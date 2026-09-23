@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged into the bundle's Info.plist by `tauri build`. Tauri's fileAssociations cannot give each type its own icon,
+     so the document types are declared here; the .icns files are copied by bundle.macOS.files in tauri.conf.json. -->
+<plist version="1.0">
+<dict>
+	<!-- The app's own strings are Chinese; this makes AppKit's (服务、搜索、进入全屏幕、打开面板) Chinese too. -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>zh_CN</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>zh-Hans</string>
+	</array>
+	<!-- Only the system's HTTPS (to the AI provider the user configures): exempt, so TestFlight and the store ask nothing. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Word 文档</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.openxmlformats.wordprocessingml.document</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>word.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Excel 表格</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.openxmlformats.spreadsheetml.sheet</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>excel.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PowerPoint 演示文稿</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.openxmlformats.presentationml.presentation</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>ppt.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Markdown 文稿</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>net.daringfireball.markdown</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>markdown.icns</string>
+		</dict>
+		<!-- .mm is also Objective-C++ source (public.objective-c-plus-plus-source, claimed by Xcode), so the mind maps
+		     are claimed by extension, as an alternate: Writer appears in 打开方式 without taking over Xcode's files. -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>思维导图</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>mm</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>mindmap.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PDF 文稿</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>pdf.icns</string>
+		</dict>
+	</array>
+</dict>
+</plist>

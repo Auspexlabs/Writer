@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+// The theme is set before the first paint, so a dark window never flashes white.
+(function () { var t = 'light'; try { t = JSON.parse(localStorage.getItem('writer-settings') || '{}').theme || 'light'; } catch (e) { }
+  if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = t; })();
+</script>
+<script src="./memo.js"></script>
+<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./theme-dark.css">
+<link rel="stylesheet" href="./theme-page.css">
+<link rel="icon" href="./assets/writer-logo-dark.svg">
+<link rel="stylesheet" href="./assets/fonts/fonts.css">
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC','Segoe UI','Microsoft YaHei UI',sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input,select,textarea{font-family:inherit;color:inherit}
+/* The Windows window (design: WriterWin): the 40px title bar replaces the shell's floating pills,
+   and the editors' AI / immersive buttons move into it. Collapsing the toolbar works as on the Mac (mac.dc.html). */
+[data-mactest] [data-shell-bar]{display:none!important}
+[data-mactest] [data-glass-bar] > div:has(> button[title="AI 助手"]){display:none!important}
+[data-mactest] [data-glass-bar]{transition:opacity .28s ease,transform .45s cubic-bezier(.2,1.25,.35,1)!important;transform-origin:top right}
+[data-mactest][data-collapsed="1"] [data-glass-bar]{opacity:0!important;transform:translateY(-8px) scale(.6)!important;transform-origin:top center!important;pointer-events:none!important}
+[data-mactest][data-collapsed="1"] div:has(> [data-bubble]){top:2px!important}
+</style>
+</helmet>
+<div data-mactest="1" data-collapsed="{{ collapsedAttr }}" style="position:fixed;inset:0;overflow:hidden;background:var(--k0, #FFFFFF)">
+  <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:40px">
+    <dc-import name="index" mac="{{ true }}" on-shell="{{ onShell }}" on-prefs="{{ openPrefs }}" on-save-dialog="{{ saveDialogProp }}" recent-files="{{ recentProp }}" on-open-recent="{{ openRecentProp }}" on-open-dialog="{{ openDialogProp }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
+  </div>
+  <div data-tauri-drag-region="deep" style="position:absolute;left:0;right:0;top:0;height:40px;z-index:59;background:var(--k0, #FFFFFF);display:flex;align-items:center">
+    <button onClick="{{ appMenuToggle }}" title="Writer 菜单 (F1)" style="width:32px;height:28px;flex:none;margin:0 6px 0 7px;padding:0;border-radius:9px;border:1px solid {{ appBtnBd }};background:{{ appBtnBg }};box-shadow:{{ appBtnSh }};backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);cursor:default;display:flex;align-items:center;justify-content:center;transition:background .2s,box-shadow .2s,border-color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));border-color:var(--k17, rgba(0,0,0,0.07))" style-active="transform:scale(0.9)">
+      <img src="./assets/writer-glyph.svg" alt="Writer" style="width:18px;height:18px;display:block;filter:var(--gmark, none)">
+    </button>
+    <button onClick="{{ sideToggle }}" title="显示/隐藏侧边栏 Ctrl+\" style="width:34px;height:26px;flex:none;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08));background:{{ sideBg }};cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.9)">
+      <span style="position:relative;width:16px;height:12px;border:1.5px solid var(--k7, #1D1D1F);border-radius:3.5px;box-sizing:border-box;display:block"><span style="position:absolute;left:4px;top:0;bottom:0;border-left:1.5px solid var(--k7, #1D1D1F)"></span></span>
+    </button>
+    <div style="height:28px;margin-left:6px;flex:none;display:flex;align-items:center;padding:0 1px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08))">
+      <button onClick="{{ goBack }}" title="撤销 Ctrl+Z" style="width:30px;height:24px;flex:none;border:none;border-radius:999px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.88)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="display:block"><path d="M5.5 3.5L2.5 6.5L5.5 9.5" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M2.5 6.5H9.5C11.7 6.5 13.5 8.3 13.5 10.5C13.5 12.7 11.7 14.5 9.5 14.5H7" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round"></path></svg></button>
+      <button onClick="{{ goFwd }}" title="重做 Ctrl+Y" style="width:30px;height:24px;flex:none;border:none;border-radius:999px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.88)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="display:block;transform:scaleX(-1)"><path d="M5.5 3.5L2.5 6.5L5.5 9.5" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M2.5 6.5H9.5C11.7 6.5 13.5 8.3 13.5 10.5C13.5 12.7 11.7 14.5 9.5 14.5H7" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round"></path></svg></button>
+    </div>
+    <sc-if value="{{ single }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;left:50%;top:0;height:40px;transform:translateX(-50%);max-width:40%;display:flex;align-items:center;gap:6px;pointer-events:none;color:var(--k11, #6E6E73)">
+        <span style="width:16px;height:16px;flex:none;display:block;background-image:url({{ fileIcon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>
+        <span style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fileName }}</span>
+      </div>
+      <div style="flex:1;align-self:stretch"></div>
+    </sc-if>
+    <sc-if value="{{ multi }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;height:40px;margin:0 8px 0 10px;display:flex;align-items:center">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+          <span style="width:1px;height:14px;flex:none;background:var(--k36, rgba(0,0,0,0.12));opacity:{{ t.sepOp }};transition:opacity .2s"></span>
+          <div role="tab" onClick="{{ t.onClick }}" onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" title="{{ t.title }}" style="flex:0 1 auto;max-width:200px;min-width:64px;height:28px;margin:0 2px;padding:0 6px 0 9px;display:flex;align-items:center;gap:7px;border-radius:7px;background:{{ t.bg }};cursor:default;transition:background .2s">
+            <span style="width:15px;height:15px;flex:none;display:block;opacity:{{ t.dotOp }};background-image:url({{ t.icon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>
+            <span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12.5px;font-weight:{{ t.fw }};color:{{ t.color }}">{{ t.title }}</span>
+            <button onClick="{{ t.onClose }}" title="关闭标签页 Ctrl+W" style="width:18px;height:18px;flex:none;padding:0;border:none;border-radius:4px;background:transparent;color:var(--k8, #8E8E93);cursor:default;display:flex;align-items:center;justify-content:center;opacity:{{ t.xOp }};transition:opacity .15s" style-hover="background:var(--k36, rgba(0,0,0,0.08));color:var(--k1, #1D1D1F)"><svg width="8" height="8" viewBox="0 0 10 10" style="display:block"><path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+          </div>
+        </sc-for>
+        <button onClick="{{ newTab }}" title="新建标签页 Ctrl+T" style="width:26px;height:26px;flex:none;margin-left:4px;border:none;border-radius:6px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center;color:var(--k8, #8E8E93)" style-hover="background:var(--k36, rgba(0,0,0,0.05));color:var(--k1, #1D1D1F)"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M5 0.5V9.5M0.5 5H9.5" stroke="currentColor" stroke-width="1.2"></path></svg></button>
+      </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:6px;padding-right:6px;flex:none">
+      <div style="height:28px;display:flex;align-items:center;padding:0 2px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08))">
+        <div style="display:flex;align-items:center;overflow:hidden;max-width:{{ quickW }};opacity:{{ quickOp }};transition:max-width .42s cubic-bezier(.32,.72,0,1),opacity .25s">
+          <button onClick="{{ quick }}" title="{{ quickTitle }}" style="width:34px;height:24px;flex:none;border:none;border-radius:999px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+            <span style="display:flex;align-items:center;gap:2px">
+              <span style="width:0;height:0;border-top:2.5px solid transparent;border-bottom:2.5px solid transparent;border-left:3.5px solid var(--k7, #1D1D1F)"></span>
+              <span style="display:flex;flex-direction:column;gap:2px"><span style="width:12px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span><span style="width:12px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span><span style="width:12px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span><span style="width:8px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span></span>
+              <span style="width:0;height:0;border-top:2.5px solid transparent;border-bottom:2.5px solid transparent;border-right:3.5px solid var(--k7, #1D1D1F)"></span>
+            </span>
+          </button>
+          <span style="width:1px;height:14px;flex:none;background:var(--k36, rgba(0,0,0,0.14))"></span>
+        </div>
+        <button onClick="{{ toggleBar }}" title="{{ barTitle }}" style="width:26px;height:24px;flex:none;border:none;border-radius:999px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+          <span style="width:6px;height:6px;border-right:1.5px solid var(--k7, #1D1D1F);border-bottom:1.5px solid var(--k7, #1D1D1F);transform:{{ chevTf }};transition:transform .4s cubic-bezier(.2,1.4,.4,1)"></span>
+        </button>
+      </div>
+      <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}"><button onClick="{{ ai }}" title="AI 助手 Ctrl+J" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08));background:{{ aiBg }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--k1, #1D1D1F);transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.88)">✦</button></sc-if>
+      <button onClick="{{ play }}" title="沉浸书写 Ctrl+." style="width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08));cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.88)">
+        <span style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--k7, #1D1D1F);margin-left:2px"></span>
+      </button>
+    </div>
+    <div style="display:flex;align-self:flex-start;flex:none;color:{{ capColor }}">
+      <button onClick="{{ doMin }}" title="最小化" style="width:46px;height:40px;padding:0;border:none;background:transparent;color:inherit;cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:var(--k36, rgba(0,0,0,0.05))"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0 5.5H10" stroke="currentColor" stroke-width="1"></path></svg></button>
+      <button onClick="{{ doMax }}" onMouseEnter="{{ maxEnter }}" onMouseLeave="{{ maxLeave }}" title="{{ maxTitle }}" style="width:46px;height:40px;padding:0;border:none;background:{{ maxBg }};color:inherit;cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:var(--k36, rgba(0,0,0,0.05))">
+        <sc-if value="{{ notMax }}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><rect x="0.5" y="0.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1"></rect></svg></sc-if>
+        <sc-if value="{{ isMax }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M2.5 2.5V2C2.5 1.2 3.2 0.5 4 0.5H8C8.8 0.5 9.5 1.2 9.5 2V6C9.5 6.8 8.8 7.5 8 7.5H7.5" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="0.5" y="2.5" width="7" height="7" rx="1.3" fill="none" stroke="currentColor" stroke-width="1"></rect></svg></sc-if>
+      </button>
+      <button onClick="{{ doClose }}" title="关闭 Alt+F4" style="width:46px;height:40px;padding:0;border:none;background:transparent;color:inherit;cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:#C42B1C;color:#FFFFFF"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" stroke-width="1"></path></svg></button>
+    </div>
+  </div>
+
+  <sc-if value="{{ snapOpen }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="menu" onMouseEnter="{{ snapKeep }}" onMouseLeave="{{ snapLeave }}" style="position:absolute;top:44px;right:30px;z-index:63;padding:12px;border-radius:12px;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.78),rgba(246,246,248,0.64)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.14),0 16px 40px rgba(0,0,0,0.2);display:grid;grid-template-columns:repeat(2,auto);gap:10px">
+      <sc-for list="{{ snapLayouts }}" as="L" hint-placeholder-count="4">
+        <div style="position:relative;width:76px;height:50px;border-radius:7px;background:var(--gcard, rgba(255,255,255,0.5));box-shadow:inset 0 0 0 1px var(--gline, rgba(0,0,0,0.08))">
+          <sc-for list="{{ L.zones }}" as="z" hint-placeholder-count="2">
+            <button onClick="{{ z.onClick }}" style="position:absolute;left:{{ z.x }};top:{{ z.y }};width:{{ z.w }};height:{{ z.h }};padding:0;border:none;border-radius:4px;background:var(--goff, rgba(0,0,0,0.1));cursor:default;transition:background .12s" style-hover="background:#3F7D5C"></button>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeMenu }}" style="position:absolute;inset:0;z-index:64"></div>
+    <div data-pop="menu" style="position:absolute;left:6px;top:42px;z-index:65;width:272px;padding:6px;border-radius:12px;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.78),rgba(246,246,248,0.64)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.14),0 18px 48px rgba(0,0,0,0.22);display:flex;flex-direction:column;font-size:13px">
+      <div style="padding:4px 4px 6px">
+        <div style="height:30px;display:flex;align-items:center;gap:7px;padding:0 10px;border-radius:999px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px rgba(0,0,0,0.12),inset 0 1px 2px rgba(0,0,0,0.04)">
+          <span style="position:relative;width:12px;height:12px;flex:none;display:block"><span style="position:absolute;left:0;top:0;width:9px;height:9px;border:1.4px solid var(--k8, #8E8E93);border-radius:50%;box-sizing:border-box"></span><span style="position:absolute;left:7.5px;top:8px;width:4.5px;height:1.4px;background:var(--k8, #8E8E93);transform:rotate(45deg);transform-origin:0 50%"></span></span>
+          <input ref="{{ qRef }}" value="{{ q }}" onChange="{{ onQ }}" onKeyDown="{{ onQKey }}" placeholder="搜索命令与帮助" style="flex:1;min-width:0;border:none;background:transparent;outline:none;font-size:12.5px;color:var(--k1, #1D1D1F)">
+        </div>
+      </div>
+      <sc-for list="{{ menuItems }}" as="it" hint-placeholder-count="0">
+        <sc-if value="{{ it.sep }}" hint-placeholder-val="{{ false }}"><div style="height:1px;margin:5px 10px;background:var(--gline, rgba(0,0,0,0.08))"></div></sc-if>
+        <sc-if value="{{ it.row }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ it.onClick }}" style="height:30px;display:flex;align-items:center;gap:10px;padding:0 10px;border:none;border-radius:7px;background:transparent;font-size:13px;color:{{ it.color }};cursor:default;text-align:left;transition:background .12s" style-hover="background:var(--gsel, rgba(255,255,255,0.85));box-shadow:0 1px 3px rgba(0,0,0,0.08)">
+            <span style="width:16px;text-align:center;font-size:13px;color:var(--k8, #8E8E93)">{{ it.icon }}</span>
+            <span style="flex:1;white-space:nowrap">{{ it.label }}</span>
+            <span style="font-size:11.5px;color:var(--k8, #8E8E93);white-space:nowrap;padding-left:20px">{{ it.key }}</span>
+          </button>
+        </sc-if>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasOverlay }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeOvBg }}" style="position:absolute;inset:0;z-index:66;overflow:auto;background:rgba(0,0,0,0.12);display:flex;align-items:safe center;justify-content:center;padding:48px 0 16px">
+      <div data-pop="center" onMouseDown="{{ stop }}">
+        <sc-if value="{{ ovPrefs }}" hint-placeholder-val="{{ false }}"><dc-import name="MacSettings" win="{{ true }}" tab="{{ prefsTab }}" on-close="{{ closeOv }}" hint-size="660px,480px"></dc-import></sc-if>
+        <sc-if value="{{ ovAbout }}" hint-placeholder-val="{{ false }}"><dc-import name="MacAbout" win="{{ true }}" on-close="{{ closeOv }}" hint-size="300px,380px"></dc-import></sc-if>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:48px;z-index:95;display:flex;justify-content:center;pointer-events:none">
+      <div data-pop="hud" style="padding:9px 16px;border-radius:999px;background:rgba(29,29,31,0.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;font-size:12.5px">{{ toast }}</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+// The Windows window page (design: WriterWin). The app's window is frameless (desktop/src-tauri/tauri.windows.conf.json):
+// this page draws the 40px title bar — the W app menu (F1), sidebar, undo/redo, title or tabs, toolbar collapse, ✦ AI, ▶ —
+// and the caption buttons, whose maximise button shows the snap layouts on hover. The bar drags the window and a
+// double-click maximises it (Tauri's drag region); the buttons call the window plugin, a snap zone calls snap_window.
+// Windows has no menu bar here, so the page handles the shortcuts the shell leaves alone (the shell has Ctrl+N/T/S/P/J/./,).
+const NATIVE = /[?&]native=1(&|$)/.test(location.search) || !!window.__TAURI_INTERNALS__;
+const EXT = { docx: '.docx', xlsx: '.xlsx', pptx: '.pptx', md: '.md', pdf: '.pdf', mm: '.mm' };
+const ICON = { docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' };
+// the design's four snap layouts, zones as fractions of the screen's work area: [x, y, w, h]
+const SNAPS = [
+  [[0, 0, .5, 1], [.5, 0, .5, 1]],
+  [[0, 0, 2 / 3, 1], [2 / 3, 0, 1 / 3, 1]],
+  [[0, 0, 1 / 3, 1], [1 / 3, 0, 1 / 3, 1], [2 / 3, 0, 1 / 3, 1]],
+  [[0, 0, .5, 1], [.5, 0, .5, .5], [.5, .5, .5, .5]]
+];
+// the window's minimum size (tauri.windows.conf.json): like Windows, offer only the layouts whose zones can hold it
+const MIN_W = 760, MIN_H = 480;
+const fits = zs => zs.every(([, , w, h]) => w * screen.availWidth >= MIN_W && h * screen.availHeight >= MIN_H);
+const settings = () => { try { return JSON.parse(localStorage.getItem('writer-settings') || '{}'); } catch (e) { return {}; } };
+// 'writer-mac' is the key every window shares (Rust keeps it); it only holds the collapsed toolbar
+const store = { get() { try { return JSON.parse(localStorage.getItem('writer-mac') || '{}'); } catch (e) { return {}; } }, set(o) { try { localStorage.setItem('writer-mac', JSON.stringify(Object.assign(this.get(), o))); } catch (e) { } } };
+const invoke = (cmd, args) => { const t = window.__TAURI_INTERNALS__; return t && t.invoke ? Promise.resolve(t.invoke(cmd, args)).catch(() => null) : Promise.resolve(null); };
+const LABEL = (() => { try { return window.__TAURI_INTERNALS__.metadata.currentWindow.label; } catch (e) { return 'main'; } })();
+const win = (cmd, args) => invoke('plugin:window|' + cmd, Object.assign({ label: LABEL }, args));
+// Windows paths: backslashes, any case, and the \\?\ prefix canonicalize() adds; the engine lists paths with '/'
+const normPath = p => String(p || '').replace(/^\\\\\?\\/, '').replace(/\\/g, '/').replace(/\/+$/, '');
+const relPath = (path, workspace) => { const full = normPath(path), root = normPath(workspace) + '/'; return full.toLowerCase().startsWith(root.toLowerCase()) ? full.slice(root.length) : full; };
+
+class Component extends DCLogic {
+  state = { sh: null, collapsed: !!store.get().collapsed, ov: null, prefsTab: null, toast: null, hovTab: null, active: document.hasFocus(), max: false, menu: false, q: '', snap: false };
+  winRef = React.createRef(); qRef = React.createRef(); api = null; workspace = null;
+
+  onShell = (info, api) => { this.api = api; this.setState({ sh: info }, () => this.report()); };
+  call(k, ...a) { if (this.api && this.api[k]) return this.api[k](...a); }
+  // storage (desktop only): the Save dialog grants the chosen file to this window's engine; recent files open in their folder's window
+  saveDialog = (name, ext) => invoke('save_dialog', { name, ext });
+  recentFiles = () => invoke('recent_files').then(r => r || []);
+  openRecent = path => invoke('open_recent', { path });
+  openDialog = () => invoke('open_files');
+  /** 退出 and the close button: open drafts are saved or discarded first (the shell asks); the system's own close keeps them. */
+  async closeWindow() { if (this.api && this.api.confirmClose && !(await this.api.confirmClose())) return; if (NATIVE) win('close'); else window.close(); }
+
+  componentDidMount() {
+    this.onSet = () => { this.forceUpdate(); this.report(); };
+    window.addEventListener('writer-settings', this.onSet); window.addEventListener('storage', this.onSet);
+    window.__writerMenu = id => this.menu(id);
+    window.__writerOpen = path => this.openPath(path);
+    this.onKey = e => this.key(e); window.addEventListener('keydown', this.onKey, true);
+    // F5 / Ctrl+R would reload the whole window: keep them for the editors that use them (放映 F5), drop them otherwise
+    this.onReload = e => { if (NATIVE && !e.defaultPrevented && (e.key === 'F5' || (e.ctrlKey && e.key.toLowerCase() === 'r'))) e.preventDefault(); };
+    window.addEventListener('keydown', this.onReload);
+    this.onFocus = () => this.setState({ active: true }); this.onBlur = () => this.setState({ active: false });
+    window.addEventListener('focus', this.onFocus); window.addEventListener('blur', this.onBlur);
+    this.onResize = () => { if (NATIVE) win('is_maximized').then(max => { if (typeof max === 'boolean' && max !== this.state.max) this.setState({ max }); }); };
+    window.addEventListener('resize', this.onResize); this.onResize();
+  }
+  // the search box takes the focus when the W menu opens (DC passes no prevState, so remember the last value)
+  componentDidUpdate() { const m = this.state.menu; if (m && !this._menuWas && this.qRef.current) this.qRef.current.focus(); this._menuWas = m; }
+  componentWillUnmount() {
+    window.removeEventListener('writer-settings', this.onSet); window.removeEventListener('storage', this.onSet);
+    window.removeEventListener('keydown', this.onKey, true); window.removeEventListener('keydown', this.onReload);
+    window.removeEventListener('focus', this.onFocus); window.removeEventListener('blur', this.onBlur); window.removeEventListener('resize', this.onResize);
+    clearTimeout(this.tt); clearTimeout(this.rt); clearTimeout(this.snapT); clearTimeout(this.hideT);
+  }
+
+  // ---- state for the native side: the window (taskbar) title, recent files, files waiting to open ----
+  report() {
+    if (!NATIVE) return;
+    clearTimeout(this.rt);
+    this.rt = setTimeout(() => {
+      const sh = this.state.sh || {};
+      const s = { title: sh.isDoc ? sh.title + (EXT[sh.type] || '') + (sh.draft ? ' — 未存储' : '') : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
+      const k = JSON.stringify(s); if (k === this._rk) return; this._rk = k; invoke('shell_state', s);
+    }, 80);
+  }
+
+  flash(t) { this.setState({ toast: t }); clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: null }), 1800); }
+
+  // ---- keyboard events forwarded to the editor, as in mac.dc.html ----
+  target() { const w = this.winRef.current; let t = document.activeElement; if (!t || !w || !w.contains(t)) t = (w && (w.querySelector('[contenteditable="true"]') || w.querySelector('[data-edroot]'))) || w || document.body; return t; }
+  sendKey(k, o = {}) {
+    const t = this.target(); const ev = new KeyboardEvent('keydown', Object.assign({ key: k, ctrlKey: true, bubbles: true, cancelable: true }, o));
+    t.dispatchEvent(ev); return ev.defaultPrevented;
+  }
+  undo(redo) { if (!this.sendKey(redo ? 'Z' : 'z', redo ? { shiftKey: true } : {})) document.execCommand(redo ? 'redo' : 'undo'); }
+  barButtons() { const w = this.winRef.current; const b = w && w.querySelector('[data-glass-bar]'); return b ? Array.from(b.querySelectorAll('button')) : []; }
+  press(label) { const b = this.barButtons().find(x => x.textContent.trim() === label); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
+  quickPress() { const q = settings().quickTab || '开始'; if (!this.press(q)) this.press('开始') || this.flash('这个编辑器没有「' + q + '」'); }
+  toggleBar() { const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
+  cycle(dir) { const docs = ((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
+  current() { const sh = this.state.sh; return sh && sh.docs.find(d => d.on); }
+
+  /** The W menu's commands (and window.__writerMenu, which the native test hooks call). */
+  menu(id) {
+    switch (id) {
+      case 'new': case 'newTab': return this.call('create');
+      case 'open': return NATIVE ? invoke('open_files') : this.sendKey('o'); // the app opens files in place; a browser uploads a copy
+      case 'closeTab': { const d = this.current(); return d && this.call('close', d.id); }
+      case 'save': return this.sendKey('s');
+      case 'saveAs': return this.call('saveAs');
+      case 'print': return this.sendKey('p');
+      case 'toggleSidebar': return this.call('toggleThumbs');
+      case 'toggleToolbar': return this.toggleBar();
+      case 'toggleAI': return settings().ai === false ? this.flash('AI 助手已在设置中关闭') : this.call('toggleAI');
+      case 'immersive': return this.call('play');
+      case 'toggleDark': this.call('toggleDark'); return setTimeout(() => { this.forceUpdate(); this.report(); }, 30);
+      case 'prevTab': return this.cycle(-1);
+      case 'nextTab': return this.cycle(1);
+      case 'undo': return this.undo(false);
+      case 'redo': return this.undo(true);
+      case 'settings': return this.showOv('prefs');
+      case 'shortcuts': return this.showOv('prefs', 'keys');
+      case 'about': return this.showOv('about');
+      case 'help': return this.flash('帮助文档即将推出，先看看「键盘快捷键」');
+      case 'quit': return this.closeWindow();
+      default: return this.flash('未知菜单：' + id);
+    }
+  }
+  /** Settings / About: in-page panels in the design's Windows style (win prop). */
+  showOv(ov, tab) { this.setState({ ov, prefsTab: tab || null, menu: false, q: '' }); }
+  openPrefs = tab => this.showOv('prefs', typeof tab === 'string' ? tab : null); // the shell's AI panel asks for 'ai'
+
+  /** The W menu (design: WriterWin items()), filtered by the search box. */
+  items() {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const I = (icon, label, key, id) => ({ row: true, sep: false, icon, label, key: key || '', id, color: id ? 'var(--k1, #1D1D1F)' : 'var(--k8, #8E8E93)', onClick: () => { if (!id) return; this.setState({ menu: false, q: '' }); this.menu(id); } });
+    const S = { sep: true, row: false };
+    const all = [
+      I('＋', '新建…', 'Ctrl+N', 'new'), I('⧉', '新建标签页', 'Ctrl+T', 'newTab'), I('↗', '打开…', 'Ctrl+O', 'open'), I('↓', '存储', 'Ctrl+S', 'save'), I('⇪', '另存为…', 'Ctrl+Shift+S', 'saveAs'), I('⎙', '打印…', 'Ctrl+P', 'print'), S,
+      I('◐', dark ? '浅色模式' : '深色模式', 'Ctrl+Shift+L', 'toggleDark'), I('⌄', this.state.collapsed ? '展开工具栏' : '收起工具栏', 'Ctrl+Alt+T', 'toggleToolbar'), S,
+      I('⚙︎', '设置', 'Ctrl+,', 'settings'), I('⌨︎', '键盘快捷键', '', 'shortcuts'), I('?', 'Writer 帮助', 'F1', 'help'), S,
+      I('ⓘ', '关于 Writer', '', 'about'), I('⏻', '退出', 'Alt+F4', 'quit')
+    ];
+    const q = this.state.q.trim(); if (!q) return all;
+    const hits = all.filter(x => x.row && x.label.toLowerCase().includes(q.toLowerCase()));
+    return hits.length ? hits : [I('', '无结果', '', null)];
+  }
+
+  /** Opens a document of this window's folder by absolute path (Explorer, a drop). Resolves true when it is open. */
+  async openPath(path) {
+    try {
+      if (!this.workspace) { const r = await fetch('/files', { credentials: 'same-origin' }); if (r.ok) this.workspace = (await r.json()).workspace; }
+      const rel = relPath(path, this.workspace), same = x => x.path.toLowerCase() === rel.toLowerCase();
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const sh = this.state.sh;
+        const d = sh && sh.docs.find(same);
+        if (d) { this.call('open', d.id); return true; }
+        if (sh && this.api && this.api.openPath) { if (await this.api.openPath(rel)) return true; break; }
+        await new Promise(r => setTimeout(r, 150));
+      }
+      this.flash('没有找到 ' + rel);
+    } catch (e) { this.flash('无法打开：' + e.message); }
+    return false;
+  }
+
+  key(e) {
+    const st = this.state, k = e.key.toLowerCase();
+    const eat = () => { e.preventDefault(); e.stopPropagation(); };
+    if (e.key === 'Escape' && (st.menu || st.ov || st.snap)) { eat(); this.setState({ menu: false, q: '', ov: null, prefsTab: null, snap: false }); return; }
+    if (e.key === 'F1') { eat(); this.setState(s => ({ menu: !s.menu, q: '' })); return; }
+    if (e.altKey && e.key === 'F4') { eat(); this.menu('quit'); return; }
+    if (!e.ctrlKey || e.metaKey) return;
+    if (e.altKey) { if (k === 't' || e.code === 'KeyT') { eat(); this.toggleBar(); } return; }
+    if (e.key === 'Tab') { eat(); this.cycle(e.shiftKey ? -1 : 1); }
+    else if (e.code === 'Backslash' || e.key === '\\') { eat(); this.call('toggleThumbs'); }
+    else if (!e.shiftKey && k === 'w') { eat(); this.menu('closeTab'); }
+    else if (!e.shiftKey && k === 'o' && NATIVE) { eat(); this.menu('open'); }
+  }
+
+  renderVals() {
+    const st = this.state, sh = st.sh, set = settings(), dark = document.documentElement.dataset.theme === 'dark';
+    const iconSet = set.iconStyle === 'c' ? 'c' : 'b';
+    const ic = t => `./assets/icons/${iconSet}/${ICON[t] || 'word'}.svg`;
+    // tabs are the documents opened in this window, not every file of the folder
+    const openDocs = sh ? sh.docs.filter(d => d.open || d.on) : [];
+    const multi = openDocs.length > 1 && !(sh && sh.pure);
+    const quickTab = set.quickTab || '开始';
+    const glass = 'linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))', onBg = 'var(--k41, rgba(255,255,255,0.9))';
+    const zoneGeo = ([fx, fy, fw, fh]) => { const P = 3, IW = 70, IH = 44, g = 1.5; const x = P + fx * IW + (fx > 0 ? g : 0), y = P + fy * IH + (fy > 0 ? g : 0); const w = fw * IW - (fx > 0 ? g : 0) - (fx + fw < 0.999 ? g : 0), h = fh * IH - (fy > 0 ? g : 0) - (fy + fh < 0.999 ? g : 0); return { x: x + 'px', y: y + 'px', w: w + 'px', h: h + 'px' }; };
+    const snapTo = ([x, y, w, h]) => { clearTimeout(this.snapT); clearTimeout(this.hideT); this.setState({ snap: false }); if (NATIVE) invoke('snap_window', { x, y, w, h }); else this.flash('贴靠布局在 Windows 应用里生效'); };
+    return {
+      winRef: this.winRef, qRef: this.qRef, onShell: this.onShell, openPrefs: this.openPrefs,
+      saveDialogProp: NATIVE ? this.saveDialog : null, recentProp: NATIVE ? this.recentFiles : null, openRecentProp: NATIVE ? this.openRecent : null, openDialogProp: NATIVE ? this.openDialog : null,
+      collapsedAttr: st.collapsed ? '1' : '0',
+      appMenuToggle: () => this.setState({ menu: !st.menu, q: '' }),
+      appBtnBg: st.menu ? 'var(--k41, rgba(255,255,255,0.92))' : 'transparent', appBtnBd: st.menu ? 'var(--k17, rgba(0,0,0,0.07))' : 'transparent',
+      appBtnSh: st.menu ? 'inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08))' : 'none',
+      menuOpen: st.menu, menuItems: this.items(), q: st.q, onQ: e => this.setState({ q: e.target.value }), closeMenu: () => this.setState({ menu: false, q: '' }),
+      onQKey: e => { if (e.key !== 'Enter') return; const it = this.items().find(x => x.row && x.id); if (it) it.onClick(); },
+      sideToggle: () => this.call('toggleThumbs'), sideBg: sh && sh.showThumbs && sh.isDoc ? onBg : glass,
+      goBack: () => this.undo(false), goFwd: () => this.undo(true),
+      single: !multi, multi,
+      // the home page shows the app icon: on Windows the dark tile on light themes, the light one on dark (design: WriterWin 2e)
+      fileName: sh ? sh.title + (sh.isDoc ? (EXT[sh.type] || '') + (sh.draft ? ' — 未存储' : '') : '') : 'Writer', fileIcon: sh && sh.isDoc ? ic(sh.type) : dark ? './assets/writer-logo-light.svg' : './assets/writer-logo-dark.svg',
+      tabs: openDocs.map((x, i, arr) => {
+        const hv = st.hovTab === x.id, prevOn = i > 0 && (arr[i - 1].on || st.hovTab === arr[i - 1].id);
+        return {
+          title: x.title, icon: ic(x.type), dotOp: x.on ? 1 : 0.6,
+          bg: x.on ? 'var(--k36, rgba(0,0,0,0.06))' : hv ? 'var(--k36, rgba(0,0,0,0.03))' : 'transparent',
+          fw: x.on ? 600 : 400, color: x.on ? 'var(--k1, #1D1D1F)' : 'var(--k8, #8E8E93)', xOp: x.on || hv ? 1 : 0,
+          sepOp: i === 0 || x.on || hv || prevOn ? 0 : 1,
+          onClick: () => this.call('open', x.id), onEnter: () => this.setState({ hovTab: x.id }), onLeave: () => this.setState({ hovTab: null }),
+          onClose: e => { e.stopPropagation(); this.call('close', x.id); }
+        };
+      }),
+      newTab: () => this.call('create'),
+      quickW: st.collapsed ? '40px' : '0px', quickOp: st.collapsed ? 1 : 0, quickTitle: '快捷打开：' + quickTab + '（可在设置中更改）', quick: () => this.quickPress(),
+      toggleBar: () => this.toggleBar(), barTitle: st.collapsed ? '展开工具栏 Ctrl+Alt+T' : '收起工具栏 Ctrl+Alt+T', chevTf: st.collapsed ? 'translateY(-2px) rotate(45deg)' : 'translateY(2px) rotate(-135deg)',
+      aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiBg: sh && sh.showAI ? onBg : glass,
+      play: () => this.call('play'),
+      // caption buttons; like Windows 11, their glyphs fade while the window is in the background
+      capColor: st.active ? 'var(--k1, #1D1D1F)' : 'var(--k8, #8E8E93)',
+      doMin: () => { if (NATIVE) win('minimize'); },
+      doMax: () => { clearTimeout(this.snapT); this.setState({ snap: false }); if (NATIVE) win('toggle_maximize'); },
+      doClose: () => this.menu('quit'),
+      isMax: st.max, notMax: !st.max, maxTitle: st.max ? '向下还原' : '最大化', maxBg: st.snap ? 'var(--k36, rgba(0,0,0,0.05))' : 'transparent',
+      maxEnter: () => { clearTimeout(this.hideT); clearTimeout(this.snapT); this.snapT = setTimeout(() => this.setState({ snap: true }), 420); },
+      maxLeave: () => { clearTimeout(this.snapT); this.hideT = setTimeout(() => this.setState({ snap: false }), 260); },
+      snapOpen: st.snap, snapKeep: () => clearTimeout(this.hideT), snapLeave: () => { this.hideT = setTimeout(() => this.setState({ snap: false }), 200); },
+      snapLayouts: (SNAPS.some(fits) ? SNAPS.filter(fits) : SNAPS).map(zs => ({ zones: zs.map(z => ({ ...zoneGeo(z), onClick: () => snapTo(z) })) })),
+      hasOverlay: !!st.ov, ovPrefs: st.ov === 'prefs', ovAbout: st.ov === 'about', prefsTab: st.prefsTab || 'general',
+      closeOv: () => this.setState({ ov: null, prefsTab: null }), closeOvBg: () => this.setState({ ov: null, prefsTab: null }), stop: e => e.stopPropagation(),
+      hasToast: !!st.toast, toast: st.toast || ''
+    };
+  }
+}
+</script>
+</body>
+</html>

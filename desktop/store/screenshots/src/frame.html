@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!-- One store screenshot: 1440 × 900 CSS px, rendered at 2× (2880 × 1800).
+     Query: t (headline), s (subline), img (the window capture), w/h (its size in CSS px here), top (its top edge),
+     theme (light|dark), glow (r,g,b of the soft light behind the window), logo=1 + logoSrc (the app icon before the headline),
+     inset + insetLabel + insetTop (a small print of a picture beside the window, e.g. the photo before the cut-out). -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+:root { --ink: #1D1D1F; --sub: #6E6E73; --top: #F7F8FA; --bottom: #E6EAF0; --edge: rgba(0, 0, 0, 0.14); --lift: rgba(20, 30, 50, 0.22); --glow: 63, 125, 92; }
+:root[data-theme="dark"] { --ink: #F5F5F7; --sub: #A1A1A6; --top: #1C1D21; --bottom: #0B0C0E; --edge: rgba(255, 255, 255, 0.16); --lift: rgba(0, 0, 0, 0.6); }
+html, body { margin: 0; width: 1440px; height: 900px; overflow: hidden; }
+body {
+  position: relative; font-family: "PingFang SC", -apple-system, "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(900px 520px at 50% 105%, rgba(var(--glow), 0.16), transparent 70%),
+    radial-gradient(700px 420px at 8% 0%, rgba(255, 255, 255, 0.55), transparent 70%),
+    linear-gradient(180deg, var(--top), var(--bottom));
+}
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(900px 520px at 50% 105%, rgba(var(--glow), 0.22), transparent 70%),
+    radial-gradient(700px 420px at 8% 0%, rgba(255, 255, 255, 0.05), transparent 70%),
+    linear-gradient(180deg, var(--top), var(--bottom));
+}
+.head { position: absolute; top: 56px; left: 0; right: 0; text-align: center; color: var(--ink); }
+.title { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.logo { width: 62px; height: 62px; flex: none; filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.14)); }
+.logo[hidden] { display: none; }
+h1 { margin: 0; font-size: 56px; line-height: 1.2; font-weight: 600; letter-spacing: 1px; }
+p { margin: 12px 0 0; font-size: 22px; line-height: 1.4; color: var(--sub); letter-spacing: 0.5px; }
+.win { position: absolute; left: 50%; transform: translateX(-50%); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 30px 80px -10px var(--lift), 0 10px 24px -8px var(--lift); }
+.win img { display: block; width: 100%; height: 100%; }
+.win::after { content: ""; position: absolute; inset: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--edge); pointer-events: none; }
+.inset { position: absolute; width: 150px; text-align: center; color: var(--sub); font-size: 15px; letter-spacing: 1px; }
+.inset img { display: block; width: 150px; height: 150px; border-radius: 10px; border: 4px solid #fff; box-sizing: border-box; transform: rotate(-3deg);
+  box-shadow: 0 14px 30px -8px var(--lift), 0 2px 6px rgba(0, 0, 0, 0.12); margin-bottom: 12px; }
+.inset[hidden] { display: none; }
+</style>
+</head>
+<body>
+<div class="head"><div class="title"><img class="logo" hidden alt=""><h1></h1></div><p></p></div>
+<div class="win"><img alt=""></div>
+<div class="inset" hidden><img alt=""><span></span></div>
+<script>
+const q = new URLSearchParams(location.search), dark = q.get('theme') === 'dark';
+document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+if (q.get('glow')) document.documentElement.style.setProperty('--glow', q.get('glow'));
+const logo = document.querySelector('.logo');
+if (q.get('logo')) { logo.hidden = false; logo.src = q.get('logoSrc'); }
+document.querySelector('h1').textContent = q.get('t') || '';
+const sub = document.querySelector('p'); sub.textContent = q.get('s') || ''; sub.hidden = !q.get('s');
+const win = document.querySelector('.win');
+win.style.width = q.get('w') + 'px'; win.style.height = q.get('h') + 'px'; win.style.top = q.get('top') + 'px';
+if (q.get('inset')) {                                   // centred in the margin left of the window
+  const inset = document.querySelector('.inset'); inset.hidden = false;
+  inset.style.left = (1440 - q.get('w')) / 4 - 75 + 'px'; inset.style.top = q.get('insetTop') + 'px';
+  inset.querySelector('img').src = q.get('inset'); inset.querySelector('span').textContent = q.get('insetLabel') || '';
+}
+win.querySelector('img').src = q.get('img');
+Promise.all([...document.images].filter(i => i.getAttribute('src')).map(i => i.decode())).then(() => { document.body.dataset.ready = '1'; });
+</script>
+</body>
+</html>

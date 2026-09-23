@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./theme-dark.css">
+<style>
+.sv-t p{margin:0}.sv-t ul,.sv-t ol{margin:0;padding-left:1.1em}.sv-t li{margin:0.15em 0}
+</style>
+</helmet>
+<div style="width:{{ w }};height:{{ h }};overflow:hidden;position:relative;background:{{ bg }}">
+  <div style="position:absolute;left:0;top:0;width:1600px;height:{{ H }};transform:{{ scale }};transform-origin:0 0">
+    <sc-for list="{{ objs }}" as="o" hint-placeholder-count="0">
+      <div data-oid="{{ o.id }}" style="position:absolute;left:{{ o.left }};top:{{ o.top }};width:{{ o.width }};height:{{ o.height }};transform:{{ o.tf }};opacity:{{ o.op }};visibility:{{ o.vis }}">
+        <div style="position:absolute;inset:0;background:{{ o.bg }};border-radius:{{ o.radius }};clip-path:{{ o.clip }};box-shadow:{{ o.stroke }}"></div>
+        <sc-if value="{{ o.isImg }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;{{ o.picFrame }}"><img src="{{ o.src }}" alt="" style="{{ o.picImage }}"></div>
+        </sc-if>
+        <sc-if value="{{ o.hasText }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:hidden;word-break:break-word">
+            <div class="sv-t" dangerouslySetInnerHTML="{{ o.inner }}"></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ o.isTable }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;font-size:{{ o.fs }};font-family:{{ o.font }}">
+            <sc-for list="{{ o.rows }}" as="r" hint-placeholder-count="0">
+              <div style="flex:1;display:flex">
+                <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="0">
+                  <div style="flex:1;display:flex;align-items:center;padding:0 16px;background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};border-bottom:1px solid rgba(128,128,128,0.25);overflow:hidden">{{ c.text }}</div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:180},&quot;slide&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ink&quot;,&quot;paper&quot;,&quot;sea&quot;,&quot;clay&quot;],&quot;default&quot;:&quot;paper&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;ratio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;16:9&quot;,&quot;4:3&quot;],&quot;default&quot;:&quot;16:9&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:320,&quot;tsType&quot;:&quot;number&quot;},&quot;hidden&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { import('./office-io.js').then(m => { this.K = m; this.forceUpdate(); }); }
+  renderVals() {
+    const K = this.K, s = this.props.slide, W = this.props.width || 160;
+    const H = this.props.ratio === '4:3' ? 1200 : 900, k = W / 1600;
+    if (!K || !s) return { w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: '#EEE', scale: `scale(${k})`, objs: [] };
+    const th = K.THEMES[this.props.theme] || K.THEMES.paper, hid = this.props.hidden || [];
+    return {
+      w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: s.bg || th.bg, scale: `scale(${k})`,
+      objs: (s.decor || []).concat(s.objs).map(o => Object.assign(K.objView(o, th, 1600 / (this.props.ratio === '4:3' ? 720 : 960)), { id: o.id, vis: hid.includes(o.id) ? 'hidden' : 'visible' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./theme-dark.css">
+<link rel="stylesheet" href="./assets/fonts/fonts.css">
+<style>body{margin:0;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased}*{box-sizing:border-box}a{color:#3F7D5C}a:hover{color:#2E6048}button,select,textarea{font-family:inherit}</style>
+</helmet>
+<div style="position:relative;width:660px;border-radius:{{ radius }};overflow:hidden;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.74),rgba(246,246,248,0.6)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);color:var(--k1, #1D1D1F);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 28px 80px rgba(0,0,0,0.26),0 2px 8px rgba(0,0,0,0.08);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;font-size:13px">
+  <div style="position:relative;height:56px;display:flex;align-items:center;padding:0 16px">
+    <div style="display:flex;gap:8px">
+      <sc-if value="{{ notWin }}" hint-placeholder-val="{{ true }}"><button onClick="{{ close }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:#FF5F57;cursor:default"></button>
+      <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span></sc-if><sc-if value="{{ isWin }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:14px;top:0;height:36px;z-index:2;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--k1, #1D1D1F);pointer-events:none"><img src="./assets/writer-glyph.svg" alt="" style="width:16px;height:16px;display:block;filter:var(--gmark, none)"><span>{{ winTitle }}</span></div><button onClick="{{ close }}" title="关闭" style="position:absolute;right:0;top:0;z-index:2;width:46px;height:36px;padding:0;border:none;background:transparent;color:var(--k1, #1D1D1F);cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:#C42B1C;color:#FFFFFF"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" stroke-width="1"></path></svg></button></sc-if>
+    </div>
+    <div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);display:flex;gap:2px;padding:3px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.08))">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+        <button onClick="{{ t.onClick }}" style="height:26px;padding:0 12px;border:none;border-radius:999px;background:{{ t.bg }};box-shadow:{{ t.sh }};display:flex;align-items:center;gap:5px;cursor:default;font-size:12.5px;font-weight:{{ t.fw }};color:var(--k1, #1D1D1F);white-space:nowrap;transition:background .2s">
+          <span style="font-size:12px;line-height:1;color:{{ t.ic }}">{{ t.icon }}</span>{{ t.label }}
+        </button>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px;padding:6px 22px 24px;max-height:560px;overflow-y:auto;scrollbar-width:none">
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <sc-if value="{{ g.hasName }}" hint-placeholder-val="{{ false }}"><div style="padding:0 6px;font-size:11.5px;font-weight:500;color:var(--k8, #8E8E93)">{{ g.name }}</div></sc-if>
+        <div style="border-radius:13px;background:var(--gcard, rgba(255,255,255,0.55));box-shadow:inset 0 0 0 1px var(--gcardb, rgba(255,255,255,0.8)),0 1px 2px rgba(0,0,0,0.04);overflow:hidden">
+          <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:10px;padding:11px 14px;border-top:{{ r.bt }}">
+              <div style="display:flex;align-items:center;gap:14px;min-height:24px">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:13px">{{ r.label }}</span>
+                  <sc-if value="{{ r.hasHint }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;color:var(--k8, #8E8E93);line-height:1.45">{{ r.hint }}</span></sc-if>
+                </div>
+                <sc-if value="{{ r.isToggle }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ r.onClick }}" style="flex:none;position:relative;width:34px;height:20px;padding:0;border:none;border-radius:999px;background:{{ r.tbg }};box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.08);cursor:default;transition:background .2s"><span style="position:absolute;top:2px;left:{{ r.tx }};width:16px;height:16px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.25),0 0 0 0.5px rgba(0,0,0,0.04);transition:left .3s cubic-bezier(.2,1.4,.4,1)"></span></button>
+                </sc-if>
+                <sc-if value="{{ r.isPopup }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:relative;flex:none">
+                    <select value="{{ r.value }}" onChange="{{ r.onChange }}" style="appearance:none;-webkit-appearance:none;height:24px;padding:0 26px 0 10px;border:none;border-radius:7px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px rgba(0,0,0,0.12),0 1px 2px rgba(0,0,0,0.06);font-size:12.5px;color:var(--k1, #1D1D1F);outline:none;min-width:{{ r.minW }};cursor:default">
+                      <sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="2"><option value="{{ o.v }}">{{ o.l }}</option></sc-for>
+                    </select>
+                    <span style="position:absolute;right:9px;top:7px;width:5px;height:5px;border-right:1.4px solid var(--k8, #8E8E93);border-bottom:1.4px solid var(--k8, #8E8E93);transform:rotate(45deg);pointer-events:none"></span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.isSeg }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex:none;display:flex;gap:1px;padding:2px;border-radius:8px;background:var(--goff, rgba(0,0,0,0.05))">
+                    <sc-for list="{{ r.items }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.onClick }}" style="height:22px;padding:0 11px;border:none;border-radius:6px;background:{{ o.bg }};box-shadow:{{ o.sh }};font-size:12px;font-weight:{{ o.fw }};color:var(--k1, #1D1D1F);cursor:default;white-space:nowrap">{{ o.label }}</button></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.isColors }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex:none;display:flex;gap:9px">
+                    <sc-for list="{{ r.items }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.onClick }}" title="{{ c.name }}" style="width:18px;height:18px;padding:0;border:none;border-radius:50%;background:{{ c.c }};box-shadow:{{ c.ring }};cursor:default;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.85)"></button></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.isSlider }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex:none;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--k8, #8E8E93)"><span>{{ r.lo }}</span><input type="range" min="{{ r.min }}" max="{{ r.max }}" value="{{ r.value }}" onChange="{{ r.onChange }}" style="width:150px;accent-color:{{ accent }}"><span>{{ r.hi }}</span></div>
+                </sc-if>
+                <sc-if value="{{ r.isInput }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex:none;display:flex;align-items:center;gap:8px">
+                    <input type="{{ r.type }}" value="{{ r.value }}" placeholder="{{ r.ph }}" onChange="{{ r.onChange }}" onBlur="{{ r.onBlur }}" onKeyDown="{{ r.onKey }}" autoComplete="{{ r.ac }}" spellCheck="false" style="width:{{ r.w }};height:24px;padding:0 10px;border:none;border-radius:7px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px var(--k22, rgba(0,0,0,0.12)),inset 0 1px 2px var(--k54, rgba(0,0,0,0.04));font-size:12.5px;color:var(--k1, #1D1D1F);outline:none">
+                    <sc-if value="{{ r.hasAct }}" hint-placeholder-val="{{ false }}"><button onClick="{{ r.onAct }}" style="flex:none;height:24px;padding:0 10px;border:none;border-radius:7px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px var(--k22, rgba(0,0,0,0.12)),0 1px 2px var(--k66, rgba(0,0,0,0.06));font-size:12.5px;color:var(--k1, #1D1D1F);cursor:default;white-space:nowrap">{{ r.act }}</button></sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.isButton }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ r.onClick }}" style="flex:none;height:24px;padding:0 14px;border:none;border-radius:7px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px var(--k22, rgba(0,0,0,0.12)),0 1px 2px var(--k66, rgba(0,0,0,0.06));font-size:12.5px;color:var(--k1, #1D1D1F);cursor:default;white-space:nowrap">{{ r.btn }}</button>
+                </sc-if>
+              </div>
+              <sc-if value="{{ r.isTheme }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:14px">
+                  <sc-for list="{{ r.items }}" as="c" hint-placeholder-count="3">
+                    <button onClick="{{ c.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;border:none;background:none;padding:0;cursor:default;font-size:11.5px;font-weight:{{ c.fw }};color:var(--k1, #1D1D1F)">
+                      <span style="width:84px;height:54px;border-radius:9px;background:{{ c.bg }};box-shadow:{{ c.ring }};position:relative;overflow:hidden;display:block">
+                        <span style="position:absolute;left:10px;top:10px;right:18px;bottom:0;border-radius:5px 5px 0 0;background:{{ c.win }};box-shadow:0 0 0 0.5px rgba(0,0,0,0.12)"></span>
+                        <span style="position:absolute;left:17px;top:18px;width:26px;height:3px;border-radius:2px;background:{{ accent }}"></span>
+                      </span>{{ c.label }}
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ r.isIcons }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ r.items }}" as="c" hint-placeholder-count="2">
+                    <button onClick="{{ c.onClick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:12px;border:none;border-radius:11px;background:{{ c.bg }};box-shadow:{{ c.ring }};cursor:default;text-align:left;transition:box-shadow .2s">
+                      <div style="display:flex;gap:6px">
+                        <sc-for list="{{ c.icons }}" as="ic" hint-placeholder-count="6"><span style="width:30px;height:30px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.12));background-image:url({{ ic }});background-size:contain;background-repeat:no-repeat;background-position:center"></span></sc-for>
+                      </div>
+                      <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:{{ c.fw }};color:var(--k1, #1D1D1F)"><span style="width:14px;height:14px;border-radius:50%;background:{{ c.dotBg }};box-shadow:{{ c.dotSh }};display:flex;align-items:center;justify-content:center"><span style="width:6px;height:6px;border-radius:50%;background:white;opacity:{{ c.dotOp }}"></span></span>{{ c.label }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ r.isText }}" hint-placeholder-val="{{ false }}">
+                <textarea value="{{ r.value }}" onChange="{{ r.onChange }}" placeholder="{{ r.ph }}" rows="3" style="resize:none;width:100%;padding:8px 10px;border:none;border-radius:9px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px rgba(0,0,0,0.12),inset 0 1px 2px rgba(0,0,0,0.04);font-size:12.5px;line-height:1.5;color:var(--k1, #1D1D1F);outline:none"></textarea>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:640},&quot;tab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;general&quot;,&quot;look&quot;,&quot;edit&quot;,&quot;ai&quot;,&quot;file&quot;,&quot;keys&quot;],&quot;default&quot;:&quot;general&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, lang: '简体中文', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
+const TABS = [['general', '通用', '⚙︎'], ['look', '外观', '◐'], ['edit', '编辑', '✎'], ['ai', 'AI', '✦'], ['file', '存储', '▤'], ['keys', '快捷键', '⌘']];
+const ICONS = ['word', 'excel', 'ppt', 'markdown', 'pdf', 'mindmap'];
+const O = a => a.map(x => Array.isArray(x) ? { v: String(x[0]), l: x[1] } : { v: String(x), l: x });
+class Component extends DCLogic {
+  state = { tab: null, v: this.load(), ws: '', ai: null, aiMsg: '' };
+  componentDidMount() {
+    if (!this.props.workspace) fetch('/files', { credentials: 'same-origin' }).then(r => r.json()).then(j => this.setState({ ws: j.workspace || '' })).catch(() => { });
+    // 设置 › AI talks to the engine (this may be a window of its own): the model settings and the key live there, never in the page.
+    Promise.all([import('./engine.js'), import('./prefs.js')]).then(([EN, P]) => { this.EN = EN; this.P = P; return EN.aiConfig(); })
+      .then(c => { const ai = this.P.aiForm(c); this.aiSent = this.aiKey(ai); this.setState({ ai }); })
+      .catch(e => this.setState({ ai: this.P ? this.P.aiForm(null) : null, aiMsg: '读不到模型设置：' + e.message }));
+  }
+  aiKey(ai, body) { const b = Object.assign({}, body || this.P.aiRequest(ai)); delete b.apiKey; return JSON.stringify(b); }
+  editAi(patch) { this.setState(s => ({ ai: Object.assign({}, s.ai, patch) })); }
+  pickAi(id) { this.setState(s => ({ ai: this.P.pickProvider(s.ai, id), aiMsg: '' }), () => this.saveAi()); }
+  /** Saves the model settings once they are complete: on leaving a field, picking a service, or 清除 (clear). Unchanged settings are not sent again. */
+  saveAi(clear) {
+    const P = this.P, EN = this.EN, f = this.state.ai; if (!P || !EN || !f) return;
+    const missing = P.aiMissing(f); if (missing) { this.setState({ aiMsg: missing }); return; }
+    const body = P.aiRequest(f); if (clear) body.apiKey = '';
+    const k = this.aiKey(f, body); if (k === this.aiSent && body.apiKey == null) return; this.aiSent = k;
+    return this.aiSaving = EN.saveAiConfig(body).then(c => this.setState(s => ({ aiMsg: '已保存', ai: Object.assign({}, s.ai, { hasKey: c.hasKey, savedUrl: c.baseUrl, source: c.source, key: body.apiKey != null && s.ai.key === f.key ? '' : s.ai.key }) })),
+      e => { this.aiSent = null; this.setState({ aiMsg: e.message + (e.hint ? '（' + e.hint + '）' : '') }); });
+  }
+  async testAi() {
+    const P = this.P, EN = this.EN; if (!P || !EN || !this.state.ai) return;
+    if (this.aiSaving) await this.aiSaving;
+    const f = this.state.ai, missing = P.aiMissing(f); if (missing) { this.setState({ aiMsg: missing }); return; }
+    this.setState({ aiMsg: '正在测试…' });
+    try { const r = await EN.testAi(P.aiRequest(f)); this.setState({ aiMsg: r.ok ? '✓ 连接成功' : '✕ ' + r.error }); } catch (e) { this.setState({ aiMsg: '✕ ' + e.message }); }
+  }
+  /** 服务商 · 接口地址 · API Key · 模型 · 测试连接. The key field is write-only: a stored key shows as 已保存 with 清除, never its value. */
+  aiRows(base) {
+    const P = this.P, f = this.state.ai; if (!P || !f) return [base('正在读取模型设置…', this.state.aiMsg)];
+    const p = P.aiPreset(f.provider), stored = P.keyStored(f);
+    const field = (k, label, ph, hint, type) => ({ ...base(label, hint), isInput: true, type: type || 'text', ac: type === 'password' ? 'new-password' : 'off', value: f[k] || '', ph, w: '260px', hasAct: false, onChange: e => this.editAi({ [k]: e.target.value }), onBlur: () => this.saveAi(), onKey: e => { if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur(); } }); // Esc closes the window: save what was typed first
+    return [
+      { ...base('服务商', f.source === 'env' ? '正在使用环境变量里的设置，它优先于这里保存的内容' : ''), isPopup: true, value: f.provider, opts: P.AI_PROVIDERS.map(x => ({ v: x.id, l: x.name })), minW: '170px', onChange: e => this.pickAi(e.target.value) },
+      field('baseUrl', '接口地址', p.url || 'https://…/v1'),
+      { ...field('key', 'API Key', stored ? '已保存' : p.key ? '粘贴 API Key' : '不需要可留空', '只保存在这台电脑上', 'password'), w: stored ? '206px' : '260px', hasAct: stored, act: '清除', onAct: () => this.saveAi(true) },
+      field('model', '模型', p.id === 'anthropic' ? '默认 ' + p.model : p.model ? '例如 ' + p.model : p.id === 'lmstudio' ? 'LM Studio 里加载的模型名' : '服务商文档里的模型名'),
+      { ...base('测试连接', this.state.aiMsg), isButton: true, btn: '测试', onClick: () => this.testAi() }
+    ];
+  }
+  load() { try { return { ...DEF, ...JSON.parse(localStorage.getItem('writer-settings') || '{}') }; } catch (e) { return { ...DEF }; } }
+  set(k, val) { const v = { ...this.state.v, [k]: val }; this.setState({ v }); try { localStorage.setItem('writer-settings', JSON.stringify(v)); } catch (e) {} if (k === 'theme') { let t = val; if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = t; } window.dispatchEvent(new Event('writer-settings')); }
+  renderVals() {
+    const v = this.state.v, A = v.accent, tab = this.state.tab || this.props.tab || 'general';
+    const off = 'var(--goff, rgba(0,0,0,0.12))';
+    // win: the Windows panel (design: WriterWin) shows shortcuts as Ctrl+… (⌃⌘S, the sidebar, is Ctrl+\ there)
+    const K = k => { if (!this.props.win) return k; if (k === '⌃⌘S') return 'Ctrl+\\'; const m = []; if (/[⌘⌃]/.test(k)) m.push('Ctrl'); if (k.includes('⇧')) m.push('Shift'); if (k.includes('⌥')) m.push('Alt'); return [...m, k.replace(/[⌘⌃⇧⌥]/g, '')].join('+'); };
+    const base = (label, hint) => ({ label, hasHint: !!hint, hint: hint || '' });
+    const tg = (k, label, hint) => ({ ...base(label, hint), isToggle: true, tbg: v[k] ? A : off, tx: v[k] ? '16px' : '2px', onClick: () => this.set(k, !v[k]) });
+    const pop = (k, label, opts, minW, hint) => ({ ...base(label, hint), isPopup: true, value: String(v[k]), opts: O(opts), minW: (minW || 120) + 'px', onChange: e => this.set(k, typeof DEF[k] === 'number' ? +e.target.value : e.target.value) });
+    const seg = (k, label, list, hint) => ({ ...base(label, hint), isSeg: true, items: list.map(([val, l]) => { const on = v[k] === val; return { label: l, bg: on ? 'var(--gsel, rgba(255,255,255,0.95))' : 'transparent', sh: on ? '0 1px 3px rgba(0,0,0,0.12),0 0 0 0.5px rgba(0,0,0,0.04)' : 'none', fw: on ? 600 : 400, onClick: () => this.set(k, val) }; }) });
+    const G = (name, rows) => ({ name: name || '', hasName: !!name, rows: rows.map((r, i) => ({ isToggle: false, isPopup: false, isSeg: false, isColors: false, isSlider: false, isTheme: false, isIcons: false, isText: false, isInput: false, isButton: false, ...r, bt: i ? '1px solid var(--gline, rgba(0,0,0,0.06))' : 'none' })) });
+    const R = {
+      general: [
+        G('启动', [seg('startup', '打开 Writer 时', [['home', '新建页'], ['last', '上次文档'], ['blank', '空白']]), pop('newType', '新建文稿类型', [['docx', '文字文档'], ['xlsx', '表格'], ['pptx', '演示文稿'], ['md', '纯文本']], 120), tg('restore', '退出时保留窗口', '重新打开时恢复所有窗口与标签页')]),
+        G('工具栏', [pop('quickTab', '收起后的快捷按钮', ['开始', '插入', '布局', '审阅', '视图', '格式', '公式', '数据', '动画'], 96, '工具气泡收起后，右上角快捷按钮直接打开的面板 · 即将推出')]),
+        G('语言与地区', [pop('lang', '语言', ['简体中文', '繁體中文', 'English', '日本語'], 110, '即将推出'), pop('paper', '纸张大小', ['A4', 'A5', 'B5', 'Letter'], 80, '新建文字文档的纸张')])
+      ],
+      look: [
+        G('', [{ ...base('外观'), isTheme: true, items: [['light', '浅色', '#E9EAEC', '#FFFFFF'], ['dark', '深色', '#1C1C1E', '#3A3A3C'], ['auto', '自动', 'linear-gradient(90deg,#E9EAEC 50%,#1C1C1E 50%)', 'linear-gradient(90deg,#FFFFFF 50%,#3A3A3C 50%)']].map(([val, label, bg, win]) => ({ label, bg, win, fw: v.theme === val ? 600 : 400, ring: v.theme === val ? '0 0 0 2px var(--k0, #fff),0 0 0 4px ' + A : '0 0 0 0.5px rgba(0,0,0,0.2)', onClick: () => this.set('theme', val) })) },
+          { ...base('强调色'), isColors: true, items: [['#3F7D5C', '竹青'], ['#2F5D8A', '黛蓝'], ['#B5573A', '赭石'], ['#7A5C9E', '藕紫'], ['#8E8E93', '石墨']].map(([c, name]) => ({ c, name, ring: v.accent === c ? '0 0 0 2px var(--k0, #fff),0 0 0 3.5px ' + c : 'inset 0 0 0 0.5px rgba(0,0,0,0.2)', onClick: () => this.set('accent', c) })) }]),
+        G('文档图标', [{ ...base('图标风格', '用于标签页、文件列表与新建页'), isIcons: true, items: [['b', 'B · 雾彩玻璃'], ['c', 'C · 深色几何']].map(([val, label]) => { const on = v.iconStyle === val; return { label, fw: on ? 600 : 400, icons: ICONS.map(n => `./assets/icons/${val}/${n}.svg`), bg: on ? 'var(--gsel, rgba(255,255,255,0.7))' : 'var(--goff, rgba(0,0,0,0.03))', ring: on ? '0 0 0 2px ' + A : 'inset 0 0 0 0.5px rgba(0,0,0,0.08)', dotBg: on ? A : 'var(--gctl, #fff)', dotSh: on ? 'none' : 'inset 0 0 0 0.5px rgba(0,0,0,0.3)', dotOp: on ? 1 : 0, onClick: () => this.set('iconStyle', val) }; }) }]),
+        G('界面', [seg('density', '界面密度', [['compact', '紧凑'], ['std', '标准'], ['loose', '宽松']]), { ...base('玻璃通透度'), isSlider: true, min: 0, max: 100, value: v.glass, lo: '实', hi: '透', onChange: e => this.set('glass', +e.target.value) }, tg('grid', '表格显示网格线'), tg('motion', '减少动态效果'), tg('darkPages', '深色模式下文稿页面也用深色', '关闭时文字文档的页面保持白色')])
+      ],
+      edit: [
+        G('正文', [pop('font', '默认字体', ['思源宋体', '思源黑体', '霞鹜文楷', 'IBM Plex Sans'], 120, '即将推出'), pop('size', '默认字号', [10, 11, 12, 14, 16, 18].map(n => [n, n + ' pt']), 80, '即将推出')]),
+        G('输入', [tg('md', 'Markdown 自动格式', '输入 # 成标题、- 成列表'), tg('spell', '键入时检查拼写'), tg('quote', '智能配对中文标点')]),
+        G('修订', [tg('track', '新文档默认开启修订')])
+      ],
+      ai: [
+        G('', [tg('ai', '启用 ✦ AI 助手'), seg('tone', '回复风格', [['brief', '简洁'], ['bal', '均衡'], ['detail', '详细']])]),
+        G('模型', this.aiRows(base)),
+        G('隐私', [tg('preview', '写入前先预览修改'), tg('ctx', '发送整篇文档作为上下文', '关闭后仅发送选中的内容')]),
+        G('自定义说明', [{ ...base('告诉 AI 你的偏好'), isText: true, value: v.instr, ph: '例如：用正式书面语。', onChange: e => this.set('instr', e.target.value) }])
+      ],
+      file: [
+        G('', [base('自动存储', '修改会自动存入文件；新文稿在第一次存储时选择位置'), tg('history', '保留版本历史', '每份文稿最多保留 30 个版本 · 即将推出')]),
+        G('默认格式 · 即将推出', [pop('fmt_docx', '文字文档', ['.docx', '.odt', '.rtf'], 80), pop('fmt_xlsx', '表格', ['.xlsx', '.ods', '.csv'], 80), pop('fmt_pptx', '演示文稿', ['.pptx', '.odp'], 80), pop('fmt_md', '纯文本', ['.md', '.txt'], 80)])
+      ],
+      keys: [['通用', [['新建', '⌘N'], ['新建标签页', '⌘T'], ['打开', '⌘O'], ['存储', '⌘S'], ['设置', '⌘,']]], ['显示', [['侧边栏', '⌃⌘S'], ['收起 / 展开工具栏', '⌥⌘T'], ['✦ AI 助手', '⌘J'], ['沉浸书写', '⌘.'], ['深色 / 浅色', '⇧⌘L']]], ['编辑', [['撤销', '⌘Z'], ['重做', '⇧⌘Z'], ['查找', '⌘F'], ['替换', '⌥⌘F']]]].map(([n, rows]) => G(n, rows.map(([l, k]) => ({ ...base(l), isSeg: true, items: [{ label: K(k), bg: 'var(--gsel, rgba(255,255,255,0.9))', sh: '0 1px 2px rgba(0,0,0,0.1)', fw: 500, onClick: () => {} }] }))))
+    };
+    return {
+      isWin: !!this.props.win, notWin: !this.props.win, radius: this.props.win ? '10px' : '18px', winTitle: 'Writer 设置',
+      iconsReady: true,
+      accent: A,
+      close: () => this.props.onClose && this.props.onClose(),
+      tabs: TABS.map(([id, label, icon]) => { const on = id === tab; return { label, icon, bg: on ? 'var(--gsel, rgba(255,255,255,0.95))' : 'transparent', sh: on ? '0 1px 4px rgba(0,0,0,0.1),inset 0 1px 0 var(--k18, #fff)' : 'none', fw: on ? 600 : 400, ic: on ? A : 'var(--k8, #8E8E93)', onClick: () => this.setState({ tab: id }) }; }),
+      groups: R[tab]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F);padding-top:58px;outline:none">
+  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--k36, rgba(0,0,0,0.12));margin-right:4px"></span></div>
+    <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
+    <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">文件</button>
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.line }};font-weight:{{ t.weight }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
+    </sc-for>
+    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
+  </div></div>
+  <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;transform-origin:top left">
+      <sc-for list="{{ ribbon }}" as="it" hint-placeholder-count="12">
+        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:20px;background:var(--k36, rgba(0,0,0,0.12));margin:0 6px;flex:none"></span></sc-if>
+        <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:30px;min-width:30px;padding:0 8px;border:none;border-radius:6px;background:{{ it.bg }};font-size:13px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">{{ it.label }}</button>
+        </sc-if>
+        <sc-if value="{{ it.isAlign }}" hint-placeholder-val="{{ false }}">
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:30px;width:30px;border:none;border-radius:6px;background:{{ it.bg }};cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:{{ it.ai }};gap:2.5px;padding:0 8px;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+            <span style="height:1.6px;width:14px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:9px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:14px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:8px;background:var(--k7, #1D1D1F)"></span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}">
+          <select data-val="{{ it.value }}" title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:28px;padding:0 4px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:9px;background:var(--k30, rgba(255,255,255,0.6));font-size:12.5px;width:{{ it.w }};flex:none;margin:0 2px">
+            <sc-for list="{{ it.options }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for>
+          </select>
+        </sc-if>
+        <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}">
+          <label title="{{ it.title }}" style="position:relative;height:30px;min-width:32px;padding:0 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+            <span style="font-size:13px;line-height:1.1;font-weight:{{ it.fw }}">{{ it.label }}</span>
+            <span style="width:18px;height:3.5px;border-radius:1px;background:{{ it.swatch }};margin-top:2px;box-shadow:inset 0 0 0 0.5px var(--k56, rgba(0,0,0,0.25))"></span>
+            <input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">
+          </label>
+        </sc-if>
+        <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}">
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}" style="height:30px;padding:0 8px;border:none;border-radius:6px;background:{{ it.bg }};font-size:13px;cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:4px" style-hover="background:var(--k20, rgba(255,255,255,0.7))">{{ it.label }}<span style="font-size:9px;color:var(--k8, #8E8E93)">▼</span></button>
+        </sc-if>
+        <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}">
+          <label title="{{ it.title }}" style="height:30px;display:flex;align-items:center;gap:6px;padding:0 6px;font-size:12.5px;color:var(--k11, #6E6E73);flex:none;white-space:nowrap">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}" style="width:84px;accent-color:var(--k1, #1D1D1F)"><span style="min-width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--k1, #1D1D1F)">{{ it.text }}</span></label>
+        </sc-if>
+      </sc-for>
+    </div></div>
+  </sc-if>
+
+  </sc-if>
+  <div style="flex:none;height:36px;margin:8px 12px 10px {{ fxML }};transition:margin .5s cubic-bezier(.2,1,.3,1);display:grid;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 1px 3px var(--k38, rgba(0,0,0,0.05));font-size:13px;overflow:hidden">
+    <input value="{{ nameBox }}" onChange="{{ onNameBox }}" onKeyDown="{{ onNameKey }}" onFocus="{{ onNameFocus }}" onBlur="{{ onNameBlur }}" style="height:100%;border:none;border-right:1px solid var(--k29, rgba(0,0,0,0.1));padding:0 14px;font-size:12.5px;font-weight:500;outline:none;background:transparent">
+    <button onMouseDown="{{ md }}" onClick="{{ openFx }}" title="插入函数" style="height:100%;border:none;background:transparent;color:var(--k8, #8E8E93);font-family:'Noto Serif SC',serif;font-style:italic;cursor:pointer;font-size:13px">fx</button>
+    <div style="position:relative;height:100%;min-width:0">
+      <div ref="{{ fxMirRef }}" style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:13px;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;white-space:pre;overflow:hidden;pointer-events:none;color:var(--k1, #1D1D1F)">{{ fxMirror }}</div>
+      <input ref="{{ fxRef }}" value="{{ fxValue }}" onChange="{{ onFx }}" onFocus="{{ onFxFocus }}" onKeyDown="{{ onFxKey }}" onKeyUp="{{ syncMirror }}" onScroll="{{ syncMirror }}" onCompositionStart="{{ onCompS }}" onCompositionEnd="{{ onCompE }}" onMouseDown="{{ onInMD }}" spellCheck="false" style="position:absolute;inset:0;width:100%;height:100%;border:none;padding:0 10px;font-size:13px;outline:none;background:transparent;color:{{ fxColor }};caret-color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">
+    </div>
+  </div>
+
+  <sc-if value="{{ showFind }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:104px;right:24px;z-index:38;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 10px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));font-size:13px">
+      <input ref="{{ findRef }}" value="{{ fq }}" onChange="{{ onFq }}" onKeyDown="{{ onFindKey }}" placeholder="查找" style="height:30px;width:140px;padding:0 12px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:999px;background:var(--k20, rgba(255,255,255,0.7));font-size:13px;outline:none">
+      <input value="{{ fr }}" onChange="{{ onFr }}" placeholder="替换为" style="height:30px;width:140px;padding:0 12px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:999px;background:var(--k20, rgba(255,255,255,0.7));font-size:13px;outline:none">
+      <button onClick="{{ findNext }}" style="height:30px;padding:0 12px;border:none;border-radius:999px;background:var(--k42, rgba(255,255,255,0.55));font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k50, rgba(255,255,255,0.9))">查找下一个</button>
+      <button onClick="{{ replaceOne }}" style="height:30px;padding:0 12px;border:none;border-radius:999px;background:var(--k42, rgba(255,255,255,0.55));font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k50, rgba(255,255,255,0.9))">替换</button>
+      <button onClick="{{ replaceAll }}" style="height:30px;padding:0 12px;border:none;border-radius:999px;background:var(--k42, rgba(255,255,255,0.55));font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k50, rgba(255,255,255,0.9))">全部替换</button>
+      <span style="color:var(--k8, #8E8E93)">{{ fcountText }}</span>
+      <div style="flex:1"></div>
+      <button onClick="{{ closeFind }}" style="height:28px;padding:0 10px;border:none;background:transparent;font-size:12.5px;cursor:pointer;color:var(--k11, #6E6E73)">关闭</button>
+    </div>
+  </sc-if>
+
+  <div style="flex:1;min-height:0;display:flex;gap:10px;padding:0 12px">
+  <sc-if value="{{ neverThumbs }}" hint-placeholder-val="{{ false }}">
+    <div data-thumbpanel="1" style="width:190px;flex:none;margin:-90px 0 0 4px;background:var(--k49, rgba(255,255,255,0.3));backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 10px 30px var(--k65, rgba(0,0,0,0.07));border-radius:22px;overflow:auto;padding:12px 10px;display:flex;flex-direction:column;gap:3px;padding-top:60px">
+      
+      <sc-for list="{{ sheetThumbs }}" as="t" hint-placeholder-count="1">
+        <div onClick="{{ t.onClick }}" style="flex:none;padding:8px 10px;border-radius:6px;background:{{ t.bg }};cursor:pointer;display:flex;flex-direction:column;gap:2px" style-hover="background:#EFEFF4">
+          <span style="font-size:13px;font-weight:{{ t.fw }}">{{ t.name }}</span><span style="font-size:11.5px;color:var(--k8, #8E8E93)">{{ t.meta }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ hasChartList }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12px;color:var(--k8, #8E8E93);padding:12px 6px 6px">图表</div>
+        <sc-for list="{{ chartList }}" as="c" hint-placeholder-count="0">
+          <div onClick="{{ c.onClick }}" style="flex:none;padding:7px 10px;border-radius:6px;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" style-hover="background:#EFEFF4">{{ c.label }}</div>
+        </sc-for>
+      </sc-if>
+    </div>
+  </sc-if>
+  <div ref="{{ wrapRef }}" style="flex:1;min-width:0;min-height:0;overflow:auto;background:var(--k0, #FFFFFF);position:relative;border-radius:16px 16px 0 0;box-shadow:0 1px 3px var(--k53, rgba(0,0,0,0.08)),0 0 0 1px var(--k66, rgba(0,0,0,0.06))">
+    <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}"><div style="padding:24px;font-size:13px;color:var(--k8, #8E8E93)">正在加载计算引擎…</div></sc-if>
+    <div style="zoom:{{ zoom }};position:relative;width:{{ gridW }}">
+      <sc-if value="{{ hasClip }}" hint-placeholder-val="{{ false }}">
+        <div style="position:sticky;top:{{ clipST }};left:{{ clipSL }};width:0;height:0;z-index:{{ clipZ }}"><div style="position:absolute;left:{{ clipL }};top:{{ clipT }};width:{{ clipW }};height:{{ clipH }};border:2px dashed var(--k59, #3F7D5C);pointer-events:none"></div></div>
+      </sc-if>
+      <div style="position:sticky;top:{{ selST }};left:{{ selSL }};width:0;height:0;z-index:{{ selZ }}"><div style="position:absolute;left:{{ selL }};top:{{ selT }};width:{{ selW }};height:{{ selH }};border:2px solid var(--k59, #3F7D5C);background:{{ selBg }};pointer-events:none;box-sizing:border-box"></div></div>
+      <sc-for list="{{ refBoxes }}" as="rb" hint-placeholder-count="0">
+        <div style="position:sticky;top:{{ rb.st }};left:{{ rb.sl }};width:0;height:0;z-index:{{ rb.z }}"><div style="position:absolute;left:{{ rb.L }};top:{{ rb.T }};width:{{ rb.W }};height:{{ rb.H }};border:{{ rb.bd }};background:{{ rb.bg }};border-radius:3px;pointer-events:none;box-sizing:border-box"></div></div>
+      </sc-for>
+      <sc-if value="{{ hasFillPrev }}" hint-placeholder-val="{{ false }}">
+        <div style="position:sticky;top:{{ fpST }};left:{{ fpSL }};width:0;height:0;z-index:{{ fpZ }}"><div data-theme-keep="1" style="position:absolute;left:{{ fpL }};top:{{ fpT }};width:{{ fpW }};height:{{ fpH }};border:1.5px dashed #6E6E73;pointer-events:none"></div></div>
+      </sc-if>
+      <div style="position:sticky;top:{{ selST }};left:{{ selSL }};width:0;height:0;z-index:{{ fhZ }}"><div onMouseDown="{{ onFillDown }}" onDoubleClick="{{ onFillDbl }}" style="position:absolute;left:{{ fhL }};top:{{ fhT }};width:8px;height:8px;background:var(--k59, #3F7D5C);border:1.5px solid var(--k0, #FFFFFF);cursor:crosshair;box-sizing:content-box"></div></div>
+      <div ref="{{ inMirRef }}" style="position:absolute;left:{{ inL }};top:{{ inT }};width:{{ inW }};height:{{ inH }};display:{{ inMirD }};align-items:center;padding:0 6px;box-sizing:border-box;font-size:13px;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;white-space:pre;overflow:hidden;background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);pointer-events:none;z-index:{{ z.mirror }}">{{ inMirror }}</div>
+      <input ref="{{ inRef }}" value="{{ inVal }}" onChange="{{ onInChange }}" onKeyDown="{{ onInKey }}" onKeyUp="{{ syncMirror }}" onScroll="{{ syncMirror }}" onCompositionStart="{{ onCompS }}" onCompositionEnd="{{ onCompE }}" onMouseDown="{{ onInMD }}" onCopy="{{ onCopy }}" onCut="{{ onCut }}" onPaste="{{ onPaste }}" onBlur="{{ onInBlur }}" spellCheck="false" autoComplete="off" style="position:absolute;left:{{ inL }};top:{{ inT }};width:{{ inW }};height:{{ inH }};opacity:{{ inOp }};pointer-events:{{ inPe }};z-index:{{ z.editor }};border:none;outline:2px solid var(--k59, #3F7D5C);padding:0 6px;font-size:13px;background:{{ inBg }};color:{{ inColor }};caret-color:{{ inCaret }};font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;box-shadow:0 2px 8px var(--k22, rgba(0,0,0,0.12))">
+      <sc-for list="{{ pics }}" as="pc" hint-placeholder-count="0">
+        <div style="position:sticky;top:{{ pc.st }};left:{{ pc.sl }};width:0;height:0;z-index:{{ pc.z }}"><div data-pic="{{ pc.id }}" onMouseDown="{{ pc.onSel }}" title="{{ pc.alt }}" style="position:absolute;left:{{ pc.x }};top:{{ pc.y }};width:{{ pc.w }};height:{{ pc.h }};transform:{{ pc.tf }};opacity:{{ pc.op }};outline:{{ pc.line }};outline-offset:1px;cursor:pointer">
+          <div style="position:absolute;inset:0;{{ pc.frame }}"><img src="{{ pc.src }}" alt="" draggable="false" style="{{ pc.image }}"></div>
+        </div></div>
+      </sc-for>
+      <sc-for list="{{ charts }}" as="ch" hint-placeholder-count="0">
+        <div style="position:sticky;top:{{ ch.st }};left:{{ ch.sl }};width:0;height:0;z-index:{{ ch.z }}"><div onMouseDown="{{ ch.onSel }}" style="position:absolute;left:{{ ch.x }};top:{{ ch.y }};width:{{ ch.w }};height:{{ ch.h }};background:var(--k0, #FFFFFF);border:1px solid {{ ch.border }};border-radius:8px;box-shadow:0 4px 16px var(--k19, rgba(0,0,0,0.1));display:flex;flex-direction:column;overflow:hidden">
+          <div onMouseDown="{{ ch.onDrag }}" onDoubleClick="{{ ch.onRename }}" style="height:34px;flex:none;order:-2;display:flex;align-items:center;gap:4px;padding:0 6px 0 14px;cursor:move">
+            <span style="flex:1;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ch.title }}</span>
+            <button onMouseDown="{{ md }}" onClick="{{ ch.onMenu }}" title="图表类型与图例" style="height:24px;padding:0 7px;border:none;border-radius:5px;background:transparent;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;white-space:nowrap" style-hover="background:var(--k37, rgba(0,0,0,0.05))">{{ ch.typeLabel }}<span style="font-size:9px;color:var(--k8, #8E8E93)">▼</span></button>
+            <button onMouseDown="{{ md }}" onClick="{{ ch.onDelete }}" title="删除图表" style="height:24px;width:24px;border:none;border-radius:5px;background:transparent;font-size:13px;cursor:pointer;color:var(--k8, #8E8E93)">✕</button>
+          </div>
+          <svg width="{{ ch.sw }}" height="{{ ch.sh }}" style="display:block;flex:none">
+            <sc-for list="{{ ch.grid }}" as="g" hint-placeholder-count="0"><line x1="{{ g.x1 }}" y1="{{ g.y1 }}" x2="{{ g.x2 }}" y2="{{ g.y2 }}" style="stroke:{{ g.stroke }};stroke-width:1"></line></sc-for>
+            <sc-for list="{{ ch.areas }}" as="a" hint-placeholder-count="0"><path d="{{ a.d }}" style="fill:{{ a.fill }};opacity:0.35"></path></sc-for>
+            <sc-for list="{{ ch.rects }}" as="b" hint-placeholder-count="0"><rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" style="fill:{{ b.fill }}"></rect></sc-for>
+            <sc-for list="{{ ch.lines }}" as="l" hint-placeholder-count="0"><polyline points="{{ l.pts }}" style="fill:none;stroke:{{ l.stroke }};stroke-width:2.5"></polyline></sc-for>
+            <sc-for list="{{ ch.dots }}" as="d" hint-placeholder-count="0"><circle cx="{{ d.x }}" cy="{{ d.y }}" r="3.5" style="fill:{{ d.fill }}"></circle></sc-for>
+            <sc-for list="{{ ch.slices }}" as="s" hint-placeholder-count="0"><path d="{{ s.d }}" style="fill:{{ s.fill }};stroke:var(--k0, #FFFFFF);stroke-width:2"></path></sc-for>
+            <sc-for list="{{ ch.labels }}" as="t" hint-placeholder-count="0"><text x="{{ t.x }}" y="{{ t.y }}" style="font-size:11px;fill:{{ t.fill }};text-anchor:{{ t.anchor }};font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">{{ t.text }}</text></sc-for>
+          </svg>
+          <div style="flex:1;order:{{ ch.lgOrder }};display:{{ ch.lgDisp }};flex-wrap:wrap;gap:4px 14px;padding:4px 14px 8px;font-size:11.5px;color:var(--k11, #6E6E73);align-content:flex-start">
+            <sc-for list="{{ ch.legend }}" as="lg" hint-placeholder-count="0"><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:{{ lg.fill }}"></span>{{ lg.name }}</span></sc-for>
+          </div>
+        </div></div>
+      </sc-for>
+      <div style="display:grid;grid-template-columns:{{ gtc }};grid-template-rows:{{ gtr }};user-select:none">
+        <div onMouseDown="{{ selAll }}" style="grid-row:1;grid-column:1;position:sticky;top:0;left:0;z-index:{{ z.corner }};background:var(--k48, #F5F5F7);border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);cursor:pointer"></div>
+        <sc-for list="{{ colHeads }}" as="h" hint-placeholder-count="12">
+          <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" style="grid-row:1;grid-column:{{ h.gc }};position:sticky;top:0;left:{{ h.left }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:s-resize">
+            {{ h.l }}
+            <span onMouseDown="{{ h.onResize }}" onDoubleClick="{{ h.onAuto }}" style="position:absolute;right:-4px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2"></span>
+          </div>
+        </sc-for>
+        <sc-for list="{{ rowHeads }}" as="h" hint-placeholder-count="20">
+          <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" style="grid-row:{{ h.gr }};grid-column:1;position:sticky;left:0;top:{{ h.top }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:e-resize">
+            {{ h.n }}
+            <span onMouseDown="{{ h.onResize }}" style="position:absolute;left:0;right:0;bottom:-4px;height:8px;cursor:row-resize;z-index:2"></span>
+          </div>
+        </sc-for>
+        <sc-for list="{{ cells }}" as="c" hint-placeholder-count="0">
+          <div onMouseDown="{{ c.onMD }}" onMouseEnter="{{ c.onME }}" onMouseLeave="{{ c.onML }}" onDoubleClick="{{ c.onDbl }}" title="{{ c.tip }}" style="grid-row:{{ c.gr }};grid-column:{{ c.gc }};position:{{ c.pos }};top:{{ c.top }};left:{{ c.left }};z-index:{{ c.z }};background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};font-style:{{ c.fst }};text-decoration:{{ c.td }};font-size:{{ c.fs }};font-family:{{ c.ff }};justify-content:{{ c.justify }};align-items:{{ c.ai }};white-space:{{ c.ws }};border-top:{{ c.bt }};border-left:{{ c.bl }};border-right:{{ c.br }};border-bottom:{{ c.bb }};padding:{{ c.pad }};display:flex;gap:4px;overflow:hidden;min-width:0;font-variant-numeric:tabular-nums;cursor:{{ c.cursor }};line-height:1.35">
+            <span style="overflow:hidden;min-width:0;flex:{{ c.flex }};text-align:{{ c.ta }};opacity:{{ c.op }}">{{ c.text }}</span>
+            <sc-if value="{{ c.hasF }}" hint-placeholder-val="{{ false }}">
+              <button onMouseDown="{{ c.onF }}" style="flex:none;width:18px;height:18px;border:1px solid var(--k10, #D1D1D6);border-radius:3px;background:{{ c.fbg }};font-size:9px;color:var(--k11, #6E6E73);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">▼</button>
+            </sc-if>
+            <sc-if value="{{ c.hasN }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:0;right:0;width:0;height:0;border-top:6px solid var(--k62, #B5563A);border-left:6px solid transparent;pointer-events:none"></span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ hasTip }}" hint-placeholder-val="{{ false }}">
+      <div ref="{{ tipRef }}" style="position:absolute;left:{{ tipL }};top:{{ tipT }};z-index:{{ z.popover }};pointer-events:none;padding:3px 8px;border-radius:8px;font-size:11px;line-height:1.3;white-space:nowrap;color:var(--k1, #1D1D1F);background:linear-gradient(180deg,var(--k71, rgba(255,255,255,0.86)),var(--k20, rgba(255,255,255,0.7)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 4px 14px var(--k22, rgba(0,0,0,0.12))">{{ tipText }}</div>
+    </sc-if>
+    <sc-if value="{{ hasNote }}" hint-placeholder-val="{{ false }}">
+      <div data-note="1" style="position:absolute;left:{{ noteL }};top:{{ noteT }};z-index:{{ z.popover }};pointer-events:none;max-width:260px;padding:8px 11px;border-radius:12px;font-size:12px;line-height:1.45;white-space:pre-wrap;color:var(--k1, #1D1D1F);background:linear-gradient(180deg,rgba(255,250,235,0.94),rgba(255,247,222,0.86));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid rgba(181,86,58,0.35);box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k77, rgba(0,0,0,0.14))"><div style="font-size:10.5px;color:var(--k62, #B5563A);margin-bottom:3px;font-weight:600">批注 · {{ noteRef }}</div>{{ noteText }}</div>
+    </sc-if>
+  </div>
+
+  </div>
+  <div style="flex:none;height:40px;display:flex;align-items:center;gap:10px;padding:0 12px;background:transparent;font-size:12.5px">
+    <div style="display:flex;align-items:center;gap:2px;overflow-x:auto;min-width:0;flex:0 1 auto;padding:3px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
+      <sc-for list="{{ sheetTabs }}" as="t" hint-placeholder-count="1">
+        <button onClick="{{ t.onClick }}" onDoubleClick="{{ t.onDbl }}" onContextMenu="{{ t.onCtx }}" style="height:26px;padding:0 14px;border:none;border-radius:999px;background:{{ t.bg }};font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ t.line }};transition:background .25s">{{ t.name }}</button>
+      </sc-for>
+      <button onClick="{{ addSheet }}" title="新建工作表" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:15px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k20, rgba(255,255,255,0.7))">＋</button>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:16px;padding:0 4px;color:var(--k8, #8E8E93);flex:none;white-space:nowrap">
+      <span>{{ statText }}</span>
+      <div style="display:flex;align-items:center;gap:6px;height:28px;padding-left:12px;border-left:1px solid var(--k36, rgba(0,0,0,0.12))">
+        <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--k11, #6E6E73);width:20px">−</button>
+        <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" style="width:110px;accent-color:var(--k1, #1D1D1F)">
+        <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--k11, #6E6E73);width:20px">＋</button>
+        <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" style="width:46px;height:22px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ hasPop }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closePop }}" style="position:fixed;inset:0;z-index:90"></div>
+    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:180px;max-height:{{ popMaxH }};overflow:auto;border-radius:16px;background:linear-gradient(180deg,var(--k23, rgba(255,255,255,0.82)),var(--k40, rgba(255,255,255,0.66)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));padding:5px;display:flex;flex-direction:column">
+      <sc-for list="{{ popItems }}" as="mi" hint-placeholder-count="0">
+        <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 10px 3px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ mi.label }}</div></sc-if>
+        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:#EFEFF4;margin:4px 6px"></div></sc-if>
+        <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:transparent;border-radius:5px;font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center" style-hover="background:var(--k27, rgba(255,255,255,0.75))"><span style="width:14px;color:var(--k35, #3F7D5C)">{{ mi.check }}</span><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
+        </sc-if>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasDlg }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:95;background:var(--k70, rgba(29,29,31,0.12));display:flex;align-items:center;justify-content:center">
+      <div data-dlg="1" data-pop="center" style="width:360px;border-radius:22px;background:linear-gradient(180deg,var(--k71, rgba(255,255,255,0.88)),var(--k72, rgba(255,255,255,0.74)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:15px;font-weight:600">{{ dlgTitle }}</div>
+        <sc-for list="{{ dlgFields }}" as="f" hint-placeholder-count="1">
+          <label style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--k11, #6E6E73)">{{ f.label }}
+            <sc-if value="{{ f.single }}" hint-placeholder-val="{{ true }}"><input value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ dlgKey }}" autoFocus="{{ f.first }}" style="height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"></sc-if>
+            <sc-if value="{{ f.multi }}" hint-placeholder-val="{{ false }}"><textarea value="{{ f.value }}" onChange="{{ f.onChange }}" autoFocus="{{ f.first }}" rows="4" style="padding:8px 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);resize:vertical;font-family:inherit"></textarea></sc-if>
+            <sc-if value="{{ f.isSel }}" hint-placeholder-val="{{ false }}"><select value="{{ f.value }}" onChange="{{ f.onChange }}" style="height:34px;padding:0 8px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"><sc-for list="{{ f.options }}" as="o" hint-placeholder-count="2"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
+          </label>
+        </sc-for>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button onClick="{{ dlgCancel }}" style="height:32px;padding:0 14px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;background:transparent;font-size:13px;cursor:pointer">取消</button>
+          <button onClick="{{ dlgOk }}" style="height:32px;padding:0 16px;border:none;border-radius:7px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13px;cursor:pointer">确定</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;doc&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(doc, opts) =&gt; void&quot;},&quot;onUndo&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onRedo&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;toast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(msg) =&gt; void&quot;}}">
+const md = e => e.preventDefault();
+const DW = 96, DH = 26, RHW = 44, CHH = 26;
+// a selected row/column header: the translucent highlight laid on the sheet colour, so cells scrolled under the sticky header don't show through
+const HEAD_ON = 'linear-gradient(var(--k50, rgba(255,255,255,0.9)),var(--k50, rgba(255,255,255,0.9))),var(--k0, #FFFFFF)';
+// The grid's layers, bottom to top. Three panes, [0] the scrolling one, [1] the frozen rows or columns, [2] their corner: each holds
+// its cells and above them what is anchored in it (selection, copy, reference and fill frames; the fill handle; pictures and charts),
+// under the next pane's cells. So what scrolls passes under the frozen rows and columns, as in Excel, and what is anchored in those
+// sticks with them (see the wrappers in the template). Above the panes the sticky headers and the corner; on top the cell editor
+// (its frame reaches over the headers' edge), the fill hint and the note card.
+const Z = { cell: [1, 5, 9], mark: [2, 6, 10], handle: [3, 7, 11], object: [4, 8, 12],
+  rowHead: 13, frozenRowHead: 14, colHead: 15, frozenColHead: 16, corner: 17, mirror: 18, editor: 19, popover: 20 };
+const PAL = ['#3F7D5C', '#E3B25A', '#2F5D8A', '#B5563A', '#7A6A9A', '#5C8A8A'];
+const FILLS = [['', '无填充'], ['#F3E6C4', '暖黄'], ['#DCEBDF', '浅绿'], ['#DCE5F0', '浅蓝'], ['#F6D9D3', '浅红'], ['#EFEFF4', '浅灰'], ['#1D1D1F', '墨色']];
+const FMTS = [['general', '常规'], ['number', '数值'], ['money', '货币 ¥'], ['usd', '货币 $'], ['acct', '会计专用'], ['pct', '百分比'], ['thousands', '千位分隔'], ['date', '日期'], ['time', '时间'], ['text', '文本']];
+const FONTS = ['思源宋体', '思源黑体', 'Arial', 'Times New Roman', 'Calibri', '微软雅黑'];
+const CHART_TYPES = [['column', '柱形图'], ['bar', '条形图'], ['line', '折线图'], ['pie', '饼图'], ['area', '面积图'], ['scatter', '散点图'], ['doughnut', '圆环图']];
+const LEGENDS = [['right', '右侧'], ['bottom', '底部'], ['top', '顶部'], ['left', '左侧'], ['none', '无图例']];
+const BORDER_CSS = { thin: '1px solid', medium: '2px solid', thick: '3px solid', dashed: '1px dashed', dotted: '1px dotted', double: '3px double', hair: '1px solid' };
+const SIDES = ['top', 'right', 'bottom', 'left'];
+const ARROWS = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+// Formula references (the engine's grammar): A1, $A$1, A1:B2, A:A, 3:3, Sheet1!A1, 'My Sheet'!A1; strings skipped.
+const refRe = E => E.refRe || (E.refRe = new RegExp('("(?:[^"]|"")*")|(' + E.REF_SRC + ')(?![\\w(:])', 'gi'));
+const REF_PAL = ['#0A5BD7', '#D9342B', '#8E44D6', '#1E9E4A', '#E8811A', '#12948E', '#D4309E', '#8C5A2E']; // Excel range-finder order: blue red purple green orange teal magenta brown
+const REF_OPEN = /[=+\-*/^&,(;:<>]\s*$/; // caret right after one of these ⇒ a reference is expected (point mode)
+const SERIES = [['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'], ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+  ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']];
+const mix = (a, b, t) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const short = v => Math.abs(v) >= 1e8 ? (v / 1e8).toFixed(1) + '亿' : Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(Math.abs(v) >= 1e5 ? 0 : 1) + '万' : String(Math.round(v * 100) / 100);
+const ZMIN = 0.2, ZMAX = 4;
+const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
+
+class Component extends DCLogic {
+  state = { tab: 'home', sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null, pop: null, dlg: null, painter: null, zoom: 1, zoomEdit: null, fex: {}, showFind: false, fq: '', fr: '', fcount: null, live: null, fillTo: null, showFx: false, nameEdit: null, chartSel: null, picSel: null, picLive: null, picBusy: null };
+  wrapRef = React.createRef(); inRef = React.createRef(); fxRef = React.createRef(); findRef = React.createRef(); inMirRef = React.createRef(); fxMirRef = React.createRef(); tipRef = React.createRef();
+  /** A sheet shows grid lines unless the user turned them off for it, or off by default in the settings (grid prop). */
+  noGrid(sh) { return sh.noGrid != null ? !!sh.noGrid : this.props.grid === false; }
+  componentDidMount() {
+    import('./glass.js');
+    import('./sheet-engine.js').then(m => { this.E = m; this.forceUpdate(); this.wantFocus = true; });
+    import('./picture.js').then(m => { this.P = m; this.forceUpdate(); }); // the 图片 tab
+    import('./engine.js').then(m => { this.EN = m; });
+    window.addEventListener('mousemove', this.onWM); window.addEventListener('mouseup', this.onWU);
+    this.attachWheel();
+    const w = this.wrapRef.current; if (w) { w.addEventListener('wheel', this.onManual, { passive: true }); w.addEventListener('scroll', this.onScrollW, { passive: true }); }
+  }
+  /** Ctrl/⌘ + wheel and trackpad pinch zoom the grid instead of the browser page: a native non-passive listener on the editor root. */
+  attachWheel() { if (this.rootEl) return; const el = this.wrapRef.current && this.wrapRef.current.closest('[data-edroot]'); if (el) { this.rootEl = el; el.addEventListener('wheel', this.onWheel, { passive: false }); } }
+  componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); if (this.rootEl) this.rootEl.removeEventListener('wheel', this.onWheel); const w = this.wrapRef.current; if (w) { w.removeEventListener('wheel', this.onManual); w.removeEventListener('scroll', this.onScrollW); } if (this.anim) cancelAnimationFrame(this.anim); }
+  /** Continuous zoom, 20%–400%; `at` (client coords) is the point that stays put, default the grid's viewport centre. */
+  setZoom(z, at) {
+    z = Math.max(ZMIN, Math.min(ZMAX, z)); const w = this.wrapRef.current, z0 = this.state.zoom; if (!w || Math.abs(z - z0) < 1e-4) return;
+    const cr = w.getBoundingClientRect(), ax = at ? at.x - cr.left : w.clientWidth / 2, ay = at ? at.y - cr.top : w.clientHeight / 2, r = z / z0, sx = w.scrollLeft, sy = w.scrollTop;
+    this.setState({ zoom: z }, () => { w.scrollLeft = (sx + ax) * r - ax; w.scrollTop = (sy + ay) * r - ay; });
+  }
+  onWheel = e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom(this.state.zoom * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
+  applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
+  componentDidUpdate(pp) {
+    this.attachWheel();
+    if (pp.doc && pp.doc.id !== this.props.doc.id) { this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null, fex: {} }); this.clip = null; }
+    // a selected picture or chart belongs to its sheet: another sheet (tab, link, undo, a move or delete) starts with none
+    const was = pp.doc && pp.doc.sheets[Math.min(pp.doc.active || 0, pp.doc.sheets.length - 1)];
+    if (was && (pp.doc.id !== this.props.doc.id || was.name !== this.sh.name) && (this.state.picSel != null || this.state.chartSel != null)) this.setState({ picSel: null, chartSel: null });
+    const pic = this.pic ? this.pic.id : null; // the 图片 tab comes and goes with the selected picture
+    if (pic !== this.picWas && this.P) { this.picWas = pic; const patch = this.P.tabAfterSelect(this.state, 'picture', !!pic); if (patch || this.state.picLive) this.setState(Object.assign({ picLive: null }, patch)); }
+    if (this.wantFocus && this.inRef.current) { this.wantFocus = false; const el = this.inRef.current; el.focus({ preventScroll: true }); if (this.state.edit) { const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) { } } }
+    if (this.focusFind && this.findRef.current) { this.focusFind = false; this.findRef.current.focus(); }
+    if (this.scrollReq) { this.scrollReq = false; this.scrollToSel(); }
+    if (this.caretTo != null) { const n = this.caretTo; this.caretTo = null; const el = this.edEl(); if (el) { try { el.setSelectionRange(n, n); } catch (e) { } } }
+    this.syncMirror();
+  }
+  // ---- formula reference colouring / point mode ----
+  edEl() { const ed = this.state.edit; return ed && ed.mode === 'bar' ? this.fxRef.current : this.inRef.current; }  syncMirror() { [[this.inRef, this.inMirRef], [this.fxRef, this.fxMirRef]].forEach(([a, b]) => { if (a.current && b.current) b.current.scrollLeft = a.current.scrollLeft; }); }
+  refsOf(val) { // every reference in a formula text, coloured by order of first appearance (same range ⇒ same colour, like Excel)
+    const E = this.E, out = [], keys = new Map(); if (!val || val[0] !== '=') return out;
+    const re = refRe(E); re.lastIndex = 0; let m;
+    while ((m = re.exec(val))) {
+      if (m[1]) continue;
+      const bang = m[2].lastIndexOf('!'), sh = bang >= 0 ? m[2].slice(0, bang).replace(/^'|'$/g, '') : null, body = m[2].slice(bang + 1);
+      if (sh == null && /[\w.一-龥]/.test(val[m.index - 1] || '')) continue;
+      const [a, b] = body.split(':'), un = x => x.replace(/\$/g, '');
+      let r1, c1, r2, c2;
+      if (/^[A-Za-z]+$/.test(un(a))) { c1 = E.colIdx(un(a)); c2 = E.colIdx(un(b)); r1 = 0; r2 = E.NR - 1; } // whole columns
+      else if (/^\d+$/.test(un(a))) { r1 = +un(a) - 1; r2 = +un(b) - 1; c1 = 0; c2 = E.NC - 1; } // whole rows
+      else { const p = E.parseA(a), q = b ? E.parseA(b) : p; r1 = p.r; c1 = p.c; r2 = q.r; c2 = q.c; }
+      [r1, r2] = [Math.min(r1, r2), Math.max(r1, r2)]; [c1, c2] = [Math.min(c1, c2), Math.max(c1, c2)];
+      const key = (sh || '') + '!' + r1 + ':' + c1 + ':' + r2 + ':' + c2;
+      if (!keys.has(key)) keys.set(key, REF_PAL[keys.size % REF_PAL.length]);
+      out.push({ s: m.index, e: m.index + m[0].length, sh, r1, c1, r2, c2, col: keys.get(key) });
+    }
+    return out;
+  }
+  spans(val) { // coloured spans for the mirror behind a formula input
+    let i = 0; const out = [];
+    this.refsOf(val).forEach((f, k) => { if (f.s > i) out.push(val.slice(i, f.s)); out.push(React.createElement('span', { key: k, style: { color: f.col } }, val.slice(f.s, f.e))); i = f.e; });
+    if (i < val.length) out.push(val.slice(i)); return out;
+  }
+  refSpan(ctrl) { // the text span a pointed reference would go into, or null when the caret is not in reference mode
+    const ed = this.state.edit, el = this.edEl(); if (!ed || ed.val[0] !== '=' || !el || this.ime) return null;
+    const s0 = el.selectionStart, e0 = el.selectionEnd, val = ed.val;
+    if (e0 > s0) return { s: s0, e: e0 };
+    const u = ed.pt ? ed.pt : this.refsOf(val).find(f => f.s <= s0 && s0 <= f.e);
+    if (u) return ctrl ? { s: u.e, e: u.e, sep: ',' } : { s: u.s, e: u.e };
+    return REF_OPEN.test(val.slice(0, s0)) ? { s: s0, e: s0 } : null;
+  }
+  setPt(span, anc, cur) { // write a pointed reference (cell or range) into the formula and keep it live for arrows/drag
+    const E = this.E, ed = this.state.edit, txt = (span.sep || '') + (anc.r === cur.r && anc.c === cur.c ? E.A(anc.r, anc.c) : E.A(Math.min(anc.r, cur.r), Math.min(anc.c, cur.c)) + ':' + E.A(Math.max(anc.r, cur.r), Math.max(anc.c, cur.c)));
+    const s = span.s + (span.sep || '').length, e = s + txt.length - (span.sep || '').length;
+    this.setState({ edit: Object.assign({}, ed, { val: ed.val.slice(0, span.s) + txt + ed.val.slice(span.e), pt: { s, e, anc, cur } }) }); this.caretTo = e;
+  }
+  pointTo(r, c, ctrl) { const span = this.refSpan(ctrl); if (!span) return false; this.setPt(span, { r, c }, { r, c }); return true; }
+  dragPt(r, c) { const ed = this.state.edit; if (ed && ed.pt) this.setPt(ed.pt, ed.pt.anc, { r, c }); }
+  ptArrow(e, ed) { // arrow keys while a formula is edited: move/extend the live pointed reference (Excel point mode)
+    if (ed.val[0] !== '=' || this.ime) return false;
+    let pt = ed.pt; if (!pt) { const el = this.edEl(), p = el ? el.selectionStart : ed.val.length; if (ed.mode === 'edit' || !REF_OPEN.test(ed.val.slice(0, p))) return false; pt = { s: p, e: p, anc: { r: ed.r, c: ed.c }, cur: { r: ed.r, c: ed.c } }; }
+    e.preventDefault(); const [dr, dc] = ARROWS[e.key], E = this.E;
+    const cur = { r: Math.max(0, Math.min(E.NR - 1, pt.cur.r + dr)), c: Math.max(0, Math.min(E.NC - 1, pt.cur.c + dc)) };
+    this.setPt(pt, e.shiftKey ? pt.anc : cur, cur); return true;
+  }
+  get doc() { return this.props.doc; }
+  get si() { return Math.min(this.doc.active || 0, this.doc.sheets.length - 1); }
+  get sh() { return this.doc.sheets[this.si]; }
+  /** The selected picture of this sheet, or null. */
+  get pic() { const id = this.state.picSel; return id != null && ((this.sh && this.sh.images) || []).find(x => x.id === id) || null; }
+  /** The 图片 tab's tools for the selected picture (picture.js): one engine command per change, the answer taken into the sheet and its saved snapshot. */
+  picTools() {
+    const p = this.pic; if (!p || !this.P) return null;
+    if (this.pt && this.pt.id === p.id && this.pt.si === this.si) return this.pt.tools;
+    const id = p.id, si = this.si, find = d => ((d.sheets[si] || {}).images || []).find(x => x.id === id);
+    const tools = this.P.pictureTools({
+      look: () => Object.assign({}, (find(this.doc) || {}).look),
+      show: look => this.setState({ picLive: { id, look } }),
+      send: props => this.EN ? this.EN.setPicture(this.doc.path, () => (find(this.doc) || {}).path, props) : Promise.reject(new Error('引擎还没有就绪')),
+      commit: (r, binary) => {
+        const c = this.EN.pictureSaved(this.doc, r.path, r.props), x0 = find(this.doc);
+        if (binary && x0) this.P.bumpPic(x0.src);
+        this.setState({ picLive: null });
+        this.commit((s, d) => { const x = find(d); if (x) Object.assign(x, { look: this.EN.mergeLook(x.look, c.look), x: x.x + c.dx, y: x.y + c.dy, w: x.w + c.dw, h: x.h + c.dh }); });
+      },
+      busy: op => this.setState({ picBusy: op }),
+      frame: () => { const x = find(this.doc) || p, el = this.wrapRef.current && this.wrapRef.current.querySelector(`[data-pic="${id}"]`), r = el ? el.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 }, z = this.state.zoom; return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: x.w * z, h: x.h * z }; },
+      src: () => this.P.picSrc((find(this.doc) || p).src),
+      toast: m => this.toast(m)
+    });
+    this.pt = { id, si, tools };
+    return tools;
+  }
+  toast(m) { this.props.toast && this.props.toast(m); }
+  commit(fn, silent) { const d = structuredClone(this.doc); fn(d.sheets[Math.min(d.active || 0, d.sheets.length - 1)], d); this.props.onChange && this.props.onChange(d, silent ? { silent: true } : undefined); }
+  rng() { const { sel, anc } = this.state; return { r1: Math.min(sel.r, anc.r), c1: Math.min(sel.c, anc.c), r2: Math.max(sel.r, anc.r), c2: Math.max(sel.c, anc.c) }; }
+  colW(c) { const lv = this.state.live; if (lv && lv.kind === 'colw' && lv.c === c) return lv.w; const sh = this.sh; return (sh.colW && sh.colW[this.E.colName(c)]) || DW; }
+  rowH(r) { const lv = this.state.live; if (lv && lv.kind === 'rowh' && lv.r === r) return lv.h; const sh = this.sh; return (sh.rowH && sh.rowH[r + 1]) || DH; }
+  mergeAt(r, c) { return (this.sh.merges || []).find(m => r >= m.r && r < m.r + m.rs && c >= m.c && c < m.c + m.cs); }
+  /** The active cell (Excel's white cell): where the selection started, a merge's top-left — typing, the formula bar and the ribbon act on it.
+   * `sel` is only the corner that mouse drags and Shift+arrows move. */
+  act() { const a = this.state.anc, m = this.mergeAt(a.r, a.c); return m ? { r: m.r, c: m.c } : { r: a.r, c: a.c }; }
+  actStyle() { const a = this.act(); return (this.sh.cells[this.E.A(a.r, a.c)] || {}).s || {}; }
+  setSel(r, c, extend) {
+    const E = this.E; r = Math.max(0, Math.min(E.NR - 1, r)); c = Math.max(0, Math.min(E.NC - 1, c));
+    this.setState(s => ({ sel: { r, c }, anc: extend ? s.anc : { r, c }, pop: null })); this.wantFocus = true; this.scrollReq = true;
+  }
+  move(dr, dc, extend) { const s = extend ? this.state.sel : this.act(); let r = s.r + dr, c = s.c + dc; const m = !extend && this.mergeAt(s.r, s.c); if (m) { if (dr > 0) r = m.r + m.rs; if (dc > 0) c = m.c + m.cs; } const hid = this.hidden || new Set(); while (hid.has(r) && r > 0 && r < this.E.NR - 1) r += dr || 1; this.setSel(r, c, extend); }
+  jump(dr, dc, extend) {
+    const E = this.E, s = extend ? this.state.sel : this.act(), has = (r, c) => { const x = this.sh.cells[E.A(r, c)]; return x && x.v !== '' && x.v != null; };
+    let r = s.r, c = s.c; const inb = (r, c) => r >= 0 && c >= 0 && r < E.NR && c < E.NC;
+    if (inb(r + dr, c + dc) && has(r, c) && has(r + dr, c + dc)) { while (inb(r + dr, c + dc) && has(r + dr, c + dc)) { r += dr; c += dc; } }
+    else { r += dr; c += dc; while (inb(r, c) && !has(r, c) && inb(r + dr, c + dc)) { r += dr; c += dc; } }
+    this.setSel(r, c, extend);
+  }
+  // View follows the active cell (or the cell `rc`, or the in-cell editor while typing): one cell of margin, frozen panes count as edges,
+  // eased scroll, and nothing happens for ~800 ms after a manual wheel/scrollbar scroll. Scale comes from DOM rects, so any zoom works.
+  scrollToSel(rc) {
+    const w = this.wrapRef.current, inp = this.inRef.current, eb = this.eb, sh = this.sh; if (!w || !inp || !eb || !this.xs || performance.now() < (this.manualUntil || 0)) return;
+    const ir = inp.getBoundingClientRect(); if (!ir.height) return;
+    const sc = ir.height / (eb.H - 1), ox = ir.left - (eb.L + 1) * sc, oy = ir.top - (eb.T + 1) * sc, wr = w.getBoundingClientRect(); // grid origin in client px
+    const ed = this.state.edit, { r, c } = rc || this.state.sel, xs = this.xs, ys = this.ys;
+    const t = !rc && ed && ed.mode !== 'bar' ? ir : { left: ox + (RHW + xs[c]) * sc, right: ox + (RHW + xs[c + 1]) * sc, top: oy + (CHH + ys[r]) * sc, bottom: oy + (CHH + ys[r + 1]) * sc };
+    const vl = wr.left + (RHW + (sh.frC ? xs[Math.min(sh.frC, c)] : 0)) * sc, vt = wr.top + (CHH + (sh.frR ? ys[Math.min(sh.frR, r)] : 0)) * sc, vr = wr.left + w.clientWidth, vb = wr.top + w.clientHeight, mx = DW * sc, my = DH * sc;
+    let dx = 0, dy = 0;
+    if (!(sh.frC && c < sh.frC)) { if (t.right > vr - mx) dx = t.right - (vr - mx); if (t.left - dx < vl + mx) dx = t.left - (vl + mx); }
+    if (!(sh.frR && r < sh.frR)) { if (t.bottom > vb - my) dy = t.bottom - (vb - my); if (t.top - dy < vt + my) dy = t.top - (vt + my); }
+    this.glide(w, Math.max(0, Math.min(w.scrollWidth - w.clientWidth, Math.round(w.scrollLeft + dx))), Math.max(0, Math.min(w.scrollHeight - w.clientHeight, Math.round(w.scrollTop + dy))));
+  }
+  glide(w, tx, ty) { // ~140 ms ease-out; a new target mid-flight restarts from the current position
+    if (tx === w.scrollLeft && ty === w.scrollTop) return; if (this.anim) cancelAnimationFrame(this.anim);
+    const x0 = w.scrollLeft, y0 = w.scrollTop, t0 = performance.now();
+    const step = now => { const k = Math.min(1, (now - t0) / 140), e = 1 - Math.pow(1 - k, 3); this.progT = now; w.scrollLeft = x0 + (tx - x0) * e; w.scrollTop = y0 + (ty - y0) * e; this.anim = k < 1 ? requestAnimationFrame(step) : null; };
+    this.anim = requestAnimationFrame(step);
+  }
+  onManual = () => { this.manualUntil = performance.now() + 800; if (this.anim) { cancelAnimationFrame(this.anim); this.anim = null; } };
+  onScrollW = () => { if (!this.anim && performance.now() - (this.progT || 0) > 120) this.onManual(); }; // a scroll we did not animate ⇒ scrollbar/trackpad
+  raw(r, c) { const x = this.sh.cells[this.E.A(r, c)]; return x && x.v != null ? String(x.v) : ''; }
+  startEdit(init, mode) { const sel = this.act(); this.setState({ edit: { r: sel.r, c: sel.c, val: init != null ? init : this.raw(sel.r, sel.c), mode } }); if (mode !== 'bar') this.wantFocus = true; }
+  /** Typed text → stored value plus the format Excel would pick for it (12% → 0%, ¥1,200 → 货币, 1,200 → 千分位, 2024/3/5 → 日期, 9:30 → 时间).
+   * `s` is the target cell's style: a text cell keeps what was typed, a cell that already has a matching format keeps it. */
+  parseInput(val, s) {
+    const E = this.E, t = val.trim(), dec = x => (x.split('.')[1] || '').length; let v = val, patch = null;
+    if (s && s.fmt === 'text') return { v, patch };
+    if (v.startsWith('=') && v.length > 1) { v = '=' + E.upperF(v.slice(1)); if (!s || !s.fmt) patch = this.inheritFmt(v); }
+    else if (/^-?[\d,]+(\.\d+)?%$/.test(t)) { const n = t.replace(/[,%]/g, ''); v = String(+(parseFloat(n) / 100).toPrecision(15)); patch = { fmt: 'pct', dec: dec(n) }; }
+    else if (/^[¥￥$]-?[\d,]+(\.\d+)?$/.test(t)) { v = t.replace(/[¥￥$,]/g, ''); patch = { fmt: t[0] === '$' ? 'usd' : 'money', dec: dec(v) ? 2 : 0 }; }
+    else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) { v = t.replace(/,/g, ''); patch = { fmt: 'number', dec: dec(v) }; }
+    else if (/[-/:年月.a-z]/i.test(t) && isNaN(Number(t))) {
+      const d = E.dateSerial(t), hasDay = d != null && !/^\d{1,2}:\d{2}/.test(t), hasTime = /\d:\d{2}/.test(t), kind = s && s.fmt;
+      // dates go to the file as ISO text (the engine types it as a date), times and date-times as serial numbers
+      if (d != null && hasDay && !hasTime) { v = E.fmtCode(Math.floor(d), 'yyyy-mm-dd'); patch = kind === 'date' || kind === 'custom' ? null : { fmt: 'date' }; }
+      else if (d != null && !hasDay) { v = String(+d.toPrecision(12)); patch = kind === 'time' ? null : { fmt: 'time' }; }
+      else if (d != null) { v = String(+d.toPrecision(15)); patch = kind === 'date' || kind === 'custom' ? null : { fmt: 'date', code: 'yyyy/m/d h:mm' }; }
+    }
+    if (patch && s && patch.fmt === s.fmt && (patch.dec == null || patch.dec === s.dec)) patch = null; // already formatted that way
+    return { v, patch };
+  }
+  /** Excel gives a new formula in a General cell the date/time/currency/percent format of the first cell it refers to (=C10+30 on a date is a date). */
+  inheritFmt(f) {
+    const ref = this.refsOf(f)[0], sh = ref && (ref.sh == null ? this.sh : this.doc.sheets.find(x => x.name.toLowerCase() === ref.sh.toLowerCase()));
+    const s = sh && (sh.cells[this.E.A(ref.r1, ref.c1)] || {}).s;
+    if (!s || !/^(date|time|pct|money|usd)$/.test(s.fmt || '')) return null;
+    return Object.fromEntries(['fmt', 'dec', 'code'].filter(k => s[k] != null).map(k => [k, s[k]]));
+  }
+  setCellRaw(sh, r, c, val, patch) {
+    const a = this.E.A(r, c), cur = sh.cells[a];
+    if (val === '' && (!cur || !cur.s)) { delete sh.cells[a]; return; }
+    sh.cells[a] = Object.assign({}, cur, { v: val });
+    if (patch) { sh.cells[a].s = Object.assign({}, cur && cur.s, patch); if (!('code' in patch)) delete sh.cells[a].s.code; }
+  }
+  commitEdit(dr, dc) {
+    const ed = this.state.edit; if (!ed) return;
+    const { v, patch } = this.parseInput(ed.val, (this.sh.cells[this.E.A(ed.r, ed.c)] || {}).s);
+    const bad = this.dvBad(ed.r, ed.c, v); if (bad) { this.toast('数据验证：' + bad); this.wantFocus = true; return; }
+    if (v !== this.raw(ed.r, ed.c) || patch) this.commit(sh => this.setCellRaw(sh, ed.r, ed.c, v, patch));
+    // move in the state callback, not a timer: keys typed right after Enter must land in the next cell, not the one just committed
+    this.setState({ edit: null, anc: { r: ed.r, c: ed.c }, sel: { r: ed.r, c: ed.c } }, () => { if (dr || dc) this.move(dr, dc); });
+    if (!dr && !dc) this.wantFocus = true;
+  }
+  eachCell(fn) { const r = this.rng(); for (let i = r.r1; i <= r.r2; i++) for (let j = r.c1; j <= r.c2; j++) fn(i, j); }
+  style(patch, toggleKey) {
+    const E = this.E, cur = this.actStyle();
+    // a format change drops the file's original code so the bridge writes the new one
+    const p = toggleKey ? { [toggleKey]: !cur[toggleKey] } : Object.assign({}, patch, patch && ('fmt' in patch || 'dec' in patch) && !('code' in patch) ? { code: null } : null);
+    this.commit(sh => this.eachCell((r, c) => { const a = E.A(r, c); const x = sh.cells[a] || { v: '' }; const s = Object.assign({}, x.s, p); Object.keys(s).forEach(k => (s[k] === null || s[k] === undefined) && delete s[k]); sh.cells[a] = Object.assign({}, x, { s }); }));
+  }
+  /** s.bd is one style for every side or {top,right,bottom,left}; kind: none|all|out|thickOut|top|bottom|dblBottom|lr. */
+  borders(kind) {
+    const E = this.E, R = this.rng();
+    const want = (r, c) => {
+      const o = {}, top = r === R.r1, bottom = r === R.r2, left = c === R.c1, right = c === R.c2, st = kind === 'thickOut' ? 'medium' : kind === 'dblBottom' ? 'double' : 'thin';
+      if (kind === 'all') SIDES.forEach(k => o[k] = st);
+      if (kind === 'out' || kind === 'thickOut') { if (top) o.top = st; if (bottom) o.bottom = st; if (left) o.left = st; if (right) o.right = st; }
+      if ((kind === 'bottom' || kind === 'dblBottom') && bottom) o.bottom = st;
+      if (kind === 'top' && top) o.top = st;
+      if (kind === 'lr') { if (left) o.left = st; if (right) o.right = st; }
+      return o;
+    };
+    this.commit(sh => this.eachCell((r, c) => {
+      const a = E.A(r, c); const x = sh.cells[a] || { v: '' }; const s = Object.assign({}, x.s);
+      if (kind === 'none') { delete s.bd; delete s.bdc; }
+      else { const cur = s.bd && typeof s.bd === 'object' ? s.bd : s.bd ? Object.fromEntries(SIDES.map(k => [k, s.bd])) : {}; const o = Object.assign({}, cur, want(r, c)); const vals = SIDES.map(k => o[k]); s.bd = vals.every(v => v && v === vals[0]) ? vals[0] : o; }
+      sh.cells[a] = Object.assign({}, x, { s });
+    }));
+  }
+  indent(dir) { const cs = this.actStyle(); this.style({ indent: Math.max(0, Math.min(15, (cs.indent || 0) + dir)) || null }); }
+  decimals(dir) { const E = this.E, calc = new E.Calc(this.doc), s0 = this.act(), x = this.sh.cells[E.A(s0.r, s0.c)]; const v = calc.value(this.si, s0.r, s0.c); const cur = x && x.s && x.s.dec != null ? x.s.dec : (x && x.s && ['money', 'usd', 'acct', 'number', 'plain'].includes(x.s.fmt) ? 2 : E.decimalsOf(v)); this.style({ dec: Math.max(0, Math.min(10, cur + dir)) }); }
+  clear(what) {
+    const E = this.E;
+    this.commit(sh => this.eachCell((r, c) => {
+      const a = E.A(r, c), x = sh.cells[a]; if (!x) return;
+      let v = x.v, s = Object.assign({}, x.s);
+      if (what === 'all') { v = ''; s = {}; } else if (what === 's') s = {}; else if (what === 'v') v = ''; else delete s[what];
+      if ((v === '' || v == null) && !Object.keys(s).length) delete sh.cells[a]; else sh.cells[a] = Object.keys(s).length ? { v, s } : { v };
+    }));
+  }
+  copy(cut) {
+    const E = this.E, R = this.rng(), calc = new E.Calc(this.doc), cells = [], lines = [];
+    for (let r = R.r1; r <= R.r2; r++) { const row = [], line = []; for (let c = R.c1; c <= R.c2; c++) { const x = this.sh.cells[E.A(r, c)]; row.push(x ? structuredClone(x) : null); line.push(E.fmt(calc.value(this.si, r, c), x && x.s)); } cells.push(row); lines.push(line.join('\t')); }
+    this.clip = { si: this.si, r1: R.r1, c1: R.c1, r2: R.r2, c2: R.c2, cells, cut, tsv: lines.join('\n') };
+    this.forceUpdate(); return this.clip.tsv;
+  }
+  paste(text) {
+    const E = this.E, R = this.rng(), r0 = R.r1, c0 = R.c1, cl = this.clip;
+    if (cl && (text == null || text.replace(/\r/g, '') === cl.tsv)) {
+      const dr = r0 - cl.r1, dc = c0 - cl.c1;
+      this.commit((sh, d) => {
+        if (cl.cut) { const src = d.sheets[cl.si]; for (let r = cl.r1; r <= cl.r2; r++) for (let c = cl.c1; c <= cl.c2; c++) delete src.cells[E.A(r, c)]; }
+        cl.cells.forEach((row, i) => row.forEach((x, j) => { const r = r0 + i, c = c0 + j; if (r >= E.NR || c >= E.NC) return; const a = E.A(r, c); if (!x) { delete sh.cells[a]; return; } const n = structuredClone(x); if (!cl.cut && typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), dr, dc); sh.cells[a] = n; }));
+      });
+      this.setState({ anc: { r: r0, c: c0 }, sel: { r: Math.min(E.NR - 1, r0 + cl.r2 - cl.r1), c: Math.min(E.NC - 1, c0 + cl.c2 - cl.c1) } });
+      if (cl.cut) this.clip = null;
+      return;
+    }
+    if (!text) return;
+    const rows = text.replace(/\r/g, '').replace(/\n$/, '').split('\n').map(l => l.split('\t'));
+    this.commit(sh => rows.forEach((row, i) => row.forEach((v, j) => { const r = r0 + i, c = c0 + j; if (r < E.NR && c < E.NC) { const p = this.parseInput(v, (sh.cells[E.A(r, c)] || {}).s); this.setCellRaw(sh, r, c, p.v, p.patch); } })));
+    this.setState({ anc: { r: r0, c: c0 }, sel: { r: Math.min(E.NR - 1, r0 + rows.length - 1), c: Math.min(E.NC - 1, c0 + Math.max(...rows.map(r => r.length)) - 1) } });
+  }
+  // Series rule for one line of source cells (ordered far→near the fill direction; sg = ±1 default step): k ⇒ value of the k-th filled cell, or null ⇒ cyclic copy.
+  seriesOf(xs, sg) {
+    if (!xs.length || xs.some(x => !x || x.v === '' || x.v == null || String(x.v)[0] === '=')) return null;
+    const vs = xs.map(x => String(x.v).trim()), last = vs[vs.length - 1], prev = vs[vs.length - 2];
+    if (vs.every(v => v !== '' && !isNaN(Number(v)))) {
+      const a = Number(last), b = prev != null ? Number(prev) : null;
+      if (xs.every(x => x.s && x.s.fmt === 'date') && b != null) { // +1 month when the two source dates differ by whole months, else by their day gap
+        const D = n => new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 864e5), da = D(a), db = D(b), mo = (da.getUTCFullYear() - db.getUTCFullYear()) * 12 + da.getUTCMonth() - db.getUTCMonth();
+        if (mo && da.getUTCDate() === db.getUTCDate()) return k => { const d = new Date(da); d.setUTCMonth(d.getUTCMonth() + mo * k); return String(Math.round((d - Date.UTC(1899, 11, 30)) / 864e5)); };
+      }
+      const step = b == null ? sg : a - b; return k => String(+(a + step * k).toPrecision(12));
+    }
+    const list = SERIES.find(L => vs.every(v => L.some(w => w.toLowerCase() === v.toLowerCase())));
+    if (list) { const ix = v => list.findIndex(w => w.toLowerCase() === v.toLowerCase()), i0 = ix(last), step = prev == null ? sg : ix(last) - ix(prev), up = last === last.toUpperCase() && last !== last.toLowerCase(); return k => { const w = list[((i0 + step * k) % list.length + list.length) % list.length]; return up ? w.toUpperCase() : w; }; }
+    const ms = vs.map(v => /^(.*?)(\d+)$/.exec(v));
+    if (ms.every(m => m && m[1] !== '') && ms.every(m => m[1] === ms[0][1])) { const m = ms[ms.length - 1], n0 = +m[2], step = prev == null ? sg : n0 - +ms[ms.length - 2][2]; return k => m[1] + String(n0 + step * k).padStart(m[2].length, '0'); }
+    return null;
+  }
+  // Pure: what dragging the fill handle from selection R to cell `to` would write. Returns { box, items: [{ r, c, cell|null }] } or null.
+  previewFill(cells, R, to, copy) {
+    const E = this.E, dr = to.r > R.r2 ? to.r - R.r2 : to.r < R.r1 ? to.r - R.r1 : 0, dc = to.c > R.c2 ? to.c - R.c2 : to.c < R.c1 ? to.c - R.c1 : 0;
+    if (!dr && !dc) return null;
+    const vert = Math.abs(dr) >= Math.abs(dc), n = Math.abs(vert ? dr : dc), back = (vert ? dr : dc) < 0, sg = back ? -1 : 1, items = [];
+    const box = vert ? { r1: back ? to.r : R.r1, r2: back ? R.r2 : to.r, c1: R.c1, c2: R.c2 } : { r1: R.r1, r2: R.r2, c1: back ? to.c : R.c1, c2: back ? R.c2 : to.c };
+    const seq = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+    (vert ? seq(R.c1, R.c2) : seq(R.r1, R.r2)).forEach(L => {
+      const src = vert ? seq(R.r1, R.r2).map(r => [r, L]) : seq(R.c1, R.c2).map(c => [L, c]); if (back) src.reverse();
+      const xs = src.map(([r, c]) => cells[E.A(r, c)] || null), fn = copy ? null : this.seriesOf(xs, sg), [r0, c0] = src[src.length - 1];
+      for (let k = 1; k <= n; k++) {
+        const tr = vert ? r0 + sg * k : L, tc = vert ? L : c0 + sg * k, idx = (k - 1) % src.length, x = xs[idx];
+        if (!x) { items.push({ r: tr, c: tc, cell: null }); continue; }
+        const nx = structuredClone(x);
+        if (fn) nx.v = fn(k);
+        else if (typeof nx.v === 'string' && nx.v[0] === '=') nx.v = '=' + E.shiftF(nx.v.slice(1), tr - src[idx][0], tc - src[idx][1]);
+        items.push({ r: tr, c: tc, cell: nx });
+      }
+    });
+    return { box, items };
+  }
+  doFill(to, copy) {
+    const E = this.E, p = this.previewFill(this.sh.cells, this.rng(), to, copy); if (!p) return;
+    this.commit(sh => p.items.forEach(({ r, c, cell }) => { const a = E.A(r, c); if (cell) sh.cells[a] = cell; else delete sh.cells[a]; }));
+    this.setState({ sel: { r: p.box.r2, c: p.box.c2 }, anc: { r: p.box.r1, c: p.box.c1 } });
+  }
+  fillDir(dir) {
+    const E = this.E, R = this.rng();
+    this.commit(sh => {
+      if (dir === 'down') for (let c = R.c1; c <= R.c2; c++) { const x = sh.cells[E.A(R.r1, c)]; for (let r = R.r1 + 1; r <= R.r2; r++) { if (!x) { delete sh.cells[E.A(r, c)]; continue; } const n = structuredClone(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), r - R.r1, 0); sh.cells[E.A(r, c)] = n; } }
+      else for (let r = R.r1; r <= R.r2; r++) { const x = sh.cells[E.A(r, R.c1)]; for (let c = R.c1 + 1; c <= R.c2; c++) { if (!x) { delete sh.cells[E.A(r, c)]; continue; } const n = structuredClone(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), 0, c - R.c1); sh.cells[E.A(r, c)] = n; } }
+    });
+  }
+  insDel(axis, at, n) {
+    const E = this.E, name = this.sh.name;
+    const refs = Object.keys(this.sh.cells), parsed = refs.map(a => E.parseA(a));
+    if (parsed.some(p => !p)) { this.toast('工作表包含当前编辑器无法移动的单元格地址，未执行插入或删除'); return; }
+    // The editor only draws 80 × 20 cells. Data outside that viewport must still survive a row/column insertion.
+    const limit = axis === 'r' ? 1048576 : 16384;
+    if (n > 0 && parsed.some(p => { const i = axis === 'r' ? p.r : p.c; return i >= at && i + n >= limit; })) {
+      this.toast('插入会超出 Excel 工作表的行列上限，未修改文件'); return;
+    }
+    this.commit((sh, d) => {
+      const nc = {};
+      Object.entries(sh.cells).forEach(([a, x]) => { const p = E.parseA(a); let i = axis === 'r' ? p.r : p.c; if (n < 0 && i >= at && i < at - n) return; if (i >= at) i += n; if (i < 0) return; nc[axis === 'r' ? E.A(i, p.c) : E.A(p.r, i)] = x; });
+      sh.cells = nc;
+      d.sheets.forEach(s2 => Object.values(s2.cells).forEach(x => { if (typeof x.v === 'string' && x.v[0] === '=') x.v = '=' + E.adjF(x.v.slice(1), s2.name, name, axis, at, n); }));
+      if (axis === 'c' && sh.colW) { const w = {}; Object.entries(sh.colW).forEach(([k, v]) => { let i = E.colIdx(k); if (n < 0 && i >= at && i < at - n) return; if (i >= at) i += n; if (i >= 0) w[E.colName(i)] = v; }); sh.colW = w; }
+      if (axis === 'r' && sh.rowH) { const h = {}; Object.entries(sh.rowH).forEach(([k, v]) => { let i = +k - 1; if (n < 0 && i >= at && i < at - n) return; if (i >= at) i += n; if (i >= 0) h[i + 1] = v; }); sh.rowH = h; }
+      const k = axis === 'r' ? 'r' : 'c', len = axis === 'r' ? 'rs' : 'cs', span = this.spanShift(at, n);
+      sh.merges = (sh.merges || []).map(m => { const s2 = span(m[k], m[k] + m[len] - 1); return s2 && Object.assign({}, m, { [k]: s2[0], [len]: s2[1] - s2[0] + 1 }); }).filter(m => m && m.rs * m.cs > 1);
+      d.sheets.forEach(s2 => (s2.charts || []).forEach(ch => { const adj = s => s ? E.adjF(s, s2.name, name, axis, at, n) : s; ch.cat = adj(ch.cat); (ch.ser || []).forEach(s => { s.values = adj(s.values); if (s.name) s.name = adj(s.name); if (s.x) s.x = adj(s.x); }); }));
+      if (sh.filter) { // the autofilter range grows/shrinks with its rows and columns, like Excel; it goes only when all of it is deleted
+        const [p, q0] = String(sh.filter).split(':').map(E.parseA), q = q0 || p, s2 = p && span(p[k], q[k]);
+        sh.filter = s2 ? E.A(k === 'r' ? s2[0] : p.r, k === 'c' ? s2[0] : p.c) + ':' + E.A(k === 'r' ? s2[1] : q.r, k === 'c' ? s2[1] : q.c) : null;
+      }
+    });
+  }
+  /** Index span [i1, i2] after inserting n (> 0) or deleting -n rows/columns at `at`: grows when lines land inside it, shrinks when its lines go, null when all go. */
+  spanShift(at, n) {
+    const mv = (i, end) => n > 0 ? (i >= at ? i + n : i) : i < at ? i : i >= at - n ? i + n : end ? at - 1 : at;
+    return (i1, i2) => { const a = mv(i1, false), b = mv(i2, true); return b < a ? null : [a, b]; };
+  }
+  region() { const R = this.rng(); if (R.r1 !== R.r2 || R.c1 !== R.c2) return R; return this.E.usedRange(this.sh); }
+  hasHeader(R, calc) { if (R.r2 <= R.r1) return false; let txt = 0, cnt = 0; for (let c = R.c1; c <= R.c2; c++) { const v = calc.value(this.si, R.r1, c); if (v !== '') { cnt++; if (typeof v === 'string') txt++; } } return cnt > 0 && txt === cnt; }
+  sort(asc, col) {
+    const E = this.E, R = this.region(); if (!R) return; const calc = new E.Calc(this.doc); const hdr = this.hasHeader(R, calc); const r1 = hdr ? R.r1 + 1 : R.r1; col = col ?? this.act().c;
+    const rows = []; for (let r = r1; r <= R.r2; r++) { const k = calc.value(this.si, r, col); rows.push({ r, k, cells: Array.from({ length: R.c2 - R.c1 + 1 }, (_, j) => this.sh.cells[E.A(r, R.c1 + j)]) }); }
+    rows.sort((a, b) => { const ea = a.k === '', eb = b.k === ''; if (ea || eb) return ea - eb; const na = typeof a.k === 'number', nb = typeof b.k === 'number'; let d = na && nb ? a.k - b.k : na ? -1 : nb ? 1 : String(a.k).localeCompare(String(b.k), 'zh'); return asc ? d : -d; });
+    this.commit(sh => rows.forEach((row, i) => { const tr = r1 + i; row.cells.forEach((x, j) => { const a = E.A(tr, R.c1 + j); if (!x) { delete sh.cells[a]; return; } const n = structuredClone(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), tr - row.r, 0); sh.cells[a] = n; }); }));
+    this.toast(asc ? '已升序排序' : '已降序排序');
+  }
+  // sh.filter is the autofilter range ("A1:D20"); which values are hidden lives only in state.fex[sheet][col].
+  fltRect() { const f = this.sh.filter; if (!f) return null; const [a, b] = String(f).split(':'), p = this.E.parseA(a), q = this.E.parseA(b || a); if (!p || !q) return null; return { r: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) }; }
+  fex() { return (this.state.fex || {})[this.sh.name] || {}; }
+  setFex(ex) { this.setState(s => ({ fex: Object.assign({}, s.fex, { [this.sh.name]: ex }) })); }
+  toggleFilter() {
+    const E = this.E;
+    if (this.sh.filter) { this.setFex({}); return this.commit(sh => { sh.filter = null; }); }
+    const R = this.region(); if (!R) return this.toast('先输入一些数据');
+    this.commit(sh => { sh.filter = E.A(R.r1, R.c1) + ':' + E.A(R.r2, R.c2); });
+  }
+  freeze(kind) { const s0 = this.act(); this.commit(s => { s.frR = kind === 'row' ? 1 : kind === 'here' ? s0.r : 0; s.frC = kind === 'col' ? 1 : kind === 'here' ? s0.c : 0; }, true); }
+  sortCustom() {
+    const E = this.E;
+    this.prompt('自定义排序', [{ key: 'c', label: '排序列（列字母）', value: E.colName(this.act().c), first: true }, { key: 'o', label: '顺序', value: 'asc', options: [['asc', '升序'], ['desc', '降序']] }],
+      v => { const c = E.colIdx(v.c.trim().toUpperCase()); if (isNaN(c) || c < 0 || c >= E.NC) return this.toast('列字母无效'); this.sort(v.o === 'asc', c); });
+  }
+  splitCols() {
+    const E = this.E, R = this.rng();
+    this.prompt('分列', [{ key: 'd', label: '分隔符（逗号、分号、空格…）', value: ',', first: true }], v => {
+      const d = v.d === '空格' ? ' ' : v.d || ',';
+      this.commit(sh => { for (let r = R.r1; r <= R.r2; r++) { const x = sh.cells[E.A(r, R.c1)]; if (!x || x.v == null || String(x.v)[0] === '=') continue; String(x.v).split(d).forEach((part, j) => { if (R.c1 + j < E.NC) this.setCellRaw(sh, r, R.c1 + j, part.trim(), null); }); } });
+    });
+  }
+  dvSet() {
+    const cs = this.actStyle(), dv = cs.dv || {};
+    this.prompt('数据验证', [{ key: 't', label: '允许', value: dv.type || 'list', options: [['list', '序列（下拉列表）'], ['number', '数字范围'], ['none', '任何值']] }, { key: 'v', label: '来源：列表项用逗号分隔；数字范围如 1-100', value: dv.type === 'list' ? dv.list.join(',') : dv.type === 'number' ? dv.min + '-' + dv.max : '', first: true }], v => {
+      if (v.t === 'list') { const list = v.v.split(/[,，]/).map(x => x.trim()).filter(Boolean); if (!list.length) return this.toast('请输入列表项'); return this.style({ dv: { type: 'list', list } }); }
+      if (v.t === 'number') { const m = /^\s*(-?[\d.]+)\s*[-~至]\s*(-?[\d.]+)\s*$/.exec(v.v); if (!m) return this.toast('范围格式：最小值-最大值'); return this.style({ dv: { type: 'number', min: +m[1], max: +m[2] } }); }
+      this.style({ dv: null });
+    });
+  }
+  dvBad(r, c, val) {
+    const x = this.sh.cells[this.E.A(r, c)], dv = x && x.s && x.s.dv; if (!dv || val === '' || val[0] === '=') return null;
+    if (dv.type === 'list') return dv.list.includes(val) ? null : '只能输入：' + dv.list.join('、');
+    if (dv.type === 'number') { const n = Number(val); return isNaN(n) || n < dv.min || n > dv.max ? `只能输入 ${dv.min} 到 ${dv.max} 之间的数字` : null; }
+    return null;
+  }
+  setLink() {
+    const E = this.E, cs = this.actStyle();
+    this.prompt('超链接', [{ key: 'u', label: '网址，或本工作簿位置（如 #Sheet1!A1）；留空则删除', value: cs.link || '', first: true }], v => {
+      const u = v.u.trim();
+      this.commit(sh => this.eachCell((r, c) => { const a = E.A(r, c), x = sh.cells[a] || { v: '' }, s = Object.assign({}, x.s); if (u) s.link = u; else delete s.link; sh.cells[a] = Object.assign({}, x, { v: x.v || u, s }); }));
+    });
+  }
+  openLink(link) {
+    const E = this.E, d = this.doc;
+    if (link[0] !== '#') { window.open(/^[a-z]+:/i.test(link) ? link : 'https://' + link, '_blank', 'noopener'); return; }
+    const bang = link.lastIndexOf('!'), name = bang > 0 ? link.slice(1, bang).replace(/^'|'$/g, '') : null, p = E.parseA(link.slice(bang + 1)); if (!p) return this.toast('位置无效：' + link);
+    const i = name ? d.sheets.findIndex(s => s.name === name) : this.si; if (i < 0) return this.toast('找不到工作表 ' + name);
+    if (i !== this.si) this.props.onChange(Object.assign({}, d, { active: i }), { silent: true });
+    this.setSel(p.r, p.c);
+  }
+  setNote() {
+    const cs = this.actStyle();
+    this.prompt('批注', [{ key: 'n', label: '批注内容（留空则删除）', value: cs.note || '', multi: true, first: true }], v => this.style({ note: v.n.trim() || null }));
+  }
+  mergeKind(kind) {
+    const E = this.E, R = this.rng(), keep = sh => (sh.merges || []).filter(x => x.r + x.rs <= R.r1 || x.r > R.r2 || x.c + x.cs <= R.c1 || x.c > R.c2);
+    if (kind === 'un') return this.commit(sh => { sh.merges = keep(sh); });
+    if (kind === 'across') { if (R.c1 === R.c2) return; return this.commit(sh => { sh.merges = keep(sh); for (let r = R.r1; r <= R.r2; r++) { sh.merges.push({ r, c: R.c1, rs: 1, cs: R.c2 - R.c1 + 1 }); for (let c = R.c1 + 1; c <= R.c2; c++) delete sh.cells[E.A(r, c)]; } }); }
+    this.merge();
+  }
+  /** Cell text through the sheet engine's formatter, plus the kinds it does not know (usd / acct / time). */
+  fmtV(v, s) {
+    const E = this.E; if (typeof v !== 'number' || !s || !s.fmt) return E.fmt(v, s);
+    if (s.code && (s.fmt === 'custom' || s.fmt === 'date' || s.fmt === 'time')) return E.fmt(v, s); // the file's own code, rendered as Excel would
+    const grp = n => E.fmt(Math.abs(n), { fmt: 'number', dec: s.dec ?? 2 });
+    if (s.fmt === 'plain') return E.fmt(v, { dec: s.dec ?? 2 });
+    if (s.fmt === 'usd') return (v < 0 ? '-' : '') + '$' + grp(v);
+    if (s.fmt === 'acct') return v < 0 ? '(¥ ' + grp(v) + ')' : '¥ ' + grp(v);
+    if (s.fmt === 'time') { const t = Math.round(((v % 1) + 1) % 1 * 86400); return [t / 3600 | 0, (t / 60 | 0) % 60, t % 60].map(n => String(n).padStart(2, '0')).join(':'); }
+    return E.fmt(v, s);
+  }
+  /** "A2:A6" or "Sheet2!B1" → { si, refs: [[r, c], …] } in row-major order. */
+  refList(rng) {
+    const E = this.E; let si = this.si, s = String(rng || ''); if (!s) return { si, refs: [] };
+    const bang = s.lastIndexOf('!'); if (bang >= 0) { const i = this.doc.sheets.findIndex(x => x.name === s.slice(0, bang).replace(/^'|'$/g, '')); if (i >= 0) si = i; s = s.slice(bang + 1); }
+    const [a, b] = s.split(':'), p = E.parseA(a), q = b ? E.parseA(b) : p; if (!p || !q) return { si, refs: [] };
+    const refs = []; for (let r = Math.min(p.r, q.r); r <= Math.max(p.r, q.r); r++) for (let c = Math.min(p.c, q.c); c <= Math.max(p.c, q.c); c++) refs.push([r, c]);
+    return { si, refs };
+  }
+  dedupe() {
+    const E = this.E, R = this.region(); if (!R) return; const calc = new E.Calc(this.doc); const hdr = this.hasHeader(R, calc); const r1 = hdr ? R.r1 + 1 : R.r1;
+    const seen = new Set(), keep = [];
+    for (let r = r1; r <= R.r2; r++) { const k = Array.from({ length: R.c2 - R.c1 + 1 }, (_, j) => String(calc.value(this.si, r, R.c1 + j))).join('\u0001'); if (!seen.has(k)) { seen.add(k); keep.push(r); } }
+    const removed = R.r2 - r1 + 1 - keep.length;
+    this.commit(sh => { const snap = {}; keep.forEach(r => { for (let c = R.c1; c <= R.c2; c++) snap[r + ':' + c] = sh.cells[E.A(r, c)]; }); for (let r = r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) delete sh.cells[E.A(r, c)]; keep.forEach((r, i) => { for (let c = R.c1; c <= R.c2; c++) { const x = snap[r + ':' + c]; if (x) sh.cells[E.A(r1 + i, c)] = x; } }); });
+    this.toast(removed ? `已删除 ${removed} 行重复数据` : '没有发现重复行');
+  }
+  autoFn(fn) {
+    const E = this.E, R = this.rng(), num = (r, c) => { const x = this.sh.cells[E.A(r, c)]; return x && x.v !== '' && !isNaN(Number(x.v)) || (x && String(x.v).startsWith('=')); };
+    if (R.r1 !== R.r2 || R.c1 !== R.c2) {
+      const r = R.r2 + 1; if (r >= E.NR) return;
+      this.commit(sh => { for (let c = R.c1; c <= R.c2; c++) sh.cells[E.A(r, c)] = Object.assign({}, sh.cells[E.A(r, c)], { v: `=${fn}(${E.A(R.r1, c)}:${E.A(R.r2, c)})` }); });
+      return;
+    }
+    const { r, c } = this.act(); let a = r - 1; while (a >= 0 && num(a, c)) a--;
+    if (a < r - 1) return this.setState({ edit: { r, c, val: `=${fn}(${E.A(a + 1, c)}:${E.A(r - 1, c)})`, mode: 'edit' } }, () => { this.wantFocus = true; this.forceUpdate(); });
+    let b = c - 1; while (b >= 0 && num(r, b)) b--;
+    if (b < c - 1) return this.setState({ edit: { r, c, val: `=${fn}(${E.A(r, b + 1)}:${E.A(r, c - 1)})`, mode: 'edit' } }, () => { this.wantFocus = true; this.forceUpdate(); });
+    this.setState({ edit: { r, c, val: `=${fn}()`, mode: 'edit' } }); this.wantFocus = true;
+  }
+  insertFn(fn) { const ed = this.state.edit; if (ed) this.setState({ edit: Object.assign({}, ed, { val: ed.val + (ed.val ? '' : '=') + fn + '(' }) }); else this.startEdit('=' + fn + '(', 'edit'); this.wantFocus = true; }
+  merge() {
+    const E = this.E, R = this.rng(), m = this.mergeAt(this.act().r, this.act().c);
+    if (m && R.r1 === R.r2 && R.c1 === R.c2 || (m && m.r === R.r1 && m.c === R.c1)) return this.commit(sh => { sh.merges = (sh.merges || []).filter(x => !(x.r === m.r && x.c === m.c)); });
+    if (R.r1 === R.r2 && R.c1 === R.c2) return;
+    this.commit(sh => { sh.merges = (sh.merges || []).filter(x => x.r + x.rs <= R.r1 || x.r > R.r2 || x.c + x.cs <= R.c1 || x.c > R.c2); sh.merges.push({ r: R.r1, c: R.c1, rs: R.r2 - R.r1 + 1, cs: R.c2 - R.c1 + 1 }); for (let r = R.r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) if (r !== R.r1 || c !== R.c1) delete sh.cells[E.A(r, c)]; const a = E.A(R.r1, R.c1); sh.cells[a] = Object.assign({ v: '' }, sh.cells[a]); sh.cells[a].s = Object.assign({}, sh.cells[a].s, { align: 'center' }); });
+    this.setState({ sel: { r: R.r1, c: R.c1 }, anc: { r: R.r1, c: R.c1 } });
+  }
+  addCF(type, val) { const R = this.rng(); this.commit(sh => { sh.cf = (sh.cf || []).concat([{ type, val, r1: R.r1, c1: R.c1, r2: R.r2, c2: R.c2 }]); }); }
+  /** Header row → series names, a text first column → categories; the chart keeps ranges, values come through the calc engine when it renders. */
+  insertChart(type, stacked) {
+    const E = this.E, R = this.region(); if (!R) return this.toast('先选择要绘图的数据');
+    const calc = new E.Calc(this.doc), hdr = this.hasHeader(R, calc);
+    let lab = null; const dr1 = hdr ? R.r1 + 1 : R.r1;
+    if (R.c2 > R.c1) { let txt = 0; for (let r = dr1; r <= R.r2; r++) if (typeof calc.value(this.si, r, R.c1) === 'string') txt++; if (txt > 0 || type === 'scatter') lab = R.c1; }
+    const cols = []; for (let c = lab == null ? R.c1 : R.c1 + 1; c <= R.c2; c++) cols.push(c);
+    const rg = c => E.A(dr1, c) + ':' + E.A(R.r2, c), cat = lab == null ? '' : rg(lab);
+    const ser = cols.map(c => Object.assign({ values: rg(c) }, hdr ? { name: E.A(R.r1, c) } : null, type === 'scatter' && cat ? { x: cat } : null));
+    const x = this.gridMap((this.xs ? this.xs[Math.min(R.c2 + 1, E.NC)] : 400) + 24, 'x', true), y = this.gridMap(this.ys ? this.ys[R.r1] : 0, 'y', true); // beside the data, in sheet px
+    const title = hdr && cols.length === 1 ? String(calc.value(this.si, R.r1, cols[0])) : this.sh.name + ' 图表';
+    this.commit(sh => { sh.charts = (sh.charts || []).concat([{ id: 'ch' + Date.now().toString(36), type, title, cat, ser, legend: 'right', stacked: !!stacked, x, y, w: 460, h: 300 }]); });
+  }
+  openPop(id, e, x, y) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && !x ? null : { id, x: x ?? r.left, y: y ?? r.bottom + 4 } }); }
+  prompt(title, fields, ok) { this.setState({ dlg: { title, fields: fields.map(f => Object.assign({ value: '' }, f)), ok } }); }
+  findNext() {
+    const E = this.E, q = this.state.fq.toLowerCase(); if (!q) return; const calc = new E.Calc(this.doc); const hits = [];
+    for (let r = 0; r < E.NR; r++) for (let c = 0; c < E.NC; c++) { const x = this.sh.cells[E.A(r, c)]; if (!x || x.v === '') continue; if (E.fmt(calc.value(this.si, r, c), x.s).toLowerCase().includes(q) || String(x.v).toLowerCase().includes(q)) hits.push([r, c]); }
+    this.setState({ fcount: hits.length }); if (!hits.length) return;
+    const { r, c } = this.act(); const nx = hits.find(([a, b]) => a > r || (a === r && b > c)) || hits[0]; this.setSel(nx[0], nx[1]);
+  }
+  replace(all) {
+    const E = this.E, q = this.state.fq; if (!q) return; let n = 0;
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    this.commit(sh => Object.entries(sh.cells).forEach(([a, x]) => { if (typeof x.v !== 'string' || x.v[0] === '=') return; const p = E.parseA(a); if (!all && (p.r !== this.act().r || p.c !== this.act().c)) return; if (re.test(x.v)) { re.lastIndex = 0; x.v = x.v.replace(re, this.state.fr); n++; } re.lastIndex = 0; }));
+    if (all) this.toast(`已替换 ${n} 处`); else this.findNext();
+  }
+  onWM = e => {
+    const op = this.op; if (!op) return;
+    if (op.kind === 'colw') this.setState({ live: { kind: 'colw', c: op.c, w: Math.max(24, Math.round(op.w0 + (e.clientX - op.x0) / this.state.zoom)) } });
+    if (op.kind === 'rowh') this.setState({ live: { kind: 'rowh', r: op.r, h: Math.max(16, Math.round(op.h0 + (e.clientY - op.y0) / this.state.zoom)) } });
+    if (op.kind === 'chart') this.setState({ live: { kind: 'chart', id: op.id, x: Math.max(0, Math.round(op.cx + (e.clientX - op.x0) / this.state.zoom)), y: Math.max(0, Math.round(op.cy + (e.clientY - op.y0) / this.state.zoom)) } });
+    if (op.kind === 'fill') { // fill hint follows the cursor (positioned in the scroll container, outside the zoomed grid); Ctrl/⌘ toggles copy vs series
+      const w = this.wrapRef.current, rc = w && w.getBoundingClientRect(); if (rc) this.fillXY = [Math.round(e.clientX - rc.left + w.scrollLeft) + 14, Math.round(e.clientY - rc.top + w.scrollTop) + 18];
+      const t = this.tipRef.current; if (t && this.fillXY) { t.style.left = this.fillXY[0] + 'px'; t.style.top = this.fillXY[1] + 'px'; }
+      const ft = this.state.fillTo, copy = e.ctrlKey || e.metaKey; if (ft && ft.copy !== copy) this.setState({ fillTo: Object.assign({}, ft, { copy }) });
+    }
+  };
+  onWU = e => {
+    const op = this.op; this.op = null; if (!op) return; const lv = this.state.live;
+    if (op.kind === 'fill' && this.state.fillTo) { const to = this.state.fillTo; this.setState({ fillTo: null }); this.doFill(to, e.ctrlKey || e.metaKey); }
+    if (lv && lv.kind === 'colw') this.commit(sh => { sh.colW = Object.assign({}, sh.colW, { [this.E.colName(lv.c)]: lv.w }); });
+    if (lv && lv.kind === 'rowh') this.commit(sh => { sh.rowH = Object.assign({}, sh.rowH, { [lv.r + 1]: lv.h }); });
+    if (lv && lv.kind === 'chart') { const x = this.gridMap(lv.x, 'x', true), y = this.gridMap(lv.y, 'y', true); this.commit(sh => { const ch = sh.charts.find(c => c.id === lv.id); if (ch) { ch.x = x; ch.y = y; } }); }
+    if (lv) this.setState({ live: null });
+    if (op.kind === 'sel' && this.state.painter) { const p = this.state.painter; this.setState({ painter: null }); this.commit(sh => this.eachCell((r, c) => { const a = this.E.A(r, c); sh.cells[a] = Object.assign({ v: '' }, sh.cells[a], { s: structuredClone(p) }); })); }
+    if (op.kind !== 'point') this.wantFocus = true; this.forceUpdate(); // a point-drag keeps the caret where the reference was inserted
+  };
+  /** Chart anchors are kept in sheet pixels, Excel's grid (64 px columns and 20 px rows unless the file sizes them) — the engine's cm
+   * positions assume it. The editor's grid is roomier, so a position is mapped through the cell it falls in; sizes stay in pixels. */
+  gridMap(v, axis, toSheet) {
+    const ex = i => (axis === 'x' ? this.sh.colW && this.sh.colW[this.E.colName(i)] : this.sh.rowH && this.sh.rowH[i + 1]) || (axis === 'x' ? 64 : 20);
+    const ed = i => axis === 'x' ? this.colW(i) : this.rowH(i);
+    let a = 0, b = 0;
+    for (let i = 0; i < 20000; i++) { const p = toSheet ? ed(i) : ex(i), q = toSheet ? ex(i) : ed(i); if (v < a + p) return Math.round(b + (v - a) * q / p); a += p; b += q; }
+    return Math.round(b);
+  }
+  chartAt(ch) { const lv = this.state.live; return lv && lv.kind === 'chart' && lv.id === ch.id ? lv : { x: this.gridMap(ch.x || 0, 'x'), y: this.gridMap(ch.y || 0, 'y') }; } // editor grid px
+  chartVals(ch, calc) {
+    const E = this.E, pos = this.chartAt(ch), d = this.doc;
+    const text = (si, r, c) => this.fmtV(calc.value(si, r, c), (d.sheets[si].cells[E.A(r, c)] || {}).s);
+    const nums = rng => { const l = this.refList(rng); return l.refs.map(([r, c]) => { const v = calc.value(l.si, r, c); return typeof v === 'number' ? v : 0; }); };
+    const cat = this.refList(ch.cat);
+    const series = (ch.ser || []).map((s, i) => { const nm = s.name ? this.refList(s.name) : null; return { name: nm && nm.refs.length ? text(nm.si, ...nm.refs[0]) : (s.name || '系列 ' + (i + 1)), fill: PAL[i % PAL.length], vals: nums(s.values), xs: s.x ? nums(s.x) : null }; });
+    const n = Math.max(1, cat.refs.length, ...series.map(s => s.vals.length));
+    const labels = Array.from({ length: n }, (_, i) => cat.refs[i] ? text(cat.si, ...cat.refs[i]) : String(i + 1));
+    const type = ch.type || 'column', round = type === 'pie' || type === 'doughnut', horiz = type === 'bar', stacked = !!ch.stacked && (type === 'column' || horiz || type === 'area'), noLg = ch.legend === 'none';
+    const sw = ch.w - 2, shh = ch.h - 34 - (noLg ? 8 : 28);
+    const out = { grid: [], rects: [], lines: [], dots: [], slices: [], areas: [], labels: [] };
+    if (round) {
+      const s = series[0] || { vals: [] }; const tot = s.vals.reduce((a, b) => a + Math.max(0, b), 0) || 1; const cx = sw / 2, cy = shh / 2 + 4, R = Math.min(sw, shh) / 2 - 12; let a0 = -Math.PI / 2;
+      s.vals.forEach((v, i) => { const a1 = a0 + Math.max(0, v) / tot * Math.PI * 2; const large = a1 - a0 > Math.PI ? 1 : 0; const p = (a) => `${(cx + R * Math.cos(a)).toFixed(1)} ${(cy + R * Math.sin(a)).toFixed(1)}`; out.slices.push({ d: a1 - a0 >= Math.PI * 2 - 1e-6 ? `M ${cx - R} ${cy} a ${R} ${R} 0 1 0 ${2 * R} 0 a ${R} ${R} 0 1 0 ${-2 * R} 0` : `M ${cx} ${cy} L ${p(a0)} A ${R} ${R} 0 ${large} 1 ${p(a1)} Z`, fill: PAL[i % PAL.length] }); const am = (a0 + a1) / 2, lr = type === 'doughnut' ? 0.78 : 0.62; if (v / tot > 0.05) out.labels.push({ x: (cx + R * lr * Math.cos(am)).toFixed(1), y: (cy + R * lr * Math.sin(am) + 4).toFixed(1), text: Math.round(v / tot * 100) + '%', anchor: 'middle', fill: '#FFFFFF' }); a0 = a1; });
+      if (type === 'doughnut') { const ri = R * 0.55; out.slices.push({ d: `M ${cx - ri} ${cy} a ${ri} ${ri} 0 1 0 ${2 * ri} 0 a ${ri} ${ri} 0 1 0 ${-2 * ri} 0`, fill: 'var(--k0, #FFFFFF)' }); }
+      out.legend = labels.map((l, i) => ({ name: l, fill: PAL[i % PAL.length] }));
+    } else {
+      const L = horiz ? 64 : 48, Rr = 12, T = 10, B = 26, pw = sw - L - Rr, ph = shh - T - B;
+      const sums = i => series.reduce((a, s) => { const v = s.vals[i] || 0; return [a[0] + Math.max(0, v), a[1] + Math.min(0, v)]; }, [0, 0]);
+      const all = stacked ? Array.from({ length: n }, (_, i) => sums(i)).flat() : series.flatMap(s => s.vals);
+      let mx = Math.max(0, ...all), mn = Math.min(0, ...all); if (mx === mn) mx = mn + 1;
+      const mag = Math.pow(10, Math.floor(Math.log10(mx - mn))); const stepv = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => (mx - mn) / s <= 5) || mag * 10; mx = Math.ceil(mx / stepv) * stepv; mn = Math.floor(mn / stepv) * stepv;
+      const V = v => horiz ? L + (v - mn) / (mx - mn) * pw : T + ph - (v - mn) / (mx - mn) * ph;
+      for (let v = mn; v <= mx + 1e-9; v += stepv) { const p = V(v).toFixed(1), stroke = v === 0 ? 'var(--k47, #C7C7CC)' : 'var(--k6, #E5E5EA)'; if (horiz) { out.grid.push({ x1: p, y1: T, x2: p, y2: T + ph, stroke }); out.labels.push({ x: p, y: T + ph + 17, text: short(v), anchor: 'middle', fill: '#8E8E93' }); } else { out.grid.push({ x1: L, y1: p, x2: L + pw, y2: p, stroke }); out.labels.push({ x: L - 6, y: (V(v) + 4).toFixed(1), text: short(v), anchor: 'end', fill: '#8E8E93' }); } }
+      if (type === 'scatter') {
+        const xall = series.flatMap(s => s.xs || s.vals.map((_, i) => i + 1)); let xmn = Math.min(...xall), xmx = Math.max(...xall); if (xmn === xmx) xmx = xmn + 1;
+        const X = x => L + (x - xmn) / (xmx - xmn) * pw;
+        [xmn, (xmn + xmx) / 2, xmx].forEach(x => out.labels.push({ x: X(x).toFixed(1), y: T + ph + 17, text: short(x), anchor: 'middle', fill: '#6E6E73' }));
+        series.forEach(s => s.vals.forEach((v, i) => out.dots.push({ x: X(s.xs ? s.xs[i] || 0 : i + 1).toFixed(1), y: V(v).toFixed(1), fill: s.fill })));
+      } else {
+        const gw = (horiz ? ph : pw) / n, cAt = i => (horiz ? T : L) + (i + 0.5) * gw, clip = l => l.length > 6 ? l.slice(0, 6) + '…' : l;
+        labels.forEach((l, i) => out.labels.push(horiz ? { x: L - 6, y: (cAt(i) + 4).toFixed(1), text: clip(l), anchor: 'end', fill: '#6E6E73' } : { x: cAt(i).toFixed(1), y: T + ph + 17, text: clip(l), anchor: 'middle', fill: '#6E6E73' }));
+        const accP = Array(n).fill(0), accN = Array(n).fill(0);
+        const span = (i, v) => { if (!stacked) return [Math.min(0, v), Math.max(0, v)]; const b = v >= 0 ? accP : accN, lo = b[i]; b[i] += v; return v >= 0 ? [lo, b[i]] : [b[i], lo]; };
+        if (type === 'line' || type === 'area') series.forEach(s => {
+          const pts = s.vals.map((v, i) => { const [lo, hi] = span(i, v); return [cAt(i).toFixed(1), V(stacked ? (v >= 0 ? hi : lo) : v).toFixed(1), V(stacked ? (v >= 0 ? lo : hi) : 0).toFixed(1)]; });
+          if (type === 'area') out.areas.push({ d: 'M ' + pts.map(p => p[0] + ' ' + p[1]).join(' L ') + ' L ' + pts.slice().reverse().map(p => p[0] + ' ' + p[2]).join(' L ') + ' Z', fill: s.fill });
+          out.lines.push({ pts: pts.map(p => p[0] + ',' + p[1]).join(' '), stroke: s.fill });
+          if (type === 'line') pts.forEach(p => out.dots.push({ x: p[0], y: p[1], fill: s.fill }));
+        });
+        else { const bw = gw * 0.7 / (stacked ? 1 : Math.max(1, series.length)); series.forEach((s, si) => s.vals.forEach((v, i) => { const [lo, hi] = span(i, v), a = cAt(i) - gw * 0.35 + (stacked ? 0 : si * bw), p0 = V(hi), p1 = V(lo); out.rects.push(horiz ? { x: p1.toFixed(1), y: a.toFixed(1), w: Math.max(0.5, p0 - p1).toFixed(1), h: Math.max(1, bw - 2).toFixed(1), fill: s.fill } : { x: a.toFixed(1), y: p0.toFixed(1), w: Math.max(1, bw - 2).toFixed(1), h: Math.max(0.5, p1 - p0).toFixed(1), fill: s.fill }); })); }
+      }
+      out.legend = series.map(s => ({ name: s.name, fill: s.fill }));
+    }
+    return Object.assign(out, {
+      x: RHW + pos.x + 'px', y: CHH + pos.y + 'px', w: ch.w + 'px', h: ch.h + 'px', sw, sh: shh, title: ch.title, border: ch.ai ? '#7FB59A' : this.state.chartSel === ch.id ? 'var(--k59, #3F7D5C)' : 'var(--k6, #E5E5EA)',
+      typeLabel: (CHART_TYPES.find(([k]) => k === type) || ['', type])[1] + (stacked ? '·堆积' : ''), lgOrder: ch.legend === 'top' ? -1 : 0, lgDisp: noLg ? 'none' : 'flex',
+      onMenu: e => this.openPop('cht' + ch.id, e),
+      onSel: e => { e.stopPropagation(); this.setState({ chartSel: ch.id }); },
+      onDrag: e => { e.preventDefault(); this.op = { kind: 'chart', id: ch.id, x0: e.clientX, y0: e.clientY, cx: pos.x, cy: pos.y }; this.setState({ chartSel: ch.id }); },
+      onRename: () => this.prompt('图表标题', [{ key: 't', label: '标题', value: ch.title, first: true }], v => this.commit(sh => { sh.charts.find(c => c.id === ch.id).title = v.t; })),
+      onDelete: () => this.commit(sh => { sh.charts = sh.charts.filter(c => c.id !== ch.id); })
+    });
+  }
+  /** Excel-style hover card for a cell note: sits to the right of the cell (in grid px, zoom applies), positioned by the cell's box. */
+  noteCard(at, box) {
+    const E = this.E, x = at && this.sh.cells[E.A(at.r, at.c)], note = x && x.s && x.s.note;
+    if (!note) return { hasNote: false, noteL: 0, noteT: 0, noteText: '', noteRef: '' };
+    const m = this.mergeAt(at.r, at.c) || { r: at.r, c: at.c, rs: 1, cs: 1 }, b = box(m.r, m.c, m.r + m.rs - 1, m.c + m.cs - 1);
+    return { hasNote: true, noteL: (b.L + b.W + 6) * this.state.zoom + 'px', noteT: Math.max(0, b.T - 4) * this.state.zoom + 'px', noteText: note, noteRef: E.A(at.r, at.c) };
+  }
+  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
+  renderVals() {
+    const E = this.E, st = this.state, d = this.doc;
+    if (!E) return { md, loading: true, statText: '', tabs: [], ribbon: [], colHeads: [], rowHeads: [], cells: [], charts: [], pics: [], sheetTabs: [], gtc: '0', gtr: '0', gridW: '0', zoom: 1, refBoxes: [], fxMirror: '', inMirror: '' };
+    const sh = this.sh, calc = new E.Calc(d), R = this.rng(), s0 = this.act(), a0 = E.A(s0.r, s0.c), cur = sh.cells[a0] || {}, cs = cur.s || {};
+    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick, title: o.title || label, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' });
+    const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value: String(value), options: options.map(([v, l]) => ({ v: String(v), l })), onChange, w, title });
+    const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label, swatch: swatch || 'transparent', value: /^#[0-9a-f]{6}$/i.test(swatch || '') ? swatch : '#000000', onChange, title, fw: fw || 400 });
+    const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label, title: title || label, bg: st.pop && st.pop.id === id ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
+    const AL = (a, title) => ({ isAlign: true, title, bg: cs.align === a ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => this.style({ align: cs.align === a ? null : a }) });
+    const SEP = { isSep: true };
+    const I = (label, onClick, o = {}) => ({ isItem: true, label, check: o.on ? '✓' : '', hint: o.hint || '', onClick: () => { this.setState({ pop: null }); onClick(); } });
+    const HD = label => ({ isHead: true, label }), IS = { isSepI: true };
+    this.menus = {};
+    const tabsDef = [['home', '开始'], ['insert', '插入'], ['formula', '公式'], ['data', '数据'], ['view', '视图']];
+    const pic = this.P ? this.pic : null, picLook = pic ? (st.picLive && st.picLive.id === pic.id ? st.picLive.look : pic.look || {}) : null;
+    if (pic) tabsDef.push(['picture', '图片']);
+    const tab = st.tab;
+    const tabs = tabsDef.map(([k, l]) => ({ label: l, color: tab === k ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === k ? 600 : 400, line: st.bubble && tab === k ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === k ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(k, e) }));
+    const cfMenu = M('cf', '条件格式', [HD('突出显示单元格'), I('大于…', () => this.prompt('大于', [{ key: 'v', label: '为大于以下值的单元格设置格式', first: true }], v => this.addCF('gt', v.v))), I('小于…', () => this.prompt('小于', [{ key: 'v', label: '为小于以下值的单元格设置格式', first: true }], v => this.addCF('lt', v.v))), I('等于…', () => this.prompt('等于', [{ key: 'v', label: '为等于以下值的单元格设置格式', first: true }], v => this.addCF('eq', v.v))), I('文本包含…', () => this.prompt('文本包含', [{ key: 'v', label: '包含以下文本', first: true }], v => this.addCF('text', v.v))), I('重复值', () => this.addCF('dup')), IS, I('数据条', () => this.addCF('bar')), I('色阶', () => this.addCF('scale')), IS, I('清除所选单元格的规则', () => this.commit(s => { s.cf = (s.cf || []).filter(x => x.r2 < R.r1 || x.r1 > R.r2 || x.c2 < R.c1 || x.c1 > R.c2); })), I('清除整个工作表的规则', () => this.commit(s => { s.cf = []; }))]);
+    const sumMenu = M('sum', 'Σ 求和', [['SUM', '求和'], ['AVERAGE', '平均值'], ['COUNT', '计数'], ['MAX', '最大值'], ['MIN', '最小值']].map(([f, l]) => I(l, () => this.autoFn(f), { hint: f })));
+    const fnMenu = M('fns', '函数库', E.FUNC_GROUPS.flatMap(([g, fs]) => [HD(g)].concat(fs.map(([f, d]) => I(f, () => this.insertFn(f), { hint: d })))));
+    const tb = e => this.style(null, e);
+    const fmtKey = cs.fmt === 'number' && cs.dec === 0 ? 'thousands' : (cs.fmt || 'general'), fmtLabel = (FMTS.find(([k]) => k === fmtKey) || ['', '自定义'])[1];
+    const sortMenu = M('sort', '排序', [I('升序 A→Z', () => this.sort(true)), I('降序 Z→A', () => this.sort(false)), IS, I('自定义排序…', () => this.sortCustom())]);
+    let ribbon = [];
+    if (tab === 'home') ribbon = [
+      B('↶', () => this.props.onUndo && this.props.onUndo(), { title: '撤销 Ctrl+Z' }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: '重做 Ctrl+Y' }), SEP,
+      B('粘贴', () => this.paste(null), { dis: !this.clip }), B('剪切', () => this.copy(true)), B('复制', () => this.copy(false)), B('格式刷', () => { const p = structuredClone(cs); delete p.link; delete p.note; delete p.dv; this.setState({ painter: st.painter ? null : p }); }, { on: !!st.painter }), SEP,
+      S(cs.font || '', [['', '默认字体']].concat(FONTS.concat(cs.font && !FONTS.includes(cs.font) ? [cs.font] : []).map(f => [f, f])), e => this.style({ font: e.target.value || null }), '104px', '字体'),
+      S(cs.fs || 11, [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].concat(cs.fs && ![9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].includes(cs.fs) ? [cs.fs] : []).map(n => [n, n + '']), e => this.style({ fs: +e.target.value }), '58px', '字号'),
+      B('B', () => tb('b'), { on: cs.b, fw: 700, title: '加粗 Ctrl+B' }), B('I', () => tb('i'), { on: cs.i, fs: 'italic', title: '斜体 Ctrl+I' }), B('U', () => tb('u'), { on: cs.u, td: 'underline', title: '下划线 Ctrl+U' }), B('S', () => tb('st'), { on: cs.st, td: 'line-through', title: '删除线' }),
+      C('A', cs.color || '#B5563A', e => this.style({ color: e.target.value }), '文字颜色', 600),
+      M('fill', '填充', FILLS.map(([c, n]) => I(n, () => this.style({ fill: c || null }), { on: (cs.fill || '') === c })).concat([I('自定义颜色…', () => this.prompt('填充颜色', [{ key: 'c', label: '十六进制颜色', value: cs.fill || '#', first: true }], v => this.style({ fill: v.c || null })))])),
+      M('bd', '边框', [['none', '无框线'], ['all', '所有框线'], ['out', '外侧框线'], ['bottom', '下框线'], ['top', '上框线'], ['lr', '左右框线'], ['thickOut', '粗外侧框线'], ['dblBottom', '双底框线']].map(([k, l]) => I(l, () => this.borders(k))).concat([IS, HD('线条颜色')], [['#3A3A3C', '黑色'], ['#8E8E93', '灰色'], ['#B5563A', '红色'], ['#2F5D8A', '蓝色'], ['#3F7D5C', '绿色']].map(([c, n]) => I(n, () => this.style({ bdc: c === '#3A3A3C' ? null : c }), { on: (cs.bdc || '#3A3A3C') === c })), [I('自定义颜色…', () => this.prompt('线条颜色', [{ key: 'c', label: '十六进制颜色', value: cs.bdc || '#', first: true }], v => this.style({ bdc: /^#[0-9a-f]{6}$/i.test(v.c) ? v.c : null })))])),
+      B('⇤', () => this.indent(-1), { title: '减少缩进', dis: !cs.indent }), B('⇥', () => this.indent(1), { title: '增加缩进' }), SEP,
+      AL('left', '左对齐'), AL('center', '居中'), AL('right', '右对齐'),
+      M('va', '垂直', [['top', '顶端对齐'], ['middle', '垂直居中'], ['bottom', '底端对齐']].map(([k, l]) => I(l, () => this.style({ va: k }), { on: (cs.va || 'middle') === k }))),
+      B('自动换行', () => tb('wrap'), { on: cs.wrap }),
+      M('merge', '合并', [I('合并居中', () => this.mergeKind('center'), { on: !!this.mergeAt(s0.r, s0.c) }), I('跨越合并', () => this.mergeKind('across')), I('取消合并', () => this.mergeKind('un'))]), SEP,
+      M('fmt', fmtLabel, FMTS.map(([k, l]) => I(l, () => this.style(k === 'general' ? { fmt: null, dec: null } : k === 'thousands' ? { fmt: 'number', dec: 0 } : { fmt: k, dec: null }), { on: fmtKey === k })).concat([IS, I('自定义…', () => this.prompt('自定义数字格式', [{ key: 'c', label: '格式代码（如 0.00、#,##0、yyyy/m/d）', value: cs.code || '', first: true }], v => { const code = v.c.trim(); if (!code || code === 'General') return this.style({ fmt: null, dec: null }); import('./engine.js').then(m => this.style(Object.assign({ fmt: null, dec: null }, m.fmtOf(code)))); }))]), '数字格式'),
+      B('¥', () => this.style({ fmt: 'money' }), { title: '货币格式' }), B('%', () => this.style({ fmt: 'pct', dec: 0 }), { title: '百分比' }), B(',', () => this.style({ fmt: 'number', dec: 0 }), { title: '千位分隔' }),
+      B('.0←', () => this.decimals(1), { title: '增加小数位数' }), B('.00→', () => this.decimals(-1), { title: '减少小数位数' }), SEP,
+      cfMenu,
+      M('ins', '插入', [I('上方插入行', () => this.insDel('r', R.r1, R.r2 - R.r1 + 1)), I('下方插入行', () => this.insDel('r', R.r2 + 1, R.r2 - R.r1 + 1)), I('左侧插入列', () => this.insDel('c', R.c1, R.c2 - R.c1 + 1)), I('右侧插入列', () => this.insDel('c', R.c2 + 1, R.c2 - R.c1 + 1))]),
+      M('del', '删除', [I('删除行', () => this.insDel('r', R.r1, -(R.r2 - R.r1 + 1))), I('删除列', () => this.insDel('c', R.c1, -(R.c2 - R.c1 + 1)))]), SEP,
+      sumMenu,
+      sortMenu,
+      B('筛选', () => this.toggleFilter(), { on: !!sh.filter }),
+      M('clr', '清除', [I('清除内容', () => this.clear('v'), { hint: 'Delete' }), I('清除格式', () => this.clear('s')), I('清除批注', () => this.clear('note')), I('清除超链接', () => this.clear('link')), I('全部清除', () => this.clear('all'))]),
+      B('查找', () => { this.focusFind = true; this.setState({ showFind: true }); }, { title: 'Ctrl+F' })
+    ];
+    if (tab === 'insert') ribbon = [
+      B('柱形图', () => this.insertChart('column')), B('折线图', () => this.insertChart('line')), B('饼图', () => this.insertChart('pie')),
+      M('chart', '图表', CHART_TYPES.map(([k, l]) => I(l, () => this.insertChart(k))).concat([IS, HD('堆积'), I('堆积柱形图', () => this.insertChart('column', true)), I('堆积条形图', () => this.insertChart('bar', true)), I('堆积面积图', () => this.insertChart('area', true))])), SEP,
+      B('超链接', () => this.setLink(), { on: !!cs.link, title: '超链接（Ctrl+点击打开）' }), B('批注', () => this.setNote(), { on: !!cs.note }), B('图片', () => this.toast('暂不支持插入图片')), SEP,
+      fnMenu, SEP,
+      B('插入行', () => this.insDel('r', R.r1, R.r2 - R.r1 + 1)), B('插入列', () => this.insDel('c', R.c1, R.c2 - R.c1 + 1)), SEP,
+      B('新工作表', () => this.addSheet())
+    ];
+    if (tab === 'formula') ribbon = [
+      sumMenu, fnMenu, SEP,
+      ...['SUM', 'AVERAGE', 'IF', 'VLOOKUP', 'COUNTIF', 'SUMIF', 'ROUND', 'CONCAT', 'TODAY'].map(f => B(f, () => this.insertFn(f))), SEP,
+      B('显示公式', () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF })
+    ];
+    if (tab === 'data') ribbon = [
+      B('升序', () => this.sort(true)), B('降序', () => this.sort(false)), sortMenu, SEP,
+      B('筛选', () => this.toggleFilter(), { on: !!sh.filter }), B('清除筛选', () => this.setFex({}), { dis: !sh.filter }), SEP,
+      B('删除重复项', () => this.dedupe()), B('分列', () => this.splitCols(), { title: '按分隔符把所选列拆到右侧各列' }), B('数据验证', () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
+      B('向下填充', () => this.fillDir('down'), { title: 'Ctrl+D' }), B('向右填充', () => this.fillDir('right'), { title: 'Ctrl+R' })
+    ];
+    if (tab === 'view') ribbon = [
+      M('frz', '冻结', [I('冻结首行', () => this.freeze('row'), { on: sh.frR === 1 && !sh.frC }), I('冻结首列', () => this.freeze('col'), { on: sh.frC === 1 && !sh.frR }), I('冻结至当前单元格', () => this.freeze('here'), { hint: s0.r || s0.c ? `${s0.r} 行 ${s0.c} 列` : '' }), IS, I('取消冻结', () => this.freeze('none'), { on: !sh.frR && !sh.frC })], '冻结窗格'), SEP,
+      B('网格线', () => this.commit(s => { s.noGrid = !this.noGrid(s); }, true), { on: !this.noGrid(sh) }), B('显示公式', () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF }), SEP,
+      ...[0.75, 1, 1.25, 1.5].map(z => B(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 }))
+    ];
+    if (tab === 'picture' && pic) ribbon = this.P.pictureRibbon({ B, M, I, C, SEP }, this.picTools(), picLook, st.picBusy);
+    // geometry
+    const xs = [0]; for (let c = 0; c < E.NC; c++) xs.push(xs[c] + this.colW(c));
+    const hidden = new Set();
+    const flt = this.fltRect(), fex = this.fex();
+    if (flt) for (let r = flt.r + 1; r <= flt.r2; r++) for (const k of Object.keys(fex)) { const ex = fex[k]; if (ex && ex.length) { const c = +k; const v = E.fmt(calc.value(this.si, r, c), (sh.cells[E.A(r, c)] || {}).s); if (ex.includes(v)) { hidden.add(r); break; } } }
+    this.hidden = hidden;
+    const ys = [0]; for (let r = 0; r < E.NR; r++) ys.push(ys[r] + (hidden.has(r) ? 0 : this.rowH(r)));
+    this.xs = xs; this.ys = ys;
+    // the frozen rows and columns; a picture or chart anchored in them (its top-left corner, grid px) is in their pane and sticks with them
+    const fzR = sh.frR || 0, fzC = sh.frC || 0;
+    const objPane = (x, y) => { const fr = y < ys[fzR], fc = x < xs[fzC]; return { st: fr ? 0 : 'auto', sl: fc ? 0 : 'auto', z: Z.object[(fr ? 1 : 0) + (fc ? 1 : 0)] }; };
+    const gtc = RHW + 'px ' + xs.slice(1).map((x, i) => (x - xs[i]) + 'px').join(' ');
+    const gtr = CHH + 'px ' + ys.slice(1).map((y, i) => (y - ys[i]) + 'px').join(' ');
+    // cf precompute
+    const cfs = (sh.cf || []).map(rule => {
+      const o = Object.assign({}, rule);
+      if (rule.type === 'bar' || rule.type === 'scale') { let mn = Infinity, mx = -Infinity; for (let r = rule.r1; r <= rule.r2; r++) for (let c = rule.c1; c <= rule.c2; c++) { const v = calc.value(this.si, r, c); if (typeof v === 'number') { mn = Math.min(mn, v); mx = Math.max(mx, v); } } o.mn = mn; o.mx = mx; }
+      if (rule.type === 'dup') { const cnt = {}; for (let r = rule.r1; r <= rule.r2; r++) for (let c = rule.c1; c <= rule.c2; c++) { const v = String(calc.value(this.si, r, c)); if (v !== '') cnt[v] = (cnt[v] || 0) + 1; } o.cnt = cnt; }
+      return o;
+    });
+    const inR = (r, c) => r >= R.r1 && r <= R.r2 && c >= R.c1 && c <= R.c2;
+    const colHeads = [], rowHeads = [], cells = [];
+    for (let c = 0; c < E.NC; c++) { const on = c >= R.c1 && c <= R.c2; colHeads.push({ l: E.colName(c), gc: c + 2, left: c < (sh.frC || 0) ? RHW + xs[c] + 'px' : 'auto', z: c < (sh.frC || 0) ? Z.frozenColHead : Z.colHead, bg: on ? HEAD_ON : 'var(--k48, #F5F5F7)', color: on ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: on ? 600 : 400,
+      onMD: e => { e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r: E.NR - 1, c } }); else this.setState({ anc: { r: 0, c }, sel: { r: E.NR - 1, c } }); this.op = { kind: 'colsel' }; this.wantFocus = true; },
+      onME: () => { if (this.op && this.op.kind === 'colsel') this.setState({ sel: { r: E.NR - 1, c } }); },
+      onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'colw', c, x0: e.clientX, w0: this.colW(c) }; },
+      onAuto: e => { e.stopPropagation(); let w = 40; for (let r = 0; r < E.NR; r++) { const x = sh.cells[E.A(r, c)]; if (x) w = Math.max(w, E.fmt(calc.value(this.si, r, c), x.s).length * 8 + 18); } this.commit(s => { s.colW = Object.assign({}, s.colW, { [E.colName(c)]: Math.min(400, w) }); }); } }); }
+    const merges = sh.merges || [], covered = new Set();
+    merges.forEach(m => { for (let r = m.r; r < m.r + m.rs; r++) for (let c = m.c; c < m.c + m.cs; c++) if (r !== m.r || c !== m.c) covered.add(r + ':' + c); });
+    const ed = st.edit, gl = this.noGrid(sh) ? 'transparent' : 'var(--k75, #E3E3E8)';
+    // fill-handle preview: ghost values are computed on a patched copy of the sheet, never written to the model until drop
+    const fpv = st.fillTo ? this.previewFill(sh.cells, R, st.fillTo, st.fillTo.copy) : null; let ghost = null, calc2 = null;
+    if (fpv) { const c2 = Object.assign({}, sh.cells); ghost = new Map(); fpv.items.forEach(i => { const a = E.A(i.r, i.c); ghost.set(a, i.cell); if (i.cell) c2[a] = i.cell; else delete c2[a]; }); calc2 = new E.Calc({ sheets: d.sheets.map((s2, i) => i === this.si ? Object.assign({}, s2, { cells: c2 }) : s2) }); }
+    for (let r = 0; r < E.NR; r++) {
+      if (hidden.has(r)) continue;
+      const onR = r >= R.r1 && r <= R.r2;
+      rowHeads.push({ n: r + 1, gr: r + 2, top: r < (sh.frR || 0) ? CHH + ys[r] + 'px' : 'auto', z: r < (sh.frR || 0) ? Z.frozenRowHead : Z.rowHead, bg: onR ? HEAD_ON : 'var(--k48, #F5F5F7)', color: onR ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: onR ? 600 : 400,
+        onMD: e => { e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r, c: E.NC - 1 } }); else this.setState({ anc: { r, c: 0 }, sel: { r, c: E.NC - 1 } }); this.op = { kind: 'rowsel' }; this.wantFocus = true; },
+        onME: () => { if (this.op && this.op.kind === 'rowsel') this.setState({ sel: { r, c: E.NC - 1 } }); },
+        onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'rowh', r, y0: e.clientY, h0: this.rowH(r) }; } });
+      for (let c = 0; c < E.NC; c++) {
+        if (covered.has(r + ':' + c)) continue;
+        const a = E.A(r, c), m = merges.find(mm => mm.r === r && mm.c === c);
+        let x = sh.cells[a], s = (x && x.s) || {}, v = x ? calc.value(this.si, r, c) : '';
+        let text = sh.showF && x && String(x.v).startsWith('=') ? String(x.v) : this.fmtV(v, s);
+        // the file's colours (fill, font, border) are drawn as they are in both themes; only the automatic ones follow the theme
+        let bg = s.fill || '', color = s.color || (s.fill === '#1D1D1F' ? '#FFFFFF' : E.isErr(v) ? '#B5563A' : '');
+        cfs.forEach(rule => {
+          if (r < rule.r1 || r > rule.r2 || c < rule.c1 || c > rule.c2 || v === '') return;
+          const n = +rule.val;
+          if ((rule.type === 'gt' && typeof v === 'number' && v > n) || (rule.type === 'lt' && typeof v === 'number' && v < n) || (rule.type === 'eq' && String(v) === String(rule.val)) || (rule.type === 'text' && String(v).includes(rule.val)) || (rule.type === 'dup' && rule.cnt[String(v)] > 1)) { bg = '#F6D9D3'; color = '#8A2F1D'; }
+          if (rule.type === 'bar' && typeof v === 'number' && rule.mx > -Infinity) { const t = rule.mx === rule.mn ? 1 : (v - Math.min(0, rule.mn)) / (rule.mx - Math.min(0, rule.mn)); bg = `linear-gradient(90deg,#A9D1B9 ${Math.round(t * 100)}%,${s.fill || '#FFFFFF'} ${Math.round(t * 100)}%)`; }
+          if (rule.type === 'scale' && typeof v === 'number') { const t = rule.mx === rule.mn ? 0.5 : (v - rule.mn) / (rule.mx - rule.mn); bg = t < 0.5 ? mix('#F4C7B8', '#FBF3D6', t * 2) : mix('#FBF3D6', '#A9D1B9', (t - 0.5) * 2); }
+        });
+        if (x && x.ai) bg = 'var(--k46, #DCEBDF)';
+        const own = !bg || (x && x.ai); // the sheet's own background; on a colour from the file (or a rule) automatic text keeps its light value
+        if (!color) color = s.link ? (own ? 'var(--k2, #2F5D8A)' : '#2F5D8A') : own ? 'var(--k7, #1D1D1F)' : '#1D1D1F'; // theme: keep — see own
+        bg = bg || 'var(--k0, #FFFFFF)';
+        let op = 1;
+        if (ghost && ghost.has(a)) {
+          x = ghost.get(a); s = (x && x.s) || {}; v = x ? calc2.value(this.si, r, c) : '';
+          text = sh.showF && x && String(x.v).startsWith('=') ? String(x.v) : this.fmtV(v, s);
+          op = 0.55;
+        }
+        const bdo = s.bd && typeof s.bd === 'object' ? s.bd : s.bd ? { top: s.bd, right: s.bd, bottom: s.bd, left: s.bd } : {};
+        const side = (k, dflt) => BORDER_CSS[bdo[k]] ? BORDER_CSS[bdo[k]] + ' ' + (s.bdc || 'var(--k13, #3A3A3C)') : dflt;
+        const isNum = typeof v === 'number' && !(sh.showF && x && String(x.v).startsWith('='));
+        const al = s.align || (isNum ? 'right' : E.isErr(v) || typeof v === 'boolean' ? 'center' : 'left');
+        const frozenR = r < (sh.frR || 0), frozenC = c < (sh.frC || 0), ind = (s.indent || 0) * 10;
+        const isF = flt && r === flt.r && c >= flt.c1 && c <= flt.c2;
+        cells.push({
+          gr: m ? `${r + 2} / span ${m.rs}` : String(r + 2), gc: m ? `${c + 2} / span ${m.cs}` : String(c + 2),
+          pos: frozenR || frozenC ? 'sticky' : 'relative', top: frozenR ? CHH + ys[r] + 'px' : 'auto', left: frozenC ? RHW + xs[c] + 'px' : 'auto', z: Z.cell[(frozenR ? 1 : 0) + (frozenC ? 1 : 0)],
+          text, bg, color, fw: s.b ? 700 : 400, fst: s.i ? 'italic' : 'normal', td: [s.u || s.link ? 'underline' : '', s.st ? 'line-through' : ''].join(' ').trim() || 'none', fs: (s.fs || 11) * 1.2 + 'px', ff: s.font ? `'${s.font}',sans-serif` : 'inherit',
+          justify: al === 'right' ? 'flex-end' : al === 'center' ? 'center' : 'flex-start', ta: al, ai: s.va === 'top' ? 'flex-start' : s.va === 'bottom' ? 'flex-end' : 'center', ws: s.wrap ? 'normal' : 'nowrap', flex: isF ? '1' : '0 1 auto',
+          bt: side('top', 'none'), bl: side('left', 'none'), br: side('right', '1px solid ' + gl), bb: side('bottom', '1px solid ' + gl), pad: `0 ${6 + (al === 'right' ? ind : 0)}px 0 ${6 + (al === 'right' ? 0 : ind)}px`,
+          tip: s.link ? s.link + '（Ctrl+点击打开）' : '', hasN: !!s.note, cursor: s.link ? 'pointer' : 'cell',
+          onML: () => { if (st.noteAt && st.noteAt.r === r && st.noteAt.c === c) this.setState({ noteAt: null }); },
+          op, hasF: !!isF, fbg: isF && fex[c] && fex[c].length ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)',
+          onF: e => { e.preventDefault(); e.stopPropagation(); const rc = e.currentTarget.getBoundingClientRect(); this.setState({ pop: { id: 'flt' + c, x: rc.left, y: rc.bottom + 4 } }); },
+          onMD: e => {
+            if (e.button === 2) return;
+            e.preventDefault();
+            if ((e.ctrlKey || e.metaKey) && s.link && !this.state.edit) { this.openLink(s.link); return; }
+            const cur = this.state.edit;
+            if (cur && this.pointTo(r, c, e.ctrlKey || e.metaKey)) { this.op = { kind: 'point' }; return; } // reference mode: click inserts, drag extends to a range
+            if (cur) this.commitEdit(0, 0);
+            if (e.shiftKey) this.setState({ sel: { r, c } }); else this.setState({ anc: { r, c }, sel: m ? { r: m.r + m.rs - 1, c: m.c + m.cs - 1 } : { r, c } });
+            if (m && !e.shiftKey) this.setState({ anc: { r, c } });
+            this.op = { kind: 'sel' }; this.wantFocus = true; this.setState({ chartSel: null, picSel: null, pop: null });
+          },
+          onME: e => { if (!this.op) { if (s.note) this.setState({ noteAt: { r, c } }); return; } if (this.op.kind === 'sel') this.setState({ sel: { r, c } }); if (this.op.kind === 'fill') this.setState({ fillTo: { r, c, copy: e.ctrlKey || e.metaKey } }); if (this.op.kind === 'point') this.dragPt(r, c); },
+          onDbl: () => { this.setState({ sel: { r, c }, anc: { r, c } }, () => this.startEdit(null, 'edit')); }
+        });
+      }
+    }
+    // overlays
+    const mA = this.mergeAt(R.r1, R.c1);
+    const sr2 = mA && R.r1 === R.r2 && R.c1 === R.c2 ? mA.r + mA.rs - 1 : R.r2, sc2 = mA && R.r1 === R.r2 && R.c1 === R.c2 ? mA.c + mA.cs - 1 : R.c2;
+    const box = (r1, c1, r2, c2) => ({ L: RHW + xs[c1] - 1, T: CHH + ys[r1] - 1, W: xs[c2 + 1] - xs[c1] + 1, H: ys[r2 + 1] - ys[r1] + 1 });
+    // selection, fill, reference and copy frames straddle the gridlines, but where the headers or a higher pane's cells cover the top or
+    // left edge (above scrolling rows, the frozen rows; left of scrolling columns, the frozen columns) a frame starts inside the cell.
+    // p: the pane of its top-left cell; st, sl: it sticks along a frozen axis it lies in wholly (one reaching past the frozen rows scrolls)
+    const mark = (r1, c1, r2, c2) => {
+      const b = box(r1, c1, r2, c2), l = b.L < RHW + (c1 < fzC ? 0 : xs[fzC]) ? 1 : 0, t = b.T < CHH + (r1 < fzR ? 0 : ys[fzR]) ? 1 : 0;
+      return { L: b.L + l, T: b.T + t, W: b.W - l, H: b.H - t, p: (r1 < fzR ? 1 : 0) + (c1 < fzC ? 1 : 0), st: r2 < fzR ? 0 : 'auto', sl: c2 < fzC ? 0 : 'auto' };
+    };
+    const sb = mark(R.r1, R.c1, sr2, sc2);
+    const multi = R.r1 !== sr2 || R.c1 !== sc2;
+    const am = this.mergeAt(s0.r, s0.c) || { r: s0.r, c: s0.c, rs: 1, cs: 1 };
+    const ab = box(am.r, am.c, am.r + am.rs - 1, am.c + am.cs - 1);
+    const editing = !!ed && ed.mode !== 'bar';
+    const em = ed && (this.mergeAt(ed.r, ed.c) || { r: ed.r, c: ed.c, rs: 1, cs: 1 }); // a merged cell is edited over its whole area
+    const eb = ed ? box(em.r, em.c, em.r + em.rs - 1, em.c + em.cs - 1) : ab; this.eb = eb; // the in-cell input sits on this box; scrollToSel derives the on-screen scale from it
+    const fp = fpv ? mark(fpv.box.r1, fpv.box.c1, fpv.box.r2, fpv.box.c2) : null;
+    const ti = fpv && (fpv.items.find(i => i.r === st.fillTo.r && i.c === st.fillTo.c) || fpv.items[fpv.items.length - 1]);
+    const tip = ti && ti.cell ? E.fmt(calc2.value(this.si, ti.r, ti.c), ti.cell.s) : '';
+    // range-finder boxes for the formula being edited (current sheet only); the live pointed one is a dashed marquee
+    const fx = ed && ed.val[0] === '=', pt = ed && ed.pt;
+    const refBoxes = fx ? this.refsOf(ed.val).filter(f => (f.sh == null || f.sh === sh.name) && f.r1 < E.NR && f.c1 < E.NC).map((f, i) => { const b = mark(f.r1, f.c1, Math.min(f.r2, E.NR - 1), Math.min(f.c2, E.NC - 1)); return { k: i, L: b.L + 'px', T: b.T + 'px', W: b.W + 1 + 'px', H: b.H + 1 + 'px', st: b.st, sl: b.sl, z: Z.mark[b.p], bd: `2px ${pt && f.s === pt.s ? 'dashed' : 'solid'} ${f.col}`, bg: f.col + '14' }; }) : [];
+    const cl = this.clip && this.clip.si === this.si ? mark(this.clip.r1, this.clip.c1, this.clip.r2, this.clip.c2) : null;
+    // stats
+    let cnt = 0, ncnt = 0, sum = 0;
+    if ((R.r2 - R.r1 + 1) * (R.c2 - R.c1 + 1) <= 4000) for (let r = R.r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) { if (hidden.has(r) || !sh.cells[E.A(r, c)]) continue; const v = calc.value(this.si, r, c); if (v !== '') cnt++; if (typeof v === 'number') { ncnt++; sum += v; } }
+    const statText = (st.painter ? '格式刷：选择目标区域 · ' : '') + (multi && ncnt ? `平均值 ${E.fmt(sum / ncnt, { dec: ncnt && !Number.isInteger(sum / ncnt) ? 2 : null })}　计数 ${cnt}　求和 ${E.fmt(sum, {})}` : multi ? `计数 ${cnt}` : ed ? '编辑' : '就绪');
+    // charts (their menus are registered here, before the popover reads them)
+    const charts = (sh.charts || []).map(ch => {
+      const set = patch => this.commit(s => Object.assign(s.charts.find(x => x.id === ch.id), patch));
+      this.menus['cht' + ch.id] = [HD('图表类型')].concat(CHART_TYPES.map(([k, l]) => I(l, () => set({ type: k }), { on: (ch.type || 'column') === k })), [IS, I('堆积', () => set({ stacked: !ch.stacked }), { on: !!ch.stacked, hint: '柱形 / 条形 / 面积' }), IS, HD('图例')], LEGENDS.map(([k, l]) => I(l, () => set({ legend: k }), { on: (ch.legend || 'right') === k })), [IS, I('数据区域…', () => this.prompt('图表数据', [{ key: 'c', label: '分类（如 A2:A6）', value: ch.cat || '', first: true }, { key: 's', label: '系列（JSON，如 [{"name":"B1","values":"B2:B6"}]）', value: JSON.stringify(ch.ser || []) }], v => { let ser; try { ser = JSON.parse(v.s || '[]'); } catch (e) { return this.toast('系列格式无效'); } set({ cat: v.c.trim(), ser }); }))]);
+      const p = this.chartAt(ch);
+      return Object.assign(this.chartVals(ch, calc), objPane(p.x, p.y));
+    });
+    // pictures, placed like charts; a picture tool's result shows at once, before the engine has answered
+    const pics = (sh.images || []).map(im => {
+      const look = st.picLive && st.picLive.id === im.id ? st.picLive.look : im.look || {}, v = this.P ? this.P.pictureView(look, im.w, im.h, 96 / 72) : null, sel = st.picSel === im.id;
+      const gx = this.gridMap(im.x || 0, 'x'), gy = this.gridMap(im.y || 0, 'y');
+      return { id: im.id, alt: im.alt || '', x: RHW + gx + 'px', y: CHH + gy + 'px', w: im.w + 'px', h: im.h + 'px', ...objPane(gx, gy),
+        tf: `rotate(${Number(look.rotation) || 0}deg)`, op: st.picBusy && sel ? 0.5 : 1, line: sel ? '2px solid var(--k59, #3F7D5C)' : 'none',
+        frame: v ? v.frame : '', image: v ? v.image : 'width:100%;height:100%', src: this.P ? this.P.picSrc(im.src) : im.src,
+        onSel: e => { e.stopPropagation(); if (st.picSel !== im.id) this.setState({ picSel: im.id, chartSel: null, pop: null }); } };
+    });
+    // popover
+    let popItems = [];
+    if (st.pop) {
+      if (st.pop.id.startsWith('flt')) {
+        const c = +st.pop.id.slice(3), vals = new Set(); if (flt) for (let r = flt.r + 1; r <= flt.r2; r++) vals.add(E.fmt(calc.value(this.si, r, c), (sh.cells[E.A(r, c)] || {}).s));
+        const ex = fex[c] || [];
+        const setEx = list => this.setFex(Object.assign({}, fex, { [c]: list }));
+        const keep = fn => ({ isItem: true, ...fn });
+        popItems = [I('升序', () => this.sortCol(true, c, flt)), I('降序', () => this.sortCol(false, c, flt)), IS,
+          keep({ label: '（全选）', check: ex.length ? '' : '✓', hint: '', onClick: () => setEx([]) })].concat(Array.from(vals).sort().map(v => keep({ label: v === '' ? '（空白）' : v, check: ex.includes(v) ? '' : '✓', hint: '', onClick: () => setEx(ex.includes(v) ? ex.filter(x => x !== v) : ex.concat([v])) })));
+      } else if (st.pop.id === 'tabctx') {
+        const i = st.pop.i;
+        popItems = [I('重命名', () => this.renameSheet(i)), I('复制工作表', () => this.copySheet(i)),
+          I('左移', () => { if (i > 0) { const ss = d.sheets.slice(); [ss[i - 1], ss[i]] = [ss[i], ss[i - 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i - 1 })); } }),
+          I('右移', () => { if (i < d.sheets.length - 1) { const ss = d.sheets.slice(); [ss[i + 1], ss[i]] = [ss[i], ss[i + 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i + 1 })); } }), IS,
+          I('删除工作表', () => { if (d.sheets.length < 2) return this.toast('至少保留一个工作表'); this.props.onChange(Object.assign({}, d, { sheets: d.sheets.filter((_, j) => j !== i), active: Math.max(0, Math.min(d.active || 0, d.sheets.length - 2)) })); })];
+      } else popItems = this.menus[st.pop.id] || [];
+    }
+    const lv = st.live;
+    const dlg = st.dlg;
+    return {
+      md, loading: false, neverThumbs: false, fxML: '12px', tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), notPure: !this.props.pure,
+      showThumbs: !this.props.pure && this.props.showThumbs !== false, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      sheetThumbs: d.sheets.map((s, i) => { const u = E.usedRange(s); return { name: s.name, fw: i === this.si ? 600 : 400, bg: i === this.si ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', meta: (u ? `${E.A(u.r1, u.c1)}:${E.A(u.r2, u.c2)} · ${Object.keys(s.cells).length} 个单元格` : '空') + ((s.charts || []).length ? ` · ${s.charts.length} 图表` : ''), onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); } } }; }),
+      hasChartList: (sh.charts || []).length > 0,
+      chartList: (sh.charts || []).map(ch => ({ label: ch.title, onClick: () => { const w = this.wrapRef.current, p = this.chartAt(ch); if (w) { w.scrollLeft = Math.max(0, (RHW + p.x) * st.zoom - 40); w.scrollTop = Math.max(0, (CHH + p.y) * st.zoom - 40); } this.setState({ chartSel: ch.id }); } })),
+      nameBox: st.nameEdit != null ? st.nameEdit : (multi ? `${E.A(R.r1, R.c1)}:${E.A(sr2, sc2)}` : a0),
+      onNameFocus: e => { this.setState({ nameEdit: e.target.value }); setTimeout(() => e.target.select(), 0); }, onNameBlur: () => this.setState({ nameEdit: null }),
+      onNameBox: e => this.setState({ nameEdit: e.target.value }),
+      onNameKey: e => { if (e.key !== 'Enter') return; const [p, q] = e.target.value.trim().toUpperCase().split(':').map(E.parseA); this.setState({ nameEdit: null }); if (p) { this.setState({ anc: p, sel: q || p }); this.wantFocus = true; this.scrollReq = true; } },
+      openFx: e => this.openPop('fns', e), fxRef: this.fxRef,
+      fxValue: ed ? ed.val : this.raw(s0.r, s0.c),
+      onFxFocus: () => { if (!this.state.edit) this.startEdit(null, 'bar'); },
+      onFx: e => { this.setState({ edit: Object.assign(Object.assign({ mode: 'bar' }, this.act()), this.state.edit, { val: e.target.value, pt: null }) }); },
+      onFxKey: e => { if (e.nativeEvent.isComposing) return; const e2 = this.state.edit; if (e2 && ARROWS[e.key] && this.ptArrow(e, e2)) return; if (e.key === 'Enter') { e.preventDefault(); this.commitEdit(1, 0); } if (e.key === 'Escape') { this.setState({ edit: null }); this.wantFocus = true; } },
+      showFind: st.showFind, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? `共 ${st.fcount} 个单元格` : '未找到',
+      onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
+      onFindKey: e => { if (e.key === 'Enter') this.findNext(); if (e.key === 'Escape') this.setState({ showFind: false }); },
+      findNext: () => this.findNext(), replaceOne: () => this.replace(false), replaceAll: () => this.replace(true), closeFind: () => { this.setState({ showFind: false }); this.wantFocus = true; },
+      wrapRef: this.wrapRef, zoom: st.zoom, z: Z, gridW: RHW + xs[E.NC] + 'px', gtc, gtr, colHeads, rowHeads, cells,
+      selAll: e => { e.preventDefault(); this.setState({ anc: { r: 0, c: 0 }, sel: { r: E.NR - 1, c: E.NC - 1 } }); this.wantFocus = true; },
+      selL: sb.L + 'px', selT: sb.T + 'px', selW: sb.W + 1 + 'px', selH: sb.H + 1 + 'px', selST: sb.st, selSL: sb.sl, selZ: Z.mark[sb.p], fhZ: Z.handle[sb.p], selBg: multi ? 'color-mix(in srgb, var(--k59, #3F7D5C) 8%, transparent)' : 'transparent',
+      fhL: sb.L + sb.W - 4 + 'px', fhT: sb.T + sb.H - 4 + 'px', onFillDown: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'fill' }; },
+      onFillDbl: () => { // Excel: double-click fills down as far as the neighbouring column (left, else right) has data
+        const has = (r2, c2) => { const y = sh.cells[E.A(r2, c2)]; return !!y && y.v !== '' && y.v != null; };
+        const nc = R.c1 > 0 && has(R.r2 + 1, R.c1 - 1) ? R.c1 - 1 : R.c2 + 1 < E.NC && has(R.r2 + 1, R.c2 + 1) ? R.c2 + 1 : -1; if (nc < 0) return;
+        let r2 = R.r2 + 1; while (r2 + 1 < E.NR && has(r2 + 1, nc)) r2++; this.op = null; this.setState({ fillTo: null }); this.doFill({ r: r2, c: R.c2 }, false);
+      },
+      hasFillPrev: !!fp, fpL: fp ? fp.L + 'px' : 0, fpT: fp ? fp.T + 'px' : 0, fpW: fp ? fp.W + 1 + 'px' : 0, fpH: fp ? fp.H + 1 + 'px' : 0, fpST: fp ? fp.st : 'auto', fpSL: fp ? fp.sl : 'auto', fpZ: Z.mark[fp ? fp.p : 0],
+      hasClip: !!cl, clipL: cl ? cl.L + 'px' : 0, clipT: cl ? cl.T + 'px' : 0, clipW: cl ? cl.W + 1 + 'px' : 0, clipH: cl ? cl.H + 1 + 'px' : 0, clipST: cl ? cl.st : 'auto', clipSL: cl ? cl.sl : 'auto', clipZ: Z.mark[cl ? cl.p : 0],
+      inRef: this.inRef, inVal: editing ? ed.val : '',
+      inL: eb.L + 1 + 'px', inT: eb.T + 1 + 'px', inW: (editing ? Math.max(eb.W - 1, Math.min(420, ed.val.length * 8 + 24)) : Math.max(24, eb.W - 1)) + 'px' /* never a sliver: in a 4px input Chrome leaves the caret at 0 after an IME commit or paste, so the next key lands in front */, inH: eb.H - 1 + 'px', inOp: editing ? 1 : 0, inPe: editing ? 'auto' : 'none', inCaret: editing ? 'var(--k1, #1D1D1F)' : 'transparent',
+      // coloured-reference mirrors: an input cannot colour its text, so a same-metrics div behind it shows the spans and the input's own text goes transparent
+      inMirRef: this.inMirRef, inMirD: editing && fx ? 'flex' : 'none', inMirror: editing && fx ? this.spans(ed.val) : '', inColor: editing && fx ? 'transparent' : 'var(--k1, #1D1D1F)', inBg: editing && fx ? 'transparent' : 'var(--k0, #FFFFFF)',
+      fxMirRef: this.fxMirRef, fxMirror: fx ? this.spans(ed.val) : '', fxColor: fx ? 'transparent' : 'var(--k1, #1D1D1F)', syncMirror: () => this.syncMirror(),
+      onCompS: () => { this.ime = true; }, onCompE: () => { this.ime = false; }, onInMD: () => { const c2 = this.state.edit; if (c2 && c2.pt) this.setState({ edit: Object.assign({}, c2, { pt: null }) }); },
+      refBoxes, hasTip: !!(fpv && tip), tipRef: this.tipRef, tipText: tip, tipL: (this.fillXY ? this.fillXY[0] : 0) + 'px', tipT: (this.fillXY ? this.fillXY[1] : 0) + 'px',
+      ...this.noteCard(st.noteAt, box),
+      onInChange: e => { if (this.state.edit && this.state.edit.mode !== 'bar') this.setState({ edit: Object.assign({}, this.state.edit, { val: e.target.value, pt: null }) }); else { const a = this.act(); this.setState({ edit: { r: a.r, c: a.c, val: e.target.value, mode: 'type' } }); } },
+      onInBlur: () => { },
+      onInKey: e => {
+        const ed2 = this.state.edit, k = e.key, ctrl = e.ctrlKey || e.metaKey;
+        if (ed2 && ed2.mode !== 'bar') {
+          if (e.nativeEvent.isComposing) return;
+          if (k === 'Enter' && e.altKey) { e.preventDefault(); this.setState({ edit: Object.assign({}, ed2, { val: ed2.val + '\n' }) }); return; }
+          if (k === 'Enter') { e.preventDefault(); this.commitEdit(e.shiftKey ? -1 : 1, 0); }
+          else if (k === 'Tab') { e.preventDefault(); this.commitEdit(0, e.shiftKey ? -1 : 1); }
+          else if (k === 'Escape') { e.preventDefault(); this.setState({ edit: null }); this.wantFocus = true; }
+          else if (k === 'F2') { e.preventDefault(); this.setState({ edit: Object.assign({}, ed2, { mode: ed2.mode === 'edit' ? 'type' : 'edit' }) }); } // Excel: F2 toggles Enter/Edit mode (arrows point vs move the caret)
+          else if (ARROWS[k] && this.ptArrow(e, ed2)) { }
+          else if (ed2.mode === 'type' && ARROWS[k]) { e.preventDefault(); const m2 = ARROWS[k]; this.commitEdit(m2[0], m2[1]); }
+          return;
+        }
+        if (ctrl) {
+          const lk = k.toLowerCase();
+          if (lk === 'z') { e.preventDefault(); e.shiftKey ? this.props.onRedo && this.props.onRedo() : this.props.onUndo && this.props.onUndo(); }
+          else if (lk === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); }
+          else if (lk === 'b' || lk === 'i' || lk === 'u') { e.preventDefault(); tb(lk); }
+          else if (lk === 'd') { e.preventDefault(); this.fillDir('down'); }
+          else if (lk === 'r') { e.preventDefault(); this.fillDir('right'); }
+          else if (lk === 'a') { e.preventDefault(); this.setState({ anc: { r: 0, c: 0 }, sel: { r: E.NR - 1, c: E.NC - 1 } }); }
+          else if (lk === 'f' || lk === 'h') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
+          else if (ARROWS[k]) { e.preventDefault(); this.jump(ARROWS[k][0], ARROWS[k][1], e.shiftKey); }
+          return;
+        }
+        if (ARROWS[k]) { e.preventDefault(); this.move(ARROWS[k][0], ARROWS[k][1], e.shiftKey); }
+        else if (k === 'Enter') { e.preventDefault(); this.move(e.shiftKey ? -1 : 1, 0); }
+        else if (k === 'Tab') { e.preventDefault(); this.move(0, e.shiftKey ? -1 : 1); }
+        else if (k === 'F2') { e.preventDefault(); this.startEdit(null, 'edit'); }
+        else if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); this.clear('v'); }
+        else if (k === 'Escape') { this.clip = null; this.setState({ painter: null }); }
+        else if (k === 'Home') { e.preventDefault(); this.setSel(s0.r, 0, e.shiftKey); }
+        else if (k === 'PageDown') { e.preventDefault(); this.move(20, 0, e.shiftKey); }
+        else if (k === 'PageUp') { e.preventDefault(); this.move(-20, 0, e.shiftKey); }
+      },
+      onCopy: e => { if (this.state.edit) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copy(false)); },
+      onCut: e => { if (this.state.edit) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copy(true)); },
+      onPaste: e => { if (this.state.edit) return; e.preventDefault(); this.paste(e.clipboardData.getData('text/plain')); },
+      charts, pics,
+      sheetTabs: d.sheets.map((s, i) => ({ name: s.name, bg: i === this.si ? 'var(--k31, rgba(255,255,255,0.95))' : 'transparent', fw: i === this.si ? 600 : 400, line: i === this.si ? '0 1px 3px var(--k36, rgba(0,0,0,0.12))' : 'none',
+        onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); this.wantFocus = true; } },
+        onDbl: () => this.renameSheet(i), onCtx: e => { e.preventDefault(); this.setState({ pop: { id: 'tabctx', i, x: e.clientX, y: e.clientY - 190 } }); } })),
+      addSheet: () => this.addSheet(),
+      statText, zoomPct: String(Math.round(st.zoom * 100)), onZoom: e => this.setZoom(+e.target.value / 100),
+      zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1),
+      zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
+      onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(Math.round(this.state.zoom * 100)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
+      onZoomKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); this.wantFocus = true; } else if (e.key === 'Escape') { const el = e.target; this.setState({ zoomEdit: null }, () => el.blur()); } },
+      onRootKey: e => {
+        if (!(e.ctrlKey || e.metaKey)) return; const k = e.key;
+        if (k === '=' || k === '+' || k === 'Add') { e.preventDefault(); this.setZoom(this.state.zoom + 0.1); }
+        else if (k === '-' || k === 'Subtract') { e.preventDefault(); this.setZoom(this.state.zoom - 0.1); }
+        else if (k === '0') { e.preventDefault(); this.setZoom(1); }
+      },
+      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popMaxH: Math.max(160, Math.min(440, (globalThis.innerHeight || 900) - Math.max(8, st.pop ? st.pop.y : 0) - 12)) + 'px', /* a menu never runs off the bottom of the window */ popItems, closePop: () => { this.setState({ pop: null }); this.wantFocus = true; },
+      hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
+      dlgFields: dlg ? dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, first: !!fl.first, multi: !!fl.multi, isSel: !!fl.options, single: !fl.multi && !fl.options, options: (fl.options || []).map(([v, l]) => ({ v, l })), onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } })) : [],
+      dlgKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.dlgOk(); } if (e.key === 'Escape') this.setState({ dlg: null }); },
+      dlgCancel: () => { this.setState({ dlg: null }); this.wantFocus = true; }, dlgOk: () => this.dlgOk()
+    };
+  }
+  dlgOk() { const dd = this.state.dlg; this.setState({ dlg: null }); this.wantFocus = true; if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } }
+  sortCol(asc, c, flt) { this.setState({ anc: { r: flt.r, c: flt.c1 }, sel: { r: flt.r2, c: flt.c2 } }, () => { this.sort(asc, c); this.setState({ sel: { r: flt.r + 1, c }, anc: { r: flt.r + 1, c } }); }); }
+  /** A copy is a new sheet with a name of its own (the file refuses a second one), and its charts and pictures are new objects: no
+   *  engine path or id ties them to the original's, so the next save writes them with the copy and the picture tools leave the original alone. */
+  copySheet(i) {
+    const d = this.doc, n = structuredClone(d.sheets[i]), k = Date.now().toString(36); let m = 2;
+    while (d.sheets.some(s => s.name === `${d.sheets[i].name} (${m})`)) m++;
+    n.name = `${d.sheets[i].name} (${m})`; delete n.path;
+    (n.charts || []).forEach((ch, j) => { ch.id = 'ch' + k + j; delete ch.eid; delete ch.path; });
+    (n.images || []).forEach((im, j) => { im.id = 'im' + k + j; delete im.path; });
+    this.props.onChange(Object.assign({}, d, { sheets: d.sheets.slice(0, i + 1).concat([n], d.sheets.slice(i + 1)), active: i + 1 }));
+  }
+  addSheet() { const d = this.doc; let n = d.sheets.length + 1; while (d.sheets.some(s => s.name === 'Sheet' + n)) n++; this.props.onChange(Object.assign({}, d, { sheets: d.sheets.concat([{ name: 'Sheet' + n, cells: {} }]), active: d.sheets.length })); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 } }); }
+  renameSheet(i) {
+    const d = this.doc, old = d.sheets[i].name;
+    this.prompt('重命名工作表', [{ key: 'n', label: '名称', value: old, first: true }], v => {
+      const nn = (v.n || '').trim(); if (!nn || nn === old) return; if (d.sheets.some(s => s.name === nn)) return this.toast('名称已存在');
+      const E = this.E; const nd = structuredClone(d); nd.sheets[i].name = nn;
+      const re = new RegExp('(^|[^\\w])' + (/^[\w\u4e00-\u9fa5]+$/.test(old) ? old : "'" + old + "'").replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '!', 'g');
+      nd.sheets.forEach(s => Object.values(s.cells).forEach(x => { if (typeof x.v === 'string' && x.v[0] === '=') x.v = x.v.replace(re, (m, p) => p + (/^[\w\u4e00-\u9fa5]+$/.test(nn) ? nn : "'" + nn + "'") + '!'); }));
+      this.props.onChange(nd);
+    });
+  }
+}
+</script>
+</body>
+</html>

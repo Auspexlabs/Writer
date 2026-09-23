@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+<title id="title">PDF · 深色几何</title>
+<rect x="4" y="4" width="56" height="56" rx="15" fill="#7D4549"/>
+<path d="M13 11h20" stroke="#C78387" stroke-width="2" stroke-linecap="round"/>
+<path d="M43 15h8v8" fill="none" stroke="#E4B3B6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M17.83 40V27.09H22.9Q24.58 27.09 25.47 28.06Q26.36 29.03 26.36 30.69Q26.36 32.38 25.47 33.35Q24.58 34.32 22.9 34.32H18.94V40ZM18.94 33.34H22.9Q24.01 33.34 24.59 32.72Q25.18 32.1 25.18 31.14V30.25Q25.18 29.31 24.59 28.69Q24.01 28.07 22.9 28.07H18.94Z M28.95 27.09H33.06Q35.55 27.09 36.91 28.7Q38.27 30.31 38.27 33.54Q38.27 36.78 36.91 38.39Q35.55 40 33.06 40H28.95ZM33.08 39.02Q34.98 39.02 36.04 37.79Q37.09 36.56 37.09 34.39V32.69Q37.09 30.53 36.04 29.3Q34.98 28.07 33.08 28.07H30.06V39.02Z M41.27 40V27.09H48.65V28.07H42.38V32.95H48.23V33.93H42.38V40Z" fill="#FFFFFF"/>
+</svg>

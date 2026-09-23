@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./theme-dark.css">
+<style>
+.mm-canvas svg text{font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;pointer-events:none;user-select:none}
+.mm-edit{position:absolute;box-sizing:border-box;border:2px solid var(--k7, #1D1D1F);background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);outline:none;resize:none;overflow:hidden;white-space:pre-wrap;word-break:break-word;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;field-sizing:content;box-shadow:0 8px 24px var(--k77, rgba(0,0,0,0.14))}
+.mm-note::placeholder{color:var(--k63, #C7C7CC)}
+.mm-range{-webkit-appearance:none;appearance:none;width:110px;height:3px;border-radius:2px;background:var(--k60, rgba(0,0,0,0.18));outline:none;cursor:pointer}
+.mm-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:var(--k7, #1D1D1F);border:2px solid var(--k51, #fff);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+</style>
+</helmet>
+<div ref="{{ rootRef }}" data-edroot="1" tabIndex="-1" onKeyDown="{{ onKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
+  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
+      <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--k36, rgba(0,0,0,0.12));margin-right:4px"></span></div>
+        <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
+          <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:transparent;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">文件</button>
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:{{ t.bg }};box-shadow:{{ t.sh }};transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;flex:none">
+          <span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span>
+          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
+          <button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="纯净模式 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:60px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k72, rgba(255,255,255,0.74)),var(--k32, rgba(255,255,255,0.5)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px">
+        <sc-for list="{{ tools }}" as="it" hint-placeholder-count="0">
+          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:20px;background:var(--k36, rgba(0,0,0,0.12));margin:0 6px;flex:none"></span></sc-if>
+          <sc-if value="{{ it.isLbl }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--k8, #8E8E93);padding:0 6px 0 4px;flex:none">{{ it.label }}</span></sc-if>
+          <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
+            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:32px;min-width:32px;padding:0 11px;border:none;border-radius:10px;background:{{ it.bg }};font-size:{{ it.fs }};font-weight:{{ it.fw }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k27, rgba(255,255,255,0.75))" style-active="transform:scale(0.92)">{{ it.label }}</button>
+          </sc-if>
+          <sc-if value="{{ it.isSw }}" hint-placeholder-val="{{ false }}">
+            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="width:28px;height:28px;border:none;border-radius:9px;background:{{ it.bg }};cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k27, rgba(255,255,255,0.75))" style-active="transform:scale(0.9)"><span style="width:16px;height:16px;border-radius:5px;background:{{ it.sw }};box-shadow:inset 0 0 0 1px var(--k60, rgba(0,0,0,0.14))"></span></button>
+          </sc-if>
+        </sc-for>
+      </div></div>
+    </sc-if>
+  </sc-if>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ cols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
+    <sc-if value="{{ showOutline }}" hint-placeholder-val="{{ false }}">
+      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,var(--k32, rgba(255,255,255,0.5)),var(--k33, rgba(255,255,255,0.32)));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 14px 40px var(--k19, rgba(0,0,0,0.1))"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 10px 0 18px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k11, #6E6E73);cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k31, rgba(255,255,255,0.95))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:1px">
+        <sc-for list="{{ outline }}" as="h" hint-placeholder-count="6">
+          <div onClick="{{ h.onClick }}" title="{{ h.text }}" style="flex:none;padding:6px 10px;padding-left:{{ h.indent }};border-radius:10px;font-size:12.5px;cursor:pointer;color:var(--k9, #3A3A3C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ h.fw }};background:{{ h.bg }};transition:background .2s" style-hover="background:var(--k30, rgba(255,255,255,0.6))"><span style="color:var(--k8, #8E8E93);font-size:10px;margin-right:4px">{{ h.mark }}</span>{{ h.text }}</div>
+        </sc-for>
+      </div></div>
+    </sc-if>
+    <div ref="{{ canvasRef }}" class="mm-canvas" onMouseDown="{{ onCanvasDown }}" style="grid-column:2;min-width:0;min-height:0;overflow:hidden;position:relative;cursor:{{ cursor }};user-select:none;-webkit-user-select:none">
+      <svg style="position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible">
+        <g style="transform:{{ tf }};transition:{{ tfTr }}">
+          <sc-for list="{{ edges }}" as="e" hint-placeholder-count="0">
+            <path style="d:path('{{ e.d }}');fill:none;stroke:{{ e.color }};stroke-width:{{ e.sw }};stroke-linecap:round"></path>
+          </sc-for>
+          <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="0">
+            <g data-nid="{{ n.id }}" onMouseDown="{{ n.onMD }}" onDoubleClick="{{ n.onDbl }}" style="transform:{{ n.tf }};cursor:{{ n.cursor }};opacity:{{ n.op }}">
+              <sc-if value="{{ n.ring }}" hint-placeholder-val="{{ false }}"><rect style="x:-4px;y:-4px;width:{{ n.rw }};height:{{ n.rh }};rx:{{ n.rrx }};fill:{{ n.ringFill }};stroke:{{ n.ringColor }};stroke-width:{{ n.ringW }};stroke-dasharray:{{ n.ringDash }}"></rect></sc-if>
+              <rect style="width:{{ n.w }};height:{{ n.h }};rx:{{ n.rx }};fill:{{ n.bg }};stroke:{{ n.stroke }};stroke-width:{{ n.sw }}"></rect>
+              <text dangerouslySetInnerHTML="{{ n.inner }}" style="font-size:{{ n.fs }};font-weight:{{ n.fw }};fill:{{ n.fg }}"></text>
+              <sc-if value="{{ n.hasIcon }}" hint-placeholder-val="{{ false }}"><g style="transform:{{ n.itf }}"><text dangerouslySetInnerHTML="{{ n.iconHtml }}" style="font-size:{{ n.ifs }}"></text></g></sc-if>
+              <sc-if value="{{ n.hasNote }}" hint-placeholder-val="{{ false }}"><g style="transform:{{ n.ntf }}"><text dangerouslySetInnerHTML="{{ noteGlyph }}" style="font-size:10px;fill:var(--k8, #8E8E93)"></text></g></sc-if>
+              <sc-if value="{{ n.hasBadge }}" hint-placeholder-val="{{ false }}"><g style="transform:{{ n.btf }}"><circle r="9" style="fill:{{ n.color }}"></circle><text dangerouslySetInnerHTML="{{ n.badgeHtml }}" y="3.5" style="font-size:10px;font-weight:600;fill:#fff;text-anchor:middle"></text></g></sc-if>
+            </g>
+          </sc-for>
+        </g>
+      </svg>
+      <sc-if value="{{ isEditing }}" hint-placeholder-val="{{ false }}">
+        <textarea ref="{{ taRef }}" class="mm-edit" value="{{ editText }}" onChange="{{ onEditText }}" onKeyDown="{{ onEditKey }}" onBlur="{{ onEditBlur }}" onMouseDown="{{ stop }}" spellCheck="false" style="left:{{ edL }};top:{{ edT }};width:{{ edW }};min-height:{{ edH }};padding:{{ edPad }};border-radius:{{ edRx }};font-size:{{ edFs }};line-height:{{ edLh }};font-weight:{{ edFw }}"></textarea>
+      </sc-if>
+      <sc-if value="{{ hasGhost }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:{{ gx }};top:{{ gy }};pointer-events:none;z-index:20;max-width:240px;padding:7px 12px;border-radius:12px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--k1, #1D1D1F);background:linear-gradient(180deg,var(--k50, rgba(255,255,255,0.9)),var(--k20, rgba(255,255,255,0.7)));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--k28, rgba(0,0,0,0.08));box-shadow:0 10px 26px var(--k26, rgba(0,0,0,0.16))">{{ ghostText }}</div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:30;height:34px;display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;border-radius:999px;background:var(--k69, rgba(255,255,255,0.38));backdrop-filter:blur(14px) saturate(180%);-webkit-backdrop-filter:blur(14px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 6px 20px var(--k53, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k11, #6E6E73);opacity:0.32;transition:opacity .45s cubic-bezier(.2,1,.3,1),background .45s;white-space:nowrap" style-hover="opacity:1;background:var(--k15, rgba(255,255,255,0.62))">
+      <span>{{ statCount }}</span>
+      <span style="width:1px;height:16px;background:var(--k36, rgba(0,0,0,0.12))"></span>
+      <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="width:22px;height:22px;border:none;border-radius:999px;background:transparent;font-size:14px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k55, rgba(0,0,0,0.06))">−</button>
+      <input class="mm-range" type="range" min="20" max="400" step="1" value="{{ zPct }}" onChange="{{ onZoomSlide }}" title="缩放">
+      <button onClick="{{ zoomIn }}" title="放大 Ctrl+=" style="width:22px;height:22px;border:none;border-radius:999px;background:transparent;font-size:14px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k55, rgba(0,0,0,0.06))">+</button>
+      <span style="min-width:38px;text-align:right;font-variant-numeric:tabular-nums">{{ zPctText }}</span>
+      <button onClick="{{ fitClick }}" title="适应画布" style="height:24px;padding:0 10px;border:none;border-radius:999px;background:transparent;font-size:12px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k55, rgba(0,0,0,0.06))">适应画布</button>
+    </div>
+    <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+      <div data-pop="right" style="position:absolute;right:18px;bottom:62px;z-index:31;width:250px;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k69, rgba(255,255,255,0.38)));backdrop-filter:blur(14px) saturate(190%);-webkit-backdrop-filter:blur(14px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
+        <div style="height:34px;flex:none;display:flex;align-items:center;gap:6px;padding:0 14px;font-size:12px;color:var(--k11, #6E6E73);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="flex:none">备注 ·</span><span style="overflow:hidden;text-overflow:ellipsis;color:var(--k1, #1D1D1F);font-weight:500">{{ selText }}</span></div>
+        <textarea class="mm-note" value="{{ note }}" onChange="{{ onNote }}" onFocus="{{ onNoteFocus }}" placeholder="给这个主题写点备注…" spellCheck="false" style="height:84px;border:none;background:transparent;resize:none;padding:2px 14px 12px;font-size:12.5px;line-height:1.6;outline:none;color:var(--k1, #1D1D1F)"></textarea>
+      </div>
+    </sc-if>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"doc":{"editor":null,"tsType":"object","default":{"id":"demo","type":"mm","title":"产品发布计划","path":"产品发布计划.mm","loaded":true,"map":{"id":"ID_1","text":"产品发布计划","children":[{"id":"ID_2","text":"目标与定位","children":[{"id":"ID_3","text":"核心用户：中小团队的运营负责人","children":[]},{"id":"ID_4","text":"差异化卖点","collapsed":true,"children":[{"id":"ID_5","text":"一键生成周报","children":[]},{"id":"ID_6","text":"离线可用","children":[]}]},{"id":"ID_7","text":"成功指标","icon":"flag","children":[{"id":"ID_8","text":"首周激活 5000","children":[]},{"id":"ID_9","text":"NPS ≥ 40","children":[]}]}]},{"id":"ID_10","text":"时间线","icon":"calendar","children":[{"id":"ID_11","text":"T-4 周：功能冻结","children":[]},{"id":"ID_12","text":"T-2 周：内测邀请","children":[]},{"id":"ID_13","text":"发布日","fill":"FFE8A3","children":[]},{"id":"ID_14","text":"发布后一周：复盘","children":[]}]},{"id":"ID_15","text":"团队分工","children":[{"id":"ID_16","text":"产品","children":[]},{"id":"ID_17","text":"研发","children":[]},{"id":"ID_18","text":"市场","children":[]},{"id":"ID_19","text":"客服","children":[]}]},{"id":"ID_20","text":"风险与应对","icon":"messagebox_warning","color":"B5563A","children":[{"id":"ID_21","text":"服务器容量不足 → 提前压测","children":[]},{"id":"ID_22","text":"竞品同期发布 → 准备对比材料","children":[]}]},{"id":"ID_23","text":"渠道","side":"left","note":"优先级：官网 > 社群 > 媒体","children":[{"id":"ID_24","text":"官网 Banner","children":[]},{"id":"ID_25","text":"用户社群","children":[]},{"id":"ID_26","text":"媒体稿件","children":[]}]}]}}},"onChange":{"editor":null,"tsType":"(doc, opts) => void"},"onUndo":{"editor":null,"tsType":"() => void"},"onRedo":{"editor":null,"tsType":"() => void"},"onConvert":{"editor":null,"tsType":"(kind, payload) => void"},"toast":{"editor":null,"tsType":"(msg) => void"},"showThumbs":{"editor":"boolean","default":true,"tsType":"boolean"},"pure":{"editor":"boolean","default":false,"tsType":"boolean"},"onToggleThumbs":{"editor":null,"tsType":"() => void"}}'>
+const md = e => e.preventDefault();
+const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const FILLS = ['FFE8A3', 'FFD6CC', 'D9EAD3', 'CFE2F3', 'E4D7F5', 'FCE5CD', 'D0E0E3', 'F4CCCC'];
+const TEXTS = ['1D1D1F', 'B5563A', '3F7D5C', '2F5D8A', '8E5AB8', 'C28A1A'];
+const ZMIN = 0.2, ZMAX = 4;
+const lit = c => String(c).replace(/var\(--[\w-]+,\s*((?:[^()]|\([^()]*\))*)\)/g, '$1');
+class Component extends DCLogic {
+  state = { tab: 'home', bubble: false, bx: 12, sel: null, editing: null, editText: '', z: 1, tx: 0, ty: 0, anim: false, drag: null, local: null, box: { w: 0, h: 0 } };
+  rootRef = React.createRef(); canvasRef = React.createRef(); taRef = React.createRef(); mcache = new Map();
+  componentDidMount() {
+    import('./glass.js');
+    import('./mindmap.js').then(m => { this.M = m; this.needFit = true; this.forceUpdate(); });
+    window.addEventListener('mousemove', this.onWM); window.addEventListener('mouseup', this.onWU);
+    const c = this.canvasRef.current;
+    if (c) { c.addEventListener('wheel', this.onWheel, { passive: false }); const r0 = c.getBoundingClientRect(); if (r0.width) this.setState({ box: { w: r0.width, h: r0.height } }); this.ro = new ResizeObserver(en => { const r = en[0].contentRect; this.setState({ box: { w: r.width, h: r.height } }); }); this.ro.observe(c); }
+    // widths measured before the web font arrives are wrong: lay out again once it is here
+    if (document.fonts) { document.fonts.ready.then(this.refont); document.fonts.addEventListener('loadingdone', this.refont); }
+  }
+  componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); const c = this.canvasRef.current; c && c.removeEventListener('wheel', this.onWheel); this.ro && this.ro.disconnect(); document.fonts && document.fonts.removeEventListener('loadingdone', this.refont); this.stopPan(); clearTimeout(this.followT); }
+  componentDidUpdate(pp) {
+    if (pp.doc && this.props.doc && pp.doc.id !== this.props.doc.id) { this.needFit = true; this.setState({ sel: null, editing: null, local: null }); return; }
+    if (this.needFit && this.state.box.w && this.M && this.doc && this.doc.map) { this.needFit = false; this.fit(1, false); }
+    if (this.focusEdit && this.taRef.current) { const el = this.taRef.current, all = this.focusEdit.all; this.focusEdit = null; el.focus(); if (all) el.select(); else el.setSelectionRange(el.value.length, el.value.length); }
+    this.follow();
+  }
+  refont = () => { this.mcache.clear(); this._layoutFor = null; this.forceUpdate(); };
+  // ----- model access: the shell owns the doc; standalone (no onChange) the editor keeps its own copy -----
+  get doc() { return this.props.onChange ? this.props.doc : (this.state.local || this.props.doc); }
+  get map() { return this.doc && this.doc.map; }
+  resolveId(id) { const m = this.doc && this.doc._tmpToId; for (let i = 0; m && id && m[id] && i < 20; i++) id = m[id]; return id; }
+  get selId() { return this.state.sel ? this.resolveId(this.state.sel) : null; }
+  get selNode() { const id = this.selId; return id && this.M ? this.M.find(this.map, id) : null; }
+  F(m, id) { return this.M.find(m, this.resolveId(id)); }
+  PO(m, id) { return this.M.parentOf(m, this.resolveId(id)); }
+  same(a, b) { return this.resolveId(a) === this.resolveId(b); }
+  toast(m) { this.props.toast && this.props.toast(m); }
+  emit(d, opts) { if (this.props.onChange) this.props.onChange(d, opts); else this.setState({ local: d }); }
+  commit(fn, opts) { const d = structuredClone(this.doc); fn(d.map, d); this.emit(d, opts); }
+  measure = (text, fs, fw) => {
+    const key = fw + '|' + fs + '|' + text; let v = this.mcache.get(key);
+    if (v == null) { const g = this.mctx || (this.mctx = document.createElement('canvas').getContext('2d')); g.font = `${fw || 400} ${fs}px ${this.M.FONT}`; v = g.measureText(text).width; if (this.mcache.size > 4000) this.mcache.clear(); this.mcache.set(key, v); }
+    return v;
+  };
+  L() { const m = this.map, k = this.doc._tmpToId; if (this._layoutFor !== m || this._layoutIds !== k) { this._layout = this.M.layout(m, this.measure); this._layoutFor = m; this._layoutIds = k; } return this._layout; }
+  // ----- edits: every change is a fresh copy handed to the shell (history + autosave live there) -----
+  addChild(pid, text) { const id = this.M.newId(); this.commit(m => { const p = this.F(m, pid); if (!p) return; (p.children = p.children || []).push({ id, text: text || '新主题', children: [] }); delete p.collapsed; }); this.startEdit(id, true, text || '新主题'); }
+  addSibling(id) { const p = this.PO(this.map, id); if (!p) return this.addChild(id); const nid = this.M.newId(); this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i + 1, 0, { id: nid, text: '新主题', children: [] }); }); this.startEdit(nid, true, '新主题'); }
+  remove(id) { const p = this.PO(this.map, id); if (!p) return this.toast('中心主题不能删除'); let next = p.id; this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i, 1); next = (pp.children[i] || pp.children[i - 1] || pp).id; }); this.followOn = true; this.setState({ sel: next, editing: null }); }
+  toggle(id) { this.commit(m => { const n = this.F(m, id); if (n && n !== m && (n.children || []).length) { if (n.collapsed) delete n.collapsed; else n.collapsed = true; } }); }
+  patch(id, props) { this.commit(m => { const n = this.F(m, id); if (!n) return; for (const k in props) { if (props[k] == null || props[k] === '' || props[k] === false) delete n[k]; else n[k] = props[k]; } }); }
+  moveSib(id, dir) { this.commit(m => { const p = this.PO(m, id); if (!p) return; const i = p.children.findIndex(c => this.same(c.id, id)), j = i + dir; if (j < 0 || j >= p.children.length) return; [p.children[i], p.children[j]] = [p.children[j], p.children[i]]; }); }
+  moveTo(id, pid, side) {
+    if (this.same(id, pid)) return;
+    this.commit(m => { const n = this.F(m, id), t = this.F(m, pid), p = this.PO(m, id); if (!n || !t || !p || this.F(n, pid)) return; p.children.splice(p.children.indexOf(n), 1); (t.children = t.children || []).push(n); delete t.collapsed; if (t === m) { if (side) n.side = side; } else delete n.side; });
+  }
+  setAll(collapsed) { this.commit(m => this.M.walk(m, (n, p) => { if (p && (n.children || []).length) { if (collapsed) n.collapsed = true; else delete n.collapsed; } })); }
+  startEdit(id, all, text) { this.edDone = false; this.followOn = true; this.focusEdit = { all: !!all }; this.setState({ sel: id, editing: id, editText: text || '' }); }
+  commitEdit() { const st = this.state; if (!st.editing || this.edDone) return; this.edDone = true; const id = st.editing, t = st.editText; this.setState({ editing: null }); const n = this.F(this.map, id); if (n && (n.text || '') !== t) this.patch(id, { text: t }); }
+  focusRoot() { const r = this.rootRef.current; r && r.focus({ preventScroll: true }); }
+  // ----- view -----
+  manual() { this.manualAt = performance.now(); this.stopPan(); }
+  zoomTo(z2, mx, my) { this.manual(); const st = this.state; z2 = Math.max(ZMIN, Math.min(ZMAX, z2)); if (mx == null) { mx = st.box.w / 2; my = st.box.h / 2; } const k = z2 / st.z; this.setState({ z: z2, tx: mx - (mx - st.tx) * k, ty: my - (my - st.ty) * k, anim: mx === st.box.w / 2 }); }
+  fit(cap, anim) { this.manual(); const b = this.L().bounds, box = this.state.box; if (!box.w || !isFinite(b.minX)) return; const z = Math.max(ZMIN, Math.min(cap || 1.25, (box.w - 80) / (b.maxX - b.minX), (box.h - 140) / (b.maxY - b.minY))); this.setState({ z, tx: box.w / 2 - (b.minX + b.maxX) / 2 * z, ty: box.h / 2 - (b.minY + b.maxY) / 2 * z + 20, anim: anim !== false }); }
+  centreOn(id) { this.manual(); const n = this.L().nodes.find(x => this.same(x.id, id)); if (!n) return; const { z, box } = this.state; this.setState({ tx: box.w / 2 - (n.x + n.w / 2) * z, ty: box.h / 2 - (n.y + n.h / 2) * z, anim: true }); }
+  // ----- camera follows editing: the edited textarea / keyboard-selected node stays inside a comfort box -----
+  /** Eased pan over ~140 ms driven by rAF; a call mid-flight retargets from wherever the view is right now. */
+  panBy(dx, dy) {
+    this.stopPan(); const from = { tx: this.state.tx, ty: this.state.ty }, t0 = performance.now();
+    const step = now => { const p = Math.min(1, (now - t0) / 140), e = 1 - Math.pow(1 - p, 3); this.setState({ tx: from.tx + dx * e, ty: from.ty + dy * e, anim: false }); this.raf = p < 1 ? requestAnimationFrame(step) : null; };
+    this.raf = requestAnimationFrame(step);
+  }
+  stopPan() { if (this.raf) cancelAnimationFrame(this.raf); this.raf = null; }
+  /** Runs after each update; only reacts when the layout, selection, edit text, zoom or canvas size changed, never within 800 ms of a manual pan / wheel / zoom. */
+  follow() {
+    const st = this.state, box = st.box; if (!this.followOn || !this.M || !this.doc || !this.doc.map || !box.w) return;
+    const k = [this.L(), st.sel, st.editing, st.editText, box.w, box.h, st.z]; if (this._fk && k.every((v, i) => v === this._fk[i])) return; this._fk = k;
+    if (performance.now() - (this.manualAt || 0) < 800) return;
+    if (st.anim) { clearTimeout(this.followT); this.followT = setTimeout(() => { this._fk = null; this.follow(); }, 420); return; } // let a CSS view transition finish first
+    let r;
+    if (st.editing && this.taRef.current) { const cr = this.canvasRef.current.getBoundingClientRect(), tr = this.taRef.current.getBoundingClientRect(); r = { left: tr.left - cr.left, top: tr.top - cr.top, right: tr.right - cr.left, bottom: tr.bottom - cr.top }; }
+    else { const id = this.selId, n = id && this.L().nodes.find(x => this.same(x.id, id)); if (!n) return; r = { left: st.tx + n.x * st.z, top: st.ty + n.y * st.z, right: st.tx + (n.x + n.w) * st.z, bottom: st.ty + (n.y + n.h) * st.z }; }
+    const L = box.w * 0.12, R = box.w * 0.88, T = box.h * 0.2, B = box.h * 0.8; let dx = 0, dy = 0;
+    if (r.left < L) dx = L - r.left; else if (r.right > R) dx = Math.max(R - r.right, L - r.left); // too wide for the box: keep its start visible
+    if (r.top < T) dy = T - r.top; else if (r.bottom > B) dy = Math.max(B - r.bottom, T - r.top);
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) this.panBy(dx, dy);
+  }
+  onWheel = e => {
+    e.preventDefault(); this.manual(); const c = this.canvasRef.current, r = c.getBoundingClientRect(), k = e.deltaMode === 1 ? 16 : 1;
+    if (e.ctrlKey || e.metaKey) this.zoomTo(this.state.z * Math.exp(-e.deltaY * k * 0.01), e.clientX - r.left, e.clientY - r.top);
+    else this.setState(s => ({ tx: s.tx - e.deltaX * k, ty: s.ty - e.deltaY * k, anim: false }));
+  };
+  // ----- mouse: drag empty canvas to pan, drag a node onto another to reparent -----
+  onWM = e => {
+    const op = this.op; if (!op) return; const dx = e.clientX - op.sx, dy = e.clientY - op.sy;
+    if (!op.moved && Math.abs(dx) + Math.abs(dy) < 4) return; op.moved = true;
+    if (op.kind === 'pan') { this.manual(); this.setState({ tx: op.tx + dx, ty: op.ty + dy, anim: false }); return; }
+    const r = this.canvasRef.current.getBoundingClientRect(), el = document.elementFromPoint(e.clientX, e.clientY), g = el && el.closest && el.closest('[data-nid]');
+    let over = g ? g.getAttribute('data-nid') : null;
+    if (this.same(over, op.id) || (over && this.F(this.F(this.map, op.id) || { children: [] }, over))) over = null;
+    this.setState({ drag: { id: op.id, x: e.clientX - r.left, y: e.clientY - r.top, over } });
+  };
+  onWU = () => {
+    const op = this.op; this.op = null; if (!op) return;
+    if (op.kind === 'pan') { if (!op.moved) this.setState({ sel: null }); return; }
+    const dg = this.state.drag; if (!dg) return; this.setState({ drag: null });
+    if (dg.over) this.moveTo(op.id, dg.over, this.same(dg.over, this.map.id) ? (dg.x < this.state.tx ? 'left' : 'right') : null);
+  };
+  onKey = e => {
+    const t = e.target; if (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
+    const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase(), sel = this.selId, M = this.M; if (!M) return;
+    if (ctrl && k === 'z') { e.preventDefault(); const fn = e.shiftKey ? this.props.onRedo : this.props.onUndo; fn && fn(); return; }
+    if (ctrl && k === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); return; }
+    if (ctrl && (e.key === '=' || e.key === '+')) { e.preventDefault(); this.zoomTo(this.state.z * 1.2); return; }
+    if (ctrl && (e.key === '-' || e.key === '_')) { e.preventDefault(); this.zoomTo(this.state.z / 1.2); return; }
+    if (ctrl && e.key === '0') { e.preventDefault(); this.zoomTo(1); return; }
+    if (ctrl) return;
+    if (e.key === 'Escape') { if (sel) this.setState({ sel: null }); return; }
+    if (e.key === 'Tab') { e.preventDefault(); this.addChild(sel || this.map.id); return; }
+    if (!sel) return;
+    if (e.key === 'Enter') { e.preventDefault(); this.addSibling(sel); return; }
+    if (e.key === 'F2') { e.preventDefault(); const n = this.F(this.map, sel); this.startEdit(sel, true, n && n.text); return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.remove(sel); return; }
+    if (e.key === ' ') { e.preventDefault(); this.toggle(sel); return; }
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); this.moveSib(sel, e.key === 'ArrowUp' ? -1 : 1); return; }
+    if (/^Arrow/.test(e.key)) { e.preventDefault(); this.nav(e.key); return; }
+    if (e.key.length === 1 && !e.altKey) { e.preventDefault(); this.startEdit(sel, false, e.key); }
+  };
+  nav(key) {
+    const L = this.L(), me = L.nodes.find(n => this.same(n.id, this.selId)); if (!me) return;
+    const kids = L.nodes.filter(n => n.parentId === me.id), sibs = L.nodes.filter(n => n.parentId === me.parentId && n.dir === me.dir), i = sibs.indexOf(me);
+    const mid = a => a[Math.floor((a.length - 1) / 2)];
+    let to = null;
+    if (key === 'ArrowUp' || key === 'ArrowDown') to = sibs[i + (key === 'ArrowUp' ? -1 : 1)];
+    else if (me.depth === 0) to = mid(kids.filter(n => n.dir === (key === 'ArrowRight' ? 1 : -1)));
+    else if ((key === 'ArrowRight') === (me.dir > 0)) to = mid(kids);
+    else to = L.nodes.find(n => n.id === me.parentId);
+    if (to) { this.followOn = true; this.setState({ sel: to.id }); }
+  }
+  // ----- png: the same layout drawn onto a canvas -----
+  nodeView(b) {
+    const n = b.n, fill = n.fill ? '#' + n.fill : null, fg = n.color ? '#' + n.color : null;
+    if (b.depth === 0) return { bg: fill || 'var(--k7, #1D1D1F)', fg: fg || (fill ? '#1D1D1F' : 'var(--kinv, #FFFFFF)'), stroke: 'none', sw: 0 }; // theme: keep — text on a user fill stays dark
+    if (b.depth === 1) return { bg: fill || 'var(--k51, #FFFFFF)', fg: fg || (fill ? '#1D1D1F' : 'var(--k1, #1D1D1F)'), stroke: b.color, sw: 1.5 }; // theme: keep
+    return { bg: fill || 'var(--k68, rgba(255,255,255,0.72))', fg: fg || (fill ? '#3A3A3C' : 'var(--k9, #3A3A3C)'), stroke: 'var(--k36, rgba(0,0,0,0.12))', sw: 1 }; // theme: keep
+  }
+  exportPng() {
+    const M = this.M, L = this.L(), b = L.bounds, P = 48, S = 2, W = Math.ceil(b.maxX - b.minX + P * 2), H = Math.ceil(b.maxY - b.minY + P * 2);
+    const c = document.createElement('canvas'); c.width = W * S; c.height = H * S; const g = c.getContext('2d'); g.scale(S, S);
+    g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H); g.translate(P - b.minX, P - b.minY); g.lineCap = 'round';
+    for (const e of L.edges) { g.strokeStyle = e.color; g.lineWidth = e.sw; g.stroke(new Path2D(e.d)); }
+    g.textBaseline = 'middle';
+    for (const n of L.nodes) {
+      const v = this.nodeView(n), s = n.s; for (const k of ['bg', 'fg', 'stroke']) v[k] = lit(v[k]); // the PNG is the document: always the light colours
+      g.beginPath(); g.roundRect(n.x, n.y, n.w, n.h, s.rx); g.fillStyle = v.bg; g.fill(); if (v.sw) { g.strokeStyle = v.stroke; g.lineWidth = v.sw; g.stroke(); }
+      if (n.n.icon) { g.font = `${s.fs * 1.2}px ${M.FONT}`; g.fillStyle = '#1D1D1F'; g.fillText(M.glyph(n.n.icon), n.x + s.px, n.y + s.py + s.lh / 2 + 1); }
+      g.font = `${s.fw} ${s.fs}px ${M.FONT}`; g.fillStyle = v.fg;
+      n.lines.forEach((l, i) => g.fillText(l, n.x + s.px + n.iw, n.y + s.py + s.lh * (i + 0.5) + 1));
+      if (n.badge) { const bx = n.dir > 0 ? n.x + n.w + 12 : n.x - 12, by = n.y + n.h / 2; g.beginPath(); g.arc(bx, by, 9, 0, Math.PI * 2); g.fillStyle = n.color; g.fill(); g.fillStyle = '#fff'; g.font = `600 10px ${M.FONT}`; g.textAlign = 'center'; g.fillText(String(n.badge), bx, by + 0.5); g.textAlign = 'left'; }
+    }
+    c.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = (this.doc.title || 'mindmap') + '.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); this.toast('已导出 PNG'); }, 'image/png');
+  }
+  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0, width: 900 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); }
+  renderVals() {
+    const M = this.M, st = this.state, d = this.doc, pure = !!this.props.pure, showOutline = !pure && this.props.showThumbs !== false;
+    const base = {
+      md, stop: e => e.stopPropagation(), notPure: !pure, rootRef: this.rootRef, canvasRef: this.canvasRef, taRef: this.taRef, onKey: this.onKey,
+      barL: pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !pure ? '48px' : '0px', spD: this.props.merged && !pure ? 'flex' : 'none', barR: this.props.barRight || '12px',
+      fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
+      aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(),
+      cols: showOutline ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)', showOutline, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      tabs: [], tools: [], bubbleOpen: false, rbx: '200px', bMax: '760px', tabKey: st.tab, outline: [], edges: [], nodes: [], tf: 'none', tfTr: 'none', cursor: 'default', isEditing: false, hasGhost: false, hasSel: false, noteGlyph: { __html: '' },
+      onCanvasDown: () => { }, statCount: '', zPct: 100, zPctText: '100%', onZoomSlide: () => { }, zoomIn: () => { }, zoomOut: () => { }, fitClick: () => { }
+    };
+    if (!M || !d || !d.map) return base;
+    const L = this.L(), R = id => this.resolveId(id), sel = this.selId, selNode = this.selNode, level1 = selNode && M.parentOf(d.map, sel) === d.map;
+    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick: () => { if (!o.dis) onClick(); }, title: o.title || label, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || '13.5px', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k1, #1D1D1F)' });
+    const SW = (hex, cur, key) => ({ isSw: true, sw: '#' + hex, title: '#' + hex, bg: cur === hex ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onClick: () => sel && this.patch(sel, { [key]: hex }) });
+    const SEP = { isSep: true }, LBL = label => ({ isLbl: true, label });
+    const need = fn => sel ? fn() : this.toast('先选中一个主题');
+    const SETS = {
+      home: [B('↶', () => this.props.onUndo && this.props.onUndo(), { title: '撤销 Ctrl+Z' }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: '重做 Ctrl+Y' }), SEP,
+        B('新增子主题', () => this.addChild(sel || d.map.id), { title: 'Tab' }), B('新增同级', () => need(() => this.addSibling(sel)), { title: 'Enter', dis: !sel || sel === d.map.id }), B('删除', () => need(() => this.remove(sel)), { title: 'Delete', dis: !sel || sel === d.map.id }), SEP,
+        B(selNode && selNode.collapsed ? '展开' : '折叠', () => need(() => this.toggle(sel)), { title: '空格', dis: !selNode || !(selNode.children || []).length || sel === d.map.id }), SEP,
+        B('上移', () => need(() => this.moveSib(sel, -1)), { title: 'Alt+↑', dis: !sel || sel === d.map.id }), B('下移', () => need(() => this.moveSib(sel, 1)), { title: 'Alt+↓', dis: !sel || sel === d.map.id }), SEP,
+        B('放左侧', () => need(() => this.patch(sel, { side: 'left' })), { dis: !level1, on: level1 && selNode.side === 'left', title: '一级分支放到左侧' }), B('放右侧', () => need(() => this.patch(sel, { side: 'right' })), { dis: !level1, on: level1 && selNode.side === 'right', title: '一级分支放到右侧' })],
+      style: [LBL('填充'), B('无', () => need(() => this.patch(sel, { fill: '' })), { on: selNode && !selNode.fill, fs: '12px' }), ...FILLS.map(h => SW(h, selNode && selNode.fill, 'fill')), SEP,
+        LBL('文字'), B('默认', () => need(() => this.patch(sel, { color: '' })), { on: selNode && !selNode.color, fs: '12px' }), ...TEXTS.map(h => SW(h, selNode && selNode.color, 'color')), SEP,
+        LBL('图标'), B('无', () => need(() => this.patch(sel, { icon: '' })), { on: selNode && !selNode.icon, fs: '12px' }), ...M.ICONS.map(([name, g]) => Object.assign(B(g, () => need(() => this.patch(sel, { icon: name })), { on: selNode && selNode.icon === name, title: name, fs: '16px' })))],
+      view: [...[50, 100, 150, 200].map(p => B(p + '%', () => this.zoomTo(p / 100), { on: Math.round(st.z * 100) === p })), B('适应画布', () => this.fit(1.25)), SEP,
+        B('全部展开', () => this.setAll(false)), B('全部折叠', () => this.setAll(true)), SEP, B('缩略图', () => this.props.onToggleThumbs && this.props.onToggleThumbs(), { on: showOutline, title: '显示/隐藏左侧大纲' })],
+      export: [B('导出 PNG', () => this.exportPng()), SEP, B('转为 Markdown 大纲', () => this.props.onConvert && this.props.onConvert('md')), B('转为 Word', () => this.props.onConvert && this.props.onConvert('docx')), B('转为演示', () => this.props.onConvert && this.props.onConvert('pptx'))]
+    };
+    const tab = st.tab;
+    const tabs = [['home', '开始'], ['style', '样式'], ['view', '视图'], ['export', '导出']].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => this.openTab(k, e) }; });
+    const outline = []; M.walk(d.map, (n, p, depth) => outline.push({ text: n.text || '（空）', indent: (10 + depth * 13) + 'px', fw: depth === 0 ? 600 : depth === 1 ? 500 : 400, bg: R(n.id) === sel ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent', mark: n.collapsed && (n.children || []).length ? '▸' : '', onClick: () => { this.setState({ sel: n.id }); this.centreOn(n.id); } }));
+    const { z, tx, ty } = st, dg = st.drag;
+    const nodes = L.nodes.map(b => {
+      const v = this.nodeView(b), s = b.s, n = b.n, bid = R(b.id), isSel = bid === sel, editing = !!st.editing && R(st.editing) === bid, over = !!dg && R(dg.over) === bid;
+      const inner = b.lines.map((l, i) => `<tspan x="${s.px + b.iw}" y="${(s.py + s.lh * (i + 0.5) + s.fs * 0.36).toFixed(1)}">${esc(l)}</tspan>`).join('');
+      return {
+        id: b.id, tf: `translate(${b.x}px,${b.y}px)`, w: b.w + 'px', h: b.h + 'px', rx: s.rx + 'px', bg: v.bg, stroke: v.stroke, sw: v.sw, fg: v.fg, fs: s.fs + 'px', fw: s.fw, inner: { __html: editing ? '' : inner }, color: b.color,
+        cursor: dg ? 'grabbing' : 'pointer', op: dg && R(dg.id) === bid ? 0.45 : 1,
+        ring: isSel || over || !!n.ai, rw: (b.w + 8) + 'px', rh: (b.h + 8) + 'px', rrx: (s.rx + 4) + 'px', ringColor: over ? 'var(--k59, #3F7D5C)' : isSel ? 'var(--k1, #1D1D1F)' : '#7FB59A', ringW: isSel ? 2 : 3, ringDash: over ? '5 4' : 'none', ringFill: over ? 'color-mix(in srgb, var(--k59, #3F7D5C) 8%, transparent)' : n.ai && !isSel ? 'rgba(127,181,154,0.14)' : 'none',
+        hasIcon: !!n.icon && !editing, itf: `translate(${s.px}px,${(s.py + s.lh / 2 + s.fs * 0.45).toFixed(1)}px)`, ifs: (s.fs * 1.2) + 'px', iconHtml: { __html: M.glyph(n.icon) },
+        hasNote: !!n.note, ntf: `translate(${b.w - 13}px,-3px)`, hasBadge: b.badge > 0, btf: `translate(${b.dir > 0 ? b.w + 12 : -12}px,${b.h / 2}px)`, badgeHtml: { __html: String(b.badge) },
+        onMD: e => { if (e.button !== 0) return; e.stopPropagation(); if (editing) return; e.preventDefault(); this.commitEdit(); this.focusRoot(); this.followOn = false; this.setState({ sel: b.id }); this.op = { kind: 'node', id: b.id, sx: e.clientX, sy: e.clientY, moved: false }; },
+        onDbl: e => { e.stopPropagation(); this.startEdit(b.id, true, n.text); }
+      };
+    });
+    const ed = st.editing && L.nodes.find(b => this.same(b.id, st.editing)), es = ed && ed.s;
+    const ghost = dg && this.F(d.map, dg.id);
+    return Object.assign(base, {
+      tabs, tools: SETS[tab] || [], bubbleOpen: st.bubble && !pure, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(820, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, outline,
+      edges: L.edges, nodes, tf: `translate(${tx}px,${ty}px) scale(${z})`, tfTr: st.anim ? 'transform .4s cubic-bezier(.2,1,.3,1)' : 'none', cursor: this.op && this.op.kind === 'pan' && this.op.moved ? 'grabbing' : 'default',
+      onCanvasDown: e => { if (e.button !== 0) return; this.commitEdit(); this.focusRoot(); this.followOn = false; this.op = { kind: 'pan', sx: e.clientX, sy: e.clientY, tx, ty, moved: false }; },
+      isEditing: !!ed, editText: st.editText, edL: ed ? (tx + ed.x * z) + 'px' : 0, edT: ed ? (ty + ed.y * z) + 'px' : 0, edW: ed ? Math.max(ed.w * z, 60) + 'px' : 0, edH: ed ? ed.h * z + 'px' : 0, edPad: ed ? `${(es.py - 2) * z}px ${(es.px - 2) * z}px` : 0, edRx: ed ? es.rx * z + 'px' : 0, edFs: ed ? es.fs * z + 'px' : 0, edLh: ed ? es.lh * z + 'px' : 0, edFw: ed ? es.fw : 400,
+      onEditText: e => this.setState({ editText: e.target.value }),
+      onEditKey: e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); this.commitEdit(); this.focusRoot(); } else if (e.key === 'Escape') { e.preventDefault(); this.edDone = true; this.setState({ editing: null }); this.focusRoot(); } else if (e.key === 'Tab') { e.preventDefault(); const id = st.editing; this.commitEdit(); this.addChild(id); } },
+      onEditBlur: () => this.commitEdit(),
+      hasGhost: !!ghost, gx: dg ? (dg.x + 14) + 'px' : 0, gy: dg ? (dg.y + 14) + 'px' : 0, ghostText: ghost ? ghost.text || '（空）' : '',
+      statCount: `${M.count(d.map)} 个主题`, zPct: Math.round(z * 100), zPctText: Math.round(z * 100) + '%',
+      onZoomSlide: e => this.zoomTo(+e.target.value / 100), zoomIn: () => this.zoomTo(z * 1.2), zoomOut: () => this.zoomTo(z / 1.2), fitClick: () => this.fit(1.25),
+      hasSel: !!selNode, selText: selNode ? selNode.text || '（空）' : '', note: selNode ? selNode.note || '' : '', noteGlyph: { __html: '✎' },
+      onNoteFocus: () => this.props.onChange && this.props.onChange(structuredClone(d)),
+      onNote: e => { const v = e.target.value; this.commit(m => { const n = this.F(m, sel); if (!n) return; if (v) n.note = v; else delete n.note; }, { silent: true }); }
+    });
+  }
+}
+</script>
+</body>
+</html>

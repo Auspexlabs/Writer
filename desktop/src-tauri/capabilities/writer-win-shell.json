@@ -1,0 +1,25 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "writer-win-shell",
+  "description": "The Windows window pages that the bundled engine serves on 127.0.0.1 may call Writer's own shell commands (report the window title and state, keep the shared settings, show the open and Save dialogs, list and open recent files, snap their window to a layout zone) and drive their own frameless window from the design's title bar (drag, double-click to maximize, minimize, maximize, close). Nothing else: no file system, shell or other windows.",
+  "windows": ["main-*"],
+  "platforms": ["windows"],
+  "remote": {
+    "urls": ["http://127.0.0.1:*"]
+  },
+  "permissions": [
+    "allow-shell-state",
+    "allow-settings-set",
+    "allow-open-files",
+    "allow-save-dialog",
+    "allow-recent-files",
+    "allow-open-recent",
+    "allow-snap-window",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-is-maximized",
+    "core:window:allow-close"
+  ]
+}

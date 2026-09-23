@@ -1,0 +1,13 @@
+{
+  "name": "writer-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "prepare:engine": "node scripts/prepare-engine.mjs",
+    "dev": "npm run prepare:engine && tauri dev",
+    "build": "npm run prepare:engine && tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

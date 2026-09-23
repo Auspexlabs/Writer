@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./theme-dark.css">
+<link rel="icon" href="./assets/writer-logo-light.svg">
+<link rel="stylesheet" href="./theme-page.css">
+<script>(function () { try { var s = JSON.parse(localStorage.getItem('writer-settings') || '{}'), t = s.theme || 'light'; if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = t; } catch (e) { } })();</script>
+<script src="./memo.js"></script>
+<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./assets/fonts/fonts.css">
+<style>
+html,body{margin:0;height:100%;background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+*{box-sizing:border-box}
+html,body{transition:background .3s}
+/* settings (prefs.js applyTo sets these on <html>): accent, reduced motion, AI off, density — the defaults add nothing */
+html[data-accent][data-accent]{--k59:var(--accent)}
+html[data-accent] [data-accent-btn]{background:var(--accent)!important;color:#FFFFFF!important}
+html[data-motion="reduce"] *,html[data-motion="reduce"] *::before,html[data-motion="reduce"] *::after{transition-duration:.12s!important;transition-delay:0s!important;transition-timing-function:ease-out!important;animation-duration:.12s!important;animation-iteration-count:1!important}
+html[data-ai="off"] [title="AI 助手"],html[data-ai="off"] [data-ai-ui]{display:none!important}
+html[data-density="compact"] :is([data-glass-bar],[data-shell-bar],[data-menu]) button{height:30px!important}
+html[data-density="compact"] [data-bubble] button[style*="min-width"]{height:28px!important}
+html[data-density="loose"] :is([data-glass-bar],[data-shell-bar],[data-menu]) button{height:38px!important}
+html[data-density="loose"] [data-bubble] button[style*="min-width"]{height:36px!important}
+a{color:var(--k2, #2F5D8A)}a:hover{color:var(--k3, #1F4468)}
+button,input,select,textarea{font-family:inherit;color:inherit}
+*{scrollbar-width:thin;scrollbar-color:transparent transparent}
+*:hover{scrollbar-color:var(--k4, rgba(0,0,0,0.22)) transparent}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.wd-ed [data-ai]{background:var(--k46, #DCEBDF);box-shadow:0 0 0 3px var(--k46, #DCEBDF);border-radius:2px}
+</style>
+</helmet>
+<div onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" style="height:{{ rootH }};min-width:720px;position:relative;overflow:hidden;background:var(--k0, #FFFFFF)">
+  <div style="position:absolute;top:0;left:0;bottom:0;right:{{ edRight }};display:flex;flex-direction:column;min-width:0;transition:right .55s cubic-bezier(.2,1,.3,1)">
+  <sc-if value="{{ neverShow }}" hint-placeholder-val="{{ false }}">
+
+  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
+    <div style="grid-column:1 / -1;height:42px;display:flex;align-items:flex-end;gap:2px;padding:0 10px 0 14px;background:var(--k5, #ECE8DF);border-bottom:1px solid var(--k6, #E5E5EA)">
+      <div style="display:flex;align-items:center;gap:8px;height:42px;padding-right:12px;flex:none">
+        <div style="width:18px;height:18px;border-radius:5px;background:var(--k7, #1D1D1F)"></div>
+        <span style="font-weight:600;font-size:14px">素笺</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:2px;min-width:0;overflow-x:auto;flex:0 1 auto">
+        <sc-for list="{{ docRows }}" as="r" hint-placeholder-count="3">
+          <div onClick="{{ r.onClick }}" onMouseDown="{{ r.onMid }}" title="{{ r.title }}" style="height:34px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;border-radius:8px 8px 0 0;background:{{ r.bg }};box-shadow:{{ r.sh }};font-size:13px;cursor:pointer;min-width:120px;max-width:210px;flex:none;position:relative;top:1px" style-hover="background:{{ r.hover }}">
+            <span style="width:16px;height:16px;flex:none;display:block;background-image:url({{ r.icon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;font-weight:{{ r.fw }}">{{ r.title }}</span>
+            <button onClick="{{ r.onClose }}" title="关闭" style="width:20px;height:20px;flex:none;border:none;border-radius:5px;background:transparent;font-size:12px;color:var(--k8, #8E8E93);cursor:pointer;padding:0" style-hover="background:var(--k6, #E5E5EA)">✕</button>
+          </div>
+        </sc-for>
+      </div>
+      <button onClick="{{ openCreate }}" title="新建" style="width:30px;height:30px;margin:0 0 4px 4px;flex:none;border:none;border-radius:7px;background:{{ newBg }};font-size:16px;cursor:pointer;color:var(--k9, #3A3A3C)" style-hover="background:var(--k6, #E5E5EA)">＋</button>
+      <div style="flex:1"></div>
+      <button onClick="{{ openFile }}" style="height:28px;margin-bottom:6px;padding:0 12px;flex:none;border:1px solid var(--k10, #D1D1D6);border-radius:7px;background:var(--k0, #FFFFFF);font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k0, #FFFFFF)">打开文件</button>
+    </div>
+  </sc-if>
+  </sc-if>
+
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;flex:1">
+    <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--k8, #8E8E93)">正在准备…</div>
+    </sc-if>
+    <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow:auto;display:flex;justify-content:center;padding:88px 40px 40px">
+        <div style="width:100%;max-width:680px;display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="margin-bottom:10px"><img class="wr-logo-light" src="./assets/writer-logo-light.svg" alt="Writer" style="width:56px;height:56px;display:block"><img class="wr-logo-dark" src="./assets/writer-logo-dark.svg" alt="Writer" style="width:56px;height:56px;display:block"></div>
+            <div style="font-family:'Noto Serif SC',serif;font-size:32px;font-weight:600">想创建什么？</div>
+            <div style="font-size:14px;color:var(--k11, #6E6E73)">{{ createSub }}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ typeTabs }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.onClick }}" style="height:34px;padding:0 14px;display:flex;align-items:center;gap:8px;border:1px solid {{ t.border }};border-radius:8px;background:{{ t.bg }};font-size:13.5px;cursor:pointer">
+                <span style="width:18px;height:18px;flex:none;display:block;background-image:url({{ t.icon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>{{ t.label }}
+              </button>
+            </sc-for>
+            <div style="flex:1"></div>
+            <button onClick="{{ createBlank }}" style="height:34px;padding:0 14px;border:1px dashed var(--k10, #D1D1D6);border-radius:8px;background:transparent;font-size:13px;color:var(--k9, #3A3A3C);cursor:pointer" style-hover="background:var(--k12, #F2F2F7)">{{ blankLabel }}</button>
+          </div>
+          <div data-ai-ui="1" style="border:1px solid var(--k10, #D1D1D6);border-radius:12px;background:var(--k0, #FFFFFF);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+            <textarea value="{{ prompt }}" onChange="{{ onPrompt }}" onKeyDown="{{ onPromptKey }}" placeholder="{{ promptPh }}" rows="4" style="border:none;background:transparent;resize:none;font-size:15px;line-height:1.6;outline:none"></textarea>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:12.5px;color:var(--k8, #8E8E93)">回车生成 · Shift+回车换行</span>
+              <div style="flex:1"></div>
+              <button onClick="{{ generate }}" style="height:34px;padding:0 18px;border:none;border-radius:8px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13.5px;font-weight:500;cursor:pointer" style-hover="background:var(--k13, #3A3A3C)">生成初稿</button>
+            </div>
+          </div>
+          <sc-if value="{{ notGenerating }}" hint-placeholder-val="{{ true }}">
+            <div data-ai-ui="1" style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:12.5px;color:var(--k8, #8E8E93)">可以从这些开始</span>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ starters }}" as="s" hint-placeholder-count="3">
+                  <button onClick="{{ s.onClick }}" style="padding:7px 12px;border:1px solid var(--k6, #E5E5EA);border-radius:999px;background:transparent;font-size:13px;color:var(--k9, #3A3A3C);cursor:pointer" style-hover="background:var(--k12, #F2F2F7)">{{ s.text }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ generating }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:10px;padding:16px 18px;border:1px solid var(--k6, #E5E5EA);border-radius:12px;background:var(--k0, #FFFFFF)">
+              <sc-for list="{{ genSteps }}" as="g" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:{{ g.color }}"><span style="width:16px;text-align:center">{{ g.mark }}</span>{{ g.label }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasRecent }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:12.5px;color:var(--k8, #8E8E93)">最近使用</span>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ recentItems }}" as="r" hint-placeholder-count="3">
+                  <button onClick="{{ r.onClick }}" title="{{ r.path }}" style="height:34px;display:flex;align-items:center;gap:10px;padding:0 10px;border:none;border-radius:8px;background:transparent;cursor:pointer;text-align:left" style-hover="background:var(--k12, #F2F2F7)">
+                    <span style="width:18px;height:18px;flex:none;display:block;background-image:url({{ r.icon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>
+                    <span style="flex:none;max-width:50%;font-size:13.5px;color:var(--k1, #1D1D1F);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                    <span style="flex:1;min-width:0;font-size:12px;color:var(--k8, #8E8E93);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.dir }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDoc }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ neverShow }}" hint-placeholder-val="{{ false }}">
+      <div style="height:48px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px 0 12px;border-bottom:1px solid var(--k6, #E5E5EA)">
+        <button onClick="{{ openFileMenu }}" style="height:30px;padding:0 12px;border:none;border-radius:7px;background:{{ fileBtnBg }};font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;flex:none" style-hover="background:#EFEFF4">文件</button>
+        <span style="width:1px;height:18px;background:var(--k6, #E5E5EA);flex:none"></span>
+        <input value="{{ title }}" onChange="{{ onTitle }}" onBlur="{{ commitTitle }}" onKeyDown="{{ onTitleKey }}" style="font-size:14.5px;font-weight:500;border:1px solid transparent;border-radius:6px;background:transparent;padding:4px 6px;flex:1;min-width:80px;max-width:280px;outline:none" style-focus="border-color:var(--k10, #D1D1D6);background:var(--k0, #FFFFFF)">
+        <span style="font-size:12.5px;color:var(--k8, #8E8E93);white-space:nowrap;flex:none">{{ metaText }}</span>
+        <div style="margin-left:auto;display:flex;padding:2px;gap:2px;border:1px solid var(--k10, #D1D1D6);border-radius:9px;flex:none">
+          <button onClick="{{ toggleThumbs }}" title="显示/隐藏左侧缩略图" style="height:26px;padding:0 10px;border:none;border-radius:6px;background:{{ thumbBtnBg }};font-size:12.5px;cursor:pointer;white-space:nowrap">缩略图</button>
+          <button onClick="{{ toggleAI }}" title="显示/隐藏右侧助手" style="height:26px;padding:0 10px;border:none;border-radius:6px;background:{{ aiBtnBg }};font-size:12.5px;cursor:pointer;white-space:nowrap">助手</button>
+          <button onClick="{{ enterPure }}" title="纯净模式：只保留编辑区 (Ctrl+.)" style="height:26px;padding:0 10px;border:none;border-radius:6px;background:transparent;font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k12, #F2F2F7)">纯净模式</button>
+        </div>
+        <button onClick="{{ doShare }}" style="height:30px;padding:0 14px;border:1px solid var(--k10, #D1D1D6);border-radius:8px;background:transparent;font-size:13px;cursor:pointer;white-space:nowrap;flex:none" style-hover="background:var(--k12, #F2F2F7)">分享</button>
+        <button onClick="{{ doDownload }}" style="height:30px;padding:0 14px;border:none;border-radius:8px;background:var(--k7, #1D1D1F);font-size:13px;color:var(--kinv, #fff);cursor:pointer;white-space:nowrap;flex:none" style-hover="background:var(--k13, #3A3A3C)">{{ dlLabel }}</button>
+      </div>
+      </sc-if>
+      <div style="flex:1;min-height:0;position:relative">
+        <sc-if value="{{ isDocx }}" hint-placeholder-val="{{ false }}">
+          <dc-import name="WordEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-revise="{{ onRevise }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+        </sc-if>
+        <sc-if value="{{ isXlsx }}" hint-placeholder-val="{{ false }}">
+          <dc-import name="SheetEditor" grid="{{ gridOn }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+        </sc-if>
+        <sc-if value="{{ isPptx }}" hint-placeholder-val="{{ false }}">
+          <dc-import name="SlideEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+        </sc-if>
+        <sc-if value="{{ isMd }}" hint-placeholder-val="{{ false }}">
+          <dc-import name="MarkdownEditor" auto-format="{{ mdAuto }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+        </sc-if>
+        <sc-if value="{{ isMm }}" hint-placeholder-val="{{ false }}">
+          <dc-import name="MindMapEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+        </sc-if>
+        <sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}">
+          <dc-import name="PdfEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+        </sc-if>
+        <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}">
+          <button data-pop="menu" onClick="{{ exitPure }}" style="position:absolute;top:12px;right:14px;z-index:200;height:30px;padding:0 14px;border-radius:999px;font-size:12px;color:var(--k11, #6E6E73);cursor:pointer;opacity:0.55;transition:opacity .3s,transform .35s cubic-bezier(.2,1.4,.4,1);background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 8px 24px var(--k19, rgba(0,0,0,0.1))" style-hover="opacity:1" style-active="transform:scale(0.94)">退出纯净模式 · Esc</button>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+  </div>
+
+  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ desktopMac }}" hint-placeholder-val="{{ false }}">
+      <div data-tauri-drag-region style="position:absolute;top:0;left:0;right:0;height:52px;z-index:20"></div>
+    </sc-if>
+    <div ref="{{ leftPillRef }}" data-shell-bar="1" style="position:absolute;top:{{ lpTop }};left:{{ lpLeft }};opacity:{{ lpOp }};max-width:{{ lpMaxW }};z-index:50;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:{{ lpBg }};backdrop-filter:{{ lpBf }};-webkit-backdrop-filter:{{ lpBf }};border:{{ lpBd }};box-shadow:{{ lpSh }};transition:left .42s cubic-bezier(.32,.72,0,1),top .42s cubic-bezier(.32,.72,0,1),background .35s,box-shadow .35s,opacity .3s">
+      <sc-if value="{{ hasMac }}" hint-placeholder-val="{{ false }}">
+        <div onMouseEnter="{{ macHoverOn }}" onMouseLeave="{{ macHoverOff }}" style="display:flex;align-items:center;gap:8px;padding:0 10px 0 9px;height:34px">
+          <button onClick="{{ macClose }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:{{ macC1 }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,0.55)">{{ macG1 }}</button>
+          <button onClick="{{ macMin }}" title="最小化" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:{{ macC2 }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,0.55)">{{ macG2 }}</button>
+          <button onClick="{{ macZoom }}" title="全屏" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:{{ macC3 }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1;color:rgba(0,0,0,0.55)">{{ macG3 }}</button>
+        </div>
+      </sc-if>
+      <button onClick="{{ toggleThumbs }}" title="显示/隐藏侧边栏" style="width:40px;height:34px;border:none;border-radius:999px;background:{{ thumbBtnBg }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)">
+        <span style="position:relative;width:19px;height:15px;border:1.7px solid var(--k7, #1D1D1F);border-radius:4.5px;box-sizing:border-box;display:block">
+          <span style="position:absolute;left:5px;top:0;bottom:0;border-left:1.7px solid var(--k7, #1D1D1F)"></span>
+          <span style="position:absolute;left:1.5px;top:2.5px;width:2.2px;height:1.4px;background:var(--k7, #1D1D1F);border-radius:1px"></span>
+          <span style="position:absolute;left:1.5px;top:5.2px;width:2.2px;height:1.4px;background:var(--k7, #1D1D1F);border-radius:1px"></span>
+          <span style="position:absolute;left:1.5px;top:7.9px;width:2.2px;height:1.4px;background:var(--k7, #1D1D1F);border-radius:1px"></span>
+        </span>
+      </button>
+      <button onClick="{{ openDocs }}" title="切换文档" style="height:34px;max-width:{{ ttlMax }};opacity:{{ ttlOp }};overflow:hidden;padding:{{ ttlPad }};transition:max-width .42s cubic-bezier(.32,.72,0,1) {{ ttlDelay }},opacity .3s ease {{ ttlDelay }},padding .42s cubic-bezier(.32,.72,0,1) {{ ttlDelay }},background .25s;border:none;border-radius:999px;background:{{ docsBtnBg }};cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)">
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ barTitle }}</span>
+        <span style="width:6px;height:6px;flex:none;border-right:1.7px solid var(--k7, #1D1D1F);border-bottom:1.7px solid var(--k7, #1D1D1F);transform:translateY(-2px) rotate(45deg);transition:transform .35s cubic-bezier(.2,1.4,.4,1)"></span>
+      </button>
+    </div>
+    <div ref="{{ rightPillRef }}" data-shell-bar="1" style="position:absolute;top:10px;right:12px;z-index:50;display:{{ rightPillDisp }};align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
+      <button onClick="{{ toggleAI }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBtnBg }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
+      <sc-if value="{{ isDoc }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ enterPure }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)">
+          <span style="position:relative;width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center">
+            <span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span>
+          </span>
+        </button>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasDocs }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeDocs }}" style="position:fixed;inset:0;z-index:200"></div>
+    <div data-pop="menu" data-menu="1" style="position:absolute;top:56px;left:12px;z-index:201;width:300px;padding:8px;border-radius:22px;display:flex;flex-direction:column;gap:2px;transform-origin:top left;background:linear-gradient(180deg,var(--k23, rgba(255,255,255,0.82)),var(--k24, rgba(255,255,255,0.64)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k25, #fff),0 18px 48px var(--k26, rgba(0,0,0,0.16)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
+      <sc-if value="{{ isDoc }}" hint-placeholder-val="{{ true }}">
+        <input value="{{ title }}" onChange="{{ onTitle }}" onBlur="{{ commitTitle }}" onKeyDown="{{ onTitleKey }}" placeholder="文档名称" style="height:36px;margin:2px 2px 6px;padding:0 12px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:12px;background:var(--k27, rgba(255,255,255,0.75));font-size:14px;font-weight:500;outline:none;color:var(--k1, #1D1D1F)" style-focus="box-shadow:0 0 0 3px color-mix(in srgb, var(--k59, #3F7D5C) 18%, transparent)">
+        <div style="padding:0 12px 6px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ metaText }}</div>
+      </sc-if>
+      <div style="padding:6px 12px 4px;font-size:11.5px;color:var(--k8, #8E8E93)">打开的文档</div>
+      <sc-for list="{{ docRows }}" as="r" hint-placeholder-count="0">
+        <div onClick="{{ r.onClick }}" style="height:38px;display:flex;align-items:center;gap:10px;padding:0 6px 0 10px;border-radius:12px;background:{{ r.bg }};cursor:pointer;transition:background .2s" style-hover="background:var(--k27, rgba(255,255,255,0.75))">
+          <span style="width:20px;height:20px;flex:none;display:block;background-image:url({{ r.icon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>
+          <span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ r.fw }}">{{ r.title }}</span>
+          <button onClick="{{ r.onClose }}" title="关闭" style="width:24px;height:24px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k8, #8E8E93);cursor:pointer" style-hover="background:var(--k28, rgba(0,0,0,0.08))">✕</button>
+        </div>
+      </sc-for>
+      <div style="height:1px;background:var(--k29, rgba(0,0,0,0.1));margin:6px 8px"></div>
+      <div style="display:flex;gap:4px;padding:2px">
+        <button onClick="{{ openCreate }}" style="flex:1;height:34px;border:none;border-radius:12px;background:var(--k30, rgba(255,255,255,0.6));font-size:13px;cursor:pointer;color:var(--k1, #1D1D1F)" style-hover="background:var(--k31, rgba(255,255,255,0.95))">新建…</button>
+        <button onClick="{{ openFile }}" style="flex:1;height:34px;border:none;border-radius:12px;background:var(--k30, rgba(255,255,255,0.6));font-size:13px;cursor:pointer;color:var(--k1, #1D1D1F)" style-hover="background:var(--k31, rgba(255,255,255,0.95))">打开文件…</button>
+      </div>
+      <sc-if value="{{ notMac }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ openSettings }}" style="height:34px;margin:2px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border:none;border-radius:12px;background:transparent;font-size:13px;cursor:pointer;color:var(--k1, #1D1D1F)" style-hover="background:var(--k27, rgba(255,255,255,0.75))"><span>设置</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--k8, #8E8E93)">Ctrl ,</span></button>
+      <button onClick="{{ toggleDark }}" style="height:34px;margin:0 2px 2px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border:none;border-radius:12px;background:transparent;font-size:13px;cursor:pointer;color:var(--k1, #1D1D1F)" style-hover="background:var(--k27, rgba(255,255,255,0.75))"><span>{{ darkLabel }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--k8, #8E8E93)">Ctrl ⇧ L</span></button>
+            <div style="display:flex;gap:2px;padding:0 2px 2px">
+        <button onClick="{{ openAbout }}" style="flex:1;height:30px;border:none;border-radius:10px;background:transparent;font-size:12px;cursor:pointer;color:var(--k8, #8E8E93)" style-hover="background:var(--k27, rgba(255,255,255,0.75));color:var(--k1, #1D1D1F)">关于 Writer</button>
+        <button onClick="{{ openGestures }}" style="flex:1;height:30px;border:none;border-radius:10px;background:transparent;font-size:12px;cursor:pointer;color:var(--k8, #8E8E93)" style-hover="background:var(--k27, rgba(255,255,255,0.75));color:var(--k1, #1D1D1F)">触控板手势</button>
+      </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showPanel }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="right" style="position:absolute;top:10px;right:10px;bottom:10px;width:{{ panelW }};z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,var(--k32, rgba(255,255,255,0.5)),var(--k33, rgba(255,255,255,0.32)));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 14px 40px var(--k19, rgba(0,0,0,0.1))">
+      <div style="height:46px;flex:none;display:flex;align-items:center;padding:0 10px 0 18px;gap:8px;font-size:13px">
+        <span style="font-size:12px">✦</span><span style="font-size:14px;font-weight:600">AI</span>
+        <div style="flex:1"></div>
+        <button onClick="{{ toggleAI }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k11, #6E6E73);cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k31, rgba(255,255,255,0.95))" style-active="transform:scale(0.88)">✕</button>
+      </div>
+      <div ref="{{ chatRef }}" style="flex:1;min-height:0;overflow:auto;padding:8px 18px 14px;display:flex;flex-direction:column;gap:18px">
+        <sc-if value="{{ noMsgs }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.7;color:var(--k11, #6E6E73);padding-top:8px">
+            <span style="font-family:'Noto Serif SC',serif;font-size:18px;font-weight:600;color:var(--k1, #1D1D1F)">有什么需要帮忙？</span>
+            <span>{{ welcome }}</span>
+            <sc-if value="{{ needsModel }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ openAiSettings }}" style="align-self:flex-start;margin-top:4px;height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">打开设置</button>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-for list="{{ msgs }}" as="m" hint-placeholder-count="0">
+          <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+            <div style="align-self:flex-end;max-width:88%;padding:8px 13px;border-radius:14px;background:var(--k17, rgba(0,0,0,0.07));color:var(--k1, #1D1D1F);font-size:13.5px;line-height:1.6;white-space:pre-wrap">{{ m.text }}</div>
+          </sc-if>
+          <sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.7;color:var(--k1, #1D1D1F)">
+              <div style="white-space:pre-wrap;font-family:'Noto Serif SC',serif;font-size:14px">{{ m.text }}</div>
+              <sc-if value="{{ m.setup }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ openAiSettings }}" style="align-self:flex-start;height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">打开设置</button>
+              </sc-if>
+              <sc-if value="{{ m.hasSteps }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--k8, #8E8E93);font-family:'IBM Plex Mono',monospace">
+                  <sc-for list="{{ m.steps }}" as="s" hint-placeholder-count="1">
+                    <div title="{{ s.text }}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:{{ s.color }}">{{ s.mark }}</span> {{ s.text }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.hasChange }}" hint-placeholder-val="{{ false }}">
+                <div data-pop="menu" style="display:flex;flex-direction:column;gap:6px;padding:2px 0 0 12px;border-left:2px solid color-mix(in srgb, var(--k59, #3F7D5C) 35%, transparent)">
+                  <sc-for list="{{ m.items }}" as="it" hint-placeholder-count="1">
+                    <div style="display:flex;gap:8px;font-size:12.5px;color:var(--k11, #6E6E73)"><span style="color:var(--k35, #3F7D5C);flex:none">{{ it.kind }}</span><span>{{ it.label }}</span></div>
+                  </sc-for>
+                  <sc-if value="{{ m.pending }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:6px;padding-top:2px">
+                      <button onClick="{{ m.onKeep }}" style="height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">保留</button>
+                      <button onClick="{{ m.onUndo }}" style="height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k17, rgba(0,0,0,0.07));font-size:12.5px;cursor:pointer;color:var(--k1, #1D1D1F);transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k36, rgba(0,0,0,0.12))" style-active="transform:scale(0.94)">撤销</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ m.settled }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:12px;color:var(--k8, #8E8E93)">{{ m.statusText }}</div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </sc-for>
+        <sc-if value="{{ thinking }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:5px;padding:4px 0">
+            <span style="width:6px;height:6px;border-radius:50%;background:#8E8E93;animation:blink 1s infinite"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#8E8E93;animation:blink 1s .2s infinite"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#8E8E93;animation:blink 1s .4s infinite"></span>
+          </div>
+        </sc-if>
+      </div>
+      <div style="flex:none;padding:0 16px 8px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+          <button onClick="{{ c.onClick }}" style="text-align:left;padding:6px 8px;border:none;border-radius:8px;background:transparent;font-size:12.5px;color:var(--k11, #6E6E73);cursor:pointer;transition:background .2s,color .2s" style-hover="background:var(--k37, rgba(0,0,0,0.05));color:var(--k1, #1D1D1F)">↳ {{ c.text }}</button>
+        </sc-for>
+      </div>
+      <div style="flex:none;padding:0 12px 12px">
+        <div style="border:1px solid var(--k29, rgba(0,0,0,0.1));border-radius:16px;background:var(--k0, #FFFFFF);padding:8px 8px 8px 14px;display:flex;align-items:flex-end;gap:8px;box-shadow:0 2px 10px var(--k38, rgba(0,0,0,0.05))">
+          <textarea value="{{ input }}" onChange="{{ onInput }}" onKeyDown="{{ onInputKey }}" placeholder="让助手修改…" rows="1" style="flex:1;border:none;background:transparent;resize:none;font-size:13.5px;line-height:1.55;outline:none;padding:5px 0;max-height:120px"></textarea>
+          <button onClick="{{ sendInput }}" data-accent-btn="1" style="width:30px;height:30px;flex:none;border:none;border-radius:10px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:14px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.88)">↑</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <input ref="{{ fileRef }}" type="file" accept=".docx,.xlsx,.pptx,.pdf,.csv,.tsv,.txt,.md,.markdown,.html,.htm,.mm" multiple="{{ true }}" onChange="{{ onFilePick }}" style="display:none">
+
+  <sc-if value="{{ hasMenu }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeMenu }}" style="position:fixed;inset:0;z-index:200"></div>
+    <div data-pop="menu" data-menu="1" style="position:fixed;left:{{ menuX }};top:{{ menuY }};z-index:201;min-width:240px;padding:6px;border-radius:20px;display:flex;flex-direction:column;background:linear-gradient(180deg,var(--k39, rgba(255,255,255,0.84)),var(--k40, rgba(255,255,255,0.66)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k25, #fff),0 18px 48px var(--k26, rgba(0,0,0,0.16)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
+      <sc-for list="{{ menuItems }}" as="mi" hint-placeholder-count="0">
+        <sc-if value="{{ mi.isSep }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--k29, rgba(0,0,0,0.1));margin:4px 10px"></div></sc-if>
+        <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ mi.onClick }}" style="text-align:left;height:34px;padding:0 12px;border:none;background:transparent;border-radius:12px;font-size:13px;cursor:pointer;display:flex;gap:12px;align-items:center;color:{{ mi.color }};transition:background .15s" style-hover="background:var(--k41, rgba(255,255,255,0.85))"><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
+        </sc-if>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ dragging }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:12px;z-index:300;border:2px dashed color-mix(in srgb, var(--k59, #3F7D5C) 60%, transparent);border-radius:28px;background:var(--k42, rgba(255,255,255,0.55));backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500;color:var(--k1, #1D1D1F);pointer-events:none">松开以打开文件</div>
+  </sc-if>
+
+  <sc-if value="{{ hasOverlay }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeOverlay }}" style="position:absolute;inset:0;z-index:350;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--k26, rgba(0,0,0,0.16))">
+      <div data-pop="center" data-dlg="1" onMouseDown="{{ stopProp }}" style="max-height:100%;max-width:100%;overflow:auto;border-radius:18px;scrollbar-width:none">
+        <sc-if value="{{ ovPrefs }}" hint-placeholder-val="{{ false }}"><dc-import name="MacSettings" tab="{{ prefsTab }}" workspace="{{ workspace }}" on-close="{{ closeOverlay }}" hint-size="660px,480px"></dc-import></sc-if>
+        <sc-if value="{{ ovAbout }}" hint-placeholder-val="{{ false }}"><dc-import name="MacAbout" version="{{ version }}" on-close="{{ closeOverlay }}" hint-size="300px,380px"></dc-import></sc-if>
+        <sc-if value="{{ ovGestures }}" hint-placeholder-val="{{ false }}"><dc-import name="MacGestures" on-close="{{ closeOverlay }}" hint-size="560px,560px"></dc-import></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasAsk }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ askCancel }}" style="position:absolute;inset:0;z-index:360;display:flex;align-items:center;justify-content:center;background:var(--k26, rgba(0,0,0,0.16))">
+      <div data-pop="center" data-dlg="1" onMouseDown="{{ stopProp }}" style="width:320px;padding:20px 20px 16px;border-radius:16px;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.86),rgba(246,246,248,0.78)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 24px 60px rgba(0,0,0,0.24);display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:14px;font-weight:600;color:var(--k1, #1D1D1F)">「{{ askTitle }}」还没有存储</div>
+        <div style="font-size:12.5px;color:var(--k11, #6E6E73);line-height:1.5">存储后才能在访达或文件资源管理器里找到它。</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onClick="{{ askDiscard }}" style="height:30px;padding:0 14px;border:1px solid var(--k10, #D1D1D6);border-radius:8px;background:transparent;font-size:13px;cursor:pointer">不存储</button>
+          <button onClick="{{ askCancel }}" style="height:30px;padding:0 14px;border:1px solid var(--k10, #D1D1D6);border-radius:8px;background:transparent;font-size:13px;cursor:pointer">取消</button>
+          <button onClick="{{ askSave }}" style="height:30px;padding:0 16px;border:none;border-radius:8px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13px;font-weight:500;cursor:pointer">存储…</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;bottom:40px;z-index:400;display:flex;justify-content:center;pointer-events:none">
+      <div data-pop="hud" style="padding:11px 18px;border-radius:999px;background:var(--k43, rgba(29,29,31,0.72));backdrop-filter:blur(12px) saturate(180%);-webkit-backdrop-filter:blur(12px) saturate(180%);color:#fff;font-size:13px;box-shadow:inset 0 1px 0 var(--k44, rgba(255,255,255,0.18)),0 12px 32px var(--k45, rgba(0,0,0,0.2));white-space:nowrap">{{ toast }}</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"menuLayout":{"editor":"enum","options":["merged","split"],"default":"merged","tsType":"string","section":"布局"}}'>
+const TAG = { docx: { l: '文', bg: 'oklch(0.52 0.1 255)', n: '文档' }, xlsx: { l: '表', bg: 'oklch(0.52 0.1 150)', n: '表格' }, pptx: { l: '演', bg: 'oklch(0.56 0.1 45)', n: '演示' }, md: { l: 'T', bg: '#636366', n: '纯文本' }, pdf: { l: 'P', bg: 'oklch(0.52 0.14 25)', n: 'PDF' }, mm: { l: '图', bg: 'oklch(0.55 0.12 300)', n: '思维导图' } };
+const CHIPS = {
+  docx: ['把第一段精简到一半', '在标题下方加一段摘要', '把所有标题翻译成英文', '检查错别字和语病', '转成演示文稿'],
+  xlsx: ['在底部加一行合计', '把表头加粗并加底色', '标出超过 30 万的单元格', '按第二列从高到低排序'],
+  pptx: ['再加一页「风险与应对」', '每页标题改得更简洁', '加一页致谢'],
+  md: ['在开头生成目录', '转成 Word 文档', '转成演示文稿'],
+  pdf: ['总结这份 PDF', '提取文字为 Word 文档'],
+  mm: ['再展开一层要点', '把每个分支补充两条子项', '按重要性排序分支', '转成演示文稿']
+};
+const WELCOME = { docx: '我可以帮你改写、精简、插入表格，或把这份文档做成演示文稿。修改会直接写入文件，并在这里列出。', xlsx: '我可以帮你汇总、排序、标记数据，或者填充表格。', pptx: '我可以帮你加页、改标题、调整每页内容。', md: '直接在正文里写就好，# 空格变标题，- 空格变列表。我可以帮你生成目录，或转成 Word 文档、演示文稿。', pdf: '我可以帮你总结这份 PDF，或把其中的文字提取成可编辑的 Word 文档。', mm: '我可以帮你展开分支、补充要点、重排结构，或把导图转成大纲、文档和演示。Tab 加子主题，Enter 加同级，拖动主题可以换父级。' };
+const NO_CHAT = '在「设置 › AI」里填写你自己的模型 API：选服务商，填上 API Key 和模型，就能开始。';
+const STARTERS = { docx: ['写一份新员工入职指南', '起草一份合作意向书', '整理本周例会纪要'], xlsx: ['做一个家庭月度记账表', '做一个项目进度跟踪表'], pptx: ['做一份产品发布会演示', '做一份季度工作汇报'], md: ['写一篇产品更新日志', '整理读书笔记', '写一份技术方案'], mm: ['做一份产品发布计划的思维导图', '整理一本书的读书笔记', '拆解一个季度目标'] };
+const EXT_TYPE = { docx: 'docx', xlsx: 'xlsx', pptx: 'pptx', md: 'md', markdown: 'md', mm: 'mm', pdf: 'pdf' };
+const clone = o => structuredClone(o);
+const countTopics = n => 1 + (n.children || []).reduce((a, c) => a + countTopics(c), 0);
+const clearAi = n => { delete n.ai; (n.children || []).forEach(clearAi); };
+function cleanTitle(p, type) { const t = p.replace(/^(帮我|请|给我)?(写|做|生成|创建|起草|整理)(一份|一个|一套|一下)?/, '').replace(/[，。,.].*$/, '').trim(); return (t || ('未命名' + TAG[type].n)).slice(0, 18); }
+const WRITES = /^(add|set|remove|move|create|export)\b/;
+const SPELL = '.wd-ed,.wd-hf,.pt-ed,.pt-src,.se-ed,[data-edit],[data-aid],.mm-note'; // editable document text (formula and label inputs keep their own setting)
+const QUOTE = '.wd-ed,.pt-ed,.pt-src'; // smart CJK punctuation: Word and Markdown
+const MAC_DESKTOP = new URLSearchParams(location.search).get('desktop') === 'mac'; // Tauri shell on macOS: hidden title bar, traffic lights at 18/20
+const MAC_INSET = MAC_DESKTOP ? 68 : 0; // the title pill (and the xlsx toolbar that follows it) start right of the traffic lights
+let PERF = new URLSearchParams(location.search).get('perf'); try { PERF = PERF || localStorage.getItem('writerPerf'); } catch (e) { } // frame-time HUD, see perf.js
+
+class Component extends DCLogic {
+  state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showThumbs: true, pure: false, chats: {}, input: '', thinking: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [] };
+  prefs = {}; closed = new Set(); lastSel = '';
+  chatRef = React.createRef(); leftPillRef = React.createRef(); rightPillRef = React.createRef(); fileRef = React.createRef(); hist = {}; sv = {}; _len = 0; _cards = 0; _h = 0;
+  componentDidMount() {
+    import('./select-sync.js'); import('./glass.js');
+    if (PERF) { window.__shell = this; import('./perf.js'); }
+    Promise.all([import('./office-io.js'), import('./sheet-engine.js'), import('./md.js'), import('./pdf-kit.js'), import('./engine.js'), import('./prefs.js')]).then(async ([K, E, MD, PK, EN, P]) => {
+      this.K = K; this.E = E; this.MD = MD; this.PK = PK; this.EN = EN; this.P = P; this.applyTheme();
+      let files = [];
+      try { files = await EN.files(); } catch (e) { this.toastMsg('无法连接引擎：' + e.message); }
+      const p = this.prefs, s = P.loadSession(), L = P.launch(files, p, s);
+      this.closed = new Set(p.restore !== false ? (s.closed || []).filter(x => files.some(f => f.path === x)) : []);
+      this.setState({ ready: true, docs: L.docs, chatOn: EN.state.chat, model: EN.state.model, view: L.open ? 'doc' : 'create' });
+      if (L.open) this.open(L.open.id); else if (L.blank) this.createBlank(L.blank);
+    });
+    window.addEventListener('keydown', this.onKey);
+    this.applyTheme(); window.addEventListener('writer-settings', this.applyTheme); window.addEventListener('storage', this.onStorage); window.addEventListener('writer-ai', this.onAi); window.addEventListener('focus', this.onAi);
+    this.mqDark = matchMedia('(prefers-color-scheme: dark)'); this.mqDark.addEventListener('change', this.applyTheme); this.mqMotion = matchMedia('(prefers-reduced-motion: reduce)'); this.mqMotion.addEventListener('change', this.applyTheme);
+    document.addEventListener('focusin', this.onFocusIn, true); document.addEventListener('beforeinput', this.onBeforeInput, true); document.addEventListener('compositionend', this.onCompEnd, true);
+    document.addEventListener('selectionchange', this.onSelChange); document.addEventListener('select', this.onSelChange, true);
+    this.onRs = () => this.forceUpdate(); window.addEventListener('resize', this.onRs);
+    this.lpRO = new ResizeObserver(() => { const el = this.leftPillRef.current, er = this.rightPillRef.current; const u = {}; if (el) { const v = Math.round(el.offsetWidth + 24 + MAC_INSET); if (v !== this.state.barLeft) u.barLeft = v; } if (er) { const v = Math.round(er.offsetWidth + 24); if (v !== this.state.barRight) u.barRight = v; } if (Object.keys(u).length) this.setState(u); });
+    const obs = () => { if (this.leftPillRef.current && this.rightPillRef.current) { this.lpRO.observe(this.leftPillRef.current); this.lpRO.observe(this.rightPillRef.current); } else setTimeout(obs, 200); }; obs();
+    window.addEventListener('beforeunload', e => { if (Object.values(this.sv).some(s => s.t || s.busy)) { e.preventDefault(); e.returnValue = ''; } });
+    // the active document's file may change from outside Writer (the MCP server, an agent's CLI calls): poll while visible,
+    // and check at once on focus/visibilitychange, on top of the SSE watch() and the check on switching to a background tab
+    this.onExternalPoll = () => { if (document.visibilityState === 'visible' && this.state.cur) this.checkExternal(this.state.cur); };
+    window.addEventListener('focus', this.onExternalPoll); document.addEventListener('visibilitychange', this.onExternalPoll);
+    this.pollT = setInterval(this.onExternalPoll, 2000);
+    this.loadRecent(); this._viewWas = this.state.view;
+  }
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.onKey); window.removeEventListener('writer-settings', this.applyTheme); window.removeEventListener('storage', this.onStorage); window.removeEventListener('writer-ai', this.onAi); window.removeEventListener('focus', this.onAi);
+    this.mqDark && this.mqDark.removeEventListener('change', this.applyTheme); this.mqMotion && this.mqMotion.removeEventListener('change', this.applyTheme);
+    document.removeEventListener('focusin', this.onFocusIn, true); document.removeEventListener('beforeinput', this.onBeforeInput, true); document.removeEventListener('compositionend', this.onCompEnd, true);
+    document.removeEventListener('selectionchange', this.onSelChange); document.removeEventListener('select', this.onSelChange, true);
+    window.removeEventListener('focus', this.onExternalPoll); document.removeEventListener('visibilitychange', this.onExternalPoll); clearInterval(this.pollT);
+    clearTimeout(this.tt); if (this.unwatch) this.unwatch();
+  }
+  // ---- theme + host hooks: the Mac window page embeds this shell with mac / macFull / macActive / onShell / onPrefs / onMac* props ----
+  toggleDark = () => { let o = {}; try { o = JSON.parse(localStorage.getItem('writer-settings') || '{}'); } catch (e) { } o.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('writer-settings', JSON.stringify(o)); } catch (e) { } this.applyTheme(); window.dispatchEvent(new Event('writer-settings')); };
+  /** Settings → <html> and the editors, live: the Settings window fires 'writer-settings' here, or 'storage' from the Mac settings window. */
+  applyTheme = () => {
+    const h = document.documentElement;
+    if (this.P) { this.prefs = this.P.load(); this.P.applyTo(h, this.prefs); this.applySpell(); }
+    else { let t = 'light'; try { t = JSON.parse(localStorage.getItem('writer-settings') || '{}').theme || 'light'; } catch (e) { } if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; h.dataset.theme = t; }
+    if (this.state.ready) this.forceUpdate();
+  };
+  onStorage = e => { if (!e.key || e.key === 'writer-settings') this.applyTheme(); if (!e.key || e.key === 'writer-ai') this.onAi(); };
+  /** 设置 › AI saved a model (here, or in the settings window), or this window comes to the front: the Mac app's other folder windows
+   *  run engines of their own, which pick up the shared settings file when asked. So ask this window's engine which model is on now. */
+  onAi = () => { if (this.EN) this.refreshFiles(); };
+  // ---- typing settings: spell check on document text, smart CJK punctuation in Word and Markdown ----
+  applySpell() { const on = this.prefs.spell !== false; document.querySelectorAll(SPELL).forEach(el => { el.spellcheck = on; }); }
+  onFocusIn = e => { const t = e.target; if (t && t.matches && t.matches(SPELL)) t.spellcheck = this.prefs.spell !== false; };
+  quoteRoot(e) { const t = e.target; return this.P && this.prefs.quote !== false && t && t.closest ? t.closest(QUOTE) : null; }
+  /** The character after the caret, '' at the end, null when text is selected. */
+  nextChar(root) {
+    if (root.tagName === 'TEXTAREA') return root.selectionStart === root.selectionEnd ? root.value.charAt(root.selectionEnd) : null;
+    const sel = getSelection(); if (!sel.rangeCount || !sel.isCollapsed) return null;
+    const n = sel.focusNode; return n && n.nodeType === 3 ? n.data.charAt(sel.focusOffset) : '';
+  }
+  /** Inserts ch after the caret without moving it, then lets the editor sync as after typing. */
+  insertAfterCaret(root, ch) {
+    if (root.tagName === 'TEXTAREA') { const i = root.selectionEnd; root.setRangeText(ch, i, i, 'start'); root.dispatchEvent(new Event('input', { bubbles: true })); return; }
+    const sel = getSelection(); if (!sel.rangeCount || !sel.isCollapsed || !root.contains(sel.focusNode)) return;
+    const n = sel.focusNode;
+    if (n.nodeType === 3) n.insertData(sel.focusOffset, ch);
+    else { const r = sel.getRangeAt(0), t = document.createTextNode(ch); r.insertNode(t); r.setStartBefore(t); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
+    root.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: ch }));
+  }
+  onBeforeInput = e => {
+    if (e.isComposing || e.inputType !== 'insertText' || !e.data) return;
+    const root = this.quoteRoot(e); if (!root) return;
+    const next = this.nextChar(root), a = next === null ? null : this.P.pairQuote(e.data, next); if (!a) return;
+    if (a.skip) { // typing 」 over 」: step over it (before the editor's own handlers, e.g. tracked changes, see the event)
+      e.preventDefault(); e.stopPropagation();
+      if (root.tagName === 'TEXTAREA') { const i = root.selectionEnd + 1; root.setSelectionRange(i, i); } else getSelection().modify('move', 'forward', 'character');
+      return;
+    }
+    setTimeout(() => this.insertAfterCaret(root, a.close), 0); // after the opening mark went in (by the browser or the editor)
+  };
+  onCompEnd = e => { const root = this.quoteRoot(e); if (!root || !e.data) return; setTimeout(() => { const next = this.nextChar(root), a = next === null ? null : this.P.pairQuote(e.data, next); if (a && a.close) this.insertAfterCaret(root, a.close); }, 0); };
+  /** The text selected in the document, for 发送整篇文档作为上下文 = off (the chat box taking focus does not clear it). */
+  onSelChange = () => {
+    const a = document.activeElement;
+    if (a && a.tagName === 'TEXTAREA' && a.closest('[data-edroot]')) { this.lastSel = a.value.slice(a.selectionStart, a.selectionEnd); return; }
+    const sel = getSelection(), n = sel && sel.anchorNode, el = n && (n.nodeType === 1 ? n : n.parentElement);
+    if (el && el.closest && el.closest('[data-edroot]')) this.lastSel = sel.isCollapsed ? '' : sel.toString();
+  };
+  shellApi = { toggleThumbs: () => this.toggleThumbsAnim(), open: id => this.open(id), openPath: async rel => { await this.refreshFiles(); const d = this.state.docs.find(x => x.path === rel); if (d) await this.open(d.id); return !!d; }, close: id => this.closeDoc(id), create: () => this.setState({ view: 'create', docsOpen: false }), toggleAI: () => this.setState(s => ({ showAI: !s.showAI })), play: () => this.setState({ pure: true }), toggleDark: () => this.toggleDark(), saveAs: () => this.saveAs(), confirmClose: () => this.confirmClose() };
+  /** Tells the host (props.onShell) what the shell shows whenever that changes: onShell(info, api). */
+  emitShell() {
+    if (!this.props.onShell || !this.state.ready) return;
+    const st = this.state, d = this.doc, isDoc = st.view === 'doc' && !!d;
+    const info = { docs: st.docs.map(x => ({ id: x.id, title: x.title, type: x.type, path: x.path, open: !!x.loaded, on: isDoc && x.id === d.id, draft: this.EN ? this.EN.isDraft(x.path) : false })), isDoc, title: isDoc ? d.title : '新建', type: isDoc ? d.type : '', path: isDoc ? d.path : '', draft: isDoc && this.EN ? this.EN.isDraft(d.path) : false, showThumbs: !!st.showThumbs, showAI: !!st.showAI, pure: !!(isDoc && st.pure), dark: document.documentElement.dataset.theme === 'dark' };
+    const k = JSON.stringify(info); if (k !== this._shK) { this._shK = k; this.props.onShell(info, this.shellApi); }
+  }
+  /** What reopens next time (退出时保留窗口 / 上次文档): the open documents in order, the ones closed, the last active one. */
+  saveSession() {
+    const st = this.state; if (!this.P || !st.ready) return;
+    const d = st.view === 'doc' && st.docs.find(x => x.id === st.cur); if (d) this._last = d.path;
+    const s = { order: st.docs.map(x => x.path), closed: [...this.closed], last: this._last || '' }, k = JSON.stringify(s);
+    if (k !== this._ssK) { this._ssK = k; this.P.saveSession(s); }
+  }
+  macVals() {
+    const p = this.props, off = p.macActive === false, h = this.state.macHover;
+    return {
+      rootH: p.mac ? '100%' : '100vh', notMac: !p.mac, hasMac: !!p.mac,
+      macC1: off ? '#D6D6D6' : '#FF5F57', macC2: off ? '#D6D6D6' : '#FEBC2E', macC3: off ? '#D6D6D6' : '#28C840',
+      macG1: h ? '×' : '', macG2: h ? '−' : '', macG3: h ? (p.macFull ? '⤡' : '⤢') : '',
+      macHoverOn: () => this.setState({ macHover: true }), macHoverOff: () => this.setState({ macHover: false }),
+      macClose: () => p.onMacClose && p.onMacClose(), macMin: () => p.onMacMin && p.onMacMin(), macZoom: () => p.onMacZoom && p.onMacZoom()
+    };
+  }
+  componentDidUpdate() {
+    this.emitShell(); this.saveSession();
+    // 最近使用 is read again whenever the start page comes back (DC passes no prevState, so remember the last view)
+    if (this.state.view === 'create' && this._viewWas !== 'create') this.loadRecent(); this._viewWas = this.state.view;
+    const msgs = this.state.chats[this.state.cur] || [], el = this.chatRef.current, cards = msgs.filter(m => m.change).length;
+    const n = msgs.reduce((a, m) => a + 1 + (m.text || '').length + ((m.steps || []).length), 0) + (this.state.thinking ? 1 : 0);
+    // new text or steps: to the bottom. A change card arrives after the reply: to the bottom as well, so 保留 / 撤销 show, unless
+    // the user has scrolled up from where the list ended (_h) to read. Layout is read only when the list changed.
+    if (el && (n !== this._len || cards !== this._cards)) {
+      if (n !== this._len || el.scrollTop + el.clientHeight >= this._h - 40) el.scrollTop = el.scrollHeight;
+      this._h = el.scrollHeight;
+    }
+    this._len = n; this._cards = cards;
+  }
+  onKey = e => {
+    if (e.key === 'Escape' && this.state.ask) { this.state.ask.res('cancel'); return; }
+    const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+    if (ctrl && e.shiftKey && k === 'l') { e.preventDefault(); this.toggleDark(); return; }
+    if (ctrl && e.key === ',') { e.preventDefault(); this.openSettings(); return; }
+    if (e.key === 'Escape' && this.state.ov) { this.setState({ ov: null }); return; }
+    if (ctrl && e.metaKey && e.ctrlKey && k === 's') { e.preventDefault(); this.toggleThumbsAnim(); return; }
+    if (ctrl && !e.shiftKey && !e.altKey && k === 'n') { e.preventDefault(); this.createBlank(this.prefs.newType || 'docx'); return; }
+    if (ctrl && !e.shiftKey && !e.altKey && k === 't') { e.preventDefault(); this.setState({ view: 'create', docsOpen: false }); return; }
+    if (ctrl && !e.shiftKey && k === 'j') { e.preventDefault(); if (this.prefs.ai !== false) this.setState(s => ({ showAI: !s.showAI })); return; }
+    if (e.key === 'Escape' && this.state.pure) { const a = document.activeElement; if (!(a && a.isContentEditable && getSelection().toString())) { e.preventDefault(); this.setState({ pure: false }); } }
+    if (ctrl && e.key === '.' && this.state.view === 'doc') { e.preventDefault(); this.setState({ pure: !this.state.pure }); }
+    if (ctrl && k === 'o') { e.preventDefault(); this.openDialog(); }
+    if (ctrl && k === 'p' && this.state.view === 'doc') { e.preventDefault(); this.print(); }
+    if (ctrl && k === 's') { e.preventDefault(); if (e.shiftKey && this.props.onSaveDialog) this.saveAs(); else this.save(); }
+  };
+  openSettings(tab) { this.setState({ docsOpen: false, menu: null }); if (this.props.onPrefs) this.props.onPrefs(tab); else this.setState(s => ({ ov: s.ov === 'prefs' ? null : 'prefs', prefsTab: tab || null })); }
+  get doc() { const d = this.state.docs.find(x => x.id === this.state.cur); return d && d.loaded ? d : null; }
+  toastMsg(t) { clearTimeout(this.tt); this.setState({ toast: t }); this.tt = setTimeout(() => this.setState({ toast: null }), 2600); }
+
+  // ---- documents: the workspace on disk is the list; models load on open and save on every change ----
+  async refreshFiles() {
+    try {
+      const fresh = await this.EN.files();
+      this.setState(s => {
+        const byPath = new Map(s.docs.map(d => [d.path, d]));
+        const kept = s.docs.filter(d => d.loaded || fresh.some(f => f.path === d.path));
+        fresh.forEach(f => { if (!byPath.has(f.path) && !this.closed.has(f.path)) kept.push(f); });
+        return { docs: kept, chatOn: this.EN.state.chat, model: this.EN.state.model };
+      });
+    } catch (e) { }
+  }
+  /** 最近使用 on the start page: the desktop host's recent files (none in a browser). */
+  loadRecent() { if (this.props.recentFiles) this.props.recentFiles().then(list => this.setState({ recent: (list || []).slice(0, 8) })).catch(() => { }); }
+  async open(id) {
+    const d = this.state.docs.find(x => x.id === id); if (!d) return;
+    if (!d.loaded) {
+      if (this.loading === id) return; this.loading = id; this.setState({ menu: null, docsOpen: false });
+      this.toastMsg('正在打开 ' + d.title + '…');
+      try { const nd = await this.EN.open(d); this.loading = null; this.setState(s => ({ docs: s.docs.map(x => x.id === id ? nd : x), cur: id, view: 'doc', menu: null, docsOpen: false, toast: null })); }
+      catch (e) { this.loading = null; this.toastMsg('无法打开 ' + d.title + '：' + e.message); return; }
+    } else { this.setState({ cur: id, view: 'doc', menu: null, docsOpen: false }); this.checkExternal(id); }
+    this.watch(id);
+  }
+  watch(id) {
+    if (this.unwatch) this.unwatch(); this.unwatch = null;
+    const d = this.state.docs.find(x => x.id === id); if (!d) return;
+    this.unwatch = this.EN.watch(d.path, () => this.checkExternal(id));
+  }
+  // ---- external changes: another program (the Writer MCP server, an agent's CLI calls) editing the open file ----
+  /** Polled every ~2s while visible, on focus/visibilitychange, on the SSE watcher, and on switching to a background
+   *  tab: reloads in place when nothing local is pending, else keeps both sides (see resolveConflict). */
+  async checkExternal(id) {
+    const st = this.sv[id]; if ((st && st.busy) || this.chatting === id) return; // a save is mid-write; re-check once it finishes
+    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) return;
+    let fresh; try { fresh = await this.EN.stat(d.path); } catch (e) { return; }
+    const decision = this.EN.reloadDecision(d._mtime, fresh.mtime, !!(st && (st.t || st.failed)));
+    if (decision === 'reload') await this.reloadExternal(id);
+    else if (decision === 'conflict') await this.resolveConflict(id);
+  }
+  async reloadExternal(id) {
+    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) return;
+    try { const nd = await this.EN.open(d); nd.rev = (d.rev || 0) + 1; this.setDoc(nd, true, { quiet: true }); this.toastMsg('已载入外部修改'); } catch (e) { }
+  }
+  /** The file changed outside Writer while local edits were pending (or a save just lost the race with 409): the local
+   *  edits are saved as a copy beside the file, which is then reloaded, so neither side is lost. */
+  async resolveConflict(id) {
+    const st = this.sv[id] = this.sv[id] || {};
+    // the scheduled autosave is cancelled now, unconditionally: it must never land on the reloaded/external file. busy
+    // stays true for the whole resolution, so a poll or focus landing mid-way does not start a second, overlapping one
+    clearTimeout(st.t); st.t = null; st.busy = true;
+    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) { st.busy = false; return; }
+    try {
+      const copy = await this.EN.saveConflictCopy(d);
+      st.again = false; st.failed = null; // only now: the local edits are safely on disk, so a later check may reload without losing anything
+      const nd = await this.EN.open(d); nd.rev = (d.rev || 0) + 1; this.setDoc(nd, true, { quiet: true });
+      this.toastMsg('文件已被外部修改，本地修改已存为「' + copy.replace(/\\/g, '/').split('/').pop() + '」');
+    } catch (e) {
+      st.failed = e.message; // still pending: leave the local edits in the editor, do not let the next check reload over them
+      this.toastMsg('检测到外部修改，但未能保存本地副本：' + e.message);
+    }
+    st.busy = false;
+  }
+  addLazy(d, openIt) { this.closed.delete(d.path); this.setState(s => ({ docs: [d, ...s.docs.filter(x => x.path !== d.path)] })); if (openIt) return this.open(d.id); }
+  /** A new file with the new-document settings applied: paper size, and revision tracking when the engine has it. */
+  async newFile(type, title) {
+    const d = await this.EN.create(type, title);
+    const caps = type === 'docx' && this.prefs.track ? await this.caps() : {};
+    for (const argv of this.P ? this.P.newFileArgs(d.path, type, this.prefs, caps) : []) { try { await this.EN.run(argv); } catch (e) { } }
+    return d;
+  }
+  /** Engine features that differ between builds, asked once: does a Word document have a `track` property yet? */
+  async caps() {
+    if (!this._caps) { try { const h = await this.EN.run(['help', 'docx', 'document', '--json']); this._caps = { track: !!(h && h.props && h.props.some(x => x.name === 'track')) }; } catch (e) { this._caps = {}; } }
+    return this._caps;
+  }
+  async createBlank(type, title) {
+    try { const d = await this.newFile(type, title); await this.addLazy(d, true); return this.state.docs.find(x => x.id === d.id); }
+    catch (e) { this.toastMsg('创建失败：' + e.message); }
+  }
+  async importFiles(files) {
+    let last = null;
+    for (const f of Array.from(files || [])) {
+      try { this.toastMsg('正在上传 ' + f.name + '…'); const d = await this.EN.upload(f); this.closed.delete(d.path); this.setState(s => ({ docs: [d, ...s.docs.filter(x => x.path !== d.path)] })); last = d; }
+      catch (e) { this.toastMsg('无法打开 ' + f.name + '：' + (e.message || '文件格式错误')); }
+    }
+    if (last) this.open(last.id);
+  }
+  /** 打开…: the desktop host's own dialog opens files in place; a browser uploads a copy. */
+  openDialog() { if (this.props.onOpenDialog) this.props.onOpenDialog(); else this.fileRef.current && this.fileRef.current.click(); }
+  /** 「title」还没有存储: resolves 'save' | 'discard' | 'cancel'. */
+  askClose(d) { return new Promise(res => this.setState({ ask: { title: d.title, res: v => { this.setState({ ask: null }); res(v); } } })); }
+  /** Closes a tab; an open draft asks first (desktop apps). Resolves false when that was cancelled. */
+  async closeDoc(id) {
+    const d = this.state.docs.find(x => x.id === id);
+    if (d && d.loaded && this.EN.isDraft(d.path) && this.props.onSaveDialog) {
+      const c = await this.askClose(d);
+      if (c === 'cancel' || (c === 'save' && !(await this.save(id)))) return false;
+      if (c === 'discard') { const sv = this.sv[id]; if (sv) { clearTimeout(sv.t); sv.t = null; sv.again = false; } try { await this.EN.discard(d); } catch (e) { this.toastMsg('未能删除草稿：' + e.message); } }
+    }
+    const st = this.state, i = st.docs.findIndex(x => x.id === id), rest = st.docs.filter(x => x.id !== id);
+    if (i >= 0) this.closed.add(st.docs[i].path);
+    if (st.cur === id) { if (this.unwatch) this.unwatch(); this.unwatch = null; }
+    this.setState({ docs: rest, cur: st.cur === id ? null : st.cur, view: st.cur === id ? 'create' : st.view, menu: null });
+    if (st.cur === id && rest.length) this.open(rest[Math.max(0, i - 1)].id);
+    return true;
+  }
+  /** Before the host closes the window: every open draft is saved or discarded, or the close is cancelled. */
+  async confirmClose() {
+    for (const d of this.state.docs.filter(x => x.loaded && this.EN.isDraft(x.path))) if (!(await this.closeDoc(d.id))) return false;
+    return true;
+  }
+  async convert(kind, p) {
+    const d = this.doc, what = { docx: '可编辑的 Word 文档', md: 'Markdown 大纲', pptx: '演示文稿' }[kind]; if (!d || !what) return;
+    try { this.toastMsg('正在转换…'); await this.flushSave(d.id); const nd = await this.EN.exportTo(d, kind); await this.addLazy(nd, true); this.addMsg(nd.id, [{ role: 'ai', text: '已转换为' + what + '，原文件保持不变。' }]); this.toastMsg('已创建「' + nd.title + '」'); }
+    catch (e) { this.toastMsg('转换失败：' + e.message); }
+  }
+  async duplicate() { const d = this.doc; if (!d) return; try { await this.flushSave(d.id); const nd = await this.EN.copy(d); await this.addLazy(nd, true); } catch (e) { this.toastMsg('复制失败：' + e.message); } }
+  async commitTitle() {
+    const d = this.doc, t = (this.state.titleDraft || '').trim(); this.setState({ titleDraft: null });
+    if (!d || !t || t === d.title) return;
+    try { await this.flushSave(d.id); const path = await this.EN.rename(d, t); this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { title: t, path }) : x) })); this.watch(d.id); this.toastMsg('已重命名为 ' + path); }
+    catch (e) { this.toastMsg('重命名失败：' + e.message); }
+  }
+  /** 存储: a draft asks the host where (its Save dialog) and moves there; other documents are already autosaved. */
+  async save(id = this.state.cur) {
+    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) return false;
+    await this.flushSave(id);
+    if (!(this.EN.isDraft(d.path) && this.props.onSaveDialog)) { this.toastMsg('已存储到 ' + d.path); return true; }
+    const target = await this.props.onSaveDialog(d.title, d.path.split('.').pop());
+    if (!target) return false;
+    return this.moveTo(d, target, false);
+  }
+  /** 另存为: continues the document in a new file the user picks; the original stays as it was (a draft moves). */
+  async saveAs(id = this.state.cur) {
+    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded || !this.props.onSaveDialog) return false;
+    await this.flushSave(id);
+    const target = await this.props.onSaveDialog(d.title, d.path.split('.').pop());
+    return target ? this.moveTo(d, target, !this.EN.isDraft(d.path)) : false;
+  }
+  async moveTo(d, target, keep) {
+    try {
+      const path = await this.EN.saveAs(d, target, keep);
+      const title = path.replace(/\\/g, '/').split('/').pop().replace(/\.[^.]+$/, '');
+      this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { path, title }) : x) }));
+      if (this.state.cur === d.id) this.watch(d.id); // a draft closed from its tab may not be the one on screen
+      this.toastMsg('已存储到 ' + target); return true;
+    } catch (e) { this.toastMsg('存储失败：' + e.message); return false; }
+  }
+
+  // ---- state + autosave ----
+  setDoc(nd, record, opts) {
+    this.setState(s => {
+      const prev = s.docs.find(d => d.id === nd.id); if (!prev) return null;
+      if (record) { const h = this.hist[nd.id] = this.hist[nd.id] || { past: [], future: [] }; h.past.push(prev); if (h.past.length > 80) h.past.shift(); h.future = []; }
+      return { docs: s.docs.map(d => d.id === nd.id ? nd : d) };
+    });
+    if (!(opts && opts.quiet)) this.scheduleSave(nd.id);
+  }
+  scheduleSave(id) { const st = this.sv[id] = this.sv[id] || {}; clearTimeout(st.t); st.t = setTimeout(() => this.flushSave(id), 700); }
+  async flushSave(id) {
+    const st = this.sv[id] = this.sv[id] || {}; clearTimeout(st.t); st.t = null;
+    if (st.busy) { st.again = true; return st.done; }
+    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) return;
+    st.busy = true; this.setState({ saving: true });
+    st.done = (async () => {
+      try {
+        const root = this.state.cur === id && d.type === 'docx' ? document.querySelector('.wd-ed[contenteditable="true"]') : null;
+        const n = await this.EN.save(d, { root });
+        if (n) { const cur = this.state.docs.find(x => x.id === id); if (cur) this.setDoc(this.EN.adopt(cur, d, true), false, { quiet: true }); }
+        st.at = Date.now(); st.failed = null;
+      } catch (e) {
+        if (e.code === 'CONFLICT') { this.setState({ saving: false }); await this.resolveConflict(id); return; }
+        st.at = Date.now(); st.failed = e.message; this.toastMsg('保存失败：' + e.message + (e.hint ? '（' + e.hint + '）' : ''));
+      }
+      st.busy = false; this.setState({ saving: false });
+      if (st.again) { st.again = false; await this.flushSave(id); }
+    })();
+    return st.done;
+  }
+  /** Accept or reject every tracked change of the current Word file: pending edits are saved first, the engine resolves the revisions in the file, then the editor reloads it. */
+  async revise(accept) {
+    const d = this.doc; if (!d || d.type !== 'docx') return; const id = d.id;
+    await this.flushSave(id);
+    const st = this.sv[id] = this.sv[id] || {};
+    st.busy = true; this.setState({ saving: true });
+    try {
+      await this.EN.run(['set', d.path, '/', '--prop', accept ? 'accept=all' : 'reject=all']);
+      const cur = this.state.docs.find(x => x.id === id);
+      if (cur) { const nd = await this.EN.open(cur); nd.rev = (cur.rev || 0) + 1; this.setDoc(nd, true, { quiet: true }); }
+      this.toastMsg(accept ? '已接受所有修订' : '已拒绝所有修订');
+    } catch (e) { this.toastMsg('修订处理失败：' + e.message + (e.hint ? '（' + e.hint + '）' : '')); }
+    st.at = Date.now(); st.busy = false; this.setState({ saving: false });
+    if (st.again) { st.again = false; this.flushSave(id); }
+  }
+  undo(redo) {
+    const d = this.doc, h = d && this.hist[d.id]; if (!h) return;
+    const src = redo ? h.future : h.past, dst = redo ? h.past : h.future; if (!src.length) return this.toastMsg(redo ? '没有可重做的操作' : '没有可撤销的操作');
+    const nd = src.pop(); dst.push(d); const out = d.type === 'docx' ? Object.assign({}, nd, { rev: (d.rev || 0) + 1, _orig: d._orig }) : this.EN.adopt(clone(nd), d);
+    Object.assign(out, { path: d.path, title: d.title }); // undo brings back content, not the file's old place (存储 and renames move it)
+    this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? out : x) }));
+    this.scheduleSave(d.id);
+  }
+  toggleThumbsAnim() {
+    if (!this.state.showThumbs) { this.setState({ showThumbs: true, closingThumbs: false }); return; }
+    const p = document.querySelector('[data-thumbpanel]');
+    this.setState({ closingThumbs: true });
+    const done = () => { if (this.state.showThumbs) this.setState({ showThumbs: false, closingThumbs: false }); };
+    const calm = document.documentElement.getAttribute('data-motion') === 'reduce';
+    if (p && p.animate) { if (!calm) p.style.willChange = 'transform, opacity'; const a = calm ? p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-out', fill: 'forwards' }) : p.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(-18px) scale(0.97)' }], { duration: 260, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }); a.onfinish = done; setTimeout(done, 320); } // transform + opacity only, see glass.js
+    else done();
+  }
+  print() { const d = this.doc; if (!d) return; if (d.type === 'mm') return this.toastMsg('思维导图请在「导出」标签导出 PNG'); if (d.type === 'md') return this.download('mdprint'); if (d.type === 'pdf') return this.download('pdfprint'); this.K.printDoc(d, { E: this.E }); }
+  async download(kind) {
+    const d = this.doc; if (!d) return; this.setState({ menu: null });
+    try {
+      if (kind === 'file' || kind === 'docx' || kind === 'xlsx' || kind === 'pptx' || kind === 'md') { await this.flushSave(d.id); this.EN.download(d.path); }
+      else if (kind === 'mdprint') { const html = this.MD.wordHtml(this.MD.mdToHtml(d.text)); this.K.printDoc(Object.assign({}, d, { type: 'docx', html, page: { size: 'A4', margin: 'normal' } }), { E: this.E }); return; }
+      else if (kind === 'pdfdoc') { this.toastMsg('正在生成 PDF…'); this.PK.download(await this.PK.exportPdf(d.id, d), d.title + '.pdf'); }
+      else if (kind === 'pdfprint') { const bytes = await this.PK.exportPdf(d.id, d); const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0'; f.src = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); document.body.appendChild(f); f.onload = () => { try { f.contentWindow.print(); } catch (e) { } }; return; }
+      else if (kind === 'csv') this.K.exportCsv(d, this.E);
+      else return this.print();
+      this.toastMsg('已下载「' + d.title + '」');
+    } catch (e) { this.toastMsg('导出失败：' + (e.message || e)); }
+  }
+
+  // ---- assistant: every turn goes through the engine, which edits the file; the editor reloads and marks what changed ----
+  addMsg(id, m) { const list = Array.isArray(m) ? m : [m]; this.setState(s => ({ chats: Object.assign({}, s.chats, { [id]: [...(s.chats[id] || []), ...list] }) })); }
+  send(text) {
+    text = (text || '').trim(); const d = this.doc; if (!text || this.state.thinking || !d) return;
+    this.addMsg(d.id, { role: 'user', text }); this.setState({ input: '' });
+    if (!this.state.chatOn) { this.addMsg(d.id, { role: 'ai', text: NO_CHAT, setup: true }); return; }
+    this.setState({ thinking: true });
+    this.chatTurn(d.id);
+  }
+  async chatTurn(id) {
+    await this.flushSave(id);
+    const d0 = this.state.docs.find(x => x.id === id); if (!d0) return this.setState({ thinking: false });
+    const snap = clone(d0);
+    const history = (this.state.chats[id] || []).filter(m => (m.role === 'user' || m.role === 'ai') && m.text && !m.setup).map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text }));
+    const msg = { role: 'ai', text: '', steps: [] }; let idx = -1;
+    const push = () => this.setState(s => { const list = [...(s.chats[id] || [])]; if (idx < 0) { idx = list.length; list.push(Object.assign({}, msg)); } else list[idx] = Object.assign({}, msg); return { chats: Object.assign({}, s.chats, { [id]: list }) }; });
+    this.chatting = id; let changed = false;
+    try {
+      const opts = this.P ? this.P.chatOptions(this.prefs, this.lastSel) : {};
+      await this.EN.chat(d0, history, (name, data) => {
+        if (name === 'text') { msg.text = (msg.text ? msg.text + '\n\n' : '') + (data.text || ''); this.setState({ thinking: false }); push(); }
+        else if (name === 'tool') { if (WRITES.test(data.command) && data.code === 0) changed = true; msg.steps.push({ text: data.command, ok: data.code === 0 }); push(); }
+        else if (name === 'error') { msg.text = (msg.text ? msg.text + '\n\n' : '') + '出错了：' + (data.message || '') + (data.hint ? '\n' + data.hint : ''); push(); }
+      }, opts);
+    } catch (e) { msg.text = (msg.text ? msg.text + '\n\n' : '') + '请求失败：' + e.message; push(); }
+    this.chatting = null; this.setState({ thinking: false });
+    if (!msg.text && !msg.steps.length) { msg.text = '（助手没有回复）'; push(); }
+    if (changed) {
+      try {
+        const cur = this.state.docs.find(x => x.id === id);
+        if (cur) {
+          const nd = await this.EN.open(cur); nd.rev = (cur.rev || 0) + 1;
+          const items = this.EN.diffMark(snap, nd);
+          this.sv[id] = Object.assign(this.sv[id] || {}, { at: Date.now() });
+          const keep = this.prefs.preview === false && items.length > 0;
+          this.setDoc(keep ? this.unmark(nd) : nd, true, { quiet: true });
+          if (items.length) { msg.change = { items, state: keep ? 'kept' : 'pending', snap }; push(); }
+        }
+      } catch (e) { this.toastMsg('重新载入失败：' + e.message); }
+    }
+    this.refreshFiles();
+  }
+  settle(id, idx, keep) {
+    const msgs = [...(this.state.chats[id] || [])], m = Object.assign({}, msgs[idx]); if (!m.change) return;
+    m.change = Object.assign({}, m.change, { state: keep ? 'kept' : 'undone' }); msgs[idx] = m;
+    const cur = this.state.docs.find(x => x.id === id); if (!cur) return;
+    if (keep) this.setDoc(this.unmark(cur), false, { quiet: true });
+    else {
+      const nd = Object.assign(this.EN.adopt(clone(m.change.snap), cur), { path: cur.path, title: cur.title });
+      if (nd.type === 'docx') { const dom = new DOMParser().parseFromString('<div id="r">' + nd.html + '</div>', 'text/html'); dom.querySelectorAll('[data-ai]').forEach(el => el.removeAttribute('data-ai')); nd.html = dom.getElementById('r').innerHTML; nd.rev = (cur.rev || 0) + 1; }
+      this.setDoc(nd, true);
+    }
+    this.setState(s => ({ chats: Object.assign({}, s.chats, { [id]: msgs }) }));
+  }
+  /** The document without the AI change marks: what a kept change looks like. */
+  unmark(cur) {
+    const nd = clone(cur);
+    if (nd.type === 'docx') { const dom = new DOMParser().parseFromString('<div id="r">' + nd.html + '</div>', 'text/html'); dom.querySelectorAll('[data-ai]').forEach(el => el.removeAttribute('data-ai')); nd.html = dom.getElementById('r').innerHTML; nd.rev = (nd.rev || 0) + 1; }
+    (nd.sheets || []).forEach(sh => Object.values(sh.cells).forEach(c => delete c.ai));
+    (nd.slides || []).forEach(sl => delete sl.ai);
+    if (nd.map) clearAi(nd.map);
+    return nd;
+  }
+  async generate(text) {
+    if (this.state.gen !== null) return;
+    const type = this.state.createType, p = (text || this.state.prompt).trim() || STARTERS[type][0];
+    this.setState({ gen: 0, prompt: p });
+    try {
+      const d = await this.EN.create(type, cleanTitle(p, type)); this.setState({ gen: 1 });
+      const nd = await this.EN.open(d);
+      this.setState(s => ({ docs: [nd, ...s.docs.filter(x => x.path !== nd.path)], cur: nd.id, view: 'doc', gen: null, prompt: '', showAI: true, chats: Object.assign({}, s.chats, { [nd.id]: [{ role: 'user', text: p }] }) }));
+      this.watch(nd.id);
+      if (this.state.chatOn) { this.setState({ thinking: true }); this.chatTurn(nd.id); }
+      else this.addMsg(nd.id, { role: 'ai', text: '已创建空白文件「' + nd.title + '」。' + NO_CHAT, setup: true });
+    } catch (e) { this.setState({ gen: null }); this.toastMsg('创建失败：' + e.message); }
+  }
+
+  /** Callbacks keep their identity across renders (memo.js), so an editor whose props did not change skips the render. */
+  renderVals() { return window.dcMemo ? dcMemo.stableAll(this, this.vals()) : this.vals(); }
+  vals() {
+    const st = this.state;
+    if (!st.ready) return { ...this.macVals(), lpLeft: MAC_DESKTOP ? '84px' : '12px', lpTop: '10px', lpMaxW: '320px', ttlMax: '160px', ttlOp: 1, ttlPad: '0 13px 0 11px', ttlDelay: '0s', lpOp: 1, lpBg: "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: "blur(10px) saturate(190%)", lpBd: "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", merged: true, leadW: 170, loading: true, notPure: true, rightPillDisp: 'flex', barTitle: '', leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, barLeft: '200px', aiOn: false, aiBtnBd: 'transparent', panelW: '300px', pillRight: '12px', edRight: '0px', showRightPill: true, thumbBtnBg: 'transparent', docsBtnBg: 'transparent', aiBtnBg: 'transparent', aiBtnSh: 'none', neverShow: false, hasDocs: false, cols: 'minmax(0,1fr)', docRows: [], isCreate: false, isDoc: false, showPanel: false, typeTabs: [], starters: [], genSteps: [], msgs: [], chips: [], menuItems: [], fileRef: this.fileRef, chatRef: this.chatRef, desktopMac: MAC_DESKTOP };
+    const d = this.doc, isDoc = st.view === 'doc' && !!d, pure = isDoc && st.pure, ai = this.prefs.ai !== false, showPanel = isDoc && st.showAI && !pure && ai;
+    let iconSet = 'b'; try { iconSet = JSON.parse(localStorage.getItem('writer-settings') || '{}').iconStyle || 'b'; } catch (e) { }
+    const ICO = t => `./assets/icons/${iconSet === 'c' ? 'c' : 'b'}/${({ docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' })[t] || 'word'}.svg`;
+    const menuItems = [];
+    const MI = (label, fn, hint, color) => menuItems.push({ isItem: true, label, hint: hint || '', color: color || 'var(--k1, #1D1D1F)', onClick: () => { this.setState({ menu: null }); fn(); } });
+    const MS = () => menuItems.push({ isSep: true });
+    if (st.menu && d) {
+      MI('新建空白文档', () => this.createBlank('docx')); MI('新建空白表格', () => this.createBlank('xlsx')); MI('新建空白演示', () => this.createBlank('pptx')); MI('新建 Markdown', () => this.createBlank('md')); MI('新建思维导图', () => this.createBlank('mm')); if (ai) MI('用 AI 新建…', () => this.setState({ view: 'create' })); MS();
+      MI('切换文档…', () => this.setState({ docsOpen: true })); MI('打开…', () => this.openDialog(), 'Ctrl+O'); MI('创建副本', () => this.duplicate()); MS();
+      if (d.type === 'docx') MI('下载 Word 文件 (.docx)', () => this.download('file'));
+      if (d.type === 'xlsx') { MI('下载 Excel 文件 (.xlsx)', () => this.download('file')); MI('下载为 CSV', () => this.download('csv')); }
+      if (d.type === 'pptx') MI('下载演示文件 (.pptx)', () => this.download('file'));
+      if (d.type === 'md') { MI('下载 Markdown (.md)', () => this.download('file')); MI('转为 Word 文档', () => this.convert('docx')); }
+      if (d.type === 'mm') { MI('下载思维导图 (.mm)', () => this.download('file')); MI('转为 Markdown 大纲', () => this.convert('md')); MI('转为 Word 文档', () => this.convert('docx')); MI('转为演示文稿', () => this.convert('pptx')); }
+      if (d.type === 'pdf') { MI('下载 PDF（含批注）', () => this.download('pdfdoc')); MI('提取为 Word 文档', () => this.convert('docx')); }
+      else if (d.type !== 'mm') MI('导出 PDF（打印）', () => this.download(d.type === 'md' ? 'mdprint' : 'pdf'));
+      MI('打印', () => this.print(), 'Ctrl+P'); MS();
+      MI(st.pure ? '退出纯净模式' : '纯净模式', () => this.setState({ pure: !st.pure }), 'Ctrl+.'); MS();
+      MI('关闭文档', () => this.closeDoc(d.id), '', '#B5563A');
+    }
+    const msgs = (d && st.chats[d.id]) || [];
+    const sv = d && this.sv[d.id], pending = !!(sv && (sv.t || sv.busy));
+    const metaText = d ? (pending ? '保存中…' : sv && sv.failed ? '保存失败：' + sv.failed : '已保存') + ' · ' + (d.type === 'xlsx' ? `${d.sheets.length} 个工作表` : d.type === 'pptx' || d.type === 'pdf' ? `${(d.slides || d.pages).length} 页` : d.type === 'md' ? '纯文本' : d.type === 'mm' ? `${countTopics(d.map)} 个主题` : d.path) : '';
+    return {
+      ...this.macVals(),
+      loading: false, notPure: !pure, pure, neverShow: false, panelW: (this.panelW = Math.max(260, Math.min(310, Math.round((window.innerWidth || 1200) * 0.26)))) + 'px', edRight: showPanel ? (this.panelW + 20) + 'px' : '0px', pillRight: '12px', showRightPill: !isDoc, rightPillDisp: isDoc || !ai ? 'none' : 'flex', barRight: '12px', barLeft: (isDoc && !pure ? (st.showThumbs ? (d.type === 'xlsx' ? (st.barLeft || 200 + MAC_INSET) : 224) : 76 + MAC_INSET + (this.props.mac ? 66 : 0)) : 12) + 'px', lpLeft: (MAC_DESKTOP ? 84 : isDoc && !pure ? 16 : 12) + 'px', lpTop: (isDoc && !pure ? 16 : 10) + 'px', lpOp: 1, lpMaxW: (isDoc && !pure && st.showThumbs ? (MAC_DESKTOP ? 122 : this.props.mac ? 160 : 156) : 320 + (this.props.mac ? 66 : 0)) + 'px', merged: false, leadW: 40, ttlMax: !isDoc || (st.showThumbs && !st.closingThumbs) ? (this.props.mac && isDoc ? '84px' : '160px') : '0px', ttlOp: !isDoc || (st.showThumbs && !st.closingThumbs) ? 1 : 0, ttlPad: !isDoc || (st.showThumbs && !st.closingThumbs) ? '0 13px 0 11px' : '0', ttlDelay: '0s', lpBg: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'transparent' : "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "blur(10px) saturate(190%)", lpBd: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? '1px solid transparent' : "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, aiOn: !!(st.showAI && isDoc), aiBtnBd: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
+      desktopMac: MAC_DESKTOP, showThumbs: st.showThumbs, toggleThumbs: () => this.toggleThumbsAnim(), thumbBtnBg: st.showThumbs && isDoc ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent',
+      barTitle: isDoc ? d.title : (this.loading ? '正在打开…' : '新建'), openDocs: () => this.setState({ docsOpen: !st.docsOpen, menu: null }), closeDocs: () => this.setState({ docsOpen: false }), hasDocs: !!st.docsOpen, docsBtnBg: st.docsOpen ? 'var(--k64, rgba(255,255,255,0.85))' : 'transparent',
+      onFileMenu: r => this.setState({ menu: this.state.menu ? null : { x: r.left, y: r.bottom + 8 }, docsOpen: false }),
+      aiBtnSh: st.showAI && isDoc ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k51, #fff)' : 'none',
+      enterPure: () => this.setState({ pure: true }), exitPure: () => this.setState({ pure: false }),
+      isMd: isDoc && d.type === 'md', isPdf: isDoc && d.type === 'pdf', isMm: isDoc && d.type === 'mm', onConvert: (k, p) => this.convert(k, p),
+      docRows: st.docs.map(x => { const on = isDoc && x.id === d.id; return { icon: ICO(x.type), tag: TAG[x.type].l, tagBg: TAG[x.type].bg, title: x.title, bg: on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', hover: on ? 'var(--k0, #FFFFFF)' : 'var(--k6, #E5E5EA)', sh: on ? '0 0 0 1px #E5E5EA' : 'none', fw: on ? 500 : 400, onClick: () => this.open(x.id),
+        onMid: e => { if (e.button === 1) { e.preventDefault(); this.closeDoc(x.id); } }, onClose: e => { e.stopPropagation(); this.closeDoc(x.id); } }; }),
+      openCreate: () => this.setState({ view: 'create', docsOpen: false }), newBg: isDoc ? 'var(--k0, #FFFFFF)' : '#EFEFF4', openFile: () => { this.setState({ docsOpen: false }); this.openDialog(); },
+      fileRef: this.fileRef, onFilePick: e => { const f = e.target.files; this.importFiles(f); e.target.value = ''; },
+      onDragOver: e => { if (Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); if (!st.dragging) this.setState({ dragging: true }); } },
+      onDragLeave: e => { if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget)) this.setState({ dragging: false }); },
+      onDrop: e => { if (!e.dataTransfer.files.length) return; e.preventDefault(); this.setState({ dragging: false }); this.importFiles(e.dataTransfer.files); }, dragging: st.dragging,
+      isCreate: st.view === 'create', isDoc,
+      typeTabs: ['md', 'docx', 'xlsx', 'pptx', 'mm'].map(k => ({ icon: ICO(k), tag: TAG[k].l, tagBg: TAG[k].bg, label: TAG[k].n, bg: st.createType === k ? 'var(--k0, #FFFFFF)' : 'transparent', border: st.createType === k ? 'var(--k7, #1D1D1F)' : 'var(--k10, #D1D1D6)', onClick: () => st.gen === null && this.setState({ createType: k }) })),
+      blankLabel: '空白' + TAG[st.createType].n, createBlank: () => this.createBlank(st.createType),
+      prompt: st.prompt, promptPh: '例如：' + STARTERS[st.createType][0], onPrompt: e => this.setState({ prompt: e.target.value }),
+      onPromptKey: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.generate(); } }, generate: () => this.generate(),
+      starters: STARTERS[st.createType].map(s => ({ text: s, onClick: () => this.generate(s) })),
+      hasRecent: !!(this.props.onOpenRecent && st.recent.length),
+      recentItems: st.recent.map(p => { const n = p.replace(/\\/g, '/'); const name = n.split('/').pop(); return { path: p, name, dir: n.slice(0, n.lastIndexOf('/')), icon: ICO(EXT_TYPE[name.split('.').pop().toLowerCase()] || 'docx'), onClick: () => this.props.onOpenRecent(p) }; }),
+      generating: st.gen !== null, notGenerating: st.gen === null,
+      genSteps: ['创建文件', '交给助手撰写', '写入文件', '打开'].map((l, i) => ({ label: l, mark: st.gen > i ? '✓' : st.gen === i ? '…' : '·', color: st.gen >= i ? 'var(--k1, #1D1D1F)' : 'var(--k52, #AEAEB2)' })),
+      doc: d, title: st.titleDraft != null ? st.titleDraft : (d ? d.title : ''), onTitle: e => this.setState({ titleDraft: e.target.value }), commitTitle: () => this.commitTitle(), onTitleKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } if (e.key === 'Escape') this.setState({ titleDraft: null }); },
+      metaText,
+      openFileMenu: e => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ menu: st.menu ? null : { x: r.left, y: r.bottom + 4 } }); }, fileBtnBg: st.menu ? '#EFEFF4' : 'transparent',
+      hasMenu: !!st.menu, menuX: st.menu ? st.menu.x + 'px' : 0, menuY: st.menu ? st.menu.y + 'px' : 0, menuItems, closeMenu: () => this.setState({ menu: null }),
+      toggleAI: () => this.setState({ showAI: !st.showAI }), aiBtnBg: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
+      doShare: () => { const u = location.origin + '/app/index.dc.html'; if (navigator.clipboard) navigator.clipboard.writeText(u).catch(() => { }); this.toastMsg('本地地址已复制：' + u); },
+      doDownload: () => this.download(d.type === 'pdf' ? 'pdfdoc' : 'file'), dlLabel: '下载',
+      isDocx: isDoc && d.type === 'docx', isXlsx: isDoc && d.type === 'xlsx', isPptx: isDoc && d.type === 'pptx',
+      onDocChange: (nd, opts) => this.setDoc(nd, !(opts && opts.silent)), onUndo: () => this.undo(false), onRedo: () => this.undo(true), onRevise: accept => this.revise(accept), toastFn: m => this.toastMsg(m),
+      showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? WELCOME[d.type] + (st.model ? '（' + st.model + '）' : '') : NO_CHAT) : '', thinking: st.thinking,
+      needsModel: !st.chatOn, openAiSettings: () => this.openSettings('ai'),
+      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? `${ch.items.length} 处修改` : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复', onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
+      chips: d ? CHIPS[d.type].map(t => ({ text: t, onClick: () => this.send(t) })) : [],
+      input: st.input, onInput: e => this.setState({ input: e.target.value }),
+      onInputKey: e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); this.send(st.input); } }, sendInput: () => this.send(st.input),
+      hasToast: !!st.toast, toast: st.toast || '',
+      toggleDark: this.toggleDark, darkLabel: document.documentElement.dataset.theme === 'dark' ? '浅色模式' : '深色模式',
+      openSettings: () => this.openSettings(), openAbout: () => this.setState({ ov: 'about', docsOpen: false }), openGestures: () => this.setState({ ov: 'gestures', docsOpen: false }),
+      hasOverlay: !!st.ov, ovPrefs: st.ov === 'prefs', ovAbout: st.ov === 'about', ovGestures: st.ov === 'gestures', prefsTab: st.prefsTab || 'general',
+      closeOverlay: () => this.setState({ ov: null }), stopProp: e => e.stopPropagation(),
+      hasAsk: !!st.ask, askTitle: st.ask ? st.ask.title : '', askSave: () => st.ask && st.ask.res('save'), askDiscard: () => st.ask && st.ask.res('discard'), askCancel: () => st.ask && st.ask.res('cancel'),
+      workspace: this.EN ? this.EN.state.workspace : '', version: this.EN ? this.EN.state.version : '',
+      createSub: ai ? '描述你要的内容，助手会先写好初稿；也可以从空白开始。' : '选择类型，从空白开始。',
+      mdAuto: this.prefs.md !== false, gridOn: this.prefs.grid !== false
+    };
+  }
+}
+</script>
+</body>
+</html>

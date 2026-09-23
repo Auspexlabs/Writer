@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Writer",
+  "version": "0.1.0",
+  "identifier": "cn.thewriter.app",
+  "build": {
+    "frontendDist": "../splash"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "security": {
+      "capabilities": ["default", "writer-window-drag", "writer-mac-shell"]
+    },
+    "windows": [
+      {
+        "label": "main",
+        "create": false,
+        "title": "Writer",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "acceptFirstMouse": true,
+        "width": 1280,
+        "height": 820,
+        "minWidth": 820,
+        "minHeight": 600
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "category": "Productivity",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "externalBin": ["binaries/writer"],
+    "resources": { "../../ui/": "ui/" },
+    "fileAssociations": [
+      { "ext": ["docx"], "name": "Word 文档", "role": "Editor" },
+      { "ext": ["xlsx"], "name": "Excel 表格", "role": "Editor" },
+      { "ext": ["pptx"], "name": "PowerPoint 演示文稿", "role": "Editor" },
+      { "ext": ["md", "markdown"], "name": "Markdown 文稿", "role": "Editor" },
+      { "ext": ["mm"], "name": "思维导图", "role": "Editor" },
+      { "ext": ["pdf"], "name": "PDF 文稿", "role": "Viewer" }
+    ],
+    "macOS": {
+      "files": {
+        "Resources/word.icns": "icons/doc/word.icns",
+        "Resources/excel.icns": "icons/doc/excel.icns",
+        "Resources/ppt.icns": "icons/doc/ppt.icns",
+        "Resources/markdown.icns": "icons/doc/markdown.icns",
+        "Resources/mindmap.icns": "icons/doc/mindmap.icns",
+        "Resources/pdf.icns": "icons/doc/pdf.icns"
+      }
+    }
+  }
+}

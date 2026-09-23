@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f2f3f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0c0e" media="(prefers-color-scheme: dark)">
+  <title>Writer：在 Mac 上直接改 Word、Excel 和 PPT</title>
+  <meta name="description" content="Writer 是一款 Mac 文档应用：Word、Excel、PowerPoint、Markdown 和思维导图打开就能改，改动自动存回原文件。内置 AI 助手，接入你自己的模型。">
+  <link rel="icon" type="image/svg+xml" href="assets/writer-logo-light.svg">
+  <link rel="icon" type="image/svg+xml" href="assets/writer-logo-dark.svg" media="(prefers-color-scheme: dark)">
+  <link rel="preload" as="image" href="assets/shots/hero-light.webp" media="(prefers-color-scheme: light)">
+  <link rel="preload" as="image" href="assets/shots/hero-dark.webp" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="assets/style.css?v=7">
+  <script>
+    // Hide the sections that rise in; if site.js never runs, show everything after 2.5 s.
+    document.documentElement.classList.add('js');
+    setTimeout(() => { if (!window.__reveal) document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in')); }, 2500);
+  </script>
+  <script src="assets/site.js?v=6" defer></script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false"><symbol id="i-arrow-right" viewBox="0 0 256 256"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol><symbol id="i-cursor-click" viewBox="0 0 256 256"><path d="M88,24V16a8,8,0,0,1,16,0v8a8,8,0,0,1-16,0ZM16,104h8a8,8,0,0,0,0-16H16a8,8,0,0,0,0,16ZM124.42,39.16a8,8,0,0,0,10.74-3.58l8-16a8,8,0,0,0-14.31-7.16l-8,16A8,8,0,0,0,124.42,39.16Zm-96,81.69-16,8a8,8,0,0,0,7.16,14.31l16-8a8,8,0,1,0-7.16-14.31ZM219.31,184a16,16,0,0,1,0,22.63l-12.68,12.68a16,16,0,0,1-22.63,0L132.7,168,115,214.09c0,.1-.08.21-.13.32a15.83,15.83,0,0,1-14.6,9.59l-.79,0a15.83,15.83,0,0,1-14.41-11L32.8,52.92A16,16,0,0,1,52.92,32.8L213,85.07a16,16,0,0,1,1.41,29.8l-.32.13L168,132.69ZM208,195.31,156.69,144h0a16,16,0,0,1,4.93-26l.32-.14,45.95-17.64L48,48l52.2,159.86,17.65-46c0-.11.08-.22.13-.33a16,16,0,0,1,11.69-9.34,16.72,16.72,0,0,1,3-.28,16,16,0,0,1,11.3,4.69L195.31,208Z"/></symbol><symbol id="i-shield-check" viewBox="0 0 256 256"><path d="M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.26,47,25.53a8,8,0,0,0,4.2,0c1-.27,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm0,72c0,37.07-13.66,67.16-40.6,89.42A129.3,129.3,0,0,1,128,223.62a128.25,128.25,0,0,1-38.92-21.81C61.82,179.51,48,149.3,48,112l0-56,160,0ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z"/></symbol><symbol id="i-plugs-connected" viewBox="0 0 256 256"><path d="M237.66,18.34a8,8,0,0,0-11.32,0l-52.4,52.41-5.37-5.38a32.05,32.05,0,0,0-45.26,0L100,88.69l-6.34-6.35A8,8,0,0,0,82.34,93.66L88.69,100,65.37,123.31a32,32,0,0,0,0,45.26l5.38,5.37-52.41,52.4a8,8,0,0,0,11.32,11.32l52.4-52.41,5.37,5.38a32,32,0,0,0,45.26,0L156,167.31l6.34,6.35a8,8,0,0,0,11.32-11.32L167.31,156l23.32-23.31a32,32,0,0,0,0-45.26l-5.38-5.37,52.41-52.4A8,8,0,0,0,237.66,18.34Zm-116.29,161a16,16,0,0,1-22.62,0L76.69,157.25a16,16,0,0,1,0-22.62L100,111.31,144.69,156Zm57.94-57.94L156,144.69,111.31,100l23.32-23.31a16,16,0,0,1,22.62,0l22.06,22A16,16,0,0,1,179.31,121.37ZM88.57,35A8,8,0,0,1,103.43,29l8,20A8,8,0,0,1,96.57,55ZM24.57,93A8,8,0,0,1,35,88.57l20,8A8,8,0,0,1,49,111.43l-20-8A8,8,0,0,1,24.57,93ZM231.43,163a8,8,0,0,1-10.4,4.46l-20-8A8,8,0,1,1,207,144.57l20,8A8,8,0,0,1,231.43,163Zm-64,58.06A8,8,0,0,1,152.57,227l-8-20A8,8,0,0,1,159.43,201Z"/></symbol><symbol id="i-key" viewBox="0 0 256 256"><path d="M216.57,39.43A80,80,0,0,0,83.91,120.78L28.69,176A15.86,15.86,0,0,0,24,187.31V216a16,16,0,0,0,16,16H72a8,8,0,0,0,8-8V208H96a8,8,0,0,0,8-8V184h16a8,8,0,0,0,5.66-2.34l9.56-9.57A79.73,79.73,0,0,0,160,176h.1A80,80,0,0,0,216.57,39.43ZM224,98.1c-1.09,34.09-29.75,61.86-63.89,61.9H160a63.7,63.7,0,0,1-23.65-4.51,8,8,0,0,0-8.84,1.68L116.69,168H96a8,8,0,0,0-8,8v16H72a8,8,0,0,0-8,8v16H40V187.31l58.83-58.82a8,8,0,0,0,1.68-8.84A63.72,63.72,0,0,1,96,95.92c0-34.14,27.81-62.8,61.9-63.89A64,64,0,0,1,224,98.1ZM192,76a12,12,0,1,1-12-12A12,12,0,0,1,192,76Z"/></symbol><symbol id="i-sparkle" viewBox="0 0 256 256"><path d="M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z"/></symbol><symbol id="i-folder-open" viewBox="0 0 256 256"><path d="M245,110.64A16,16,0,0,0,232,104H216V88a16,16,0,0,0-16-16H130.67L102.94,51.2a16.14,16.14,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A16.05,16.05,0,0,0,245,110.64ZM93.34,64,123.2,86.4A8,8,0,0,0,128,88h72v16H69.77a16,16,0,0,0-15.18,10.94L40,158.7V64Zm112,136H43.1l26.67-80H232Z"/></symbol><symbol id="i-tabs" viewBox="0 0 256 256"><path d="M255.66,165.7h0v0a.24.24,0,0,0,0-.08L233.37,91.4A15.89,15.89,0,0,0,218.05,80H208a8,8,0,0,0,0,16h10.05l19.2,64H206L185.37,91.4A15.89,15.89,0,0,0,170.05,80H160a8,8,0,0,0,0,16h10.05l19.2,64H158L137.37,91.4A15.89,15.89,0,0,0,122.05,80H38A15.89,15.89,0,0,0,22.63,91.4L.37,165.6l0,.05v0s0,.05,0,.08A8.1,8.1,0,0,0,0,168a8,8,0,0,0,8,8H248a8,8,0,0,0,7.66-10.3ZM38,96h84.1l19.2,64H18.75Z"/></symbol><symbol id="i-terminal-window" viewBox="0 0 256 256"><path d="M128,128a8,8,0,0,1-3,6.25l-40,32a8,8,0,1,1-10-12.5L107.19,128,75,102.25a8,8,0,1,1,10-12.5l40,32A8,8,0,0,1,128,128Zm48,24H136a8,8,0,0,0,0,16h40a8,8,0,0,0,0-16Zm56-96V200a16,16,0,0,1-16,16H40a16,16,0,0,1-16-16V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56ZM216,200V56H40V200H216Z"/></symbol><symbol id="i-caret-left" viewBox="0 0 256 256"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></symbol><symbol id="i-caret-right" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></symbol></svg>
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="top">
+    <div class="wrap top-in">
+      <a class="brand" href="#top" aria-label="Writer，回到页首">
+        <picture>
+          <source srcset="assets/writer-logo-dark.svg" media="(prefers-color-scheme: dark)">
+          <img src="assets/writer-logo-light.svg" width="28" height="28" alt="">
+        </picture>
+        <span class="wordmark" aria-hidden="true"></span>
+      </a>
+      <nav class="nav" aria-label="页面导航">
+        <a href="#formats">功能</a>
+        <a href="#ai">AI 助手</a>
+        <a href="#developers">开发者</a>
+      </nav>
+      <a class="btn btn-small" href="#download">下载 Mac 版</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap">
+        <h1 id="hero-title" class="reveal"><span class="nb dim">Word、Excel、PPT，</span><span class="nb">在 Mac 上直接改。</span></h1>
+        <p class="lead reveal" style="--d: 1"><span class="nb">改动一秒内存回原文件，没动过的内容原样保留。</span><span class="nb">内置 AI 助手，用你自己的模型。</span></p>
+        <div class="cta reveal" style="--d: 2">
+          <a class="btn" href="download/mac">下载 Mac 版</a>
+          <a class="link" href="#ai">看看 AI 助手<svg class="ic" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
+        </div>
+      </div>
+      <div class="bezel glass hero-shot">
+        <picture class="window">
+          <source srcset="assets/shots/hero-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="assets/shots/hero-light.webp" width="2400" height="1500" fetchpriority="high" alt="Writer 窗口：打开的是《城市咖啡节活动方案》。用户在右侧 AI 助手里说“活动改到下个周末了，把文中的日期都改过来”，助手改了开头一段、日程表和一条注意事项，改动在文档里标出，下方可以选择保留或撤销。">
+        </picture>
+      </div>
+    </section>
+
+    <section class="section" id="formats" aria-labelledby="formats-title">
+      <div class="wrap">
+        <h2 id="formats-title" class="reveal">一个应用，打开六种文档。</h2>
+        <p class="section-lead reveal"><span class="nb">Word、Excel、PowerPoint、Markdown 和思维导图都能直接编辑。</span><span class="nb">PDF 可以查看，也能转成 Word 接着改。</span></p>
+        <ul class="dock glass reveal" aria-label="支持的格式">
+          <li><img src="assets/icons/word.svg" width="64" height="64" alt=""><strong>Word</strong><span>.docx</span></li>
+          <li><img src="assets/icons/excel.svg" width="64" height="64" alt=""><strong>Excel</strong><span>.xlsx</span></li>
+          <li><img src="assets/icons/ppt.svg" width="64" height="64" alt=""><strong>PowerPoint</strong><span>.pptx</span></li>
+          <li><img src="assets/icons/markdown.svg" width="64" height="64" alt=""><strong>Markdown</strong><span>.md</span></li>
+          <li><img src="assets/icons/mindmap.svg" width="64" height="64" alt=""><strong>思维导图</strong><span>.mm</span></li>
+          <li><img src="assets/icons/pdf.svg" width="64" height="64" alt=""><strong>PDF</strong><span>.pdf，查看</span></li>
+        </ul>
+
+        <div class="showcase reveal">
+          <div class="tabs glass" role="tablist" aria-label="编辑器">
+            <button type="button" role="tab" id="t-sheet" aria-controls="p-sheet" aria-selected="true">表格</button>
+            <button type="button" role="tab" id="t-slides" aria-controls="p-slides" aria-selected="false" tabindex="-1">演示</button>
+            <button type="button" role="tab" id="t-mindmap" aria-controls="p-mindmap" aria-selected="false" tabindex="-1">思维导图</button>
+            <button type="button" role="tab" id="t-markdown" aria-controls="p-markdown" aria-selected="false" tabindex="-1">Markdown</button>
+          </div>
+          <figure class="panel glass" role="tabpanel" id="p-sheet" aria-labelledby="t-sheet">
+            <figcaption>公式、图表和多个工作表。</figcaption>
+            <picture class="window">
+              <source srcset="assets/shots/sheet-dark.webp" media="(prefers-color-scheme: dark)">
+              <img src="assets/shots/sheet-light.webp" width="2048" height="1360" loading="lazy" decoding="async" alt="Writer 打开的 Excel 表格：咖啡节预算，带公式算出的剩余和进度，旁边是预算与已支出的柱形图。">
+            </picture>
+          </figure>
+          <figure class="panel glass" role="tabpanel" id="p-slides" aria-labelledby="t-slides">
+            <figcaption>编辑幻灯片，设置切换效果，直接放映。</figcaption>
+            <picture class="window">
+              <source srcset="assets/shots/slides-dark.webp" media="(prefers-color-scheme: dark)">
+              <img src="assets/shots/slides-light.webp" width="2048" height="1360" loading="lazy" decoding="async" alt="Writer 打开的演示文稿：左侧是幻灯片缩略图，中间是“城市咖啡节”封面页。">
+            </picture>
+          </figure>
+          <figure class="panel glass" role="tabpanel" id="p-mindmap" aria-labelledby="t-mindmap">
+            <figcaption>FreeMind 格式，可以转成大纲、Word 或演示文稿。</figcaption>
+            <picture class="window">
+              <source srcset="assets/shots/mindmap-dark.webp" media="(prefers-color-scheme: dark)">
+              <img src="assets/shots/mindmap-light.webp" width="2048" height="1360" loading="lazy" decoding="async" alt="Writer 打开的思维导图：中心是“咖啡节筹备”，分出场地、内容、宣传和人员四个分支。">
+            </picture>
+          </figure>
+          <figure class="panel glass" role="tabpanel" id="p-markdown" aria-labelledby="t-markdown">
+            <figcaption>排版视图和源代码随时切换。</figcaption>
+            <picture class="window">
+              <source srcset="assets/shots/markdown-dark.webp" media="(prefers-color-scheme: dark)">
+              <img src="assets/shots/markdown-light.webp" width="2048" height="1360" loading="lazy" decoding="async" alt="Writer 打开的 Markdown 文件：一份排版好的会议纪要，左侧是标题大纲。">
+            </picture>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="files-title">
+      <div class="wrap bento">
+        <div class="tile tile-lead reveal">
+          <h2 id="files-title">文件还是那个文件。</h2>
+          <p><span class="nb">不导入，不转换。</span><span class="nb">你在 Finder 里双击的那一份，</span><span class="nb">就是正在编辑的这一份。</span></p>
+          <div class="fan" aria-hidden="true">
+            <img src="assets/icons/word.svg" width="64" height="64" alt="">
+            <img src="assets/icons/excel.svg" width="64" height="64" alt="">
+            <img src="assets/icons/ppt.svg" width="64" height="64" alt="">
+          </div>
+        </div>
+        <div class="tile tile-number glass reveal" style="--d: 1">
+          <p class="big">1 秒</p>
+          <p>每次修改在一秒内写回原文件，不用另存为。</p>
+        </div>
+        <div class="tile glass reveal" style="--d: 2">
+          <span class="chip glass"><svg class="ic" aria-hidden="true"><use href="#i-cursor-click"/></svg></span>
+          <h3>双击就能打开</h3>
+          <p>Finder 里双击，拖到 Dock 图标上，或者按 ⌘O。</p>
+        </div>
+        <div class="tile glass reveal" style="--d: 3">
+          <span class="chip glass"><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg></span>
+          <h3>没改的都还在</h3>
+          <p>批注、图表、动画和样式，没动过的部分原样保留，发回给同事也放心。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="ai" aria-labelledby="ai-title">
+      <div class="wrap ai">
+        <div>
+          <h2 id="ai-title" class="reveal"><span class="nb">AI 助手，</span><span class="nb">用你自己的模型。</span></h2>
+          <p class="section-lead reveal"><span class="nb">说一句要改什么，助手直接在文档里动手。</span><span class="nb">改了哪些地方列在回复下面，</span><span class="nb">满意就保留，不满意一键撤销。</span></p>
+          <ul class="points">
+            <li class="reveal"><span class="chip glass"><svg class="ic" aria-hidden="true"><use href="#i-plugs-connected"/></svg></span><div><h3>模型由你选</h3><p>Anthropic，或任何兼容 OpenAI 接口的服务，也可以用本机模型。</p>
+              <ul class="providers" aria-label="可以接入的服务">
+                <li>Anthropic</li><li>OpenAI</li><li>DeepSeek</li><li>通义千问</li><li>Kimi</li><li>智谱</li><li>豆包</li><li>Ollama</li><li>LM Studio</li>
+              </ul></div></li>
+            <li class="reveal" style="--d: 1"><span class="chip glass"><svg class="ic" aria-hidden="true"><use href="#i-key"/></svg></span><div><h3>Key 留在本机</h3><p>在「设置 › AI」里填好就能用。API Key 只保存在这台 Mac 上，只有向助手提问时，相关内容才会发给你选的服务。</p></div></li>
+            <li class="reveal" style="--d: 2"><span class="chip glass"><svg class="ic" aria-hidden="true"><use href="#i-sparkle"/></svg></span><div><h3>从一句话开始</h3><p>新建文档时描述想要什么，助手先写好初稿。</p></div></li>
+          </ul>
+        </div>
+        <div class="bezel glass reveal" style="--d: 1">
+          <picture class="window">
+            <source srcset="assets/shots/ai-dark.webp" media="(prefers-color-scheme: dark)">
+            <img src="assets/shots/ai-light.webp" width="1840" height="1360" loading="lazy" decoding="async" alt="Writer 的 AI 助手在预算表里操作：用户要求给进度低于 50% 的项目备注“需跟进”，助手新增了备注列、标注了两行，并列出“修改 3 个单元格”，等待保留或撤销。">
+          </picture>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="details" aria-labelledby="details-title">
+      <div class="wrap rail-head">
+        <h2 id="details-title" class="reveal">照 Mac 的习惯来做。</h2>
+        <div class="rail-nav" aria-hidden="true">
+          <button type="button" class="round glass" data-rail="-1" tabindex="-1"><svg class="ic"><use href="#i-caret-left"/></svg></button>
+          <button type="button" class="round glass" data-rail="1" tabindex="-1"><svg class="ic"><use href="#i-caret-right"/></svg></button>
+        </div>
+      </div>
+      <ul class="rail reveal" tabindex="0" aria-label="Mac 上的细节，可以左右滑动">
+        <li class="card glass">
+          <div class="art art-theme">
+            <img src="assets/shots/theme-light.webp" width="760" height="496" loading="lazy" decoding="async" alt="">
+            <img src="assets/shots/theme-dark.webp" width="760" height="496" loading="lazy" decoding="async" alt="">
+          </div>
+          <h3>浅色与深色</h3><p>跟随系统或手动切换，另有五种强调色可选。</p>
+        </li>
+        <li class="card glass">
+          <div class="art art-keys" aria-hidden="true"><kbd>⌘</kbd><kbd>J</kbd></div>
+          <h3>原生菜单和快捷键</h3><p>中文菜单栏，常用操作都有快捷键：⌘J 打开 AI 助手，⌘. 进入沉浸书写。</p>
+        </li>
+        <li class="card glass">
+          <div class="art art-zoom" aria-hidden="true"><span>20%</span><i></i><span>400%</span></div>
+          <h3>自由缩放</h3><p>双指捏合就能缩放页面、表格和幻灯片，从 20% 到 400%。</p>
+        </li>
+        <li class="card glass">
+          <div class="art art-show">
+            <picture>
+              <source srcset="assets/shots/show-dark.webp" media="(prefers-color-scheme: dark)">
+              <img src="assets/shots/show-light.webp" width="760" height="426" loading="lazy" decoding="async" alt="">
+            </picture>
+          </div>
+          <h3>放映与阅读</h3><p>演示文稿一键放映，文档可以切换网页视图和阅读模式。</p>
+        </li>
+        <li class="card glass">
+          <div class="art art-icon" aria-hidden="true"><svg class="ic"><use href="#i-folder-open"/></svg></div>
+          <h3>草稿自动保存</h3><p>新建的文档先存成草稿，每次修改都自动保存。第一次存储时，由你选择放在哪里。</p>
+        </li>
+        <li class="card glass">
+          <div class="art art-icon" aria-hidden="true"><svg class="ic"><use href="#i-tabs"/></svg></div>
+          <h3>一个文件夹，一个窗口</h3><p>同一个文件夹里打开的文档排成标签页，双指左右轻扫就能切换。</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" id="developers" aria-labelledby="dev-title">
+      <div class="wrap">
+        <h2 id="dev-title" class="reveal"><span class="nb">给开发者：</span><span class="nb">同一个引擎。</span></h2>
+        <p class="section-lead reveal"><span class="nb">App 里的文档引擎也是命令行工具和 MCP 服务。</span><span class="nb">文档是一棵树，每个元素都有路径，命令输出 JSON。</span><span class="nb">AI 助手用的就是这套命令。</span></p>
+        <div class="code reveal">
+          <div class="code-bar"><span><svg class="ic" aria-hidden="true"><use href="#i-terminal-window"/></svg>终端</span><button class="copy" type="button" data-copy="dev-code">复制</button></div>
+<pre id="dev-code"><code>W=/Applications/Writer.app/Contents/MacOS/writer
+
+$W view 方案.docx outline
+$W set 方案.docx '/body/table[1]/row[2]/cell[1]' --prop text="10 月 17 日 09:00"
+
+<span class="c"># 注册为 MCP 服务：在你的 AI 工具里添加这条命令</span>
+$W mcp</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="download" aria-labelledby="download-title">
+      <div class="cta-wrap reveal">
+        <div class="cta-card glass">
+          <picture>
+            <source srcset="assets/writer-logo-dark.svg" media="(prefers-color-scheme: dark)">
+            <img class="app-icon" src="assets/writer-logo-light.svg" width="88" height="88" alt="" loading="lazy">
+          </picture>
+          <h2 id="download-title">下载 Writer</h2>
+          <p>macOS 14 及以上，适用于 Apple 芯片的 Mac。</p>
+          <a class="btn" href="download/mac">下载 Mac 版</a>
+          <p class="small" data-latest hidden></p>
+          <p class="small">已签名并通过 Apple 公证。打开 dmg，把 Writer 拖进「应用程序」文件夹即可。</p>
+          <p class="soon">Windows 版开发中，做好后会在这里提供下载。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <a class="brand" href="#top" aria-label="Writer，回到页首">
+        <picture>
+          <source srcset="assets/writer-logo-dark.svg" media="(prefers-color-scheme: dark)">
+          <img src="assets/writer-logo-light.svg" width="24" height="24" alt="">
+        </picture>
+        <span class="wordmark" aria-hidden="true"></span>
+      </a>
+      <p>Mac 上的文档应用。© 2026 Auspex</p>
+      <nav class="foot-links" aria-label="页脚"><a href="privacy/">隐私政策</a><a href="support/">技术支持</a><a href="#top">回到顶部</a></nav>
+    </div>
+  </footer>
+</body>
+</html>

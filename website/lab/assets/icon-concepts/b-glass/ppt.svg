@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+<title id="title">PPT · 雾彩玻璃</title>
+<defs><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF" stop-opacity=".97"/><stop offset="1" stop-color="#FCF2EB" stop-opacity=".88"/></linearGradient></defs>
+<rect x="4" y="4" width="56" height="56" rx="16" fill="url(#glass)" stroke="#FFFFFF" stroke-width="1.5"/>
+<path d="M10 27C13 14 23 9 39 8" fill="none" stroke="#FFFFFF" stroke-opacity=".72" stroke-width="2" stroke-linecap="round"/>
+<g fill="none" stroke="#AA735D" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="18" width="30" height="24" rx="3"/><path d="M32 42v6M25 48h14M24 36l6-8 6 4 5-8"/></g>
+</svg>

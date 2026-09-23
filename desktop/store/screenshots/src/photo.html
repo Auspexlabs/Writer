@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<!-- The sample photo for the cut-out shot, drawn here so the screenshots carry no third-party image: a latte with a heart
+     in a white cup, on a saucer with a spoon, on an oak table, seen from above in soft window light. shots.mjs saves it as JPEG. -->
+<html>
+<head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body>
+<canvas id="c" width="1200" height="1200"></canvas>
+<script>
+const c = document.getElementById('c'), g = c.getContext('2d'), W = c.width, H = c.height;
+let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const circle = (x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); };
+const shadow = (blur, dx, dy, a) => { g.shadowColor = `rgba(55,28,8,${a})`; g.shadowBlur = blur; g.shadowOffsetX = dx; g.shadowOffsetY = dy; };
+
+// ---- the table: oak planks with grain, lit from the top left ----
+const planks = [0, 250, 560, 880, H];
+for (let p = 0; p < planks.length - 1; p++) {
+  const y0 = planks[p], y1 = planks[p + 1], t = [0, 12, -9, 5][p];
+  g.fillStyle = `rgb(${184 + t},${136 + t * 0.8},${92 + t * 0.6})`; g.fillRect(0, y0, W, y1 - y0);
+  for (let i = 0; i < 130; i++) {                                   // grain: long wavy lines along the plank
+    const y = y0 + rnd() * (y1 - y0), amp = 2 + rnd() * 8, f = 0.002 + rnd() * 0.005, ph = rnd() * 6, dark = rnd() < 0.7;
+    g.strokeStyle = dark ? `rgba(105,62,30,${0.05 + rnd() * 0.17})` : `rgba(238,200,155,${0.05 + rnd() * 0.12})`;
+    g.lineWidth = 0.6 + rnd() * (dark ? 3.4 : 2); g.beginPath();
+    for (let x = -10; x <= W + 10; x += 12) { const yy = y + Math.sin(x * f + ph) * amp + Math.sin(x * f * 3.1 + ph) * amp * 0.25; x < 0 ? g.moveTo(x, yy) : g.lineTo(x, yy); }
+    g.stroke();
+  }
+  if (p) { g.fillStyle = 'rgba(58,32,14,0.6)'; g.fillRect(0, y0 - 2, W, 3); g.fillStyle = 'rgba(255,226,190,0.2)'; g.fillRect(0, y0 + 1, W, 2); }
+}
+let lg = g.createRadialGradient(170, 90, 40, 330, 260, 1250);            // window light from the top left, falling off
+lg.addColorStop(0, 'rgba(255,245,228,0.45)'); lg.addColorStop(0.45, 'rgba(255,240,220,0.08)'); lg.addColorStop(1, 'rgba(38,18,4,0.42)');
+g.fillStyle = lg; g.fillRect(0, 0, W, H);
+
+// ---- the saucer ----
+const SX = 600, SY = 612, SR = 468;
+g.save(); shadow(80, 42, 52, 0.55); circle(SX, SY, SR); g.fillStyle = '#EAE5DD'; g.fill(); g.restore();
+let sg = g.createRadialGradient(SX - 110, SY - 130, 40, SX, SY, SR);
+sg.addColorStop(0, '#FCFBF8'); sg.addColorStop(0.55, '#F1EDE7'); sg.addColorStop(0.8, '#E2DCD3'); sg.addColorStop(0.9, '#FAF8F4'); sg.addColorStop(0.97, '#E8E2D9'); sg.addColorStop(1, '#CBC3B6');
+circle(SX, SY, SR); g.fillStyle = sg; g.fill();
+g.lineWidth = 3; g.strokeStyle = 'rgba(120,100,80,0.10)'; circle(SX, SY, SR * 0.8); g.stroke();   // the well's edge
+
+// ---- the teaspoon, on the saucer's right ----
+g.save(); g.translate(958, 470); g.rotate(1.43);
+shadow(16, 12, 14, 0.35);
+let mg = g.createLinearGradient(0, -40, 0, 40); mg.addColorStop(0, '#F7F7F5'); mg.addColorStop(0.42, '#B3B2AE'); mg.addColorStop(0.55, '#E2E1DD'); mg.addColorStop(1, '#8F8D88');
+g.fillStyle = mg; g.beginPath(); g.ellipse(0, 0, 66, 40, 0, 0, Math.PI * 2); g.fill();
+g.beginPath(); g.moveTo(52, -8); g.quadraticCurveTo(120, -5, 330, -11); g.arc(330, 0, 11, -Math.PI / 2, Math.PI / 2); g.quadraticCurveTo(120, 5, 52, 8); g.closePath(); g.fill();
+g.shadowColor = 'transparent'; let bw = g.createRadialGradient(-14, -10, 4, 0, 0, 60); bw.addColorStop(0, 'rgba(255,255,255,0.7)'); bw.addColorStop(1, 'rgba(90,90,85,0.25)');
+g.fillStyle = bw; g.beginPath(); g.ellipse(0, 0, 56, 31, 0, 0, Math.PI * 2); g.fill();   // the bowl's hollow
+g.restore();
+
+// ---- the cup: shadow, handle, rim, inner wall, coffee ----
+const CX = 578, CY = 588, R = 312, HA = 0.66;
+g.save(); shadow(56, 34, 42, 0.5); circle(CX, CY, R); g.fillStyle = '#F2EEE8'; g.fill();
+g.translate(CX, CY); g.rotate(HA); g.beginPath(); g.roundRect(R - 40, -38, 170, 76, 38); g.fill(); g.restore();
+g.save(); g.translate(CX, CY); g.rotate(HA);                            // the handle: a loop, seen from above
+let hg = g.createLinearGradient(0, -38, 0, 38); hg.addColorStop(0, '#FFFFFF'); hg.addColorStop(0.5, '#F0ECE6'); hg.addColorStop(1, '#D5CEC3');
+g.fillStyle = hg; g.beginPath(); g.roundRect(R - 40, -38, 170, 76, 38); g.fill();
+let og = g.createLinearGradient(0, -14, 0, 14); og.addColorStop(0, 'rgba(150,135,118,0.95)'); og.addColorStop(1, 'rgba(205,195,182,0.95)');
+g.fillStyle = og; g.beginPath(); g.roundRect(R + 22, -14, 84, 28, 14); g.fill();               // the loop's opening
+g.restore();
+let rg = g.createLinearGradient(CX - R, CY - R, CX + R, CY + R);
+rg.addColorStop(0, '#FFFFFF'); rg.addColorStop(0.5, '#F3EFE9'); rg.addColorStop(1, '#D7D0C5');
+circle(CX, CY, R); g.fillStyle = rg; g.fill();
+let wg = g.createRadialGradient(CX + 36, CY + 36, R * 0.7, CX, CY, R * 0.93);   // the inner wall, in its own shade
+wg.addColorStop(0, '#D6CDC1'); wg.addColorStop(1, '#EFE9E1');
+circle(CX, CY, R * 0.925); g.fillStyle = wg; g.fill();
+const CR = R * 0.86;
+let cg = g.createRadialGradient(CX - 36, CY - 48, 10, CX, CY, CR);
+cg.addColorStop(0, '#CB955F'); cg.addColorStop(0.55, '#B27B47'); cg.addColorStop(0.86, '#8A5530'); cg.addColorStop(0.97, '#5E3517'); cg.addColorStop(1, '#4A290F');
+circle(CX, CY, CR); g.fillStyle = cg; g.fill();
+g.save(); circle(CX, CY, CR); g.clip();                                   // crema: mottled, speckled
+for (let i = 0; i < 60; i++) { const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * CR; let m = g.createRadialGradient(CX + Math.cos(a) * d, CY + Math.sin(a) * d, 0, CX + Math.cos(a) * d, CY + Math.sin(a) * d, 30 + rnd() * 50); const dark = rnd() < 0.5; m.addColorStop(0, dark ? 'rgba(110,62,28,0.18)' : 'rgba(225,175,120,0.16)'); m.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = m; g.fillRect(0, 0, W, H); }
+for (let i = 0; i < 1300; i++) { const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * CR; g.fillStyle = rnd() < 0.5 ? 'rgba(232,192,142,0.12)' : 'rgba(88,48,18,0.12)'; circle(CX + Math.cos(a) * d, CY + Math.sin(a) * d, 1 + rnd() * 3.2); g.fill(); }
+
+// the heart: milk poured in layers, then pulled through
+const heart = (s, color, dx = 0) => {
+  const hx = CX - 8 + dx, hy = CY + 14;
+  g.fillStyle = color; g.beginPath();
+  g.moveTo(hx, hy + 138 * s);
+  g.bezierCurveTo(hx - 50 * s, hy + 82 * s, hx - 205 * s, hy + 26 * s, hx - 176 * s, hy - 80 * s);
+  g.bezierCurveTo(hx - 148 * s, hy - 176 * s, hx - 36 * s, hy - 170 * s, hx + 2 * s, hy - 86 * s);
+  g.bezierCurveTo(hx + 38 * s, hy - 172 * s, hx + 152 * s, hy - 172 * s, hx + 178 * s, hy - 76 * s);
+  g.bezierCurveTo(hx + 204 * s, hy + 30 * s, hx + 48 * s, hy + 84 * s, hx, hy + 138 * s);
+  g.fill();
+};
+g.filter = 'blur(3px)';
+heart(1.0, '#F6ECDD'); heart(0.74, '#C8935F', 3); heart(0.64, '#F4E8D6', 3); heart(0.4, '#C18A56', 5); heart(0.31, '#F2E4CF', 5);
+g.filter = 'blur(1.6px)'; g.strokeStyle = '#EBDAC2'; g.lineWidth = 8; g.lineCap = 'round';
+g.beginPath(); g.moveTo(CX - 8, CY - 176); g.quadraticCurveTo(CX - 2, CY + 20, CX - 8, CY + 205); g.stroke();
+g.filter = 'none'; g.restore();
+let ring = g.createRadialGradient(CX, CY, CR * 0.88, CX, CY, CR);              // where the coffee meets the cup
+ring.addColorStop(0, 'rgba(60,30,10,0)'); ring.addColorStop(1, 'rgba(60,30,10,0.38)');
+circle(CX, CY, CR); g.fillStyle = ring; g.fill();
+g.lineWidth = 12; g.strokeStyle = 'rgba(255,255,255,0.8)';                    // light on the rim
+g.beginPath(); g.arc(CX, CY, R - 11, Math.PI * 1.05, Math.PI * 1.55); g.stroke();
+g.lineWidth = 6; g.strokeStyle = 'rgba(255,255,255,0.5)';
+g.beginPath(); g.arc(CX, CY, CR + 5, Math.PI * 1.1, Math.PI * 1.45); g.stroke();
+
+// ---- a camera's softness and grain ----
+const img = g.getImageData(0, 0, W, H), px = img.data;
+for (let i = 0; i < px.length; i += 4) { const n = (rnd() - 0.5) * 9; px[i] += n; px[i + 1] += n; px[i + 2] += n; }
+g.putImageData(img, 0, 0);
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

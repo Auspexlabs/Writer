@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "writer-window-drag",
+  "description": "Allow the bundled local Writer editor to drag its macOS windows by their title strips.",
+  "windows": ["main-*", "settings", "about", "gestures"],
+  "platforms": ["macOS"],
+  "remote": {
+    "urls": ["http://127.0.0.1:*"]
+  },
+  "permissions": ["core:window:allow-start-dragging"]
+}

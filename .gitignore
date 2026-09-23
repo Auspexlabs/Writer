@@ -1,0 +1,16 @@
+source/
+bin/
+obj/
+.vs/
+.idea/
+*.user
+.DS_Store
+TestResults/
+dist/
+!website/dist/
+!website/dist/**
+
+# certificates, provisioning profiles and API keys for release builds (never committed)
+.signing/
+desktop/SIGNING.local.md
+website/.deploy.local

@@ -1,0 +1,109 @@
+Writer
+Copyright (C) 2026 北京奥斯佩克斯网络科技中心（个体工商户）(Auspex)
+https://thewriter.cn
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3 of the License only (AGPL-3.0-only), together
+with the additional terms below. The text of the License is in the LICENSE
+file.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+details.
+
+
+ADDITIONAL TERMS UNDER SECTION 7 OF THE AGPL-3.0
+
+These terms apply to the parts of this program whose copyright is held by
+Auspex. Third-party components keep their own licenses (see below).
+
+1. Attribution (section 7(b)). If you convey this program or a work based on
+   it, in source or object form, or make a modified version available to
+   users who interact with it remotely through a computer network, you must
+   preserve
+
+     - the author attribution "Writer by Auspex", and
+     - the copyright notice at the top of this file
+
+   both in the Appropriate Legal Notices that the program's user interface
+   displays (in the Writer app, its About screen) and in the documentation
+   that comes with the program. You may add your own notices next to them,
+   for example "based on Writer by Auspex".
+
+2. Origin (section 7(c)). A modified version must be marked as modified, as
+   section 5(a) requires, and must not be presented as the official Writer
+   app or as a product of Auspex.
+
+3. Trademarks (section 7(e)). This license grants no rights under trademark
+   law in the Writer name and logo or the Auspex name. Displaying the
+   attribution that term 1 requires is always permitted.
+
+
+DUAL LICENSING
+
+Auspex also offers this program under a separate commercial license, for
+using its source code in products or services without the obligations of the
+AGPL-3.0. See COMMERCIAL.md, or write to mosheng9@outlook.com.
+
+The official Writer app published by Auspex is free of charge for everyone,
+including businesses and other organizations that use it for work. The
+commercial license concerns reuse of the source code only.
+
+
+THIRD-PARTY COMPONENTS
+
+Writer includes third-party libraries, fonts and test files under their own
+licenses. They are listed, with their notices, in THIRD_PARTY_NOTICES.md.
+Neither the terms above nor a commercial license from Auspex change those
+licenses.
+
+
+----------------------------------------------------------------------------
+中文译文（仅供参考；如与英文不一致，以英文为准）
+
+Writer
+版权所有 (C) 2026 北京奥斯佩克斯网络科技中心（个体工商户）(Auspex)
+
+本程序是自由软件：你可以依据自由软件基金会发布的 GNU Affero 通用公共许可证
+第 3 版（仅限第 3 版，AGPL-3.0-only）以及下列附加条款，再分发和修改本程序。
+许可证全文见 LICENSE 文件。
+
+发布本程序是希望它有用，但不提供任何担保，也不包括对适销性或特定用途适用性的
+默示担保。详见 GNU Affero 通用公共许可证。
+
+AGPL-3.0 第 7 条下的附加条款
+
+以下条款适用于本程序中由 Auspex 享有版权的部分。第三方组件仍适用各自的
+许可证（见下文）。
+
+1. 署名（第 7(b) 条）。以源代码或目标代码形式传递（convey）本程序或基于本程序
+   的作品，或者让用户通过计算机网络远程使用修改后的版本时，必须保留
+
+     - 作者署名 “Writer by Auspex”；
+     - 本文件开头的版权声明；
+
+   并且既要保留在程序用户界面显示的“适当法律声明”（Appropriate Legal
+   Notices）中（在 Writer 应用中即“关于”界面），也要保留在随程序提供的文档中。
+   你可以在旁边加上自己的声明，例如 “based on Writer by Auspex”。
+
+2. 来源（第 7(c) 条）。修改版必须按第 5(a) 条的要求标明经过修改，并且不得以
+   官方 Writer 应用或 Auspex 产品的名义出现。
+
+3. 商标（第 7(e) 条）。本许可不授予 Writer 名称和标志、Auspex 名称的任何商标
+   权利。按第 1 条的要求显示署名，始终是允许的。
+
+双重许可
+
+Auspex 另以单独的商业许可提供本程序，供希望在产品或服务中使用其源代码、
+又不承担 AGPL-3.0 义务的用户选择。详见 COMMERCIAL.md，或写信至
+mosheng9@outlook.com。
+
+Auspex 发布的官方 Writer 应用对所有人免费，包括在工作中使用它的企业和其他
+组织。商业许可只涉及源代码的再利用。
+
+第三方组件
+
+Writer 包含第三方的库、字体和测试文件，它们适用各自的许可证，连同其声明列在
+THIRD_PARTY_NOTICES.md 中。上述条款和 Auspex 的商业许可都不改变这些许可证。

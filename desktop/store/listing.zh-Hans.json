@@ -1,0 +1,42 @@
+{
+  "locale": "zh-Hans",
+  "appInfo": {
+    "subtitle": "AI 写作 · 文档表格演示一站编辑",
+    "privacyPolicyUrl": "https://thewriter.cn/privacy",
+    "primaryCategory": "PRODUCTIVITY",
+    "secondaryCategory": "BUSINESS"
+  },
+  "version": {
+    "copyright": "2026 Auspex",
+    "promotionalText": "一个 App 搞定文档、表格、演示、Markdown 和思维导图。接入你自己的 AI 模型，让它直接帮你写、帮你改；原生读写 Office 文件，所有文档都留在你的 Mac 上。",
+    "keywords": "幻灯片,思维导图,Markdown,PDF,docx,xlsx,pptx,AI助手,抠图,办公,笔记,编辑器,排版,公式,图表,修订,批注,初稿",
+    "supportUrl": "https://thewriter.cn/support",
+    "marketingUrl": "https://thewriter.cn",
+    "description": "Writer 是为 Mac 打造的全能文档工具：一个 App 编辑 Word 文档、Excel 表格、PowerPoint 演示、Markdown 和思维导图，还能阅读 PDF。再接入你自己的 AI 模型，写作、改稿、整理数据都可以交给它。\n\n【一个 App，文档表格演示全搞定】\n• 文档：标题样式、表格（合并单元格、三线表）、目录、修订与批注，打开就能编辑\n• 表格：230 多个函数、公式引用彩色高亮、填充柄预览、冻结窗格、筛选、图表\n• 演示：原样还原 PowerPoint 模板的主题色、背景和字体，支持编辑、切换效果、备注和放映\n• Markdown 与思维导图：所见即所得，随时切换源码\n• PDF：清晰流畅地阅读\n\n【你的 AI，你做主】\n• 在「设置 › AI」里填入你自己的模型服务：Claude、OpenAI、DeepSeek、通义千问、Kimi、智谱、豆包，或本地运行的 Ollama、LM Studio\n• AI 直接动手修改文档：精简段落、改写语气、翻译标题、生成初稿……\n• 没有账号、没有订阅：请求从你的 Mac 直接发往你选择的服务商\n\n【图片工具】\n• 一键抠图：基于 macOS 内置的 Apple Vision，在本机完成，不上传图片\n• 裁剪、旋转翻转、亮度对比度、灰度、透明度、边框阴影圆角、压缩图片、重置图片\n• 调整都按 Office 原生格式保存，在 Word、PowerPoint 里打开效果一致\n\n【为 Mac 而设计】\n• 原生菜单栏、标签页、深色模式、触控板手势\n• 工具栏可以随时收起，沉浸书写不打扰\n• 镜头跟随：放大编辑时，光标始终留在视野里\n\n【隐私】\n• 文档只保存在你的 Mac 上。Writer 不收集任何数据，没有广告，也没有追踪。"
+  },
+  "ageRating": {
+    "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+    "contests": "NONE",
+    "gamblingSimulated": "NONE",
+    "gunsOrOtherWeapons": "NONE",
+    "horrorOrFearThemes": "NONE",
+    "matureOrSuggestiveThemes": "NONE",
+    "medicalOrTreatmentInformation": "NONE",
+    "profanityOrCrudeHumor": "NONE",
+    "sexualContentGraphicAndNudity": "NONE",
+    "sexualContentOrNudity": "NONE",
+    "violenceCartoonOrFantasy": "NONE",
+    "violenceRealistic": "NONE",
+    "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+    "gambling": false,
+    "lootBox": false,
+    "unrestrictedWebAccess": false,
+    "advertising": false,
+    "ageAssurance": false,
+    "messagingAndChat": false,
+    "parentalControls": false,
+    "userGeneratedContent": false,
+    "socialMedia": false,
+    "healthOrWellnessTopics": false
+  }
+}
