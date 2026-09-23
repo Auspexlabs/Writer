@@ -14,8 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://thewriter.cn">官网</a> ·
-  <a href="https://thewriter.cn/#download">下载 Mac 版</a> ·
+  <a href="https://github.com/Auspexlabs/writer/releases/latest">下载 Mac 版</a> ·
   <a href="docs/engine.md">引擎文档</a> ·
   <a href="README.en.md">English</a>
 </p>
@@ -52,7 +51,14 @@
 
 ## 下载
 
-- 在[官网](https://thewriter.cn/#download)下载 Mac 版。安装包已签名并通过 Apple 公证，打开 dmg，把 Writer 拖进「应用程序」文件夹即可。
+用 Homebrew 安装：
+
+```bash
+brew install --cask auspexlabs/tap/writer
+```
+
+也可以在 [GitHub Releases](https://github.com/Auspexlabs/writer/releases/latest) 下载 dmg。安装包已签名并通过 Apple 公证，打开后把 Writer 拖进「应用程序」文件夹即可。
+
 - 系统要求：macOS 14 或更高版本，目前适用于 Apple 芯片的 Mac。
 - Windows 版正在开发中。
 - 官方发布的 Writer 应用对所有人免费，企业和组织在工作中使用也一样。
@@ -62,7 +68,7 @@
 应用里的文档引擎就是 `writer` 命令。装好应用以后可以直接在终端里用：
 
 ```bash
-W=/Applications/Writer.app/Contents/MacOS/writer
+W=/Applications/Writer.app/Contents/MacOS/writer   # 用 Homebrew 安装的，直接用 writer
 
 $W view 方案.docx outline          # 列出每个元素和它的路径
 $W set 方案.docx '/body/table[1]/row[2]/cell[1]' --prop text="10 月 17 日 09:00"
@@ -105,7 +111,7 @@ src/          引擎（.NET 10）：Writer.Core 文档树与路径，Writer.Form
               Writer.Cli 命令行、MCP 服务、HTTP 服务和 AI 助手
 ui/           编辑器：每种格式一个页面，engine.js 负责和引擎通信
 desktop/      Mac 应用（Tauri 2 窗口加内置引擎），Windows 版在开发中
-website/      官网 thewriter.cn，纯静态页面
+website/      官网，纯静态页面
 tests/        引擎测试：单元、格式适配器、命令行和往返保真
 docs/         引擎参考、设计文档和计划、README 用的截图
 brand/        标志和文件图标
@@ -129,9 +135,8 @@ SKILL.md      给 AI 智能体的使用说明
 ## 联系
 
 - 商业许可、技术支持和反馈：[mosheng9@outlook.com](mailto:mosheng9@outlook.com)
-- 官网：[thewriter.cn](https://thewriter.cn)
 
 ---
 
 Writer by Auspex<br>
-Copyright (C) 2026 北京奥斯佩克斯网络科技中心（个体工商户）(Auspex)
+Copyright (C) 2026 北京奥斯佩克斯网络科技中心 (Auspex)

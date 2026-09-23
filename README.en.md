@@ -15,8 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://thewriter.cn">Website</a> ·
-  <a href="https://thewriter.cn/#download">Download for Mac</a> ·
+  <a href="https://github.com/Auspexlabs/writer/releases/latest">Download for Mac</a> ·
   <a href="docs/engine.md">Engine reference</a> ·
   <a href="README.md">中文</a>
 </p>
@@ -68,8 +67,15 @@ This repository holds two things built from the same code:
 
 ## Download
 
-- Download the Mac app from the [website](https://thewriter.cn/#download). It is signed and notarized by Apple: open
-  the dmg and drag Writer into Applications.
+Install with Homebrew:
+
+```bash
+brew install --cask auspexlabs/tap/writer
+```
+
+Or download the dmg from [GitHub Releases](https://github.com/Auspexlabs/writer/releases/latest). It is signed and
+notarized by Apple: open it and drag Writer into Applications.
+
 - Requires macOS 14 or later, on a Mac with Apple silicon for now.
 - A Windows version is in development.
 - The official Writer app is free for everyone, including businesses and organizations that use it for work.
@@ -79,7 +85,7 @@ This repository holds two things built from the same code:
 The app's document engine is the `writer` command. With the app installed you can use it from a terminal:
 
 ```bash
-W=/Applications/Writer.app/Contents/MacOS/writer
+W=/Applications/Writer.app/Contents/MacOS/writer   # installed with Homebrew? just use writer
 
 $W view plan.docx outline          # every element with its path
 $W set plan.docx '/body/table[1]/row[2]/cell[1]' --prop text="17 Oct 09:00"
@@ -123,7 +129,7 @@ src/          the engine (.NET 10): Writer.Core, the document tree and paths; Wr
               writing each format; Writer.Cli, the command line, MCP server, HTTP server and AI assistant
 ui/           the editors, one page per format; engine.js talks to the engine
 desktop/      the Mac app (Tauri 2 windows around a bundled engine); Windows in development
-website/      the website, thewriter.cn, as static pages
+website/      the website, as static pages
 tests/        engine tests: unit, format adapters, command line and round-trip fidelity
 docs/         the engine reference, design documents and plans, screenshots for this README
 brand/        logos and file icons
@@ -155,9 +161,8 @@ This is a summary; the LICENSE and NOTICE files are what count.
 ## Contact
 
 - Commercial licensing, support and feedback: [mosheng9@outlook.com](mailto:mosheng9@outlook.com)
-- Website: [thewriter.cn](https://thewriter.cn)
 
 ---
 
 Writer by Auspex<br>
-Copyright (C) 2026 北京奥斯佩克斯网络科技中心（个体工商户）(Auspex)
+Copyright (C) 2026 北京奥斯佩克斯网络科技中心 (Auspex)
