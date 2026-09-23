@@ -240,7 +240,7 @@ class Component extends DCLogic {
         else if (ctrl && ['1', '2', '3'].includes(k)) { e.preventDefault(); this.block('h' + k); }
         else if (ctrl && k === '0') { e.preventDefault(); this.exec('formatBlock', '<p>'); }
         else if (ctrl && k === 's') { e.preventDefault(); this.flush(); this.props.toast && this.props.toast('已保存'); }
-        else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+        else if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) {
           const s = window.getSelection(); const b = s.rangeCount && this.blockOf(s.getRangeAt(0).startContainer);
           if (b && b.tagName === 'P') {
             const t = b.textContent.trim();
@@ -265,7 +265,7 @@ class Component extends DCLogic {
         if (ctrl && k === 'i') { e.preventDefault(); return this.wrapSrc('*', '*', '斜体'); }
         if (ctrl && k === 'k') { e.preventDefault(); return this.wrapSrc('[', '](https://)', '链接文字'); }
         if (e.key === 'Tab') { e.preventDefault(); this.insText('  '); return; }
-        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && t.selectionStart === t.selectionEnd) {
+        if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) && t.selectionStart === t.selectionEnd) {
           const v = t.value, s = t.selectionStart, ls = v.lastIndexOf('\n', s - 1) + 1, m = LIST.exec(v.slice(ls, s));
           if (m) { e.preventDefault(); if (!m[4].trim()) { t.setSelectionRange(ls, s); this.insText(''); return; } const num = /^\d+/.exec(m[2]); this.insText('\n' + m[1] + (num ? (+num[0] + 1) + m[2].slice(num[0].length) : m[2]) + ' ' + (m[3] ? '[ ] ' : '')); }
         }

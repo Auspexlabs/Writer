@@ -101,7 +101,8 @@ test('a slide deleted while another is added is listed as deleted: slides go by 
 // ---- the panel (index.dc.html): its logic in a vm, as storage.test.mjs runs it ----
 function shell(docs, cur) {
   const code = readFileSync(new URL('../index.dc.html', import.meta.url), 'utf8').match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
-  const ctx = { location: { search: '' }, URLSearchParams, structuredClone, setTimeout: () => 0, clearTimeout: () => { }, document: { querySelector: () => null },
+  const ctx = { location: { search: '' }, URLSearchParams, structuredClone, setTimeout: () => 0, clearTimeout: () => { }, window: { innerWidth: 1200 },
+    document: { querySelector: () => null, documentElement: { dataset: {} } },
     React: { createRef: () => ({ current: null }) }, DCLogic: class { setState(u) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); } } };
   vm.runInNewContext(code + '\nglobalThis.Shell = Component;', ctx);
   const c = new ctx.Shell();
@@ -109,6 +110,8 @@ function shell(docs, cur) {
   Object.assign(c.state, { docs, cur, view: 'doc', showAI: true });
   return c;
 }
+/** vals() needs state.ready (the shell shows a loading placeholder until then) — the render tests below want the real thing. */
+function ready(c) { c.state.ready = true; return c; }
 /** The chat list's scroller; like a browser's, scrollTop stays between 0 and the content's bottom. */
 const scroller = (clientHeight, scrollHeight) => ({ clientHeight, scrollHeight, top: 0, get scrollTop() { return this.top = Math.max(0, Math.min(this.top, this.scrollHeight - this.clientHeight)); }, set scrollTop(v) { this.top = v; this.scrollTop; } });
 const card = { items: [['新增', '段落 · 新的一段']], state: 'pending' };
@@ -129,4 +132,63 @@ test('the panel scrolls a new change card into view, 保留 / 撤销 included, u
   el.scrollTop = 900; c.componentDidUpdate(); // the user scrolls up to read; the shell renders for something else
   render([...again.slice(0, 3), { ...reply, change: card }], 1980);
   assert.equal(el.scrollTop, 900, 'scrolled up on purpose: left where the user is');
+});
+
+test('the writer commands collapse behind 「执行了 N 条命令」; the reply text always shows; the line expands the list', () => {
+  const c = ready(shell([{ id: 'a', title: 'a', type: 'docx', path: 'a.docx', loaded: true }], 'a'));
+  c.state.chats = { a: [{ role: 'ai', text: '已经改好了。', steps: [{ text: 'set a.docx /body/paragraph[1] --prop text=Hi', ok: true }, { text: 'set a.docx /body/paragraph[2] --prop text=Bye', ok: true }, { text: 'export a.docx --to a.pdf', ok: false }] }] };
+  let m = c.vals().msgs[0];
+  assert.equal(m.text, '已经改好了。', 'the reply text is always present');
+  assert.equal(m.hasSteps, true);
+  assert.equal(m.stepsOpen, false, 'collapsed by default');
+  assert.equal(m.stepsLabel, '执行了 3 条命令');
+  m.onToggleSteps();
+  m = c.vals().msgs[0];
+  assert.equal(m.stepsOpen, true, 'clicking the line expands it');
+  assert.equal(m.text, '已经改好了。', 'expanding never touches the reply text');
+  m.onToggleSteps();
+  assert.equal(c.vals().msgs[0].stepsOpen, false, 'clicking again collapses it');
+});
+
+test('the send button becomes 停止 while a turn is in flight, and stops instead of sending', () => {
+  const c = ready(shell([{ id: 'a', title: 'a', type: 'docx', path: 'a.docx', loaded: true }], 'a'));
+  let sent = null, stopped = false;
+  c.send = t => { sent = t; }; c.stopChat = () => { stopped = true; };
+  c.state.input = 'hi';
+  let v = c.vals();
+  assert.equal(v.sendLabel, '↑');
+  v.sendClick();
+  assert.deepEqual([sent, stopped], ['hi', false]);
+
+  sent = null; c.state.sending = true;
+  v = c.vals();
+  assert.equal(v.sendLabel, '停止');
+  v.sendClick();
+  assert.deepEqual([sent, stopped], [null, true], 'while sending, the button stops instead of sending');
+});
+
+test('IME: a WKWebView candidate-confirming Enter (isComposing false, keyCode 229) never fires; a real Enter still does', () => {
+  const c = ready(shell([{ id: 'a', title: 'a', type: 'docx', path: 'a.docx', loaded: true }], 'a'));
+  let sent = null; c.send = t => { sent = t; };
+  c.state.input = '你好';
+  const enter = keyCode => ({ key: 'Enter', shiftKey: false, nativeEvent: { isComposing: false, keyCode }, preventDefault: () => { } });
+  let v = c.vals();
+  v.onInputKey(enter(229));
+  assert.equal(sent, null, 'confirming a pinyin candidate must not send the chat message');
+  v.onInputKey(enter(13));
+  assert.equal(sent, '你好', 'a real Enter still sends');
+
+  let blurred = false;
+  const titleEvt = keyCode => Object.assign(enter(keyCode), { currentTarget: { blur: () => { blurred = true; } } });
+  v.onTitleKey(titleEvt(229));
+  assert.equal(blurred, false, 'confirming a candidate in the title field must not commit the rename');
+  v.onTitleKey(titleEvt(13));
+  assert.equal(blurred, true);
+
+  let generated = false; c.generate = () => { generated = true; };
+  v = c.vals();
+  v.onPromptKey(enter(229));
+  assert.equal(generated, false, 'the create-page prompt must not generate while a candidate is still being confirmed');
+  v.onPromptKey(enter(13));
+  assert.equal(generated, true);
 });

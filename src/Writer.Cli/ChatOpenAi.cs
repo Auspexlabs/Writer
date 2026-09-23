@@ -30,14 +30,14 @@ public sealed partial class Chat
     }
 
     /// <summary>One request, retried at most once per refusal that names what to change: reasoning_effort, reasoning_content.</summary>
-    async Task<Reply> OpenAiTurn(string system, JsonArray messages, CancellationToken ct)
+    async Task<Reply> OpenAiTurn(string system, JsonArray messages, bool web, CancellationToken ct)
     {
         if (_fold) Fold(messages);
         while (true)
         {
             try
             {
-                return await OpenAiRequest(system, messages, ct);
+                return await OpenAiRequest(system, messages, web, ct);
             }
             catch (WriterException ex) when (!_noReasoning && Says(ex, "reasoning_effort"))
             {
@@ -54,7 +54,7 @@ public sealed partial class Chat
     /// <summary>The provider's words are in the message or, when they were given a short Chinese name, in the hint.</summary>
     static bool Says(WriterException ex, string word) => ex.Message.Contains(word, StringComparison.Ordinal) || ex.Hint.Contains(word, StringComparison.Ordinal);
 
-    async Task<Reply> OpenAiRequest(string system, JsonArray messages, CancellationToken ct)
+    async Task<Reply> OpenAiRequest(string system, JsonArray messages, bool web, CancellationToken ct)
     {
         var all = new JsonArray(new JsonObject { ["role"] = "system", ["content"] = system });
         foreach (var m in messages) all.Add(m!.DeepClone());
@@ -62,11 +62,7 @@ public sealed partial class Chat
         {
             ["model"] = Model,
             ["messages"] = all,
-            ["tools"] = new JsonArray(new JsonObject
-            {
-                ["type"] = "function",
-                ["function"] = new JsonObject { ["name"] = Mcp.ToolName, ["description"] = Mcp.ToolDescription, ["parameters"] = Parameters() },
-            }),
+            ["tools"] = OpenAiTools(web),
             ["stream"] = true,
         };
         if (_noReasoning) body["reasoning_effort"] = "none";
@@ -128,35 +124,53 @@ public sealed partial class Chat
         if (!streamed) throw NotAnApi(other ?? "");
         if (finish is "content_filter" or "sensitive") throw new WriterException(ErrorCode.Io, "模型服务拦截了这次回复（内容审核）", "");
 
-        var blocks = new List<(string?, string?, string?)>();
-        if (text.Length > 0) blocks.Add((text.ToString(), null, null));
+        var blocks = new List<(string?, string?, string?, JsonObject?)>();
+        if (text.Length > 0) blocks.Add((text.ToString(), null, null, null));
         var toolCalls = new JsonArray();
         for (var i = 0; i < calls.Count; i++)
         {
             var call = calls[i];
             if (call.Id.Length == 0) call.Id = "call_" + i;
             var args = call.Args.ToString();
-            string? command = null;
+            JsonObject? input = null;
             try
             {
-                command = Str((JsonNode.Parse(args.Length == 0 ? "{}" : args) as JsonObject)?["command"]);
+                input = JsonNode.Parse(args.Length == 0 ? "{}" : args) as JsonObject;
             }
             catch (JsonException)
             {
                 args = "{}"; // echoing broken JSON back could get the next request refused; the tool result says what went wrong
             }
-            blocks.Add((null, call.Id, command));
+            var name = call.Name.Length > 0 ? call.Name : Mcp.ToolName;
+            blocks.Add((null, call.Id, name, input));
             toolCalls.Add((JsonNode)new JsonObject
             {
                 ["id"] = call.Id,
                 ["type"] = "function",
-                ["function"] = new JsonObject { ["name"] = call.Name.Length > 0 ? call.Name : Mcp.ToolName, ["arguments"] = args },
+                ["function"] = new JsonObject { ["name"] = name, ["arguments"] = args },
             });
         }
         var message = new JsonObject { ["role"] = "assistant", ["content"] = text.Length > 0 ? text.ToString() : null };
         if (reasoning is not null) message["reasoning_content"] = reasoning.ToString(); // thinking models want it back within the turn
         if (toolCalls.Count > 0) message["tool_calls"] = toolCalls;
         return new Reply(blocks, message, calls.Count > 0);
+    }
+
+    /// <summary>The tools offered on /chat/completions: writer always, web_search and web_fetch when 联网搜索 is on.</summary>
+    static JsonArray OpenAiTools(bool web)
+    {
+        static JsonObject Fn(string name, string description, JsonObject schema) => new()
+        {
+            ["type"] = "function",
+            ["function"] = new JsonObject { ["name"] = name, ["description"] = description, ["parameters"] = schema },
+        };
+        var tools = new JsonArray { Fn(Mcp.ToolName, Mcp.ToolDescription, Parameters()) };
+        if (web)
+        {
+            tools.Add(Fn(Web.SearchToolName, Web.SearchDescription, Web.SearchParameters()));
+            tools.Add(Fn(Web.FetchToolName, Web.FetchDescription, Web.FetchParameters()));
+        }
+        return tools;
     }
 
     /// <summary>Adds one tool_calls fragment. The first fragment of a call brings its id and name, later ones (same index) add

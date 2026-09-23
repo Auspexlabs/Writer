@@ -35,16 +35,18 @@ public sealed partial class Chat
         _http = new HttpClient(handler ?? Direct, disposeHandler: false) { Timeout = TimeSpan.FromSeconds(180) };
     }
 
-    /// <summary>One model reply: its text and tool calls in order (a call has an Id; a null Command means unusable input),
-    /// the assistant message for the transcript, and whether the model waits for tool results.</summary>
-    sealed record Reply(List<(string? Text, string? Id, string? Command)> Blocks, JsonObject Message, bool WantsTools);
+    /// <summary>One model reply: its text and tool calls in order, the assistant message for the transcript, and whether the
+    /// model waits for tool results. In a block, Tool is the advertised name (writer, web_search, web_fetch) and Input its
+    /// JSON arguments when Id is set (a tool call); both are null for a plain text block.</summary>
+    sealed record Reply(List<(string? Text, string? Id, string? Tool, JsonObject? Input)> Blocks, JsonObject Message, bool WantsTools);
 
     /// <summary>Runs one user turn. <paramref name="history"/> is the UI's transcript: [{role, content}] with the new user message last.
     /// <paramref name="emit"/> receives (event, json): text {text}, tool {command, code, output}, done {steps}, error {message, hint}.
     /// <paramref name="instructions"/> (the user's preferences) are appended to the system prompt. A non-null <paramref name="selection"/>
-    /// limits the context to that text: it is quoted before the new message and the document outline is left out of the prompt.</summary>
+    /// limits the context to that text: it is quoted before the new message and the document outline is left out of the prompt.
+    /// <paramref name="web"/> (联网搜索, on by default) offers web_search and web_fetch alongside writer.</summary>
     public async Task RunAsync(string? file, string workspace, JsonElement history, Func<string, string, Task> emit, CancellationToken ct,
-        string? instructions = null, string? selection = null)
+        string? instructions = null, string? selection = null, bool web = true)
     {
         var messages = new JsonArray();
         foreach (var m in history.EnumerateArray())
@@ -61,8 +63,18 @@ public sealed partial class Chat
         }
         if (!string.IsNullOrWhiteSpace(selection))
             messages[^1]!["content"] = "The user selected this part of the document:\n<selection>\n" + selection.Trim() + "\n</selection>\n\n" + messages[^1]!["content"]!.GetValue<string>();
-        var system = SystemPrompt(file, workspace, outline: selection is null);
+        var system = SystemPrompt(file, workspace, outline: selection is null, web: web);
         if (!string.IsNullOrWhiteSpace(instructions)) system += "\n\n## The user's preferences\n\n" + instructions.Trim() + "\n";
+        // Seeded once, up front, from what the user and the document already put in front of the model; web_search/web_fetch
+        // results grow it as the turn runs. web_fetch may only target a URL already in this set — see RunTool.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        if (web)
+        {
+            foreach (var url in Web.ExtractUrls(system)) seen.Add(url);
+            foreach (var m in messages)
+                if (Str(m?["role"]) == "user" && Str(m?["content"]) is { } content)
+                    foreach (var url in Web.ExtractUrls(content)) seen.Add(url);
+        }
         var steps = 0;
         for (; steps < MaxSteps; steps++)
         {
@@ -70,7 +82,7 @@ public sealed partial class Chat
             Reply reply;
             try
             {
-                reply = _openAi ? await OpenAiTurn(system, messages, ct) : await AnthropicTurn(system, messages, ct);
+                reply = _openAi ? await OpenAiTurn(system, messages, web, ct) : await AnthropicTurn(system, messages, web, ct);
             }
             catch (WriterException ex)
             {
@@ -78,17 +90,17 @@ public sealed partial class Chat
                 return;
             }
             var results = new List<(string Id, string Output, bool Failed)>();
-            foreach (var (text, id, command) in reply.Blocks)
+            foreach (var (text, id, tool, input) in reply.Blocks)
             {
+                ct.ThrowIfCancellationRequested(); // the client may have gone away mid-reply: stop before the next text or tool block
                 if (id is null)
                 {
                     await emit("text", Json(new JsonObject { ["text"] = text }));
                     continue;
                 }
-                var (code, output) = command is null ? (1, "The tool input must be JSON like {\"command\": \"view report.docx outline\"}.")
-                    : Serve.RunArgv(Mcp.Tokenize(command), workspace);
+                var (display, code, output) = await RunTool(tool, input, workspace, seen, ct);
                 var shown = output.Length > 6000 ? output[..6000] + "\n…(truncated)" : output;
-                await emit("tool", Json(new JsonObject { ["command"] = command ?? "", ["code"] = code, ["output"] = shown }));
+                await emit("tool", Json(new JsonObject { ["command"] = display, ["code"] = code, ["output"] = shown }));
                 results.Add((id, shown.Length == 0 ? "(no output)" : shown, code != 0));
             }
             messages.Add((JsonNode)reply.Message);
@@ -115,7 +127,7 @@ public sealed partial class Chat
         var messages = new JsonArray(new JsonObject { ["role"] = "user", ["content"] = "Reply with one word: ok" });
         try
         {
-            _ = _openAi ? await OpenAiTurn(system, messages, limit.Token) : await AnthropicTurn(system, messages, limit.Token);
+            _ = _openAi ? await OpenAiTurn(system, messages, false, limit.Token) : await AnthropicTurn(system, messages, false, limit.Token);
             return null;
         }
         catch (WriterException ex)
@@ -128,14 +140,14 @@ public sealed partial class Chat
         }
     }
 
-    async Task<Reply> AnthropicTurn(string system, JsonArray messages, CancellationToken ct)
+    async Task<Reply> AnthropicTurn(string system, JsonArray messages, bool web, CancellationToken ct)
     {
         var body = new JsonObject
         {
             ["model"] = Model,
             ["max_tokens"] = 8192,
             ["system"] = system,
-            ["tools"] = new JsonArray(new JsonObject { ["name"] = Mcp.ToolName, ["description"] = Mcp.ToolDescription, ["input_schema"] = Parameters() }),
+            ["tools"] = AnthropicTools(web),
             ["messages"] = messages.DeepClone(),
         };
         using var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl + "/v1/messages") { Content = new StringContent(Json(body), Encoding.UTF8, "application/json") };
@@ -153,14 +165,53 @@ public sealed partial class Chat
             throw NotAnApi(text);
         }
         var content = reply["content"] as JsonArray ?? [];
-        var blocks = new List<(string?, string?, string?)>();
+        var blocks = new List<(string?, string?, string?, JsonObject?)>();
         foreach (var block in content)
         {
             var type = block?["type"]?.GetValue<string>();
-            if (type == "text") blocks.Add((block!["text"]?.GetValue<string>() ?? "", null, null));
-            else if (type == "tool_use") blocks.Add((null, block!["id"]?.GetValue<string>() ?? "", block["input"]?["command"]?.GetValue<string>() ?? ""));
+            if (type == "text") blocks.Add((block!["text"]?.GetValue<string>() ?? "", null, null, null));
+            else if (type == "tool_use") blocks.Add((null, block!["id"]?.GetValue<string>() ?? "", block["name"]?.GetValue<string>(), block["input"] as JsonObject));
         }
         return new Reply(blocks, new JsonObject { ["role"] = "assistant", ["content"] = content.DeepClone() }, reply["stop_reason"]?.GetValue<string>() == "tool_use");
+    }
+
+    /// <summary>The tools offered on /v1/messages: writer always, web_search and web_fetch when 联网搜索 is on.</summary>
+    static JsonArray AnthropicTools(bool web)
+    {
+        var tools = new JsonArray { new JsonObject { ["name"] = Mcp.ToolName, ["description"] = Mcp.ToolDescription, ["input_schema"] = Parameters() } };
+        if (web)
+        {
+            tools.Add(new JsonObject { ["name"] = Web.SearchToolName, ["description"] = Web.SearchDescription, ["input_schema"] = Web.SearchParameters() });
+            tools.Add(new JsonObject { ["name"] = Web.FetchToolName, ["description"] = Web.FetchDescription, ["input_schema"] = Web.FetchParameters() });
+        }
+        return tools;
+    }
+
+    /// <summary>Runs one tool call and returns what to show in the tool event: a display command line (the writer command as
+    /// given, or 搜索/打开 for the web tools), the exit code, and the output text. Newly seen URLs (a search's results, or the
+    /// links printed in a fetched page) are folded into <paramref name="seen"/> for a later web_fetch call this turn.</summary>
+    async Task<(string Display, int Code, string Output)> RunTool(string? tool, JsonObject? input, string workspace, HashSet<string> seen, CancellationToken ct)
+    {
+        if (tool == Web.SearchToolName)
+        {
+            var query = Str(input?[Web.QueryParam]);
+            if (string.IsNullOrWhiteSpace(query)) return (Web.SearchToolName, 1, "The tool input must be JSON like {\"query\": \"...\"}.");
+            var (code, output, urls) = await Web.SearchAsync(query, ct);
+            foreach (var url in urls) seen.Add(url);
+            return ($"搜索 \"{query}\"", code, output);
+        }
+        if (tool == Web.FetchToolName)
+        {
+            var url = Str(input?[Web.UrlParam]);
+            if (string.IsNullOrWhiteSpace(url)) return (Web.FetchToolName, 1, "The tool input must be JSON like {\"url\": \"https://...\"}.");
+            var (code, output, urls) = await Web.FetchAsync(url, seen, ct);
+            foreach (var u in urls) seen.Add(u);
+            return ($"打开 {url}", code, output);
+        }
+        var command = Str(input?["command"]);
+        var (writerCode, writerOutput) = command is null ? (1, "The tool input must be JSON like {\"command\": \"view report.docx outline\"}.")
+            : Serve.RunArgv(Mcp.Tokenize(command), workspace);
+        return (command ?? "", writerCode, writerOutput);
     }
 
     /// <summary>Sends a request. Network trouble, timeouts and error statuses become WriterExceptions; the caller disposes the response.</summary>
@@ -232,7 +283,7 @@ public sealed partial class Chat
     };
 
     /// <summary>Rules, the command reference for the open file's format, and its current outline.</summary>
-    public static string SystemPrompt(string? file, string workspace, bool outline = true)
+    public static string SystemPrompt(string? file, string workspace, bool outline = true, bool web = false)
     {
         var sb = new StringBuilder();
         sb.Append("You are the assistant built into a document editor. The user sees the document on the left and talks to you on the right. ");
@@ -240,6 +291,7 @@ public sealed partial class Chat
         sb.Append("Look before you change: start with `view <file> outline` (or `get`/`query`) so you address the right paths, then make the smallest edit that does the job. ");
         sb.Append("Use `help <format> <element>` when unsure which properties exist. Prefer `--prop html=` or `--prop md=` for formatted text. ");
         sb.Append("Never tell the user to run commands themselves. When the user asks a question, answer it from the document. ");
+        if (web) sb.Append("Use web_search and web_fetch when the task needs current or outside facts the document doesn't have, and say which URLs you used. ");
         sb.Append("Reply in the user's language, briefly, saying what you changed and where; no command output, no paths unless the user asks.\n\n");
         sb.Append(Mcp.Instructions).Append("\n\n");
         var format = file is null ? null : Adapters.CanonicalFormat(Path.GetExtension(file));

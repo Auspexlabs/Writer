@@ -5,7 +5,7 @@ export const KEY = 'writer-settings';
 export const SESSION = 'writer-session';
 
 /** The same keys and defaults as DEF in MacSettings.dc.html (tests/prefs.test.mjs keeps the two in step). */
-export const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, lang: '简体中文', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
+export const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, lang: '简体中文', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
 
 /** Puts the appearance settings on <html> (el) as attributes the stylesheets key on; the defaults add nothing, so the
  *  designed look is untouched: data-theme, data-density (compact|loose), data-motion=reduce (also when the system asks),
@@ -33,11 +33,13 @@ const TONE = { brief: 'Keep every reply to one or two short sentences.', detail:
 /** Extra system-prompt text for POST /chat: the reply style (回复风格) plus the user's own instructions (自定义说明). */
 export function instructions(p) { return [TONE[p.tone], String(p.instr || '').trim()].filter(Boolean).join('\n'); }
 
-/** The optional fields of a /chat request: instructions always when set; the selection only when the whole document is not to be sent. */
+/** The optional fields of a /chat request: instructions always when set; the selection only when the whole document is not
+ *  to be sent; web only to turn 联网搜索 off (the engine defaults it on). */
 export function chatOptions(p, selection) {
   const o = {}, ins = instructions(p);
   if (ins) o.instructions = ins;
   if (p.ctx === false) o.selection = String(selection || '').slice(0, 8000);
+  if (p.web === false) o.web = false;
   return o;
 }
 

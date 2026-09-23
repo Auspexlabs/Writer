@@ -9,9 +9,9 @@
 <h1 align="center">Writer</h1>
 
 <p align="center">
-  <b>Edit Word, Excel and PowerPoint files directly on your Mac.</b><br>
-  Every change is saved back to the original file within a second, and whatever you did not touch stays as it was.
-  A built-in AI assistant works with the model of your choice.
+  <b>A clean, lightweight office app for Mac. No ads, completely free.</b><br>
+  Word, Excel and PowerPoint files open ready to edit, and every change is saved back to the original file within a
+  second. A built-in AI assistant works with the model of your choice.
 </p>
 
 <p align="center">
@@ -40,6 +40,8 @@ This repository holds two things built from the same code:
 
 ## Features
 
+- **Clean and completely free.** No ads, no subscriptions or paid tiers, no account to sign up for, and no data
+  collected.
 - **Six kinds of documents, one app.** Word (.docx), Excel (.xlsx), PowerPoint (.pptx), Markdown (.md) and mind maps
   (FreeMind .mm) are all editable. PDFs can be viewed, or converted to Word to keep working on them.
 - **The file stays the file.** No import, no conversion: the file you double-click in Finder is the one you are
@@ -75,6 +77,10 @@ brew install --cask auspexlabs/tap/writer
 
 Or download the dmg from [GitHub Releases](https://github.com/Auspexlabs/writer/releases/latest). It is signed and
 notarized by Apple: open it and drag Writer into Applications.
+
+An AI agent that can run terminal commands can install it for you with the brew command above, no clicks needed, then
+register `writer mcp` as an MCP server to read and edit your documents. Instructions for agents are in
+[SKILL.md](SKILL.md).
 
 - Requires macOS 14 or later, on a Mac with Apple silicon for now.
 - A Windows version is in development.

@@ -1079,15 +1079,15 @@ class Component extends DCLogic {
       nameBox: st.nameEdit != null ? st.nameEdit : (multi ? `${E.A(R.r1, R.c1)}:${E.A(sr2, sc2)}` : a0),
       onNameFocus: e => { this.setState({ nameEdit: e.target.value }); setTimeout(() => e.target.select(), 0); }, onNameBlur: () => this.setState({ nameEdit: null }),
       onNameBox: e => this.setState({ nameEdit: e.target.value }),
-      onNameKey: e => { if (e.key !== 'Enter') return; const [p, q] = e.target.value.trim().toUpperCase().split(':').map(E.parseA); this.setState({ nameEdit: null }); if (p) { this.setState({ anc: p, sel: q || p }); this.wantFocus = true; this.scrollReq = true; } },
+      onNameKey: e => { if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const [p, q] = e.target.value.trim().toUpperCase().split(':').map(E.parseA); this.setState({ nameEdit: null }); if (p) { this.setState({ anc: p, sel: q || p }); this.wantFocus = true; this.scrollReq = true; } },
       openFx: e => this.openPop('fns', e), fxRef: this.fxRef,
       fxValue: ed ? ed.val : this.raw(s0.r, s0.c),
       onFxFocus: () => { if (!this.state.edit) this.startEdit(null, 'bar'); },
       onFx: e => { this.setState({ edit: Object.assign(Object.assign({ mode: 'bar' }, this.act()), this.state.edit, { val: e.target.value, pt: null }) }); },
-      onFxKey: e => { if (e.nativeEvent.isComposing) return; const e2 = this.state.edit; if (e2 && ARROWS[e.key] && this.ptArrow(e, e2)) return; if (e.key === 'Enter') { e.preventDefault(); this.commitEdit(1, 0); } if (e.key === 'Escape') { this.setState({ edit: null }); this.wantFocus = true; } },
+      onFxKey: e => { if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const e2 = this.state.edit; if (e2 && ARROWS[e.key] && this.ptArrow(e, e2)) return; if (e.key === 'Enter') { e.preventDefault(); this.commitEdit(1, 0); } if (e.key === 'Escape') { this.setState({ edit: null }); this.wantFocus = true; } },
       showFind: st.showFind, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? `共 ${st.fcount} 个单元格` : '未找到',
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
-      onFindKey: e => { if (e.key === 'Enter') this.findNext(); if (e.key === 'Escape') this.setState({ showFind: false }); },
+      onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) this.findNext(); if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replace(false), replaceAll: () => this.replace(true), closeFind: () => { this.setState({ showFind: false }); this.wantFocus = true; },
       wrapRef: this.wrapRef, zoom: st.zoom, z: Z, gridW: RHW + xs[E.NC] + 'px', gtc, gtr, colHeads, rowHeads, cells,
       selAll: e => { e.preventDefault(); this.setState({ anc: { r: 0, c: 0 }, sel: { r: E.NR - 1, c: E.NC - 1 } }); this.wantFocus = true; },
@@ -1113,7 +1113,7 @@ class Component extends DCLogic {
       onInKey: e => {
         const ed2 = this.state.edit, k = e.key, ctrl = e.ctrlKey || e.metaKey;
         if (ed2 && ed2.mode !== 'bar') {
-          if (e.nativeEvent.isComposing) return;
+          if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
           if (k === 'Enter' && e.altKey) { e.preventDefault(); this.setState({ edit: Object.assign({}, ed2, { val: ed2.val + '\n' }) }); return; }
           if (k === 'Enter') { e.preventDefault(); this.commitEdit(e.shiftKey ? -1 : 1, 0); }
           else if (k === 'Tab') { e.preventDefault(); this.commitEdit(0, e.shiftKey ? -1 : 1); }
@@ -1167,7 +1167,7 @@ class Component extends DCLogic {
       hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popMaxH: Math.max(160, Math.min(440, (globalThis.innerHeight || 900) - Math.max(8, st.pop ? st.pop.y : 0) - 12)) + 'px', /* a menu never runs off the bottom of the window */ popItems, closePop: () => { this.setState({ pop: null }); this.wantFocus = true; },
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
       dlgFields: dlg ? dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, first: !!fl.first, multi: !!fl.multi, isSel: !!fl.options, single: !fl.multi && !fl.options, options: (fl.options || []).map(([v, l]) => ({ v, l })), onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } })) : [],
-      dlgKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.dlgOk(); } if (e.key === 'Escape') this.setState({ dlg: null }); },
+      dlgKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.dlgOk(); } if (e.key === 'Escape') this.setState({ dlg: null }); },
       dlgCancel: () => { this.setState({ dlg: null }); this.wantFocus = true; }, dlgOk: () => this.dlgOk()
     };
   }

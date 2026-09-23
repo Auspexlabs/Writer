@@ -6,7 +6,7 @@ namespace Writer.Cli;
 /// <summary>Entry point shared by the executable, the tests and the MCP server.</summary>
 public static class Runner
 {
-    public const string Version = "0.1.0";
+    public const string Version = "0.1.1";
 
     /// <summary>Runs one command. Output goes to stdout, errors as JSON to stderr; returns the exit code.</summary>
     public static int Run(string[] argv, TextWriter stdout, TextWriter stderr)

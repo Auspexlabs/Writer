@@ -658,6 +658,7 @@ public sealed class Serve : IDisposable
         }
         string? file, instructions, selection;
         JsonElement messages;
+        bool web;
         try
         {
             using var parsed = JsonDocument.Parse(body);
@@ -668,6 +669,8 @@ public sealed class Serve : IDisposable
             messages = m.Clone();
             instructions = Text(root, "instructions");
             selection = Text(root, "selection");
+            // 联网搜索: on unless the settings page sends web:false.
+            web = !(root.TryGetProperty("web", out var w) && w.ValueKind == JsonValueKind.False);
         }
         catch (JsonException ex)
         {
@@ -680,22 +683,38 @@ public sealed class Serve : IDisposable
         response.SendChunked = true;
         var stream = response.OutputStream;
         var gate = new SemaphoreSlim(1, 1);
-        async Task Emit(string name, string json)
+        // HttpListener has no "client disconnected" event: a write to an abandoned SSE stream throws, which is the only signal
+        // that the browser's AbortController fired. That failure cancels this token, which the Chat loop already checks between
+        // steps and tool calls, so a client going away stops further model calls and tool commands (already-run ones stand).
+        using var aborted = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
+        async Task Write(string chunk)
         {
             await gate.WaitAsync(_stop.Token);
             try
             {
-                await stream.WriteAsync(Encoding.UTF8.GetBytes("event: " + name + "\ndata: " + json.ReplaceLineEndings(" ") + "\n\n"), _stop.Token);
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(chunk), _stop.Token);
                 await stream.FlushAsync(_stop.Token);
+            }
+            catch (Exception) when (!_stop.IsCancellationRequested)
+            {
+                aborted.Cancel();
             }
             finally
             {
                 gate.Release();
             }
         }
+        Task Emit(string name, string json) => Write("event: " + name + "\ndata: " + json.ReplaceLineEndings(" ") + "\n\n");
+        // Nothing is written while the model thinks, so an SSE comment every second is what notices 停止 in time: its failed
+        // write cancels the model call before the reply can run a tool command.
+        var ping = Task.Run(async () =>
+        {
+            try { while (true) { await Task.Delay(PingEvery, aborted.Token); await Write(": ping\n\n"); } }
+            catch (OperationCanceledException) { }
+        });
         try
         {
-            await chat.RunAsync(file, Workspace, messages, Emit, _stop.Token, instructions, selection);
+            await chat.RunAsync(file, Workspace, messages, Emit, aborted.Token, instructions, selection, web);
         }
         catch (WriterException ex)
         {
@@ -707,7 +726,18 @@ public sealed class Serve : IDisposable
                 w.WriteEndObject();
             }));
         }
+        catch (OperationCanceledException)
+        {
+            // the client went away (or the server is stopping): nothing left to notify
+        }
+        finally
+        {
+            aborted.Cancel();
+            await ping;
+        }
     }
+
+    static readonly TimeSpan PingEvery = TimeSpan.FromSeconds(1);
 
     const string AiExample = "{\"provider\":\"deepseek\",\"baseUrl\":\"https://api.deepseek.com\",\"model\":\"deepseek-flash\",\"apiKey\":\"sk-...\"}";
 

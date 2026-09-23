@@ -8,11 +8,37 @@ description: Read, create and edit Word (.docx), Excel (.xlsx), PowerPoint (.ppt
 One binary, one tree model for every document. Every element has a path, every command prints JSON, and
 edits keep everything you did not touch exactly as it was (comments, tracked changes, charts, animations).
 
+## Install
+
+If `writer` is not on PATH and the user is on a Mac (macOS 14 or later, Apple silicon), install the Writer app. Neither
+way needs any clicks:
+
+```bash
+brew install --cask auspexlabs/tap/writer    # the app in /Applications, and `writer` on PATH
+```
+
+Without Homebrew:
+
+```bash
+curl -fL -o /tmp/Writer.dmg https://github.com/Auspexlabs/writer/releases/latest/download/Writer-mac.dmg
+hdiutil attach -nobrowse -quiet /tmp/Writer.dmg -mountpoint /tmp/writer-dmg
+cp -R /tmp/writer-dmg/Writer.app /Applications/ && hdiutil detach -quiet /tmp/writer-dmg
+# the CLI is /Applications/Writer.app/Contents/MacOS/writer
+```
+
 ## Run
 
-CLI: `writer <command> <file> [path] [options]`. MCP: the `writer` tool takes the same command line as a
-single `command` string (no program name). If `writer` is not on PATH, run `dotnet writer.dll ...` from the
-install folder.
+CLI: `writer <command> <file> [path] [options]`. MCP: register `writer mcp` (stdio) as a server; its `writer` tool
+takes the same command line as a single `command` string (no program name). From a source build the binary is
+`dist/<platform>/writer`.
+
+To connect yourself, add Writer to your MCP client's config, or use the client's own add-server command. Use the full
+path, because apps opened from the Dock do not see the shell's PATH. Restart the client if it loads servers only at
+startup.
+
+```json
+{ "mcpServers": { "writer": { "command": "/Applications/Writer.app/Contents/MacOS/writer", "args": ["mcp"] } } }
+```
 
 ## Workflow
 

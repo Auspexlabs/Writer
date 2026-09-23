@@ -264,10 +264,17 @@ button,input,select,textarea{font-family:inherit;color:inherit}
                 <button onClick="{{ openAiSettings }}" style="align-self:flex-start;height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">打开设置</button>
               </sc-if>
               <sc-if value="{{ m.hasSteps }}" hint-placeholder-val="{{ false }}">
-                <div style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--k8, #8E8E93);font-family:'IBM Plex Mono',monospace">
-                  <sc-for list="{{ m.steps }}" as="s" hint-placeholder-count="1">
-                    <div title="{{ s.text }}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:{{ s.color }}">{{ s.mark }}</span> {{ s.text }}</div>
-                  </sc-for>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <button onClick="{{ m.onToggleSteps }}" style="align-self:flex-start;display:flex;align-items:center;gap:5px;height:20px;padding:0;border:none;background:transparent;font-size:11.5px;color:var(--k8, #8E8E93);cursor:pointer" style-hover="color:var(--k1, #1D1D1F)">
+                    <span style="display:inline-block;transform:rotate({{ m.stepsArrow }});transition:transform .2s;font-size:9px">▸</span>{{ m.stepsLabel }}
+                  </button>
+                  <sc-if value="{{ m.stepsOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:3px;padding-left:13px;font-size:11.5px;color:var(--k8, #8E8E93);font-family:'IBM Plex Mono',monospace">
+                      <sc-for list="{{ m.steps }}" as="s" hint-placeholder-count="1">
+                        <div title="{{ s.text }}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:{{ s.color }}">{{ s.mark }}</span> {{ s.text }}</div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
                 </div>
               </sc-if>
               <sc-if value="{{ m.hasChange }}" hint-placeholder-val="{{ false }}">
@@ -305,7 +312,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
       <div style="flex:none;padding:0 12px 12px">
         <div style="border:1px solid var(--k29, rgba(0,0,0,0.1));border-radius:16px;background:var(--k0, #FFFFFF);padding:8px 8px 8px 14px;display:flex;align-items:flex-end;gap:8px;box-shadow:0 2px 10px var(--k38, rgba(0,0,0,0.05))">
           <textarea value="{{ input }}" onChange="{{ onInput }}" onKeyDown="{{ onInputKey }}" placeholder="让助手修改…" rows="1" style="flex:1;border:none;background:transparent;resize:none;font-size:13.5px;line-height:1.55;outline:none;padding:5px 0;max-height:120px"></textarea>
-          <button onClick="{{ sendInput }}" data-accent-btn="1" style="width:30px;height:30px;flex:none;border:none;border-radius:10px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:14px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.88)">↑</button>
+          <button onClick="{{ sendClick }}" data-accent-btn="1" style="width:{{ sendW }};height:30px;flex:none;border:none;border-radius:10px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:{{ sendFs }};cursor:pointer;transition:width .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.88)">{{ sendLabel }}</button>
         </div>
       </div>
     </div>
@@ -386,7 +393,7 @@ const MAC_INSET = MAC_DESKTOP ? 68 : 0; // the title pill (and the xlsx toolbar 
 let PERF = new URLSearchParams(location.search).get('perf'); try { PERF = PERF || localStorage.getItem('writerPerf'); } catch (e) { } // frame-time HUD, see perf.js
 
 class Component extends DCLogic {
-  state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showThumbs: true, pure: false, chats: {}, input: '', thinking: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [] };
+  state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showThumbs: true, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [] };
   prefs = {}; closed = new Set(); lastSel = '';
   chatRef = React.createRef(); leftPillRef = React.createRef(); rightPillRef = React.createRef(); fileRef = React.createRef(); hist = {}; sv = {}; _len = 0; _cards = 0; _h = 0;
   componentDidMount() {
@@ -764,31 +771,35 @@ class Component extends DCLogic {
   // ---- assistant: every turn goes through the engine, which edits the file; the editor reloads and marks what changed ----
   addMsg(id, m) { const list = Array.isArray(m) ? m : [m]; this.setState(s => ({ chats: Object.assign({}, s.chats, { [id]: [...(s.chats[id] || []), ...list] }) })); }
   send(text) {
-    text = (text || '').trim(); const d = this.doc; if (!text || this.state.thinking || !d) return;
+    text = (text || '').trim(); const d = this.doc; if (!text || this.state.sending || !d) return;
     this.addMsg(d.id, { role: 'user', text }); this.setState({ input: '' });
     if (!this.state.chatOn) { this.addMsg(d.id, { role: 'ai', text: NO_CHAT, setup: true }); return; }
-    this.setState({ thinking: true });
+    this.setState({ thinking: true, sending: true });
     this.chatTurn(d.id);
   }
+  /** 停止: aborts the in-flight request. The engine notices the closed connection and stops its own loop (no further
+   *  model calls or tool commands); whatever already ran stands, and chatTurn below still lists it with keep/undo. */
+  stopChat() { if (this.chatAbort) this.chatAbort.abort(); }
   async chatTurn(id) {
     await this.flushSave(id);
-    const d0 = this.state.docs.find(x => x.id === id); if (!d0) return this.setState({ thinking: false });
+    const d0 = this.state.docs.find(x => x.id === id); if (!d0) return this.setState({ thinking: false, sending: false });
     const snap = clone(d0);
     const history = (this.state.chats[id] || []).filter(m => (m.role === 'user' || m.role === 'ai') && m.text && !m.setup).map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text }));
     const msg = { role: 'ai', text: '', steps: [] }; let idx = -1;
     const push = () => this.setState(s => { const list = [...(s.chats[id] || [])]; if (idx < 0) { idx = list.length; list.push(Object.assign({}, msg)); } else list[idx] = Object.assign({}, msg); return { chats: Object.assign({}, s.chats, { [id]: list }) }; });
-    this.chatting = id; let changed = false;
+    this.chatting = id; let changed = false, aborted = false;
+    const ctrl = this.chatAbort = new AbortController();
     try {
-      const opts = this.P ? this.P.chatOptions(this.prefs, this.lastSel) : {};
+      const opts = Object.assign(this.P ? this.P.chatOptions(this.prefs, this.lastSel) : {}, { signal: ctrl.signal });
       await this.EN.chat(d0, history, (name, data) => {
         if (name === 'text') { msg.text = (msg.text ? msg.text + '\n\n' : '') + (data.text || ''); this.setState({ thinking: false }); push(); }
         else if (name === 'tool') { if (WRITES.test(data.command) && data.code === 0) changed = true; msg.steps.push({ text: data.command, ok: data.code === 0 }); push(); }
         else if (name === 'error') { msg.text = (msg.text ? msg.text + '\n\n' : '') + '出错了：' + (data.message || '') + (data.hint ? '\n' + data.hint : ''); push(); }
       }, opts);
-    } catch (e) { msg.text = (msg.text ? msg.text + '\n\n' : '') + '请求失败：' + e.message; push(); }
-    this.chatting = null; this.setState({ thinking: false });
-    if (!msg.text && !msg.steps.length) { msg.text = '（助手没有回复）'; push(); }
-    if (changed) {
+    } catch (e) { if (e.name === 'AbortError') aborted = true; else { msg.text = (msg.text ? msg.text + '\n\n' : '') + '请求失败：' + e.message; push(); } }
+    this.chatAbort = null; this.chatting = null; this.setState({ thinking: false, sending: false });
+    if (!msg.text && !msg.steps.length) { msg.text = aborted ? '已停止' : '（助手没有回复）'; push(); }
+    if (changed || aborted) {
       try {
         const cur = this.state.docs.find(x => x.id === id);
         if (cur) {
@@ -802,6 +813,11 @@ class Component extends DCLogic {
       } catch (e) { this.toastMsg('重新载入失败：' + e.message); }
     }
     this.refreshFiles();
+  }
+  toggleSteps(id, idx) {
+    const msgs = [...(this.state.chats[id] || [])], m = Object.assign({}, msgs[idx]); if (!m.steps) return;
+    m.stepsOpen = !m.stepsOpen; msgs[idx] = m;
+    this.setState(s => ({ chats: Object.assign({}, s.chats, { [id]: msgs }) }));
   }
   settle(id, idx, keep) {
     const msgs = [...(this.state.chats[id] || [])], m = Object.assign({}, msgs[idx]); if (!m.change) return;
@@ -886,13 +902,13 @@ class Component extends DCLogic {
       typeTabs: ['md', 'docx', 'xlsx', 'pptx', 'mm'].map(k => ({ icon: ICO(k), tag: TAG[k].l, tagBg: TAG[k].bg, label: TAG[k].n, bg: st.createType === k ? 'var(--k0, #FFFFFF)' : 'transparent', border: st.createType === k ? 'var(--k7, #1D1D1F)' : 'var(--k10, #D1D1D6)', onClick: () => st.gen === null && this.setState({ createType: k }) })),
       blankLabel: '空白' + TAG[st.createType].n, createBlank: () => this.createBlank(st.createType),
       prompt: st.prompt, promptPh: '例如：' + STARTERS[st.createType][0], onPrompt: e => this.setState({ prompt: e.target.value }),
-      onPromptKey: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.generate(); } }, generate: () => this.generate(),
+      onPromptKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.generate(); } }, generate: () => this.generate(),
       starters: STARTERS[st.createType].map(s => ({ text: s, onClick: () => this.generate(s) })),
       hasRecent: !!(this.props.onOpenRecent && st.recent.length),
       recentItems: st.recent.map(p => { const n = p.replace(/\\/g, '/'); const name = n.split('/').pop(); return { path: p, name, dir: n.slice(0, n.lastIndexOf('/')), icon: ICO(EXT_TYPE[name.split('.').pop().toLowerCase()] || 'docx'), onClick: () => this.props.onOpenRecent(p) }; }),
       generating: st.gen !== null, notGenerating: st.gen === null,
       genSteps: ['创建文件', '交给助手撰写', '写入文件', '打开'].map((l, i) => ({ label: l, mark: st.gen > i ? '✓' : st.gen === i ? '…' : '·', color: st.gen >= i ? 'var(--k1, #1D1D1F)' : 'var(--k52, #AEAEB2)' })),
-      doc: d, title: st.titleDraft != null ? st.titleDraft : (d ? d.title : ''), onTitle: e => this.setState({ titleDraft: e.target.value }), commitTitle: () => this.commitTitle(), onTitleKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } if (e.key === 'Escape') this.setState({ titleDraft: null }); },
+      doc: d, title: st.titleDraft != null ? st.titleDraft : (d ? d.title : ''), onTitle: e => this.setState({ titleDraft: e.target.value }), commitTitle: () => this.commitTitle(), onTitleKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); e.currentTarget.blur(); } if (e.key === 'Escape') this.setState({ titleDraft: null }); },
       metaText,
       openFileMenu: e => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ menu: st.menu ? null : { x: r.left, y: r.bottom + 4 } }); }, fileBtnBg: st.menu ? '#EFEFF4' : 'transparent',
       hasMenu: !!st.menu, menuX: st.menu ? st.menu.x + 'px' : 0, menuY: st.menu ? st.menu.y + 'px' : 0, menuItems, closeMenu: () => this.setState({ menu: null }),
@@ -903,10 +919,11 @@ class Component extends DCLogic {
       onDocChange: (nd, opts) => this.setDoc(nd, !(opts && opts.silent)), onUndo: () => this.undo(false), onRedo: () => this.undo(true), onRevise: accept => this.revise(accept), toastFn: m => this.toastMsg(m),
       showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? WELCOME[d.type] + (st.model ? '（' + st.model + '）' : '') : NO_CHAT) : '', thinking: st.thinking,
       needsModel: !st.chatOn, openAiSettings: () => this.openSettings('ai'),
-      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? `${ch.items.length} 处修改` : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复', onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
+      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: `执行了 ${(m.steps || []).length} 条命令`, stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? `${ch.items.length} 处修改` : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复', onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
       chips: d ? CHIPS[d.type].map(t => ({ text: t, onClick: () => this.send(t) })) : [],
       input: st.input, onInput: e => this.setState({ input: e.target.value }),
-      onInputKey: e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); this.send(st.input); } }, sendInput: () => this.send(st.input),
+      onInputKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.send(st.input); } },
+      sendClick: () => st.sending ? this.stopChat() : this.send(st.input), sendLabel: st.sending ? '停止' : '↑', sendW: st.sending ? '44px' : '30px', sendFs: st.sending ? '11.5px' : '14px',
       hasToast: !!st.toast, toast: st.toast || '',
       toggleDark: this.toggleDark, darkLabel: document.documentElement.dataset.theme === 'dark' ? '浅色模式' : '深色模式',
       openSettings: () => this.openSettings(), openAbout: () => this.setState({ ov: 'about', docsOpen: false }), openGestures: () => this.setState({ ov: 'gestures', docsOpen: false }),

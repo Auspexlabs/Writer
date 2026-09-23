@@ -261,7 +261,7 @@ export function cropBox({ frame, crop, rotation, flipH, flipV, src }) {
     const done = value => { layer.remove(); document.removeEventListener('keydown', key, true); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); resolve(value); };
     let beside = false;
     const up = () => { drag = null; if (beside) done([l, t, r, b]); };
-    const key = e => { if (e.key === 'Escape') { e.preventDefault(); done(null); } else if (e.key === 'Enter') { e.preventDefault(); done([l, t, r, b]); } };
+    const key = e => { if (e.key === 'Escape') { e.preventDefault(); done(null); } else if (e.key === 'Enter' && !(e.isComposing || e.keyCode === 229)) { e.preventDefault(); done([l, t, r, b]); } };
     stage.addEventListener('pointerdown', down);
     // a click beside the picture finishes, as in Office — on release, so the press cannot start dragging the picture underneath
     layer.addEventListener('pointerdown', e => { if (e.target === layer) { e.preventDefault(); beside = true; } });

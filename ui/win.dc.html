@@ -335,7 +335,7 @@ class Component extends DCLogic {
       appBtnBg: st.menu ? 'var(--k41, rgba(255,255,255,0.92))' : 'transparent', appBtnBd: st.menu ? 'var(--k17, rgba(0,0,0,0.07))' : 'transparent',
       appBtnSh: st.menu ? 'inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08))' : 'none',
       menuOpen: st.menu, menuItems: this.items(), q: st.q, onQ: e => this.setState({ q: e.target.value }), closeMenu: () => this.setState({ menu: false, q: '' }),
-      onQKey: e => { if (e.key !== 'Enter') return; const it = this.items().find(x => x.row && x.id); if (it) it.onClick(); },
+      onQKey: e => { if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const it = this.items().find(x => x.row && x.id); if (it) it.onClick(); },
       sideToggle: () => this.call('toggleThumbs'), sideBg: sh && sh.showThumbs && sh.isDoc ? onBg : glass,
       goBack: () => this.undo(false), goFwd: () => this.undo(true),
       single: !multi, multi,

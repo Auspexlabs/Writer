@@ -138,9 +138,11 @@ export function watch(path, cb) {
 }
 
 /** Streams a chat turn; onEvent(name, data) gets text / tool / done / error. Resolves when the stream ends.
- *  opts: { instructions?, selection? } — the settings' reply style and custom text, and (when the whole document is not to be sent) the selection. */
+ *  opts: { instructions?, selection?, signal? } — the settings' reply style and custom text, (when the whole document is not to
+ *  be sent) the selection, and an AbortSignal (停止) that ends the request; signal is not sent, the rest goes in the body. */
 export async function chat(doc, messages, onEvent, opts) {
-  const res = await http('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ file: doc ? doc.path : null, messages }, opts)) });
+  const { signal, ...body } = opts || {};
+  const res = await http('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ file: doc ? doc.path : null, messages }, body)), signal });
   const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
   for (; ;) {
     const { done, value } = await reader.read(); if (done) break;

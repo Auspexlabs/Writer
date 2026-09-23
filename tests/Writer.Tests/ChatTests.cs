@@ -68,6 +68,61 @@ public class ChatTests : IDisposable
     }
 
     [Fact]
+    public async Task Cancelling_mid_reply_runs_no_further_tool_commands()
+    {
+        // the 停止 button: /chat cancels its token once the client goes away (Serve.ChatStream). RunAsync must stop
+        // before the next tool call in the same reply, not just before the next model turn — this reply carries two.
+        var file = Path.Combine(_dir, "doc.docx");
+        File.WriteAllBytes(file, Docx(P("Old text")));
+        var api = new FakeApi(
+            (HttpStatusCode.OK, """{"content":[{"type":"tool_use","id":"t1","name":"writer","input":{"command":"set doc.docx /body/paragraph[1] --prop text=First"}},{"type":"tool_use","id":"t2","name":"writer","input":{"command":"set doc.docx /body/paragraph[1] --prop text=Second"}}],"stop_reason":"tool_use"}"""));
+        var chat = new Chat("k-1", "model-x", "https://fake.test/", api);
+        using var cts = new CancellationTokenSource();
+        var events = new List<string>();
+        Task Emit(string name, string json) { events.Add(name); if (name == "tool") cts.Cancel(); return Task.CompletedTask; } // as if the SSE write just failed
+        using var history = JsonDocument.Parse(Messages(("user", "go")));
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => chat.RunAsync(file, _dir, history.RootElement, Emit, cts.Token));
+
+        Assert.Equal(["tool"], events); // t2 neither ran nor emitted
+        using var doc = OpenDocx(File.ReadAllBytes(file));
+        Assert.Equal("First", doc.Root.Children[0].Children[0].Text); // t1's edit stands; t2's never happened
+    }
+
+    /// <summary>A model that never answers: it waits until its request is cancelled, and says so.</summary>
+    sealed class SilentApi : HttpMessageHandler
+    {
+        public TaskCompletionSource Asked { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Cancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Asked.TrySetResult();
+            try { await Task.Delay(Timeout.Infinite, ct); }
+            catch (OperationCanceledException) { Cancelled.TrySetResult(); throw; }
+            throw new InvalidOperationException("unreachable");
+        }
+    }
+
+    [Fact]
+    public async Task Stopping_while_the_model_thinks_cancels_the_model_call()
+    {
+        // 停止 during a long model call: nothing is written then, so only /chat's once-a-second ping can notice the client left
+        File.WriteAllText(Path.Combine(_dir, "a.md"), "# Hi\n");
+        var api = new SilentApi();
+        using var serve = new Serve(0, requireToken: false, workspace: _dir, chat: new Chat("k-1", "model-x", "https://fake.test", api));
+        serve.Start();
+        using var client = new HttpClient { BaseAddress = new Uri(serve.Url) };
+        var request = new HttpRequestMessage(HttpMethod.Post, "/chat") { Content = new StringContent("""{"file":"a.md","messages":[{"role":"user","content":"hi"}]}""", Encoding.UTF8, "application/json") };
+        var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        await api.Asked.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        response.Dispose(); // the client goes away, as the 停止 button's AbortController does
+
+        await api.Cancelled.Task.WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
+    [Fact]
     public async Task Api_errors_and_bad_transcripts_become_error_events()
     {
         var api = new FakeApi((HttpStatusCode.Unauthorized, """{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}"""));
@@ -146,6 +201,40 @@ public class ChatTests : IDisposable
         var nothingSelected = await Send(new { file = "doc.docx", messages = new[] { new { role = "user", content = "Hi" } }, selection = "" });
         Assert.DoesNotContain("## Current outline", nothingSelected.GetProperty("system").GetString());
         Assert.Equal("Hi", nothingSelected.GetProperty("messages")[0].GetProperty("content").GetString());
+    }
+
+    [Fact]
+    public async Task Web_search_and_web_fetch_are_offered_alongside_writer_by_default_and_dropped_when_web_is_off()
+    {
+        var api = new FakeApi((HttpStatusCode.OK, """{"content":[{"type":"text","text":"Hi."}],"stop_reason":"end_turn"}"""));
+        var chat = new Chat("k-1", "model-x", "https://fake.test", api);
+        using var history = JsonDocument.Parse(Messages(("user", "hello")));
+
+        await chat.RunAsync(null, _dir, history.RootElement, (_, _) => Task.CompletedTask, CancellationToken.None);
+        var on = JsonDocument.Parse(api.Requests[0]).RootElement;
+        Assert.Equal(["writer", "web_search", "web_fetch"], on.GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
+        Assert.Contains("Use web_search and web_fetch", on.GetProperty("system").GetString());
+
+        await chat.RunAsync(null, _dir, history.RootElement, (_, _) => Task.CompletedTask, CancellationToken.None, web: false);
+        var off = JsonDocument.Parse(api.Requests[1]).RootElement;
+        Assert.Equal(["writer"], off.GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
+        Assert.DoesNotContain("web_search", off.GetProperty("system").GetString());
+    }
+
+    [Fact]
+    public async Task Web_fetch_for_a_url_the_user_never_mentioned_is_refused_with_no_network_call_and_shown_as_a_打开_step()
+    {
+        var api = new FakeApi(
+            (HttpStatusCode.OK, """{"content":[{"type":"tool_use","id":"t1","name":"web_fetch","input":{"url":"https://evil.example/collect"}}],"stop_reason":"tool_use"}"""),
+            (HttpStatusCode.OK, """{"content":[{"type":"text","text":"Got it."}],"stop_reason":"end_turn"}"""));
+        var chat = new Chat("k-1", "model-x", "https://fake.test", api);
+
+        var events = await Run(chat, null, _dir, ("user", "Summarize this for me"));
+
+        var tool = events.Single(e => e.Name == "tool").Data;
+        Assert.Equal("打开 https://evil.example/collect", tool.GetProperty("command").GetString());
+        Assert.Equal(1, tool.GetProperty("code").GetInt32());
+        Assert.Contains("hasn't appeared", tool.GetProperty("output").GetString());
     }
 
     /// <summary>An OpenAI-compatible server: answers each request with reply(n, request body) and records the requests.</summary>

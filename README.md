@@ -9,8 +9,8 @@
 <h1 align="center">Writer</h1>
 
 <p align="center">
-  <b>Word、Excel、PPT，在 Mac 上直接改。</b><br>
-  改动一秒内存回原文件，没动过的内容原样保留。内置 AI 助手，用你自己的模型。
+  <b>纯净轻量的 Mac 办公软件。无广告，完全免费。</b><br>
+  Word、Excel、PPT 打开就能改，改动一秒内存回原文件。内置 AI 助手，用你自己的模型。
 </p>
 
 <p align="center">
@@ -32,6 +32,7 @@
 
 ## 功能
 
+- **纯净，完全免费。** 没有广告，没有会员和订阅，不用注册账号，也不收集你的任何数据。
 - **六种文档，一个应用。** Word（.docx）、Excel（.xlsx）、PowerPoint（.pptx）、Markdown（.md）和思维导图（FreeMind 格式 .mm）都能直接编辑。PDF 可以查看，也能转成 Word 接着改。
 - **文件还是那个文件。** 不导入，不转换。在 Finder 里双击的那一份，就是正在编辑的这一份。每次修改在一秒内写回原文件；批注、图表、动画和样式，没动过的部分原样保留。
 - **AI 助手，用你自己的模型。** 说一句要改什么，助手直接在文档里动手。改了哪些地方列在回复下面，满意就保留，不满意一键撤销。可以接入 Anthropic、OpenAI、DeepSeek、通义千问、Kimi、智谱、豆包，任何兼容 OpenAI 接口的服务，以及 Ollama、LM Studio 这样的本机模型。API Key 只保存在你的电脑上。
@@ -58,6 +59,8 @@ brew install --cask auspexlabs/tap/writer
 ```
 
 也可以在 [GitHub Releases](https://github.com/Auspexlabs/writer/releases/latest) 下载 dmg。安装包已签名并通过 Apple 公证，打开后把 Writer 拖进「应用程序」文件夹即可。
+
+也可以让 AI 帮你装：能在终端里执行命令的 AI 助手，运行上面那条 brew 命令就能装好，全程不用点按钮；装好后把 `writer mcp` 注册为它的 MCP 服务，它就能直接读写你的文档。给 AI 看的说明在 [SKILL.md](SKILL.md)。
 
 - 系统要求：macOS 14 或更高版本，目前适用于 Apple 芯片的 Mac。
 - Windows 版正在开发中。

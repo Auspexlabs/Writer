@@ -822,7 +822,7 @@ class Component extends DCLogic {
       hasBubble: pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? Math.max(50, st.selBub.y - 8) + 'px' : 0, bubbleBtns,
       showFind: st.showFind && !pure, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? `共 ${st.fcount} 处` : '未找到',
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
-      onFindKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.findNext(); } if (e.key === 'Escape') this.setState({ showFind: false }); },
+      onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replaceOne(), replaceAll: () => this.replaceAll(), closeFind: () => this.setState({ showFind: false }),
       bodyCols: [showTh ? '224px' : '0px', 'minmax(0,1fr)', !pure && (d.comments || []).length ? '272px' : null].filter(Boolean).join(' '),
       showNav: showTh, heads: st.heads.map(h => ({ text: h.text, indent: (8 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.focusEl(this.edRef.current.querySelectorAll('h1,h2,h3')[h.i]) })), noHeads: !st.heads.length,
@@ -867,7 +867,7 @@ class Component extends DCLogic {
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
       dlgFields: dlg ? (dlg.info ? [] : dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, ph: fl.ph || '', first: !!fl.first, onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } }))).concat(dlg.info ? [
         { label: '字数', value: String(info.count), onChange: () => { } }, { label: '字符数（不计空格）', value: String(info.chars), onChange: () => { } }, { label: '段落数', value: String(info.paras), onChange: () => { } }, { label: '页数', value: String(info.pages), onChange: () => { } }] : []) : [],
-      dlgKey: e => { if (e.key === 'Enter') { e.preventDefault(); const dd = this.state.dlg; this.setState({ dlg: null }); if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } } if (e.key === 'Escape') this.setState({ dlg: null }); },
+      dlgKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); const dd = this.state.dlg; this.setState({ dlg: null }); if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } } if (e.key === 'Escape') this.setState({ dlg: null }); },
       dlgCancel: () => this.setState({ dlg: null }),
       dlgOk: () => { const dd = this.state.dlg; this.setState({ dlg: null }); if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } }
     };

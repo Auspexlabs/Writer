@@ -109,7 +109,7 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:640},&quot;tab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;general&quot;,&quot;look&quot;,&quot;edit&quot;,&quot;ai&quot;,&quot;file&quot;,&quot;keys&quot;],&quot;default&quot;:&quot;general&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
-const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, lang: '简体中文', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
+const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, lang: '简体中文', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
 const TABS = [['general', '通用', '⚙︎'], ['look', '外观', '◐'], ['edit', '编辑', '✎'], ['ai', 'AI', '✦'], ['file', '存储', '▤'], ['keys', '快捷键', '⌘']];
 const ICONS = ['word', 'excel', 'ppt', 'markdown', 'pdf', 'mindmap'];
 const O = a => a.map(x => Array.isArray(x) ? { v: String(x[0]), l: x[1] } : { v: String(x), l: x });
@@ -145,7 +145,7 @@ class Component extends DCLogic {
   aiRows(base) {
     const P = this.P, f = this.state.ai; if (!P || !f) return [base('正在读取模型设置…', this.state.aiMsg)];
     const p = P.aiPreset(f.provider), stored = P.keyStored(f);
-    const field = (k, label, ph, hint, type) => ({ ...base(label, hint), isInput: true, type: type || 'text', ac: type === 'password' ? 'new-password' : 'off', value: f[k] || '', ph, w: '260px', hasAct: false, onChange: e => this.editAi({ [k]: e.target.value }), onBlur: () => this.saveAi(), onKey: e => { if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur(); } }); // Esc closes the window: save what was typed first
+    const field = (k, label, ph, hint, type) => ({ ...base(label, hint), isInput: true, type: type || 'text', ac: type === 'password' ? 'new-password' : 'off', value: f[k] || '', ph, w: '260px', hasAct: false, onChange: e => this.editAi({ [k]: e.target.value }), onBlur: () => this.saveAi(), onKey: e => { if (e.key === 'Escape' || (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) e.currentTarget.blur(); } }); // Esc closes the window: save what was typed first
     return [
       { ...base('服务商', f.source === 'env' ? '正在使用环境变量里的设置，它优先于这里保存的内容' : ''), isPopup: true, value: f.provider, opts: P.AI_PROVIDERS.map(x => ({ v: x.id, l: x.name })), minW: '170px', onChange: e => this.pickAi(e.target.value) },
       field('baseUrl', '接口地址', p.url || 'https://…/v1'),
@@ -186,7 +186,7 @@ class Component extends DCLogic {
       ai: [
         G('', [tg('ai', '启用 ✦ AI 助手'), seg('tone', '回复风格', [['brief', '简洁'], ['bal', '均衡'], ['detail', '详细']])]),
         G('模型', this.aiRows(base)),
-        G('隐私', [tg('preview', '写入前先预览修改'), tg('ctx', '发送整篇文档作为上下文', '关闭后仅发送选中的内容')]),
+        G('隐私', [tg('preview', '写入前先预览修改'), tg('ctx', '发送整篇文档作为上下文', '关闭后仅发送选中的内容'), tg('web', '联网搜索', '允许助手搜索和打开网页')]),
         G('自定义说明', [{ ...base('告诉 AI 你的偏好'), isText: true, value: v.instr, ph: '例如：用正式书面语。', onChange: e => this.set('instr', e.target.value) }])
       ],
       file: [
