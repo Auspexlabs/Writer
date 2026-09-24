@@ -14,8 +14,29 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
+<link rel="stylesheet" href="./vendor/katex/katex.min.css">
 <style>
 html,body{margin:0;height:100%;background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+/* AI chat replies (index.dc.html renders them from Markdown; see .ai-md below) — tight paragraph/list spacing, mono code */
+.ai-md{word-break:break-word}
+.ai-md>*{margin:0 0 8px}
+.ai-md>*:last-child{margin-bottom:0}
+.ai-md h1,.ai-md h2,.ai-md h3,.ai-md h4,.ai-md h5,.ai-md h6{margin:10px 0 4px;font-weight:600;line-height:1.35}
+.ai-md h1{font-size:1.25em}.ai-md h2{font-size:1.15em}.ai-md h3{font-size:1.08em}
+.ai-md ul,.ai-md ol{margin:0 0 8px;padding-left:1.3em}
+.ai-md li{margin:2px 0}
+.ai-md li>ul,.ai-md li>ol{margin:2px 0 0}
+.ai-md pre{margin:0 0 8px;padding:10px 12px;border-radius:8px;background:var(--k17, rgba(0,0,0,0.07));overflow:auto}
+.ai-md code{font-family:'IBM Plex Mono',monospace;font-size:0.92em}
+.ai-md pre code{background:none;padding:0}
+.ai-md :not(pre)>code{background:var(--k17, rgba(0,0,0,0.07));padding:1px 5px;border-radius:4px}
+.ai-md blockquote{margin:0 0 8px;padding:0 0 0 10px;border-left:2px solid var(--k29, rgba(0,0,0,0.1));color:var(--k11, #6E6E73)}
+.ai-md table{border-collapse:collapse;margin:0 0 8px;font-size:0.94em}
+.ai-md th,.ai-md td{border:1px solid var(--k29, rgba(0,0,0,0.1));padding:4px 8px}
+.ai-md hr{border:none;border-top:1px solid var(--k29, rgba(0,0,0,0.1));margin:10px 0}
+.ai-md img{max-width:100%;border-radius:6px}
+.ai-md a{word-break:break-all}
+.ai-md .md-math-block{margin:6px 0;overflow-x:auto}
 *{box-sizing:border-box}
 html,body{transition:background .3s}
 /* settings (prefs.js applyTo sets these on <html>): accent, reduced motion, AI off, density — the defaults add nothing */
@@ -259,7 +280,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
           </sc-if>
           <sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.7;color:var(--k1, #1D1D1F)">
-              <div style="white-space:pre-wrap;font-family:'Noto Serif SC',serif;font-size:14px">{{ m.text }}</div>
+              <div class="ai-md" dangerouslySetInnerHTML="{{ m.html }}" style="font-family:'Noto Serif SC',serif;font-size:14px"></div>
               <sc-if value="{{ m.setup }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ openAiSettings }}" style="align-self:flex-start;height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">打开设置</button>
               </sc-if>
@@ -386,6 +407,7 @@ const countTopics = n => 1 + (n.children || []).reduce((a, c) => a + countTopics
 const clearAi = n => { delete n.ai; (n.children || []).forEach(clearAi); };
 function cleanTitle(p, type) { const t = p.replace(/^(帮我|请|给我)?(写|做|生成|创建|起草|整理)(一份|一个|一套|一下)?/, '').replace(/[，。,.].*$/, '').trim(); return (t || ('未命名' + TAG[type].n)).slice(0, 18); }
 const WRITES = /^(add|set|remove|move|create|export)\b/;
+const escHtml = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'); // md.js fallback before it has loaded (chat isn't usable that early, but never render raw text as HTML)
 const SPELL = '.wd-ed,.wd-hf,.pt-ed,.pt-src,.se-ed,[data-edit],[data-aid],.mm-note'; // editable document text (formula and label inputs keep their own setting)
 const QUOTE = '.wd-ed,.pt-ed,.pt-src'; // smart CJK punctuation: Word and Markdown
 const MAC_DESKTOP = new URLSearchParams(location.search).get('desktop') === 'mac'; // Tauri shell on macOS: hidden title bar, traffic lights at 18/20
@@ -919,7 +941,7 @@ class Component extends DCLogic {
       onDocChange: (nd, opts) => this.setDoc(nd, !(opts && opts.silent)), onUndo: () => this.undo(false), onRedo: () => this.undo(true), onRevise: accept => this.revise(accept), toastFn: m => this.toastMsg(m),
       showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? WELCOME[d.type] + (st.model ? '（' + st.model + '）' : '') : NO_CHAT) : '', thinking: st.thinking,
       needsModel: !st.chatOn, openAiSettings: () => this.openSettings('ai'),
-      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: `执行了 ${(m.steps || []).length} 条命令`, stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? `${ch.items.length} 处修改` : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复', onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
+      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', html: { __html: m.text ? (this.MD ? this.MD.mdToHtml(m.text, { safe: true }) : escHtml(m.text)) : '' }, setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: `执行了 ${(m.steps || []).length} 条命令`, stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? `${ch.items.length} 处修改` : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复', onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
       chips: d ? CHIPS[d.type].map(t => ({ text: t, onClick: () => this.send(t) })) : [],
       input: st.input, onInput: e => this.setState({ input: e.target.value }),
       onInputKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.send(st.input); } },

@@ -178,11 +178,12 @@ public sealed partial class Chat
     /// <summary>The tools offered on /v1/messages: writer always, web_search and web_fetch when 联网搜索 is on.</summary>
     static JsonArray AnthropicTools(bool web)
     {
-        var tools = new JsonArray { new JsonObject { ["name"] = Mcp.ToolName, ["description"] = Mcp.ToolDescription, ["input_schema"] = Parameters() } };
+        // JsonNode-typed adds: JsonArray.Add<T> for a JsonObject is the reflection overload, which the NativeAOT release engine refuses
+        var tools = new JsonArray(new JsonObject { ["name"] = Mcp.ToolName, ["description"] = Mcp.ToolDescription, ["input_schema"] = Parameters() });
         if (web)
         {
-            tools.Add(new JsonObject { ["name"] = Web.SearchToolName, ["description"] = Web.SearchDescription, ["input_schema"] = Web.SearchParameters() });
-            tools.Add(new JsonObject { ["name"] = Web.FetchToolName, ["description"] = Web.FetchDescription, ["input_schema"] = Web.FetchParameters() });
+            tools.Add((JsonNode)new JsonObject { ["name"] = Web.SearchToolName, ["description"] = Web.SearchDescription, ["input_schema"] = Web.SearchParameters() });
+            tools.Add((JsonNode)new JsonObject { ["name"] = Web.FetchToolName, ["description"] = Web.FetchDescription, ["input_schema"] = Web.FetchParameters() });
         }
         return tools;
     }

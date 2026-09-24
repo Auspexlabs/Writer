@@ -4,6 +4,9 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>writer</AssemblyName>
     <RootNamespace>Writer.Cli</RootNamespace>
+    <!-- the release engine is NativeAOT: every build reports what AOT would refuse (warnings are errors) -->
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

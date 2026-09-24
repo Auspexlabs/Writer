@@ -52,6 +52,7 @@ Bundled:
 |---|---|---|---|---|
 | React (`react.production.min.js`) | 18.3.1 | MIT | Copyright (c) Facebook, Inc. and its affiliates. | `ui/vendor/`, unmodified (matches the SRI hashes in `ui/support.js`) |
 | ReactDOM (`react-dom.production.min.js`, includes a Modernizr 3.0.0pre custom build, MIT) | 18.3.1 | MIT | Copyright (c) Facebook, Inc. and its affiliates. | `ui/vendor/`, unmodified |
+| KaTeX (`katex.min.js`, `katex.min.css`, `fonts/*.woff2`) | 0.18.9 | MIT | Copyright (c) 2013-2020 Khan Academy and other contributors | `ui/vendor/katex/`, unmodified — renders `$…$` / `$$…$$` math in `md.js` and the Markdown editor, no network request |
 | IBM Plex Sans 400/500/600, IBM Plex Mono 400 (Latin subsets, via @fontsource 5.3.0) | — | OFL-1.1 | Copyright 2017, 2019 IBM Corp. | `ui/assets/fonts/`, license in `ui/assets/fonts/OFL.txt` |
 | dc-runtime (`ui/support.js`) | — | Not stated in the file | — | The runtime of the design tool that exported the `ui/*.dc.html` pages. Generated (per its first line) from `dc-runtime/src/*.ts`; changed in this repository |
 

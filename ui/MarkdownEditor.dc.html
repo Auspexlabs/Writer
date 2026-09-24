@@ -9,7 +9,17 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
+<link rel="stylesheet" href="./vendor/katex/katex.min.css">
 <style>
+.pt-ed .md-math-block{margin:10px 0;padding:6px 4px;border-radius:8px;cursor:pointer;overflow-x:auto}
+.pt-ed .md-math-block:hover{background:var(--k17, rgba(0,0,0,0.07))}
+.pt-ed .md-math{cursor:pointer;border-radius:3px}
+.pt-ed .md-math:hover{background:var(--k17, rgba(0,0,0,0.07))}
+.pt-ed .md-math-editing{cursor:default;background:var(--k17, rgba(0,0,0,0.07))}
+.pt-ed .md-math-editing:hover{background:var(--k17, rgba(0,0,0,0.07))}
+.md-math-src{display:block;width:100%;box-sizing:border-box;border:1px solid var(--k36, rgba(0,0,0,0.12));border-radius:6px;background:var(--k0, #FFFFFF);padding:8px 10px;margin:0 0 6px;resize:none;overflow:hidden;outline:none;font-family:'IBM Plex Mono',monospace;font-size:13.5px;line-height:1.6;color:var(--k9, #3A3A3C)}
+.md-math-preview{min-height:1.4em;overflow-x:auto}
+.katex-error{cursor:help}
 .pt-ed{outline:none;font-family:'Noto Serif SC',serif;font-size:17px;line-height:1.9;color:var(--k1, #1D1D1F);word-break:break-word;caret-color:var(--k1, #1D1D1F)}
 .pt-ed>*:first-child{margin-top:0}
 .pt-ed h1{font-size:34px;line-height:1.3;font-weight:700;margin:0 0 22px;letter-spacing:0.005em}
@@ -105,6 +115,16 @@
 <script type="text/x-dc" data-dc-script data-props="{&quot;doc&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(doc, opts) =&gt; void&quot;},&quot;onConvert&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(kind, payload) =&gt; void&quot;},&quot;toast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(msg) =&gt; void&quot;},&quot;showThumbs&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;pure&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onToggleThumbs&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
 const md = e => e.preventDefault();
 const LIST = /^(\s*)([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$/;
+const autoGrow = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+/** The atomic math element (a rendered .md-math-block or .md-math) immediately in the direction of travel from a
+ *  collapsed range, if the caret is exactly at that boundary — so an arrow key can open it instead of just hopping
+ *  over it, the way a contenteditable=false island otherwise behaves. Skips empty/zero-width text in between. */
+function mathSiblingAt(r, fwd) {
+  const c = r.startContainer, off = r.startOffset;
+  let sib = c.nodeType === 3 ? (fwd ? (off === c.nodeValue.length ? c.nextSibling : undefined) : (off === 0 ? c.previousSibling : undefined)) : (fwd ? c.childNodes[off] : c.childNodes[off - 1]);
+  while (sib && sib.nodeType === 3 && !sib.nodeValue.replace(/\u200B/g, '').trim()) sib = fwd ? sib.nextSibling : sib.previousSibling;
+  return sib && sib.nodeType === 1 && (sib.classList.contains('md-math-block') || sib.classList.contains('md-math')) ? sib : null;
+}
 class Component extends DCLogic {
   state = { mode: 'rich', tab: 'format', bubble: false, bx: 12, selBar: null };
   edRef = React.createRef(); taRef = React.createRef(); scRef = React.createRef(); imgRef = React.createRef();
@@ -118,7 +138,10 @@ class Component extends DCLogic {
   }
   /** Caret follow (镜头跟随): rich mode reads the selection in edRef, source mode measures the textarea with a mirror; scrolls scRef unless the textarea scrolls on its own (no field-sizing:content). */
   attachFollow() { const sc = this.scRef.current; if (this.gone || !this.F || !sc || (this.follow && this.follow.el === sc)) return; this.follow && this.follow.detach(); this.follow = this.F.attach(sc, () => this.state.mode === 'rich' ? this.F.caretRect(this.edRef.current) : this.F.textareaCaret(this.taRef.current), { scroller: () => { const t = this.taRef.current; return t && t.scrollHeight > t.clientHeight + 1 ? t : sc; } }); }
-  componentWillUnmount() { document.removeEventListener('selectionchange', this.onSel); if (this.syncT) { clearTimeout(this.syncT); this.flush(); } this.unOut && this.unOut(); this.gone = true; this.follow && this.follow.detach(); }
+  componentWillUnmount() { document.removeEventListener('selectionchange', this.onSel); if (this.syncT) { clearTimeout(this.syncT); this.flush(); } this.unOut && this.unOut(); this.gone = true; this.follow && this.follow.detach(); this.dropMathOutside(); }
+  /** load() below replaces the whole editor DOM (a doc switch, an external edit, or coming back to rich mode) — drop
+   *  any math block's outside-click listener first, or it leaks and keeps watching for clicks near a detached node. */
+  dropMathOutside() { if (this._mathOutside) { document.removeEventListener('mousedown', this._mathOutside, true); this._mathOutside = null; this._mathWrap = null; } this._openInlineText = null; }
   componentDidUpdate(pp) {
     const ps = this.prevState || this.state; this.prevState = this.state; // the runtime passes prevProps only
     this.attachFollow();
@@ -128,7 +151,7 @@ class Component extends DCLogic {
     else if (this.state.mode === 'rich' && d.text !== this.lastText) this.load();
   }
   get doc() { return this.props.doc; }
-  load() { const ed = this.edRef.current; if (!ed || !this.M) return; ed.innerHTML = this.M.mdToHtml(this.doc.text || ''); ed.querySelectorAll('input[type=checkbox]').forEach(c => c.setAttribute('contenteditable', 'false')); ed.querySelectorAll('[data-line],[data-li]').forEach(n => { n.removeAttribute('data-line'); n.removeAttribute('data-li'); }); this.lastText = this.doc.text || ''; }
+  load() { const ed = this.edRef.current; if (!ed || !this.M) return; this.dropMathOutside(); ed.innerHTML = this.M.mdToHtml(this.doc.text || ''); ed.querySelectorAll('input[type=checkbox]').forEach(c => c.setAttribute('contenteditable', 'false')); ed.querySelectorAll('[data-line],[data-li]').forEach(n => { n.removeAttribute('data-line'); n.removeAttribute('data-li'); }); this.lastText = this.doc.text || ''; }
   emit(text) { this.lastText = text; this.props.onChange && this.props.onChange(Object.assign({}, this.doc, { text }), { silent: true }); }
   sync() { clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 280); }
   flush() { this.syncT = null; const ed = this.edRef.current; if (!ed || !this.M || this.state.mode !== 'rich') return; const t = this.M.htmlToMd(ed); if (!t.trim() && (this.lastText || '').trim().length > 20 && !this.userCleared) return; if (t !== this.lastText) this.emit(t); }
@@ -151,7 +174,9 @@ class Component extends DCLogic {
   insertBlockHTML(h) { this.exec('insertHTML', h + '<p><br></p>'); }
   link() { const s = window.getSelection(); const txt = s.toString(); const url = window.prompt ? (() => { try { return window.prompt('链接地址', 'https://'); } catch (e) { return null; } })() : null; if (!url) return; if (txt) this.exec('createLink', url); else this.exec('insertHTML', `<a href="${url}">${url}</a>`); }
   rules(e) {
-    if (this.props.autoFormat === false) return;
+    if (this.props.autoFormat === false || !this.M) return;
+    if (document.activeElement !== this.edRef.current) return; // a nested control (a math source box) owns this keystroke, not the rich text model
+    if (e.nativeEvent && e.nativeEvent.isComposing) return; // an IME composition (e.g. pinyin candidates) is still open — act only once it commits
     const s = window.getSelection(); if (!s.rangeCount) return; const r = s.getRangeAt(0); if (!r.collapsed) return;
     const node = r.startContainer; if (node.nodeType !== 3) return;
     const b = this.blockOf(node); if (!b) return;
@@ -160,26 +185,97 @@ class Component extends DCLogic {
       const full = b.textContent;
       const atStart = b.firstChild === node || (b.firstChild && b.firstChild.nodeType === 3 && b.firstChild === node);
       if (atStart && before === full.slice(0, before.length)) {
-        const m = /^(#{1,6}) $/.exec(before) || null;
+        if (before.replace(/\u00a0/g, ' ') === '$$ ') return this.openMathBlock(b, ''); // "$$" + Space, mirroring the Enter case in onRichKey below
         const take = n => { node.nodeValue = node.nodeValue.slice(n); const nr = document.createRange(); nr.setStart(node, 0); nr.collapse(true); s.removeAllRanges(); s.addRange(nr); };
-        if (m) { take(m[1].length + 1); document.execCommand('formatBlock', false, '<h' + m[1].length + '>'); return this.sync(); }
-        if (/^[-*+] $/.test(before)) { take(2); document.execCommand('insertUnorderedList'); return this.sync(); }
-        if (/^1[.)] $/.test(before)) { take(3); document.execCommand('insertOrderedList'); return this.sync(); }
-        if (/^> $/.test(before)) { take(2); document.execCommand('formatBlock', false, '<blockquote>'); return this.sync(); }
-        if (/^\[ ?\] $/.test(before)) { take(before.length); this.task(); return; }
+        const bt = this.M.blockTrigger(before);
+        if (bt) {
+          take(bt.len);
+          if (bt.type === 'task') { this.task(); return; }
+          // Built by hand, not with execCommand: on a block the marker just emptied, WebKit's formatBlock and list
+          // commands resolve the caret to the end of the previous paragraph and convert that one instead.
+          const tag = { ul: 'ul', ol: 'ol', quote: 'blockquote' }[bt.type] || bt.type; // or h1..h6
+          const el = document.createElement(tag), into = tag === 'ul' || tag === 'ol' ? el.appendChild(document.createElement('li')) : el;
+          while (b.firstChild) into.appendChild(b.firstChild);
+          const zw = document.createTextNode('​'); into.insertBefore(zw, into.firstChild); // keeps an emptied block a line tall so the caret stays in it; htmlToMd drops it
+          b.replaceWith(el);
+          const nr = document.createRange(); nr.setStart(zw, 1); nr.collapse(true); s.removeAllRanges(); s.addRange(nr);
+          return this.sync();
+        }
       }
     }
-    const pats = [[/\*\*([^*\n]+)\*\*$/, 'strong'], [/~~([^~\n]+)~~$/, 'del'], [/==([^=\n]+)==$/, 'mark'], [/`([^`\n]+)`$/, 'code'], [/(?:^|[^*])\*([^*\n]+)\*$/, 'em']];
-    for (const [re, tag] of pats) {
-      const m = re.exec(before); if (!m) continue;
-      const full = m[0].startsWith('*') || tag !== 'em' ? m[0] : m[0].slice(1);
-      const start = r.startOffset - full.length; const rr = document.createRange(); rr.setStart(node, start); rr.setEnd(node, r.startOffset);
-      rr.deleteContents(); const el = document.createElement(tag); el.textContent = m[1]; rr.insertNode(el);
-      const sp = document.createTextNode('\u200B'); el.after(sp); const nr = document.createRange(); nr.setStart(sp, 1); nr.collapse(true); s.removeAllRanges(); s.addRange(nr);
-      return this.sync();
-    }
+    const it = this.M.inlineTrigger(before); if (!it) return;
+    const start = r.startOffset - it.len; const rr = document.createRange(); rr.setStart(node, start); rr.setEnd(node, r.startOffset);
+    rr.deleteContents();
+    let node2;
+    if (it.tag === 'math') { const t = document.createElement('template'); t.innerHTML = this.M.mathInlineHtml(it.text); node2 = t.content.firstChild; } // via md.js, so a chat reply, a saved file and live typing all agree on the markup
+    else { node2 = document.createElement(it.tag); node2.textContent = it.text; }
+    rr.insertNode(node2);
+    const sp = document.createTextNode('\u200B'); node2.after(sp); const nr = document.createRange(); nr.setStart(sp, 1); nr.collapse(true); s.removeAllRanges(); s.addRange(nr);
+    return this.sync();
+  }
+  /** Opens the Typora-style math block editor in place of `anchorEl` (a paragraph that just triggered "$$", or an
+   *  existing rendered .md-math-block): a source textarea with a live KaTeX preview underneath, closed by Escape,
+   *  Cmd/Ctrl+Enter, or a click outside — never by the outer rich-text key/click handlers, which the editing wrapper
+   *  is insulated from (contenteditable="false" on the wrapper; the <textarea> is its own native control regardless). */
+  openMathBlock(anchorEl, initialSrc) {
+    if (!this.M) return;
+    const wrap = document.createElement('div'); wrap.className = 'md-math-block md-math-editing'; wrap.setAttribute('contenteditable', 'false');
+    const ta = document.createElement('textarea'); ta.className = 'md-math-src'; ta.value = initialSrc; ta.spellcheck = false; ta.rows = 1;
+    const prev = document.createElement('div'); prev.className = 'md-math-preview';
+    wrap.append(ta, prev);
+    anchorEl.replaceWith(wrap);
+    const renderPreview = () => { prev.innerHTML = this.M.renderMath(ta.value, true); autoGrow(ta); };
+    renderPreview();
+    const closeIt = () => this.closeMathBlock(wrap, ta.value);
+    ta.addEventListener('input', ev => { ev.stopPropagation(); renderPreview(); this.sync(); });
+    ta.addEventListener('keydown', ev => {
+      ev.stopPropagation(); // this box's keystrokes are its own, never the rich editor's Enter/Tab/arrow rules
+      if (ev.key === 'Escape') { ev.preventDefault(); closeIt(); }
+      else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); closeIt(); }
+      else if (ev.key === 'Tab') { ev.preventDefault(); const s0 = ta.selectionStart, e0 = ta.selectionEnd; ta.setRangeText('  ', s0, e0, 'end'); renderPreview(); }
+    });
+    const onOutside = ev => { if (!wrap.contains(ev.target)) closeIt(); };
+    document.addEventListener('mousedown', onOutside, true);
+    this._mathOutside = onOutside; this._mathWrap = wrap;
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0);
+  }
+  closeMathBlock(wrap, src) {
+    this.dropMathOutside();
+    if (!wrap.isConnected) return;
+    this.edRef.current.focus(); // like onScDown below: focus the editor before placing the range, not after
+    const s = window.getSelection();
+    if (!src.trim()) { const p = document.createElement('p'); p.innerHTML = '<br>'; wrap.replaceWith(p); const r = document.createRange(); r.setStart(p, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); return this.sync(); }
+    const t = document.createElement('template'); t.innerHTML = this.M.mathBlockHtml(src); const el = t.content.firstChild;
+    wrap.replaceWith(el);
+    let after = el.nextElementSibling;
+    if (!after) { after = document.createElement('p'); after.innerHTML = '<br>'; el.after(after); }
+    const r = document.createRange(); r.setStart(after, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r);
+    this.sync();
+  }
+  /** Turns a rendered inline formula back into its plain "$src$" text so the user can edit it like normal text;
+   *  onSel below notices when the caret leaves that text again and re-renders it (commitInlineMath). */
+  openInlineMath(el) {
+    const txt = document.createTextNode('$' + (el.getAttribute('data-src') || '') + '$');
+    el.replaceWith(txt);
+    this.edRef.current.focus();
+    const r = document.createRange(); r.setStart(txt, txt.length); r.collapse(true);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    this._openInlineText = txt;
+  }
+  commitInlineMath() {
+    const txt = this._openInlineText; this._openInlineText = null;
+    if (!txt || !txt.parentNode || !this.M) return;
+    const m = /^\$(?=\S)([^$\n]*?\S)\$$/.exec(txt.nodeValue);
+    if (!m) return; // edited into something that's no longer "$...$" — leave it as plain text rather than guess
+    const t = document.createElement('template'); t.innerHTML = this.M.mathInlineHtml(m[1]); const el = t.content.firstChild;
+    txt.replaceWith(el);
+    this.sync();
   }
   onSel = () => {
+    if (this._openInlineText) {
+      const s0 = window.getSelection(); const r0 = s0.rangeCount && s0.getRangeAt(0);
+      if (!r0 || r0.startContainer !== this._openInlineText) this.commitInlineMath();
+    }
     if (this.state.mode !== 'rich') { if (this.state.selBar) this.setState({ selBar: null }); return; }
     const ed = this.edRef.current, s = window.getSelection(); if (!ed || !s.rangeCount) return;
     const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer) || r.collapsed) { if (this.state.selBar) this.setState({ selBar: null }); return; }
@@ -232,7 +328,7 @@ class Component extends DCLogic {
       scRef: this.scRef, edRef: this.edRef, taRef: this.taRef, imgRef: this.imgRef,
       isRich: rich, isSrc: !rich, gridPT: showOutline ? '0px' : '0px', richDisp: rich ? 'block' : 'none', richDisp: rich ? 'block' : 'none', text, pad: pure ? '16vh 40px 34vh' : '96px 40px 40vh',
       onScDown: e => { if (e.target === e.currentTarget && rich && this.edRef.current) { e.preventDefault(); const ed = this.edRef.current; ed.focus(); const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } },
-      onRichInput: e => { this.userCleared = !!(e.nativeEvent && /^delete/.test(e.nativeEvent.inputType || '')); if (e.nativeEvent && e.nativeEvent.inputType === 'insertText' && e.nativeEvent.data === ' ' || (e.nativeEvent && /[*~=`]/.test(e.nativeEvent.data || ''))) this.rules(e); this.sync(); },
+      onRichInput: e => { this.userCleared = !!(e.nativeEvent && /^delete/.test(e.nativeEvent.inputType || '')); if (e.nativeEvent && e.nativeEvent.inputType === 'insertText' && e.nativeEvent.data === ' ' || (e.nativeEvent && /[*~=`$]/.test(e.nativeEvent.data || ''))) this.rules(e); this.sync(); },
       onRichKey: e => {
         const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
         if (ctrl && k === 'k') { e.preventDefault(); this.link(); }
@@ -246,6 +342,7 @@ class Component extends DCLogic {
             const t = b.textContent.trim();
             if (t === '```' || /^```\w*$/.test(t)) { e.preventDefault(); const pre = document.createElement('pre'); const code = document.createElement('code'); code.textContent = '\n'; pre.appendChild(code); b.replaceWith(pre); const r = document.createRange(); r.setStart(code.firstChild, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.sync(); }
             else if (t === '---' || t === '***') { e.preventDefault(); const hr = document.createElement('hr'); const p = document.createElement('p'); p.innerHTML = '<br>'; b.replaceWith(hr); hr.after(p); const r = document.createRange(); r.setStart(p, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.sync(); }
+            else if (t === '$$' && this.M) { e.preventDefault(); this.openMathBlock(b, ''); }
           }
           if (b && b.tagName === 'PRE') { e.preventDefault(); document.execCommand('insertText', false, '\n'); }
           if (b && b.tagName === 'LI' && b.classList.contains('task')) { setTimeout(() => { const s2 = window.getSelection(); const nb = s2.rangeCount && this.blockOf(s2.getRangeAt(0).startContainer); if (nb && nb.tagName === 'LI' && nb !== b && !nb.querySelector('input')) { nb.classList.add('task'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.setAttribute('contenteditable', 'false'); nb.prepend(cb, document.createTextNode(' ')); } this.sync(); }, 0); }
@@ -255,8 +352,19 @@ class Component extends DCLogic {
           if (b && /^H[1-6]|BLOCKQUOTE$/.test(b.tagName)) { const pre = document.createRange(); pre.setStart(b, 0); pre.setEnd(r.startContainer, r.startOffset); if (!pre.toString().length) { e.preventDefault(); document.execCommand('formatBlock', false, '<p>'); this.sync(); } }
         }
         else if (e.key === 'Tab') { e.preventDefault(); document.execCommand(e.shiftKey ? 'outdent' : 'indent'); this.sync(); }
+        else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && !e.shiftKey && !ctrl) {
+          const s = window.getSelection(); if (!s.rangeCount || !s.getRangeAt(0).collapsed) return;
+          const fwd = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+          const hit = mathSiblingAt(s.getRangeAt(0), fwd); // a rendered formula sits right at the caret, in the direction of travel
+          if (hit) { e.preventDefault(); if (hit.classList.contains('md-math-block')) this.openMathBlock(hit, hit.getAttribute('data-src') || ''); else this.openInlineMath(hit); }
+        }
       },
-      onRichClick: e => { const cb = e.target.closest && e.target.closest('input[type=checkbox]'); if (cb) { setTimeout(() => { if (cb.checked) cb.setAttribute('checked', ''); else cb.removeAttribute('checked'); this.sync(); }, 0); } const a = e.target.closest && e.target.closest('a[href]'); if (a && (e.metaKey || e.ctrlKey)) window.open(a.href, '_blank'); },
+      onRichClick: e => {
+        const cb = e.target.closest && e.target.closest('input[type=checkbox]'); if (cb) { setTimeout(() => { if (cb.checked) cb.setAttribute('checked', ''); else cb.removeAttribute('checked'); this.sync(); }, 0); }
+        const a = e.target.closest && e.target.closest('a[href]'); if (a && (e.metaKey || e.ctrlKey)) window.open(a.href, '_blank');
+        const mb = this.M && e.target.closest && e.target.closest('.md-math-block:not(.md-math-editing)'); if (mb) return this.openMathBlock(mb, mb.getAttribute('data-src') || '');
+        const mi = this.M && e.target.closest && e.target.closest('span.md-math'); if (mi) return this.openInlineMath(mi);
+      },
       onRichPaste: e => { const t = e.clipboardData.getData('text/plain'); const h = e.clipboardData.getData('text/html'); if (t && (!h || /^(#|[-*] |\d+\. |>|```)/m.test(t))) { e.preventDefault(); document.execCommand('insertHTML', false, M.mdToHtml(t)); this.sync(); } },
       onText: e => this.emit(e.target.value),
       onSrcKey: e => {
@@ -271,7 +379,7 @@ class Component extends DCLogic {
         }
       },
       onSelect: () => { },
-      toggleMode: () => { if (rich) { this.flush(); this.setState({ mode: 'src', selBar: null }); setTimeout(() => this.ta() && this.ta().focus(), 30); } else this.setState({ mode: 'rich' }); },
+      toggleMode: () => { if (rich) { this.flush(); this.dropMathOutside(); this.setState({ mode: 'src', selBar: null }); setTimeout(() => this.ta() && this.ta().focus(), 30); } else this.setState({ mode: 'rich' }); },
       modeIcon: rich ? '</>' : 'A', modeTitle: rich ? '查看源代码' : '返回排版视图', modeFs: rich ? '13px' : '18px', modeFont: rich ? "'IBM Plex Mono',monospace" : "'Noto Serif SC',serif",
       hasSelBar: !!sb && rich, sbx: sb ? sb.x + 'px' : 0, sby: sb ? sb.y + 'px' : 0,
       selBtns: [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), SB('</>', 'code', { font: "'IBM Plex Mono',monospace", title: '行内代码' }), SB('高亮', 'mark'), SB('链接', 'link'), SB('H1', 'h1', { fw: 600 }), SB('H2', 'h2', { fw: 600 }), SB('引用', 'quote')],

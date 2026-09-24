@@ -159,7 +159,8 @@ public sealed partial class Chat
     /// <summary>The tools offered on /chat/completions: writer always, web_search and web_fetch when 联网搜索 is on.</summary>
     static JsonArray OpenAiTools(bool web)
     {
-        static JsonObject Fn(string name, string description, JsonObject schema) => new()
+        // JsonNode, not JsonObject: JsonArray.Add<T> for a JsonObject is the reflection overload, which NativeAOT refuses
+        static JsonNode Fn(string name, string description, JsonObject schema) => new JsonObject
         {
             ["type"] = "function",
             ["function"] = new JsonObject { ["name"] = name, ["description"] = description, ["parameters"] = schema },

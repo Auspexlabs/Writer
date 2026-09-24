@@ -77,10 +77,15 @@ html[data-theme="dark"]{--nglass:linear-gradient(180deg,rgba(50,50,54,.46),rgba(
 #dc-root>.sc-host>div:first-child{width:100vw!important;min-height:100vh;border-radius:0!important;background:var(--nglass)!important;
   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
 #dc-root>.sc-host[data-sc-name="MacSettings"]>div:first-child{height:100vh;display:flex;flex-direction:column}
-#dc-root>.sc-host[data-sc-name="MacSettings"]>div:first-child>div:nth-child(2){flex:1;min-height:0;max-height:none!important}`;
+#dc-root>.sc-host[data-sc-name="MacSettings"]>div:first-child>div:nth-child(2){flex:1;min-height:0;max-height:none!important}
+button[title="关闭"]{position:relative}
+button[title="关闭"]::before{content:'';position:absolute;inset:-14px}`;
   document.documentElement.appendChild(css);
 
   // The page's own lights stand in for the hidden native ones (✕ → onClose); its header strip drags the window, Esc closes it.
+  // The lights are drawn at 12px, well under the header's own height, so a mousedown that is a few pixels off the
+  // button (still meant for it) used to land on the header background and start a drag instead of closing the window;
+  // the ::before above gives the close button a bigger hit box so those clicks land on the button itself.
   document.addEventListener('mousedown', e => {
     if (e.button === 0 && e.detail === 1 && e.target.matches && e.target.matches('#dc-root>.sc-host>div>div:first-child')) {
       e.preventDefault();
