@@ -71,6 +71,34 @@
 .wd-ed [data-w-sectionbreak="nextPage"]::after{content:var(--wd-sb-nextPage)}.wd-ed [data-w-sectionbreak="continuous"]::after{content:var(--wd-sb-continuous)}
 .wd-ed [data-w-sectionbreak="evenPage"]::after{content:var(--wd-sb-evenPage)}.wd-ed [data-w-sectionbreak="oddPage"]::after{content:var(--wd-sb-oddPage)}
 .wd-hfbox:empty::before,.wd-hfbox:has(>br:only-child)::before,.wd-hfbox>p:only-child:has(>br:only-child)::before{content:var(--wd-hf-hint);color:var(--k8, #8E8E93);pointer-events:none}
+.wd-format{position:absolute;top:6px;right:8px;bottom:8px;width:304px;z-index:44;display:flex;flex-direction:column;min-height:0;border-radius:18px;background:var(--format-panel-bg);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--format-panel-sh);color:var(--ink);font-family:var(--font-ui);overflow:hidden}
+.wd-format-tabs{height:48px;flex:none;display:flex;align-items:stretch;justify-content:space-between;gap:2px;padding:0 12px;border-bottom:.5px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.wd-format-tabs button{position:relative;flex:none;border:0;background:none;padding:0 3px;font:400 13px var(--font-ui);color:var(--ink-3);cursor:pointer;white-space:nowrap}
+.wd-format-tabs button[data-on="1"]{font-weight:600;color:var(--ink)}.wd-format-tabs button[data-on="1"]::after{content:"";position:absolute;bottom:0;left:3px;right:3px;height:2px;background:var(--ink)}
+.wd-format-tabs button[data-context="1"]{color:var(--format-accent)}.wd-format-tabs button[data-context="1"][data-on="1"]::after{background:var(--format-accent)}
+.wd-format-scroll{flex:1;min-height:0;overflow:auto;padding:4px 14px 18px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.wd-format-group{padding:10px 0;border-bottom:.5px solid var(--line)}.wd-format-group:last-child{border-bottom:0}
+.wd-format-group-title{font-size:11.5px;font-weight:600;color:var(--ink-2);margin:0 0 9px}
+.wd-format-items{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.wd-format-items button,.wd-format-items select,.wd-format-items label{box-sizing:border-box;height:29px;min-width:29px;border:0;border-radius:8px;background:var(--format-control);box-shadow:var(--format-control-sh);color:var(--ink);font:12px var(--font-ui);cursor:pointer}
+.wd-format-items button{padding:0 9px}.wd-format-items button:hover{background:var(--fill)}.wd-format-items button[data-on="1"]{background:var(--format-selected)}
+.wd-format[data-tab="insert"] .wd-format-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.wd-format[data-tab="insert"] .wd-format-items button{width:100%;min-height:52px;height:auto;padding:6px;white-space:normal;line-height:1.35}
+.wd-format-items select{padding:0 7px;max-width:100%;min-width:65px;flex:1}.wd-format-items label{display:flex;align-items:center;gap:6px;padding:0 8px}
+.wd-format-items input[type=color]{width:20px;height:20px;border:0;padding:0;background:transparent;cursor:pointer}
+.wd-format-items input[type=range]{width:90px;accent-color:var(--format-accent)}
+.wd-format-comment{display:flex;flex-direction:column;gap:7px;margin-top:9px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--format-control)}
+.wd-format-comment-head{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-2)}
+.wd-format-comment-head button{border:0;background:transparent;color:var(--ink-2);font:11.5px var(--font-ui);cursor:pointer;padding:3px}
+.wd-format-comment-avatar{width:18px;height:18px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px}
+.wd-format-comment-quote{font-size:11.5px;color:var(--ink-2);border-left:2px solid #E3B25A;padding-left:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wd-format-comment textarea,.wd-format-comment input{box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:7px;background:var(--format-panel-bg);color:var(--ink);font:12px/1.5 var(--font-ui);padding:5px 7px;outline:none;resize:vertical}
+.wd-format-comment-reply{padding-left:9px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.wd-selectbar{position:fixed;z-index:80;display:flex;align-items:center;gap:4px;height:42px;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none;padding:4px 7px;border-radius:13px;background:var(--format-panel-bg);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--format-panel-sh);font-family:var(--font-ui);white-space:nowrap}
+.wd-selectbar[data-below="0"]{transform:translate(-50%,-100%)}.wd-selectbar[data-below="1"]{transform:translate(-50%,0)}
+.wd-selectbar::after{content:"";position:absolute;left:50%;width:9px;height:9px;transform:translateX(-50%) rotate(45deg);background:var(--format-panel-bg);box-shadow:1px 1px 1px rgba(0,0,0,.05)}
+.wd-selectbar[data-below="0"]::after{bottom:-4px}.wd-selectbar[data-below="1"]::after{top:-4px}
+.wd-selectbar button,.wd-selectbar select{height:30px;border:0;border-radius:7px;background:transparent;color:var(--ink);font:13px var(--font-ui);cursor:pointer}.wd-selectbar button{min-width:27px;padding:0 7px}.wd-selectbar button:hover,.wd-selectbar button[data-on="1"]{background:var(--format-selected)}.wd-selectbar select{background:var(--format-control);box-shadow:var(--format-control-sh);max-width:105px}
 </style>
 </helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:{{ rootBg }};position:relative;outline:none">
@@ -118,6 +146,45 @@
   </sc-if>
 
   </sc-if>
+  <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ true }}">
+    <aside class="wd-format" data-word-format="1" data-tab="{{ tabKey }}" aria-label="格式面板">
+      <nav class="wd-format-tabs" aria-label="格式标签">
+        <sc-for list="{{ panelTabs }}" as="t" hint-placeholder-count="6"><button data-word-tab="{{ t.key }}" data-on="{{ t.on }}" data-context="{{ t.context }}" onClick="{{ t.onClick }}">{{ t.label }}</button></sc-for>
+      </nav>
+      <div class="wd-format-scroll">
+        <sc-for list="{{ panelGroups }}" as="g" hint-placeholder-count="5">
+          <section class="wd-format-group">
+            <div class="wd-format-group-title">{{ g.title }}</div>
+            <div class="wd-format-items">
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="6">
+                <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}"><button title="{{ it.title }}" data-on="{{ it.on }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }}">{{ it.label }}</button></sc-if>
+                <sc-if value="{{ it.isAlign }}" hint-placeholder-val="{{ false }}"><button title="{{ it.title }}" data-on="{{ it.on }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}">{{ it.label }}</button></sc-if>
+                <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}"><select title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}"><sc-for list="{{ it.options }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
+                <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}"><label title="{{ it.title }}"><span style="width:16px;height:16px;border-radius:4px;background:{{ it.swatch }};box-shadow:0 0 0 .5px var(--line)"></span><span>{{ it.title }}</span><input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;opacity:0;width:1px;height:1px"></label></sc-if>
+                <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}"><button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}">{{ it.label }} ⌄</button></sc-if>
+                <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}"><label title="{{ it.title }}">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}"><span>{{ it.text }}</span></label></sc-if>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+        <sc-if value="{{ panelCommentsOpen }}" hint-placeholder-val="{{ false }}">
+          <section class="wd-format-group"><div class="wd-format-group-title">批注 · {{ commentCount }}</div>
+            <div class="wd-format-items"><button onClick="{{ prevComment }}">上一条</button><button onClick="{{ nextComment }}">下一条</button></div>
+            <sc-for list="{{ comments }}" as="c" hint-placeholder-count="1">
+              <div class="wd-format-comment" onClick="{{ c.onFocus }}" style="border-color:{{ c.border }};opacity:{{ c.op }}">
+                <div class="wd-format-comment-head"><span class="wd-format-comment-avatar" style="background:{{ c.avBg }}">{{ c.av }}</span><span style="flex:1">{{ c.time }}</span><button onClick="{{ c.onResolve }}" title="{{ c.resolveTitle }}">{{ c.resolveLabel }}</button><button onClick="{{ c.onDelete }}">删除</button></div>
+                <div class="wd-format-comment-quote">{{ c.quote }}</div>
+                <textarea value="{{ c.text }}" onChange="{{ c.onText }}" placeholder="输入批注…" rows="2"></textarea>
+                <sc-for list="{{ c.replies }}" as="r" hint-placeholder-count="0"><div class="wd-format-comment-reply"><div class="wd-format-comment-head"><span class="wd-format-comment-avatar" style="background:{{ r.avBg }}">{{ r.av }}</span><span style="flex:1">{{ r.time }}</span><button onClick="{{ r.onDelete }}">删除</button></div><textarea value="{{ r.text }}" onChange="{{ r.onText }}" rows="1"></textarea></div></sc-for>
+                <input value="{{ c.draft }}" onChange="{{ c.onDraft }}" onKeyDown="{{ c.onReplyKey }}" placeholder="回复…（回车发送）">
+              </div>
+            </sc-for>
+          </section>
+        </sc-if>
+        <sc-if value="{{ panelNotesOpen }}" hint-placeholder-val="{{ false }}"><section class="wd-format-group"><div class="wd-format-group-title">脚注和尾注 · {{ noteCount }}</div><sc-for list="{{ notes }}" as="nt" hint-placeholder-count="1"><div class="wd-format-comment" onClick="{{ nt.onFocus }}" style="border-color:{{ nt.border }}"><div class="wd-format-comment-head"><span style="flex:1">{{ nt.label }}</span><button onClick="{{ nt.onDelete }}">删除</button></div><textarea value="{{ nt.text }}" onChange="{{ nt.onText }}" placeholder="输入注释文字…" rows="2"></textarea></div></sc-for></section></sc-if>
+      </div>
+    </aside>
+  </sc-if>
   <sc-if value="{{ showFind }}" hint-placeholder-val="{{ false }}">
     <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:58px;left:50%;margin-left:-330px;width:660px;z-index:38;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 8px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px">
       <input ref="{{ findRef }}" value="{{ fq }}" onChange="{{ onFq }}" onKeyDown="{{ onFindKey }}" placeholder="查找" style="height:28px;width:150px;padding:0 10px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;outline:none">
@@ -133,9 +200,10 @@
 
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ bodyCols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
-      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:12px;left:12px;bottom:12px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:var(--panel-r, 16px);overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="height:40px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 8px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;transition:background .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:2px">
+      <div data-thumbpanel="1" data-pop="left" style="position:fixed;top:8px;left:8px;bottom:8px;width:232px;z-index:57;display:flex;flex-direction:column;min-height:0;border-radius:18px;overflow:hidden;background:var(--format-panel-bg);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--format-panel-sh)"><div style="height:68px;flex:none"></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:2px">
         
-        <div style="flex:none;display:flex;flex-direction:column;gap:12px;align-items:center;padding-bottom:16px">
+        <div style="display:flex;padding:2px;margin:0 0 14px;border-radius:9px;background:var(--fill);flex:none"><button onClick="{{ thumbPagesClick }}" style="flex:1;height:27px;border:0;border-radius:8px;background:{{ thumbPagesBg }};box-shadow:{{ thumbPagesSh }};font-size:12px;cursor:pointer">页面</button><button onClick="{{ thumbOutlineClick }}" style="flex:1;height:27px;border:0;border-radius:8px;background:{{ thumbOutlineBg }};box-shadow:{{ thumbOutlineSh }};font-size:12px;cursor:pointer">大纲</button></div>
+        <sc-if value="{{ navPages }}" hint-placeholder-val="{{ true }}"><div style="flex:none;display:flex;flex-direction:column;gap:12px;align-items:center;padding-bottom:16px">
           <sc-for list="{{ pageThumbs }}" as="pt" hint-placeholder-count="1">
             <div onClick="{{ pt.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer" style-hover="transform:translateY(-1px)">
               <div data-light="1" style="width:{{ pt.w }};height:{{ pt.h }};background:{{ pageBg }};box-shadow:0 0 0 1px var(--kpageb, rgba(0,0,0,0.06)),0 3px 10px var(--k65, rgba(0,0,0,0.07));border-radius:4px;overflow:hidden;position:relative;outline:{{ pt.line }};outline-offset:3px;transition:transform .35s cubic-bezier(.2,1.4,.4,1)">
@@ -149,8 +217,8 @@
             </div>
           </sc-for>
           <button onClick="{{ addPageQuick }}" style="flex:none;width:140px;height:32px;border:1px dashed var(--line, rgba(0,0,0,0.1));border-radius:10px;background:transparent;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">＋ 新页面</button>
-        </div>
-        <div style="flex:none;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 8px 6px">标题</div>
+        </div></sc-if>
+        <sc-if value="{{ navOutline }}" hint-placeholder-val="{{ false }}"><div style="flex:none;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 8px 6px">标题</div></sc-if>
         <sc-for list="{{ heads }}" as="h" hint-placeholder-count="4">
           <div onClick="{{ h.onClick }}" style="flex:none;padding:7px 10px;padding-left:{{ h.indent }};border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;color:var(--ink-2, rgba(29,29,31,0.62));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ h.fw }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)">{{ h.text }}</div>
         </sc-for>
@@ -229,15 +297,12 @@
 
   <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out"><span>{{ wordsText }}</span><span> · </span><span>{{ pagesText }}</span></div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-  <div style="position:absolute;right:18px;bottom:12px;z-index:30;height:20px;display:flex;align-items:center;gap:12px;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));font-variant-numeric:tabular-nums;white-space:nowrap">
-    <span>{{ pagesText }}</span><span>{{ wordsText }}</span><span>中文（简体）</span>
-    <sc-if value="{{ trackOn }}" hint-placeholder-val="{{ false }}"><span style="color:var(--k61, #2E7350)">修订：开</span></sc-if>
-    <div style="flex:1"></div>
-    <div style="display:flex;align-items:center;gap:6px">
+  <div data-word-status="1" style="position:absolute;left:{{ statusX }};transform:translateX(-50%);bottom:21px;z-index:30;height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-radius:999px;background:var(--format-panel-bg);box-shadow:var(--format-panel-sh);font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap;transition:left .55s cubic-bezier(.2,1,.3,1)">
+    <span>{{ wordsText }}</span><span>·</span><span>{{ pagePositionText }}</span><span style="height:15px;width:1px;background:var(--line);margin:0 2px"></span>
+    <div style="display:flex;align-items:center;gap:4px">
     <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">−</button>
-    <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" style="width:60px;height:12px;margin:0;accent-color:var(--ink-2, rgba(29,29,31,0.62))">
-    <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">＋</button>
     <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" style="width:40px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
+    <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">＋</button>
     </div>
   </div>
   </sc-if>
@@ -247,6 +312,20 @@
         <sc-if value="{{ b.sep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:16px;margin:0 3px;flex:none;background:var(--k36, rgba(0,0,0,0.12))"></span></sc-if>
         <sc-if value="{{ b.btn }}" hint-placeholder-val="{{ true }}"><button onMouseDown="{{ md }}" onClick="{{ b.onClick }}" style="height:28px;min-width:28px;padding:0 9px;border:none;border-radius:12px;background:{{ b.bg }};color:var(--k1, #1D1D1F);font-size:12.5px;font-weight:{{ b.fw }};font-style:{{ b.fs }};cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px" style-hover="background:var(--k20, rgba(255,255,255,0.7))"><sc-if value="{{ b.star }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;line-height:1">✦</span></sc-if>{{ b.label }}</button></sc-if>
       </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasWordSelection }}" hint-placeholder-val="{{ false }}">
+    <div class="wd-selectbar" data-word-selection="1" data-below="{{ selBelow }}" style="left:{{ bx }};top:{{ by }}">
+      <select title="样式" value="{{ selectionStyle }}" onChange="{{ onSelectionStyle }}"><sc-for list="{{ selectionStyles }}" as="s" hint-placeholder-count="4"><option value="{{ s.id }}">{{ s.label }}</option></sc-for></select>
+      <span style="width:1px;height:18px;background:var(--line)"></span>
+      <button onClick="{{ selectionSmaller }}" title="减小字号">A−</button>
+      <select title="字号" value="{{ selectionSize }}" onChange="{{ onSelectionSize }}" style="width:53px"><sc-for list="{{ selectionSizes }}" as="s" hint-placeholder-count="8"><option value="{{ s }}">{{ s }}</option></sc-for></select>
+      <button onClick="{{ selectionLarger }}" title="增大字号">A+</button>
+      <span style="width:1px;height:18px;background:var(--line)"></span>
+      <button onClick="{{ selectionBold }}" data-on="{{ selectionBoldOn }}" title="加粗" style="font-weight:700">B</button><button onClick="{{ selectionItalic }}" data-on="{{ selectionItalicOn }}" title="斜体" style="font-style:italic">I</button><button onClick="{{ selectionUnderline }}" data-on="{{ selectionUnderlineOn }}" title="下划线" style="text-decoration:underline">U</button>
+      <label title="文字颜色" style="position:relative;display:flex;align-items:center;justify-content:center;width:30px;height:30px;cursor:pointer"><span style="border-bottom:3px solid {{ selectionColor }};font-weight:600">A</span><input type="color" value="{{ selectionColor }}" onChange="{{ onSelectionColor }}" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+      <button onClick="{{ selectionHighlight }}" title="高亮" style="text-decoration:underline;text-decoration-color:{{ selectionHighlightColor }};text-decoration-thickness:3px">▱</button>
+      <span style="width:1px;height:18px;background:var(--line)"></span><button onClick="{{ selectionLink }}" title="链接">↗</button><button onClick="{{ selectionRewrite }}" title="改写">✦ {{ rewriteLabel }}</button>
     </div>
   </sc-if>
 
@@ -380,7 +459,7 @@ const hfOut = html => {
 };
 
 class Component extends DCLogic {
-  state = { tab: 'home', fmt: {}, zoom: 1, zoomEdit: null, view: 'page', showRuler: true, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFF2A8', activeCid: null, imgSel: false, hf: null, hfLive: null };
+  state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: 1, zoomEdit: null, view: 'page', showRuler: true, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFF2A8', activeCid: null, imgSel: false, hf: null, hfLive: null };
   edRef = React.createRef(); cvRef = React.createRef(); imgRef = React.createRef(); findRef = React.createRef(); hfRef = React.createRef();
   pgId = 'pg' + Math.random().toString(36).slice(2, 8); // scopes the page view's rules (pgCss) to this editor's text
   componentDidMount() {
@@ -435,6 +514,7 @@ class Component extends DCLogic {
   applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
   componentDidUpdate(pp) {
     this.attachWheel(); this.attachFollow(); this.hb && this.hb.layout(); this.shb && this.shb.layout();
+    if (pp.formatOpen && !this.props.formatOpen && this.state.pop) this.setState({ pop: null });
     if (this.state.hf && !this.hfRef.current) this.setState({ hf: null, hfLive: null }); // its page went (web view, columns): back to the text
     const d = this.props.doc, o = pp.doc || {};
     if (o.styles !== d.styles) this.styleSheet();
@@ -753,8 +833,8 @@ class Component extends DCLogic {
   /** Where typing and the ribbon go: the header or footer being edited, else the text. */
   get root() { return (this.state.hf && this.hfRef.current) || this.edRef.current; }
   onSel = () => {
-    const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) return;
-    const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return;
+    const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) { if (this.state.selBub) this.setState({ selBub: null }); return; }
+    const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) { if (this.state.selBub) this.setState({ selBub: null }); return; }
     this.range = r.cloneRange();
     const q = c => { try { return document.queryCommandState(c); } catch (e) { return false; } };
     let el = r.startContainer; if (el.nodeType === 3) el = el.parentNode;
@@ -771,9 +851,16 @@ class Component extends DCLogic {
     if (tbl.bordercolor) tbl.borderColor = tbl.bordercolor;
     const f = { b: q('bold'), i: q('italic'), u: q('underline'), s: q('strikeThrough'), sup: q('superscript'), sub: q('subscript'), ul: q('insertUnorderedList'), ol: q('insertOrderedList'), block, font: fam, size: Math.round(parseFloat(cs.fontSize) * 0.75 * 2) / 2, align: q('justifyCenter') ? 'center' : q('justifyRight') ? 'right' : q('justifyFull') ? (cs.textAlignLast === 'justify' ? 'distribute' : 'justify') : 'left', inTable: !!el.closest('td,th'), color: cs.color,
       lk: !list ? '' : list.tagName === 'UL' ? 'bullet' : (list.closest('ol[data-w-list]') || list).getAttribute('data-w-list') || 'number', pat, ps, rs, tbl, row, cell: cellAt };
-    if (JSON.stringify(f) !== JSON.stringify(this.state.fmt)) this.setState({ fmt: f });
-    if (this.props.pure) { const rc = r.getBoundingClientRect(); const b = r.collapsed || !rc.width ? null : { x: Math.round(rc.left + rc.width / 2), y: Math.round(rc.top) }; if (JSON.stringify(b) !== JSON.stringify(this.state.selBub || null)) this.setState({ selBub: b }); }
-    else if (this.state.selBub) this.setState({ selBub: null });
+    const next = {};
+    if (JSON.stringify(f) !== JSON.stringify(this.state.fmt)) next.fmt = f;
+    if (f.inTable && !this.state.fmt.inTable && !this.state.imgSel && !this.state.shapeSel) next.tab = 'table';
+    else if (!f.inTable && this.state.tab === 'table') next.tab = 'home';
+    const rc = r.getBoundingClientRect(), below = rc.top < 95, rawX = rc.left + rc.width / 2;
+    const half = this.props.pure ? 0 : Math.min(255, (window.innerWidth - 16) / 2);
+    const x = Math.max(half + 8, Math.min(window.innerWidth - half - 8, rawX));
+    const selBar = r.collapsed || !rc.width ? null : { x: Math.round(x), y: Math.round(below ? rc.bottom + 8 : rc.top - 8), below };
+    if (JSON.stringify(selBar) !== JSON.stringify(this.state.selBub || null)) next.selBub = selBar;
+    if (Object.keys(next).length) this.setState(next);
   };
   restore() {
     const ed = this.root; const s = window.getSelection();
@@ -1378,11 +1465,11 @@ class Component extends DCLogic {
   }
   vals() {
     const st = this.state, f = st.fmt, pg = this.page, d = this.doc;
-    const B = (label, onClick, o = {}) => { const l = $t(label); return { isBtn: true, label: l, onClick, title: o.title ? $t(o.title) : l, bg: o.on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' }; };
+    const B = (label, onClick, o = {}) => { const l = $t(label); return { isBtn: true, label: l, onClick, title: o.title ? $t(o.title) : l, on: o.on ? '1' : '0', bg: o.on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' }; };
     const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value, options: options.map(([v, l]) => ({ v: String(v), l: $t(String(l)) })), onChange, w, title: title ? $t(title) : title });
     const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label: $t(label), swatch, value: /^#[0-9a-f]{6}$/i.test(swatch) ? swatch : '#000000', onChange, title: title ? $t(title) : title, fw: fw || 400, onPre: () => { } });
     const M = (id, label, items, title) => { this.menus[id] = items; const l = $t(label); return { isMenu: true, label: l, title: title ? $t(title) : l, bg: st.pop && st.pop.id === id ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
-    const AL = (a, title) => ({ isAlign: true, title: $t(title), bg: f.align === a ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', b1: '14px', b2: a === 'justify' || a === 'distribute' ? '14px' : '10px', b3: a === 'distribute' ? '10px' : '14px', b4: a === 'justify' || a === 'distribute' ? '14px' : '8px', onClick: () => this.align(a) });
+    const AL = (a, title) => ({ isAlign: true, label: $t(title), title: $t(title), on: f.align === a ? '1' : '0', bg: f.align === a ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', b1: '14px', b2: a === 'justify' || a === 'distribute' ? '14px' : '10px', b3: a === 'distribute' ? '10px' : '14px', b4: a === 'justify' || a === 'distribute' ? '14px' : '8px', onClick: () => this.align(a) });
     const SEP = { isSep: true };
     const I = (label, onClick, o = {}) => ({ isItem: true, label: $t(label), onClick: () => { this.setState({ pop: null }); onClick(); }, font: o.font || 'inherit', css: o.css || '', hint: o.hint || '', bg: o.on ? 'var(--k12, #F2F2F7)' : 'transparent' });
     const HD = label => ({ isHead: true, label });
@@ -1394,7 +1481,7 @@ class Component extends DCLogic {
     if (st.imgSel) tabsDef.push(['image', '图片']);
     if (st.shapeSel && this.selShape) tabsDef.push(['shape', '形状格式']);
     let tab = st.tab; if (!tabsDef.some(t => t[0] === tab)) tab = 'home';
-    const tabs = tabsDef.map(([k, l]) => ({ label: $t(l), color: st.bubble && tab === k ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: st.bubble && tab === k ? 600 : 400, bg: st.bubble && tab === k ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(k, e) }));
+    const tabs = tabsDef.map(([k, l]) => ({ key: k, label: $t(l), on: tab === k ? '1' : '0', context: ['table', 'image', 'shape'].includes(k) ? '1' : '0', color: st.bubble && tab === k ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: st.bubble && tab === k ? 600 : 400, bg: st.bubble && tab === k ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(k, e), onPanelClick: () => this.setState({ tab: k, pop: null, bubble: false }) }));
     let ribbon = [];
     if (tab === 'home') ribbon = [
       B('↶', () => this.exec('undo'), { title: '撤销 Ctrl+Z' }), B('↷', () => this.exec('redo'), { title: '重做 Ctrl+Y' }), SEP,
@@ -1520,6 +1607,39 @@ class Component extends DCLogic {
         B('删除图片', () => { const b = box(); this.pushPicUndo(); this.selectImg(null); if (b) { b.remove(); this.picDone(); } })
       ]) : [];
     }
+    // Keep every existing ribbon command, while presenting the same actions in scrollable inspector groups.
+    const chunks = [[]];
+    for (const item of ribbon) { if (item.isSep) chunks.push([]); else chunks[chunks.length - 1].push(item); }
+    const names = {
+      home: ['工具', '格式', '字体', '文字格式与颜色', '样式', '对齐与缩进', '列表', '间距、边框与底纹', '查找'],
+      insert: ['常用', '形状与文本', '分隔', '页眉页脚', '符号与日期', '封面与书签', '目录与批注'],
+      layout: ['纸张与分栏', '页面', '段落', '段落设置'], refs: ['目录', '脚注与尾注', '题注与交叉引用'],
+      review: ['字数统计', '批注', '修订', '查找'], view: ['阅读方式', '显示', '缩放', '沉浸'],
+      table: ['插入行列', '删除', '单元格', '样式与边框', '对齐与行高', '标题行', '其它'],
+      image: ['图片', '大小与环绕', '删除'], shape: ['填充与轮廓', '形状与大小', '删除']
+    };
+    const panelGroups = chunks.filter(c => c.length).map((items, i) => ({ title: $t((names[tab] || [])[i] || '工具'), items }));
+    if (tab === 'home') {
+      const group = (title, items) => ({ title: $t(title), items });
+      const split = chunks[6].findIndex(it => it.title === $t('行距'));
+      const listItems = split < 0 ? chunks[6] : chunks[6].slice(0, split);
+      const spacingItems = split < 0 ? [] : chunks[6].slice(split);
+      const pat = f.pat || {};
+      spacingItems.push(
+        M('before-home', '段前', ['0pt', '6pt', '12pt', '18pt', '24pt'].map(v => I(v, () => this.para('spaceBefore', v), { on: pat.spacebefore === v }))),
+        M('after-home', '段后', ['0pt', '6pt', '8pt', '12pt', '18pt'].map(v => I(v, () => this.para('spaceAfter', v), { on: pat.spaceafter === v }))),
+        M('ind-home', '首行缩进', [['无', ''], ['2 字符', '2ch'], ['悬挂缩进 2 字符', '-2ch']].map(([l, v]) => I(l, () => this.para('indentFirst', v), { on: (pat.indentfirst || '') === v }))),
+        M('flow-home', '换行和分页', [['keepNext', '与下段同页'], ['keepLines', '段中不分页'], ['pageBreakBefore', '段前分页']].map(([k, l]) => I(l, () => this.para(k, pat[k.toLowerCase()] === 'true' ? 'false' : 'true'), { on: pat[k.toLowerCase()] === 'true' })))
+      );
+      panelGroups.splice(0, panelGroups.length,
+        group('样式', chunks[4]), group('字体', [chunks[2][0], { ...chunks[2][3], label: 'A−' }, chunks[2][1], { ...chunks[2][2], label: 'A+' }]), group('文字格式与颜色', chunks[3]),
+        group('对齐与缩进', chunks[5]), group('间距、边框与底纹', spacingItems), group('列表', listItems),
+        group('工具', chunks[1].concat(chunks[0], chunks[7])));
+      const shortcuts = [['Normal', '正文'], ['Heading1', '标题 1'], ['Heading2', '标题 2'], ['Quote', '引用']].map(([id, label]) => {
+        const style = this.gallery().find(s => s.id === id); return style ? B(label, () => this.applyStyle(style), { on: f.ps === id }) : null;
+      }).filter(Boolean);
+      panelGroups[0].items = panelGroups[0].items.concat(shortcuts);
+    }
     // popover
     if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
     let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
@@ -1536,7 +1656,7 @@ class Component extends DCLogic {
     const hue = a => AV_HUES[Array.from(a || '').reduce((h, ch) => (h * 31 + ch.codePointAt(0)) >>> 0, 7) % AV_HUES.length]; // by name: the same in every document
     const av = c => c.mine ? $t('我') : Array.from(c.initials || initialsOf(c.author)).slice(0, 2).join(''), avBg = c => c.mine ? AV_ME : `oklch(0.56 0.1 ${hue(c.author)})`;
     const setC = (id, patch, silent) => this.change({ comments: d.comments.map(x => x.id === id ? Object.assign({}, x, patch) : x) }, silent);
-    const comments = (d.comments || []).filter(c => !c.parent).map(c => ({ quote: c.quote || '', text: c.text, time: c.time || '', border: st.activeCid === c.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
+    const comments = (d.comments || []).filter(c => !c.parent).map(c => ({ id: c.id, quote: c.quote || '', text: c.text, time: c.time || '', border: st.activeCid === c.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
       av: av(c), avBg: avBg(c), op: c.resolved ? 0.55 : 1, resolveLabel: c.resolved ? $t('重新打开') : $t('解决'), resolveTitle: c.resolved ? $t('这条批注已解决，点击重新打开') : $t('标记为已解决'),
       onResolve: e => { e.stopPropagation(); setC(c.id, { resolved: !c.resolved }); },
       onText: e => setC(c.id, { text: e.target.value }, true),
@@ -1545,13 +1665,14 @@ class Component extends DCLogic {
       draft: (st.replyDraft || {})[c.id] || '', onDraft: e => this.setState({ replyDraft: Object.assign({}, st.replyDraft, { [c.id]: e.target.value }) }),
       onReplyKey: e => { if (e.key === 'Enter' && !(e.nativeEvent && (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) { e.preventDefault(); this.replyTo(c, e.target.value); } },
       onFocus: () => { this.setState({ activeCid: c.id }); const el = this.edRef.current.querySelector(`[data-cid="${c.id}"]`); this.focusEl(el); } }));
+    const moveComment = dir => { if (!comments.length) return; const i = comments.findIndex(c => c.id === st.activeCid); const next = comments[i < 0 ? (dir > 0 ? 0 : comments.length - 1) : (i + dir + comments.length) % comments.length]; next.onFocus(); };
     const ed0 = this.edRef.current, marks = ed0 && ed0.querySelectorAll ? Array.from(ed0.querySelectorAll('sup[data-fn]')) : null; // the notes whose marks are in the text, in their order
     const noteList = marks ? marks.map(m => (d.notes || []).find(x => x.id === m.getAttribute('data-fn'))).filter(Boolean) : d.notes || [];
     const notes = noteList.map(x => { const m = marks && marks.find(y => y.getAttribute('data-fn') === x.id), n = m ? m.textContent : ''; return { label: $t(x.kind === 'endnote' ? '尾注 {n}' : '脚注 {n}', { n }), text: x.text || '', focus: st.focusNote === x.id, border: st.activeNote === x.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
       onText: e => this.change({ notes: (d.notes || []).map(y => y.id === x.id ? Object.assign({}, y, { text: e.target.value }) : y) }, true),
       onDelete: e => { e.stopPropagation(); this.delNote(x.id); },
       onFocus: () => { this.setState({ activeNote: x.id, focusNote: null }); this.focusEl(m); } }; });
-    const side = !this.props.pure && ((!st.hideCm && (d.comments || []).length > 0) || notes.length > 0);
+    const side = !this.props.pure && !this.props.formatOpen && !this.props.aiOn && ((!st.hideCm && (d.comments || []).length > 0) || notes.length > 0);
     const dlg = st.dlg;
     const info = st.info;
     const pure = !!this.props.pure, showTh = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the panel only when its 缩略图 asks, over the page
@@ -1588,27 +1709,31 @@ class Component extends DCLogic {
       bb('标题@@sel', () => this.exec('formatBlock', heading ? '<p>' : '<h1>'), { on: heading }), SEPB, bb('链接', () => this.linkDlg())]
       .concat(this.props.onRewrite ? [SEPB, bb('改写', () => this.props.onRewrite(String(getSelection())), { star: true })] : []);
     return {
-      md, stop: e => e.stopPropagation(), tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
-      notPure: !pure, pure, showBar: !pure || !!this.props.pureTools, rootBg: 'transparent', pageThumbs, addPageQuick: () => this.addPage(), thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
-      hasBubble: pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? Math.max(50, st.selBub.y - 8) + 'px' : 0, bubbleBtns,
+      md, stop: e => e.stopPropagation(), tabs, ribbon, panelTabs: tabs.map(t => ({ ...t, onClick: t.onPanelClick })), panelGroups, panelCommentsOpen: tab === 'review' && comments.length > 0, panelNotesOpen: tab === 'refs' && notes.length > 0, prevComment: () => moveComment(-1), nextComment: () => moveComment(1), formatOpen: !pure && !!this.props.formatOpen, bubbleOpen: pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
+      notPure: !pure, pure, showBar: pure && !!this.props.pureTools, rootBg: 'transparent', pageThumbs, addPageQuick: () => this.addPage(), thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      hasBubble: pure && !!st.selBub, hasWordSelection: !pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? st.selBub.y + 'px' : 0, selBelow: st.selBub && st.selBub.below ? '1' : '0', bubbleBtns,
+      selectionStyles: this.gallery().filter(s => s.type !== 'character').slice(0, 20).map(s => ({ id: s.id, label: $t(s.label) })), selectionStyle: f.ps || 'Normal', onSelectionStyle: e => { const s = this.gallery().find(x => x.id === e.target.value); if (s) this.applyStyle(s); },
+      selectionSizes: SIZES, selectionSize: SIZES.includes(f.size) ? f.size : 11, onSelectionSize: e => this.setFontSize(+e.target.value), selectionSmaller: () => this.bump(-1), selectionLarger: () => this.bump(1),
+      selectionBold: () => this.exec('bold'), selectionItalic: () => this.exec('italic'), selectionUnderline: () => this.exec('underline'), selectionBoldOn: f.b ? '1' : '0', selectionItalicOn: f.i ? '1' : '0', selectionUnderlineOn: f.u ? '1' : '0',
+      selectionColor: st.lastColor, onSelectionColor: e => { this.setState({ lastColor: e.target.value }); this.exec('foreColor', e.target.value); }, selectionHighlightColor: st.lastHl, selectionHighlight: () => this.exec('hiliteColor', st.lastHl), selectionLink: () => this.linkDlg(), selectionRewrite: () => this.props.onRewrite && this.props.onRewrite(String(getSelection())), rewriteLabel: $t('改写'),
       showFind: st.showFind && !pure, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'),
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replaceOne(), replaceAll: () => this.replaceAll(), closeFind: () => this.setState({ showFind: false }),
-      bodyCols: [showTh && !pure ? '224px' : '0px', 'minmax(0,1fr)', side ? '272px' : null].filter(Boolean).join(' '),
-      showNav: showTh, heads: st.heads.map(h => ({ text: h.text, indent: (8 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.focusEl(this.edRef.current.querySelectorAll('h1,h2,h3')[h.i]) })), noHeads: !st.heads.length,
+      bodyCols: [showTh && !pure ? '248px' : '0px', 'minmax(0,1fr)', !pure && this.props.formatOpen ? '320px' : side ? '272px' : null].filter(Boolean).join(' '),
+      showNav: showTh, navPages: st.navMode !== 'outline', navOutline: st.navMode === 'outline', thumbPagesClick: () => this.setState({ navMode: 'pages' }), thumbOutlineClick: () => this.setState({ navMode: 'outline' }), thumbPagesBg: st.navMode !== 'outline' ? 'var(--format-control)' : 'transparent', thumbOutlineBg: st.navMode === 'outline' ? 'var(--format-control)' : 'transparent', thumbPagesSh: st.navMode !== 'outline' ? 'var(--format-control-sh)' : 'none', thumbOutlineSh: st.navMode === 'outline' ? 'var(--format-control-sh)' : 'none', heads: st.navMode === 'outline' ? st.heads.map(h => ({ text: h.text, indent: (8 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.focusEl(this.edRef.current.querySelectorAll('h1,h2,h3')[h.i]) })) : [], noHeads: st.navMode === 'outline' && !st.heads.length,
       cvRef: this.cvRef, edRef: this.edRef, imgRef: this.imgRef,
       onCanvasDown: e => { if (e.target === this.cvRef.current) { e.preventDefault(); this.restore(); } },
       zoomV: st.zoom, pageW: web ? '100%' : sv ? n * PW + (n - 1) * GAP + 'px' : PW + 'px', sheetH: web ? 'auto' : sv ? PH + 'px' : n * PH + (n - 1) * GAP + 'px',
       sideAttr: sv ? '1' : '0', edFlex: sv ? 'none' : '1', edW: sv ? PW - 2 * m[1] + 'px' : 'auto', edH: sv ? PH - 2 * m[0] + 'px' : 'auto', edCols: sv ? 'auto' : pg.cols, edColW: sv ? PW - 2 * m[1] + 'px' : 'auto', edGap: sv ? 2 * m[1] + GAP + 'px' : '32px', edFill: sv ? 'auto' : 'balance', pad: web ? '16px 56px 48px' : `${m[0]}px ${m[1]}px`, padH: m[1] + 'px', pageBg: pg.color || 'var(--kpage, #FFFFFF)', pageInk, cols: pg.cols,
-      cvPad: web ? `${CV_PAD[0]}px 0 72px` : `${CV_PAD[0]}px ${CV_PAD[1]}px 72px`, cvBg: web ? pg.color || 'var(--kpage, #FFFFFF)' : 'transparent', cvLight: web ? '1' : undefined, sheetBg: 'transparent', pageSh: 'var(--paper-sh, 0 0 0 1px rgba(0,0,0,0.05),0 10px 34px rgba(0,0,0,0.06))',
+      cvPad: web ? `${CV_PAD[0]}px 0 72px` : `${CV_PAD[0]}px ${CV_PAD[1]}px 72px`, cvBg: web ? pg.color || 'var(--kpage, #FFFFFF)' : 'transparent', cvLight: web ? '1' : undefined, sheetBg: 'transparent', pageSh: 'var(--word-paper-sh)',
       hasWm: !web && !!pg.wm, wm: $t(pg.wm), sheets, pgId: this.pgId, hfZones, hfRef: this.hfRef, hfOp: hf ? 1 : 0.6, edOp: hf ? 0.4 : 1, edPe: hf ? 'none' : 'auto',
       showRuler: st.showRuler && !web && !sv && !pure, cmPx: CMPX + 'px', halfCmPx: CMPX / 2 + 'px', tabStops, onRuler: e => this.rulerClick(e, m[1]), rulerTitle: $t('点击标尺添加制表位；点击制表位切换 左 / 居中 / 右 / 小数点，再点一次移除'),
       hfOn: !!hf, hfBtns, hfBarTop: !hf ? 'auto' : hf.kind === 'header' ? zoneTop + m[0] + 26 + 'px' : paged ? zoneTop + PH - m[0] - 64 + 'px' : 'auto', hfBarBottom: hf && hf.kind === 'footer' && !paged ? m[0] + 26 + 'px' : 'auto', // clear of the 页眉 / 页脚 label
       onHfInput: () => this.hfInput(), onHfKey: e => { if (e.key === 'Escape') { e.preventDefault(); this.exitHF(); } },
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
       onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); }, // double-click the text: back to it
-      onInput: () => { if (this.selImg) this.selectImg(null); this.sync(); },
+      onInput: () => { if (this.selImg) this.selectImg(null); if (this.state.selBub) this.setState({ selBub: null }); this.sync(); },
       onEdClick: e => {
         const t = e.target;
         if (t.tagName === 'IMG') { if (t !== this.selImg) this.selectImg(t); }
@@ -1630,7 +1755,8 @@ class Component extends DCLogic {
       onImgFile: e => { const file = e.target.files[0]; e.target.value = ''; if (!file) return; const rd = new FileReader(); rd.onload = () => this.insertHTML(`<p><img src="${rd.result}" style="max-width:100%;display:block;margin:8px auto"></p>`); rd.readAsDataURL(file); }, // a paragraph of its own: dragged into the text or onto the page from there
       markupAttr: st.markup || 'all', cmAttr: st.hideCm ? '0' : '1',
       hasComments: !pure && !st.hideCm && (d.comments || []).length > 0, comments, commentCount: (d.comments || []).length, hasSide: side, hasNotes: notes.length > 0, notes, noteCount: notes.length,
-      pagesText: web ? $t('连续') : $t('共 {n} 页', { n: info.pages }), wordsText: $t('{n} 字', { n: info.count || 0 }), trackOn: !!d.track,
+      pagesText: web ? $t('连续') : $t('共 {n} 页', { n: info.pages }), pagePositionText: web ? $t('连续') : $t('第 {n} / {total} 页', { n: this.caretPage() + 1, total: info.pages }), wordsText: $t('{n} 字', { n: (info.count || 0).toLocaleString() }), trackOn: !!d.track,
+      statusX: `calc(50% + ${((showTh && !pure ? 248 : 0) - (!pure && this.props.formatOpen ? 320 : side ? 272 : 0)) / 2}px)`,
       zoomPct: Math.round(st.zoom * 100), onZoom: e => this.setZoom(+e.target.value / 100),
       zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1),
       zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
