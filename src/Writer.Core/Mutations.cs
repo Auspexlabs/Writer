@@ -6,7 +6,7 @@ public static class Mutations
     public static Node Set(Node node, IEnumerable<KeyValuePair<string, string>> props)
     {
         var canonical = Registry.Normalize(node.Format, node.Kind, props);
-        foreach (var (name, value) in Ordered(canonical)) node.SetProp(name, value);
+        node.SetProps(Ordered(canonical));
         return Refresh(node);
     }
 
@@ -44,7 +44,7 @@ public static class Mutations
     public static Node Refresh(Node node) => node.Parent?.FindChild(node.Anchor) ?? node;
 
     /// <summary>list before level and value before type; a picture is reset, replaced or cut out before it is adjusted, and compressed
-    /// last; everything else in the order given.</summary>
+    /// last; a deck's palette before its fonts; text fitted once it and its box are set; everything else in the order given.</summary>
     static IEnumerable<KeyValuePair<string, string>> Ordered(Dictionary<string, string> props) =>
-        props.OrderBy(p => p.Key switch { "reset" => -3, "src" => -2, "background" => -1, "level" or "type" => 1, "compress" => 2, _ => 0 });
+        props.OrderBy(p => p.Key switch { "reset" => -3, "src" => -2, "background" or "palette" => -1, "level" or "type" or "restart" => 1, "sectionBreak" or "caption" => -1, "bookmark" or "dropCap" => 1, "compress" or "fit" => 2, _ => 0 });
 }

@@ -87,6 +87,16 @@ static class DocxRuns
         }
     }
 
+    /// <summary>Joins two runs a marker split (a comment range, a note's mark) once it is gone: the second's text goes into the first
+    /// when both look the same.</summary>
+    public static void Rejoin(OpenXmlElement? previous, OpenXmlElement? next)
+    {
+        if (previous is not W.Run a || next is not W.Run b || (a.RunProperties?.OuterXml ?? "") != (b.RunProperties?.OuterXml ?? "")
+            || !b.ChildElements.All(c => c is W.RunProperties || IsTextElement(c))) return;
+        foreach (var t in b.ChildElements.Where(IsTextElement).ToList()) { t.Remove(); a.Append(t); }
+        b.Remove();
+    }
+
     /// <summary>Replaces a run's text, keeping its formatting.</summary>
     public static void SetRunText(W.Run run, string text)
     {
@@ -130,33 +140,63 @@ static class DocxRuns
 
     /// <summary>Runs for the specs; a spec with a change becomes a run wrapped in w:ins or w:del, attributed to its author
     /// (else the document's, else Writer) at its date (else now).</summary>
-    public static List<OpenXmlElement> MakeRuns(DocxDocument doc, IEnumerable<RunSpec> specs, W.RunProperties? baseProperties)
+    public static List<OpenXmlElement> MakeRuns(DocxDocument doc, IEnumerable<RunSpec> specs, W.RunProperties? baseProperties) =>
+        specs.Select(spec => MakeRun(doc, spec, Properties(doc, spec, baseProperties))).ToList();
+
+    /// <summary>A run of the spec's text with exactly these properties, in the spec's link and revision mark.</summary>
+    public static OpenXmlElement MakeRun(DocxDocument doc, RunSpec spec, W.RunProperties? rp)
     {
-        var result = new List<OpenXmlElement>();
-        foreach (var spec in specs)
+        var run = new W.Run();
+        if (rp is not null) run.RunProperties = rp;
+        foreach (var e in TextElements(spec.Text, spec.Deleted)) run.Append(e);
+        var element = spec.Link is null ? run : (OpenXmlElement)MakeHyperlink(doc, spec.Link, run);
+        return spec.Change is "inserted" or "deleted" ? DocxRevisions.Wrap(doc, spec, element) : element;
+    }
+
+    /// <summary>The base properties with what the spec states on top.</summary>
+    static W.RunProperties? Properties(DocxDocument doc, RunSpec spec, W.RunProperties? baseProperties)
+    {
+        var rp = baseProperties?.CloneNode(true) as W.RunProperties ?? new W.RunProperties();
+        if (spec.Bold) rp.Bold = new W.Bold();
+        if (spec.Italic) rp.Italic = new W.Italic();
+        if (spec.Strike) rp.Strike = new W.Strike();
+        if (spec.Code) rp.RunFonts = new W.RunFonts { Ascii = "Consolas", HighAnsi = "Consolas", ComplexScript = "Consolas" };
+        if (spec.Underline) rp.Underline = new W.Underline { Val = W.UnderlineValues.Single };
+        if (spec.Color is not null) rp.Color = new W.Color { Val = spec.Color };
+        if (spec.HalfPoints is { } half)
         {
-            var run = new W.Run();
-            var rp = baseProperties?.CloneNode(true) as W.RunProperties ?? new W.RunProperties();
-            if (spec.Bold) rp.Bold = new W.Bold();
-            if (spec.Italic) rp.Italic = new W.Italic();
-            if (spec.Strike) rp.Strike = new W.Strike();
-            if (spec.Code) rp.RunFonts = new W.RunFonts { Ascii = "Consolas", HighAnsi = "Consolas", ComplexScript = "Consolas" };
-            if (spec.Underline) rp.Underline = new W.Underline { Val = W.UnderlineValues.Single };
-            if (spec.Color is not null) rp.Color = new W.Color { Val = spec.Color };
-            if (spec.HalfPoints is { } half)
-            {
-                rp.FontSize = new W.FontSize { Val = half };
-                rp.FontSizeComplexScript = new W.FontSizeComplexScript { Val = half };
-            }
-            if (spec.Font is not null) rp.RunFonts = new W.RunFonts { Ascii = spec.Font, HighAnsi = spec.Font, EastAsia = spec.Font, ComplexScript = spec.Font };
-            if (spec.Highlight is not null) rp.Shading = new W.Shading { Val = W.ShadingPatternValues.Clear, Color = "auto", Fill = spec.Highlight };
-            if (spec.Link is not null) rp.RunStyle = new W.RunStyle { Val = doc.Styles.ResolveStyle("Hyperlink", "character") };
-            if (rp.HasChildren) run.RunProperties = rp;
-            foreach (var e in TextElements(spec.Text, spec.Deleted)) run.Append(e);
-            var element = spec.Link is null ? run : (OpenXmlElement)MakeHyperlink(doc, spec.Link, run);
-            result.Add(spec.Change is "inserted" or "deleted" ? DocxRevisions.Wrap(doc, spec, element) : element);
+            rp.FontSize = new W.FontSize { Val = half };
+            rp.FontSizeComplexScript = new W.FontSizeComplexScript { Val = half };
         }
-        return result;
+        if (spec.Font is not null) rp.RunFonts = new W.RunFonts { Ascii = spec.Font, HighAnsi = spec.Font, EastAsia = spec.Font, ComplexScript = spec.Font };
+        if (spec.Highlight is not null) SetHighlight(rp, spec.Highlight);
+        if (spec.VertAlign is not null) rp.VerticalTextAlignment = new W.VerticalTextAlignment { Val = spec.VertAlign == "superscript" ? W.VerticalPositionValues.Superscript : W.VerticalPositionValues.Subscript };
+        if (spec.Spacing is not null && double.TryParse(spec.Spacing.TrimEnd('p', 't', ' '), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var spacing)) rp.Spacing = new W.Spacing { Val = (int)Math.Round(spacing * 20) };
+        if (spec.Outline) rp.Outline = new W.Outline();
+        if (spec.Shadow) rp.Shadow = new W.Shadow();
+        if (spec.Style is not null && doc.Styles.TryResolveStyle(spec.Style, "character") is { } characterStyle) rp.RunStyle = new W.RunStyle { Val = characterStyle };
+        if (spec.Link is not null) rp.RunStyle = new W.RunStyle { Val = doc.Styles.ResolveStyle("Hyperlink", "character") };
+        return rp.HasChildren ? rp : null;
+    }
+
+    /// <summary>Word's highlight pen colours (w:highlight) and the RGB each is.</summary>
+    static readonly (string Name, string Hex)[] Highlights =
+    [
+        ("yellow", "FFFF00"), ("green", "00FF00"), ("cyan", "00FFFF"), ("magenta", "FF00FF"), ("blue", "0000FF"), ("red", "FF0000"), ("darkBlue", "000080"), ("darkCyan", "008080"),
+        ("darkGreen", "008000"), ("darkMagenta", "800080"), ("darkRed", "800000"), ("darkYellow", "808000"), ("darkGray", "808080"), ("lightGray", "C0C0C0"), ("black", "000000"),
+    ];
+
+    public static string? HighlightHex(string name) => Highlights.FirstOrDefault(h => h.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).Hex;
+
+    /// <summary>A highlight as Word's pen (w:highlight) when the colour is one of its fifteen, else as shading; null removes both.</summary>
+    public static void SetHighlight(W.RunProperties rp, string? hex)
+    {
+        rp.Highlight = null;
+        rp.Shading = null;
+        if (hex is null) return;
+        var pen = Highlights.FirstOrDefault(h => h.Hex.Equals(hex, StringComparison.OrdinalIgnoreCase)).Name;
+        if (pen is not null) rp.Highlight = new W.Highlight { Val = new EnumValue<W.HighlightColorValues>(new W.HighlightColorValues(pen)) };
+        else rp.Shading = new W.Shading { Val = W.ShadingPatternValues.Clear, Color = "auto", Fill = hex };
     }
 
     public static W.Hyperlink MakeHyperlink(DocxDocument doc, string target, W.Run run)
@@ -165,7 +205,9 @@ static class DocxRuns
         Uri uri;
         try { uri = new Uri(target, UriKind.RelativeOrAbsolute); }
         catch (UriFormatException) { throw new WriterException(ErrorCode.Validation, $"'{target}' is not a valid link", "Use a URL like https://example.com or #bookmark."); }
-        var relationship = doc.Main.AddHyperlinkRelationship(uri, true);
-        return new W.Hyperlink(run) { Id = relationship.Id, History = true };
+        // the link's own relationship when the document has one to this address, so a retyped link does not add another
+        var id = doc.Main.HyperlinkRelationships.FirstOrDefault(r => r.IsExternal && r.Uri.OriginalString == uri.OriginalString)?.Id
+            ?? doc.Main.AddHyperlinkRelationship(uri, true).Id;
+        return new W.Hyperlink(run) { Id = id, History = true };
     }
 }

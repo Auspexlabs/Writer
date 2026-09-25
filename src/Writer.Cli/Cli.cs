@@ -6,7 +6,7 @@ namespace Writer.Cli;
 /// <summary>Entry point shared by the executable, the tests and the MCP server.</summary>
 public static class Runner
 {
-    public const string Version = "0.1.2";
+    public const string Version = "0.1.3";
 
     /// <summary>Runs one command. Output goes to stdout, errors as JSON to stderr; returns the exit code.</summary>
     public static int Run(string[] argv, TextWriter stdout, TextWriter stderr)
@@ -68,9 +68,9 @@ static class Files
     /// <summary>Read-only formats fail early with one clear error instead of a property-level one.</summary>
     public static void EnsureWritable(Document doc)
     {
-        if (!Adapters.ForName(doc.Format).CanWrite)
+        if (Adapters.ForName(doc.Format) is { CanWrite: false } adapter)
             throw new WriterException(ErrorCode.FormatReadonly, $"{doc.Format} files are read-only",
-                $"Export first, then edit the copy: writer export <file> --to <file>.md");
+                $"Export first, then edit the copy: writer export <file> --to <file>.{(adapter as Writer.Formats.Compat.CompatAdapter)?.Target ?? "md"}");
     }
 
     /// <summary>Replaces the file atomically (temp file beside it, then rename). Where the folder is not writable but the file is

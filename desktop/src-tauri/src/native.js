@@ -79,13 +79,23 @@ html[data-theme="dark"]{--nglass:linear-gradient(180deg,rgba(50,50,54,.46),rgba(
 #dc-root>.sc-host[data-sc-name="MacSettings"]>div:first-child{height:100vh;display:flex;flex-direction:column}
 #dc-root>.sc-host[data-sc-name="MacSettings"]>div:first-child>div:nth-child(2){flex:1;min-height:0;max-height:none!important}
 button[data-close]{position:relative}
-button[data-close]::before{content:'';position:absolute;inset:-14px}`;
+button[data-close]::before{content:'';position:absolute;inset:-14px}
+button[data-close]::after{content:'';position:absolute;inset:0;opacity:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.5 3.5L8.5 8.5M8.5 3.5L3.5 8.5' stroke='%234D0000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E") center/12px 12px no-repeat}
+button[data-close]:hover::after{opacity:1}
+button[data-close]:active{filter:brightness(0.8)}
+html.w-dim button[data-close]{background:#D6D6D6!important;border-color:rgba(0,0,0,0.06)!important}
+html.w-dim[data-theme="dark"] button[data-close]{background:#4A4A4C!important;border-color:rgba(255,255,255,0.08)!important}`;
   document.documentElement.appendChild(css);
 
   // The page's own lights stand in for the hidden native ones (✕ → onClose); its header strip drags the window, Esc closes it.
   // The lights are drawn at 12px, well under the header's own height, so a mousedown that is a few pixels off the
   // button (still meant for it) used to land on the header background and start a drag instead of closing the window;
-  // the ::before above gives the close button a bigger hit box so those clicks land on the button itself.
+  // the ::before above gives the close button a bigger hit box so those clicks land on the button itself. Like the native
+  // one it shows its × while the pointer is over it, darkens while pressed and is grey while the window is not key.
+  const root = document.documentElement, dim = () => root.classList.toggle('w-dim', !document.hasFocus());
+  window.addEventListener('focus', dim);
+  window.addEventListener('blur', dim);
+  dim();
   document.addEventListener('mousedown', e => {
     if (e.button === 0 && e.detail === 1 && e.target.matches && e.target.matches('#dc-root>.sc-host>div>div:first-child')) {
       e.preventDefault();

@@ -103,6 +103,134 @@
 			<key>CFBundleTypeIconFile</key>
 			<string>pdf.icns</string>
 		</dict>
+		<!-- Compatibility formats: opened as a Word, Excel or PowerPoint draft (Office's compatibility mode), never written
+		     back, so Writer is an alternate for them — it appears in 打开方式 without taking the types over from Office, WPS
+		     or TextEdit. The list mirrors Adapters.OpensAs in the engine and DOC_EXTS in main.rs. -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Word 97-2003 文档</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.word.doc</string>
+				<string>org.openxmlformats.wordprocessingml.document.macroenabled</string>
+				<string>org.openxmlformats.wordprocessingml.template</string>
+				<string>org.openxmlformats.wordprocessingml.template.macroenabled</string>
+				<string>org.oasis-open.opendocument.text</string>
+				<string>org.oasis-open.opendocument.text-template</string>
+				<string>public.rtf</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>doc</string>
+				<string>dot</string>
+				<string>wps</string>
+				<string>wpt</string>
+				<string>docm</string>
+				<string>dotx</string>
+				<string>dotm</string>
+				<string>odt</string>
+				<string>ott</string>
+				<string>rtf</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>word.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Excel 97-2003 表格</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.excel.xls</string>
+				<string>org.openxmlformats.spreadsheetml.sheet.macroenabled</string>
+				<string>org.openxmlformats.spreadsheetml.template</string>
+				<string>org.openxmlformats.spreadsheetml.template.macroenabled</string>
+				<string>org.oasis-open.opendocument.spreadsheet</string>
+				<string>org.oasis-open.opendocument.spreadsheet-template</string>
+				<string>public.comma-separated-values-text</string>
+				<string>public.tab-separated-values-text</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>xls</string>
+				<string>xlt</string>
+				<string>et</string>
+				<string>ett</string>
+				<string>xlsm</string>
+				<string>xltx</string>
+				<string>xltm</string>
+				<string>ods</string>
+				<string>ots</string>
+				<string>csv</string>
+				<string>tsv</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>excel.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PowerPoint 97-2003 演示文稿</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.powerpoint.ppt</string>
+				<string>org.openxmlformats.presentationml.presentation.macroenabled</string>
+				<string>org.openxmlformats.presentationml.template</string>
+				<string>org.openxmlformats.presentationml.template.macroenabled</string>
+				<string>org.openxmlformats.presentationml.slideshow</string>
+				<string>org.openxmlformats.presentationml.slideshow.macroenabled</string>
+				<string>org.oasis-open.opendocument.presentation</string>
+				<string>org.oasis-open.opendocument.presentation-template</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ppt</string>
+				<string>pot</string>
+				<string>pps</string>
+				<string>dps</string>
+				<string>dpt</string>
+				<string>pptm</string>
+				<string>potx</string>
+				<string>potm</string>
+				<string>ppsx</string>
+				<string>ppsm</string>
+				<string>odp</string>
+				<string>otp</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>ppt.icns</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>文本与网页</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.plain-text</string>
+				<string>public.html</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>txt</string>
+				<string>html</string>
+				<string>htm</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>markdown.icns</string>
+		</dict>
 	</array>
 </dict>
 </plist>

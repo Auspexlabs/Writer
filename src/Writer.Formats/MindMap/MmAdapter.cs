@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -49,6 +50,8 @@ public sealed class MmDocument(XDocument xml) : Document
 
     public override string Format => "mm";
     public override Node Root => new MmRoot(this);
+    /// <summary>Opened from an .xmind file: exporting it to .mm writes this very map.</summary>
+    public bool FromXmind { get; init; }
 
     public string Render()
     {
@@ -125,10 +128,68 @@ sealed class MmTopic(MmDocument doc, XElement node) : Node
         if ((string?)node.Attribute("LINK") is { Length: > 0 } link) props["link"] = link;
         if (Color("COLOR") is { } color) props["color"] = color;
         if (Color("BACKGROUND_COLOR") is { } fill) props["fill"] = fill;
-        if ((string?)Icons().FirstOrDefault()?.Attribute("BUILTIN") is { Length: > 0 } icon) props["icon"] = icon;
+        var icons = Icons().Select(i => (string?)i.Attribute("BUILTIN")).Where(i => !string.IsNullOrEmpty(i)).ToList();
+        if (icons.Count > 0) props["icon"] = string.Join(",", icons);
+        var labels = Attrs("label").Select(a => (string?)a.Attribute("VALUE")).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        if (labels.Count > 0) props["labels"] = string.Join(",", labels);
+        if (Picture() is { } picture)
+        {
+            if ((string?)picture.Attribute("URI") is { Length: > 0 } uri) props["image"] = uri;
+            if ((string?)picture.Attribute("WIDTH") is { Length: > 0 } w && (string?)picture.Attribute("HEIGHT") is { Length: > 0 } h) props["imageSize"] = w + "," + h;
+        }
+        if (Font() is { } font)
+        {
+            foreach (var (prop, attribute) in FontFlags)
+                if ((string?)font.Attribute(attribute) == "true") props[prop] = "true";
+            if ((string?)font.Attribute("SIZE") is { Length: > 0 } size) props["size"] = size;
+            if ((string?)font.Attribute("NAME") is { Length: > 0 } name) props["font"] = name;
+        }
+        if (Attr("free") is { } free) props["free"] = free;
+        if (Attr("summary") is { } summary) props["summary"] = summary;
+        foreach (var name in MapAttrs) if (Attr(name) is { } v) props[name] = v;
+        if (Attr("mono") == "true") props["mono"] = "true";
+        if (Cloud() is { } cloud) props["cloud"] = (string?)cloud.Attribute("COLOR") is { Length: > 0 } c ? c.TrimStart('#').ToUpperInvariant() : "F0F0F0";
+        var arrows = Arrows().Select(a => new Rel((string?)a.Attribute("DESTINATION") ?? "", (string?)a.Attribute("MIDDLE_LABEL") ?? "",
+            ((string?)a.Attribute("COLOR") ?? "").TrimStart('#').ToUpperInvariant(), ArrowsOf((string?)a.Attribute("STARTARROW"), (string?)a.Attribute("ENDARROW")))).Where(r => r.To.Length > 0).ToList();
+        if (arrows.Count > 0)
+            props["rels"] = NodeJson.Compact(w =>
+            {
+                w.WriteStartArray();
+                foreach (var r in arrows)
+                {
+                    w.WriteStartObject();
+                    w.WriteString("to", r.To); w.WriteString("label", r.Label); w.WriteString("color", r.Color); w.WriteString("arrows", r.Arrows);
+                    w.WriteEndObject();
+                }
+                w.WriteEndArray();
+            });
         if ((string?)node.Attribute("ID") is { Length: > 0 } id) props["id"] = id;
         return props;
     }
+
+    /// <summary>One relationship line as the rels prop carries it: a JSON array of these.</summary>
+    sealed record Rel(string To, string Label, string Color, string Arrows);
+
+    static string ArrowsOf(string? start, string? end)
+    {
+        var s = start is not null && start != "None";
+        var e = end is null || end != "None";
+        return s && e ? "both" : s ? "start" : e ? "end" : "none";
+    }
+
+    static List<Rel> ParseRels(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.ValueKind != JsonValueKind.Array) throw new JsonException("expected an array");
+        string Str(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+        return doc.RootElement.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object).Select(e => new Rel(Str(e, "to"), Str(e, "label"), Str(e, "color"), Str(e, "arrows"))).ToList();
+    }
+
+    /// <summary>How the map (or one branch) is drawn: attribute rows FreeMind carries along.</summary>
+    static readonly string[] MapAttrs = ["structure", "theme", "lines"];
+
+    /// <summary>Topic props kept as flags on FreeMind's &lt;font&gt; element (STRIKETHROUGH is Freeplane's).</summary>
+    static readonly (string Prop, string Attribute)[] FontFlags = [("bold", "BOLD"), ("italic", "ITALIC"), ("strike", "STRIKETHROUGH")];
 
     public override void SetProp(string name, string value)
     {
@@ -145,6 +206,22 @@ sealed class MmTopic(MmDocument doc, XElement node) : Node
             case "color": node.SetAttributeValue("COLOR", value == "none" ? null : "#" + value.ToLowerInvariant()); break;
             case "fill": node.SetAttributeValue("BACKGROUND_COLOR", value == "none" ? null : "#" + value.ToLowerInvariant()); break;
             case "icon": SetIcon(value); break;
+            case "bold" or "italic" or "strike": SetFont(FontFlags.First(f => f.Prop == name).Attribute, value == "true" ? "true" : null); break;
+            case "size": SetFont("SIZE", value is "" or "0" ? null : value); break;
+            case "font": SetFont("NAME", value.Length == 0 ? null : value); break;
+            case "free": SetAttr("free", value); break;
+            case "labels": SetLabels(value); break;
+            case "summary": SetAttr("summary", value); break;
+            case "structure" or "theme" or "lines": SetAttr(name, value == "none" ? "" : value); break;
+            case "mono": SetAttr("mono", value == "true" ? "true" : ""); break;
+            case "cloud": SetCloud(value); break;
+            case "rels": SetRels(value); break;
+            case "image": SetPicture("URI", value.Length == 0 ? null : value); break;
+            case "imageSize":
+                var size = value.Split(',');
+                SetPicture("WIDTH", size.Length == 2 ? size[0].Trim() : null);
+                SetPicture("HEIGHT", size.Length == 2 ? size[1].Trim() : null);
+                break;
         }
     }
 
@@ -210,6 +287,56 @@ sealed class MmTopic(MmDocument doc, XElement node) : Node
 
     IEnumerable<XElement> Icons() => node.Elements().Where(e => e.Name.LocalName == "icon");
 
+    XElement? Font() => node.Elements().FirstOrDefault(e => e.Name.LocalName == "font");
+
+    // What FreeMind has no element for rides in its <attribute NAME=".." VALUE=".."/> rows, which every FreeMind keeps and shows as a small table
+    IEnumerable<XElement> Attrs(string name) => node.Elements().Where(e => e.Name.LocalName == "attribute" && (string?)e.Attribute("NAME") == name);
+
+    string? Attr(string name) => (string?)Attrs(name).FirstOrDefault()?.Attribute("VALUE") is { Length: > 0 } v ? v : null;
+
+    /// <summary>Sets the one attribute row called name; an empty value removes it.</summary>
+    void SetAttr(string name, string value)
+    {
+        var rows = Attrs(name).ToList();
+        if (value.Length == 0)
+        {
+            foreach (var row in rows) { Whitespace(row)?.Remove(); row.Remove(); }
+            return;
+        }
+        if (rows.Count > 0) rows[0].SetAttributeValue("VALUE", value);
+        else Insert(new XElement(node.Name.Namespace + "attribute", new XAttribute("NAME", name), new XAttribute("VALUE", value)));
+    }
+
+    /// <summary>One attribute of the topic's &lt;font&gt;: null clears it, and a font left without attributes goes away.</summary>
+    void SetFont(string attribute, string? value)
+    {
+        var font = Font();
+        if (value is null)
+        {
+            if (font is null) return;
+            font.SetAttributeValue(attribute, null);
+            if (!font.HasAttributes)
+            {
+                Whitespace(font)?.Remove();
+                font.Remove();
+            }
+            return;
+        }
+        if (font is null)
+        {
+            font = new XElement(node.Name.Namespace + "font");
+            Insert(font);
+        }
+        font.SetAttributeValue(attribute, value);
+    }
+
+    /// <summary>Adds a child element of the topic before its first child topic, as FreeMind writes them.</summary>
+    void Insert(XElement elem)
+    {
+        if (Nodes(node).FirstOrDefault() is { } first) first.AddBeforeSelf(elem, Indent(first));
+        else node.Add(elem);
+    }
+
     string? Color(string attribute) => (string?)node.Attribute(attribute) is { Length: > 0 } v ? v.TrimStart('#').ToUpperInvariant() : null;
 
     void SetText(string value)
@@ -232,27 +359,84 @@ sealed class MmTopic(MmDocument doc, XElement node) : Node
             notes[0].ReplaceNodes(html);
             return;
         }
-        var rich = new XElement(node.Name.Namespace + "richcontent", new XAttribute("TYPE", "NOTE"), html);
-        if (Nodes(node).FirstOrDefault() is { } first) first.AddBeforeSelf(rich, Indent(first));
-        else node.Add(rich);
+        Insert(new XElement(node.Name.Namespace + "richcontent", new XAttribute("TYPE", "NOTE"), html));
     }
 
+    /// <summary>The icons and markers as a comma-separated list of builtin names, replacing what was there; none clears them.</summary>
     void SetIcon(string value)
     {
-        var icons = Icons().ToList();
-        if (value.Length == 0 || value == "none")
+        foreach (var icon in Icons().ToList()) { Whitespace(icon)?.Remove(); icon.Remove(); }
+        if (value == "none") return;
+        foreach (var name in value.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0))
+            Insert(new XElement(node.Name.Namespace + "icon", new XAttribute("BUILTIN", name)));
+    }
+
+    /// <summary>XMind-style labels: one FreeMind attribute row called label per entry of the comma-separated list.</summary>
+    void SetLabels(string value)
+    {
+        foreach (var row in Attrs("label").ToList()) { Whitespace(row)?.Remove(); row.Remove(); }
+        foreach (var label in value.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0))
+            Insert(new XElement(node.Name.Namespace + "attribute", new XAttribute("NAME", "label"), new XAttribute("VALUE", label)));
+    }
+
+    // A boundary around a branch is FreeMind's cloud
+    XElement? Cloud() => node.Elements().FirstOrDefault(e => e.Name.LocalName == "cloud");
+
+    void SetCloud(string value)
+    {
+        var cloud = Cloud();
+        if (value == "none")
         {
-            icons.Remove();
+            if (cloud is null) return;
+            Whitespace(cloud)?.Remove();
+            cloud.Remove();
             return;
         }
-        if (icons.Count > 0)
+        if (cloud is null) { cloud = new XElement(node.Name.Namespace + "cloud"); Insert(cloud); }
+        cloud.SetAttributeValue("COLOR", "#" + value.ToLowerInvariant());
+    }
+
+    // Relationship lines are FreeMind arrowlinks on the source topic (MIDDLE_LABEL as Freeplane writes it)
+    IEnumerable<XElement> Arrows() => node.Elements().Where(e => e.Name.LocalName == "arrowlink");
+
+    void SetRels(string value)
+    {
+        List<Rel> rels;
+        try { rels = ParseRels(value); }
+        catch (JsonException ex) { throw new WriterException(ErrorCode.Validation, $"rels: {ex.Message}", "Example: rels=[{\"to\":\"ID_2\",\"label\":\"because\",\"color\":\"B5563A\",\"arrows\":\"end\"}]"); }
+        foreach (var old in Arrows().ToList()) { Whitespace(old)?.Remove(); old.Remove(); }
+        foreach (var rel in rels.Where(r => r.To.Length > 0))
         {
-            icons[0].SetAttributeValue("BUILTIN", value);
+            var arrows = rel.Arrows.Length > 0 ? rel.Arrows : "end";
+            var link = new XElement(node.Name.Namespace + "arrowlink", new XAttribute("DESTINATION", rel.To),
+                new XAttribute("STARTARROW", arrows is "both" or "start" ? "Default" : "None"), new XAttribute("ENDARROW", arrows is "both" or "end" ? "Default" : "None"),
+                new XAttribute("ID", "Arrow_" + doc.NewId()));
+            if (!string.IsNullOrEmpty(rel.Color)) link.SetAttributeValue("COLOR", "#" + rel.Color.TrimStart('#').ToLowerInvariant());
+            if (!string.IsNullOrEmpty(rel.Label)) link.SetAttributeValue("MIDDLE_LABEL", rel.Label);
+            Insert(link);
+        }
+    }
+
+    // A picture is Freeplane's external-object hook (URI plus our WIDTH / HEIGHT); FreeMind keeps hooks it does not know
+    XElement? Picture() => node.Elements().FirstOrDefault(e => e.Name.LocalName == "hook" && (string?)e.Attribute("NAME") == "ExternalObject");
+
+    void SetPicture(string attribute, string? value)
+    {
+        var hook = Picture();
+        if (value is null)
+        {
+            if (hook is null) return;
+            if (attribute == "URI") { Whitespace(hook)?.Remove(); hook.Remove(); }
+            else hook.SetAttributeValue(attribute, null);
             return;
         }
-        var icon = new XElement(node.Name.Namespace + "icon", new XAttribute("BUILTIN", value));
-        if (Nodes(node).FirstOrDefault() is { } first) first.AddBeforeSelf(icon, Indent(first));
-        else node.Add(icon);
+        if (hook is null)
+        {
+            if (attribute != "URI") return;
+            hook = new XElement(node.Name.Namespace + "hook", new XAttribute("NAME", "ExternalObject"));
+            Insert(hook);
+        }
+        hook.SetAttributeValue(attribute, value);
     }
 
     /// <summary>The text of a richcontent block: one line per paragraph, whitespace collapsed.</summary>

@@ -8,53 +8,53 @@
 <body>
 <x-dc>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F);padding-top:58px;outline:none">
-  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--k36, rgba(0,0,0,0.12));margin-right:4px"></span></div>
+  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
     <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
-    <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">文件</button>
+    <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
-      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.line }};font-weight:{{ t.weight }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
+      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:{{ t.color }};transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};font-weight:{{ t.weight }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
     </sc-for>
-    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
+    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:28px;height:28px;flex:none;border:none;border-radius:var(--ctl-r, 8px);background:transparent;padding:0;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"></circle><path d="M6.6 5.6v4.8L10.6 8z" fill="currentColor" stroke="none"></path></svg></button></div>
   </div></div>
   <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;transform-origin:top left">
+    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);color:var(--ink, #1D1D1F);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;transform-origin:top left">
       <sc-for list="{{ ribbon }}" as="it" hint-placeholder-count="12">
-        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:20px;background:var(--k36, rgba(0,0,0,0.12));margin:0 6px;flex:none"></span></sc-if>
+        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
         <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:30px;min-width:30px;padding:0 8px;border:none;border-radius:6px;background:{{ it.bg }};font-size:13px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">{{ it.label }}</button>
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">{{ it.label }}</button>
         </sc-if>
         <sc-if value="{{ it.isAlign }}" hint-placeholder-val="{{ false }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:30px;width:30px;border:none;border-radius:6px;background:{{ it.bg }};cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:{{ it.ai }};gap:2.5px;padding:0 8px;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;width:28px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:{{ it.ai }};gap:2.5px;padding:0 8px;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
             <span style="height:1.6px;width:14px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:9px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:14px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:8px;background:var(--k7, #1D1D1F)"></span>
           </button>
         </sc-if>
         <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}">
-          <select data-val="{{ it.value }}" title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:28px;padding:0 4px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:9px;background:var(--k30, rgba(255,255,255,0.6));font-size:12.5px;width:{{ it.w }};flex:none;margin:0 2px">
+          <select data-val="{{ it.value }}" title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:28px;padding:0 4px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;width:{{ it.w }};flex:none;margin:0 2px">
             <sc-for list="{{ it.options }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for>
           </select>
         </sc-if>
         <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}">
-          <label title="{{ it.title }}" style="position:relative;height:30px;min-width:32px;padding:0 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+          <label title="{{ it.title }}" style="position:relative;height:28px;min-width:28px;padding:0 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--ctl-r, 8px);cursor:pointer;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
             <span style="font-size:13px;line-height:1.1;font-weight:{{ it.fw }}">{{ it.label }}</span>
             <span style="width:18px;height:3.5px;border-radius:1px;background:{{ it.swatch }};margin-top:2px;box-shadow:inset 0 0 0 0.5px var(--k56, rgba(0,0,0,0.25))"></span>
             <input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">
           </label>
         </sc-if>
         <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}" style="height:30px;padding:0 8px;border:none;border-radius:6px;background:{{ it.bg }};font-size:13px;cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:4px" style-hover="background:var(--k20, rgba(255,255,255,0.7))">{{ it.label }}<span style="font-size:9px;color:var(--k8, #8E8E93)">▼</span></button>
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}" style="height:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:4px" style-hover="background:var(--fill, rgba(0,0,0,0.07))">{{ it.label }}<span style="font-size:8px;color:var(--ink-3, rgba(29,29,31,0.36))">▼</span></button>
         </sc-if>
         <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}">
-          <label title="{{ it.title }}" style="height:30px;display:flex;align-items:center;gap:6px;padding:0 6px;font-size:12.5px;color:var(--k11, #6E6E73);flex:none;white-space:nowrap">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}" style="width:84px;accent-color:var(--k1, #1D1D1F)"><span style="min-width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--k1, #1D1D1F)">{{ it.text }}</span></label>
+          <label title="{{ it.title }}" style="height:28px;display:flex;align-items:center;gap:6px;padding:0 6px;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62));flex:none;white-space:nowrap">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}" style="width:84px;accent-color:var(--k1, #1D1D1F)"><span style="min-width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--k1, #1D1D1F)">{{ it.text }}</span></label>
         </sc-if>
       </sc-for>
     </div></div>
   </sc-if>
 
   </sc-if>
-  <div style="flex:none;height:36px;margin:8px 12px 10px {{ fxML }};transition:margin .5s cubic-bezier(.2,1,.3,1);display:grid;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 1px 3px var(--k38, rgba(0,0,0,0.05));font-size:13px;overflow:hidden">
-    <input value="{{ nameBox }}" onChange="{{ onNameBox }}" onKeyDown="{{ onNameKey }}" onFocus="{{ onNameFocus }}" onBlur="{{ onNameBlur }}" style="height:100%;border:none;border-right:1px solid var(--k29, rgba(0,0,0,0.1));padding:0 14px;font-size:12.5px;font-weight:500;outline:none;background:transparent">
-    <button onMouseDown="{{ md }}" onClick="{{ openFx }}" title="插入函数" style="height:100%;border:none;background:transparent;color:var(--k8, #8E8E93);font-family:'Noto Serif SC',serif;font-style:italic;cursor:pointer;font-size:13px">fx</button>
+  <div style="flex:none;height:34px;width:min(760px,calc(100% - 48px));box-sizing:border-box;margin:4px auto 10px;display:grid;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:12px;background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-size:12.5px;overflow:hidden">
+    <input value="{{ nameBox }}" onChange="{{ onNameBox }}" onKeyDown="{{ onNameKey }}" onFocus="{{ onNameFocus }}" onBlur="{{ onNameBlur }}" style="height:100%;border:none;padding:0 14px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px;font-weight:500;outline:none;color:var(--ink, #1D1D1F);background:linear-gradient(var(--line, rgba(0,0,0,0.1)),var(--line, rgba(0,0,0,0.1))) right center/1px 16px no-repeat">
+    <button onMouseDown="{{ md }}" onClick="{{ openFx }}" title="插入函数" style="height:100%;border:none;background:transparent;color:var(--ink-3, rgba(29,29,31,0.36));font-family:Georgia,serif;font-style:italic;cursor:pointer;font-size:13px">fx</button>
     <div style="position:relative;height:100%;min-width:0">
       <div ref="{{ fxMirRef }}" style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:13px;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;white-space:pre;overflow:hidden;pointer-events:none;color:var(--k1, #1D1D1F)">{{ fxMirror }}</div>
       <input ref="{{ fxRef }}" value="{{ fxValue }}" onChange="{{ onFx }}" onFocus="{{ onFxFocus }}" onKeyDown="{{ onFxKey }}" onKeyUp="{{ syncMirror }}" onScroll="{{ syncMirror }}" onCompositionStart="{{ onCompS }}" onCompositionEnd="{{ onCompE }}" onMouseDown="{{ onInMD }}" spellCheck="false" style="position:absolute;inset:0;width:100%;height:100%;border:none;padding:0 10px;font-size:13px;outline:none;background:transparent;color:{{ fxColor }};caret-color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">
@@ -62,19 +62,22 @@
   </div>
 
   <sc-if value="{{ showFind }}" hint-placeholder-val="{{ false }}">
-    <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:104px;right:24px;z-index:38;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 10px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));font-size:13px">
-      <input ref="{{ findRef }}" value="{{ fq }}" onChange="{{ onFq }}" onKeyDown="{{ onFindKey }}" placeholder="查找" style="height:30px;width:140px;padding:0 12px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:999px;background:var(--k20, rgba(255,255,255,0.7));font-size:13px;outline:none">
-      <input value="{{ fr }}" onChange="{{ onFr }}" placeholder="替换为" style="height:30px;width:140px;padding:0 12px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:999px;background:var(--k20, rgba(255,255,255,0.7));font-size:13px;outline:none">
-      <button onClick="{{ findNext }}" style="height:30px;padding:0 12px;border:none;border-radius:999px;background:var(--k42, rgba(255,255,255,0.55));font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k50, rgba(255,255,255,0.9))">查找下一个</button>
-      <button onClick="{{ replaceOne }}" style="height:30px;padding:0 12px;border:none;border-radius:999px;background:var(--k42, rgba(255,255,255,0.55));font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k50, rgba(255,255,255,0.9))">替换</button>
-      <button onClick="{{ replaceAll }}" style="height:30px;padding:0 12px;border:none;border-radius:999px;background:var(--k42, rgba(255,255,255,0.55));font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--k50, rgba(255,255,255,0.9))">全部替换</button>
-      <span style="color:var(--k8, #8E8E93)">{{ fcountText }}</span>
+    <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:104px;right:24px;z-index:38;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 8px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px">
+      <input ref="{{ findRef }}" value="{{ fq }}" onChange="{{ onFq }}" onKeyDown="{{ onFindKey }}" placeholder="查找" style="height:28px;width:140px;padding:0 10px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;outline:none">
+      <input value="{{ fr }}" onChange="{{ onFr }}" placeholder="替换为" style="height:28px;width:140px;padding:0 10px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;outline:none">
+      <button onClick="{{ findNext }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F);font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--line, rgba(0,0,0,0.1))">查找下一个</button>
+      <button onClick="{{ replaceOne }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F);font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--line, rgba(0,0,0,0.1))">替换</button>
+      <button onClick="{{ replaceAll }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F);font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--line, rgba(0,0,0,0.1))">全部替换</button>
+      <sc-for list="{{ findOpts }}" as="o" hint-placeholder-count="3">
+        <button onClick="{{ o.onClick }}" title="{{ o.title }}" style="height:28px;padding:0 9px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:{{ o.bg }};font-size:12px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F)">{{ o.label }}</button>
+      </sc-for>
+      <span style="color:var(--ink-3, rgba(29,29,31,0.36))">{{ fcountText }}</span>
       <div style="flex:1"></div>
-      <button onClick="{{ closeFind }}" style="height:28px;padding:0 10px;border:none;background:transparent;font-size:12.5px;cursor:pointer;color:var(--k11, #6E6E73)">关闭</button>
+      <button onClick="{{ closeFind }}" style="height:28px;padding:0 10px;border:none;background:transparent;font-size:12.5px;cursor:pointer;color:var(--ink-2, rgba(29,29,31,0.62))">关闭</button>
     </div>
   </sc-if>
 
-  <div style="flex:1;min-height:0;display:flex;gap:10px;padding:0 12px">
+  <div style="flex:1;min-height:0;display:flex;gap:10px;padding:0 24px">
   <sc-if value="{{ neverThumbs }}" hint-placeholder-val="{{ false }}">
     <div data-thumbpanel="1" style="width:190px;flex:none;margin:-90px 0 0 4px;background:var(--k49, rgba(255,255,255,0.3));backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 10px 30px var(--k65, rgba(0,0,0,0.07));border-radius:22px;overflow:auto;padding:12px 10px;display:flex;flex-direction:column;gap:3px;padding-top:60px">
       
@@ -91,7 +94,7 @@
       </sc-if>
     </div>
   </sc-if>
-  <div ref="{{ wrapRef }}" style="flex:1;min-width:0;min-height:0;overflow:auto;background:var(--k0, #FFFFFF);position:relative;border-radius:16px 16px 0 0;box-shadow:0 1px 3px var(--k53, rgba(0,0,0,0.08)),0 0 0 1px var(--k66, rgba(0,0,0,0.06))">
+  <div ref="{{ wrapRef }}" style="flex:1;min-width:0;min-height:0;overflow:auto;background:var(--k0, #FFFFFF);position:relative;border-radius:10px;box-shadow:var(--paper-sh, 0 0 0 1px rgba(0,0,0,0.05),0 10px 34px rgba(0,0,0,0.06))">
     <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}"><div style="padding:24px;font-size:13px;color:var(--k8, #8E8E93)">正在加载计算引擎…</div></sc-if>
     <div style="zoom:{{ zoom }};position:relative;width:{{ gridW }}">
       <sc-if value="{{ hasClip }}" hint-placeholder-val="{{ false }}">
@@ -131,25 +134,26 @@
           <div style="flex:1;order:{{ ch.lgOrder }};display:{{ ch.lgDisp }};flex-wrap:wrap;gap:4px 14px;padding:4px 14px 8px;font-size:11.5px;color:var(--k11, #6E6E73);align-content:flex-start">
             <sc-for list="{{ ch.legend }}" as="lg" hint-placeholder-count="0"><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:{{ lg.fill }}"></span>{{ lg.name }}</span></sc-for>
           </div>
+          <div onMouseDown="{{ ch.onResize }}" title="拖动调整大小" style="position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;border-right:2px solid {{ ch.border }};border-bottom:2px solid {{ ch.border }};border-radius:0 0 8px 0;box-sizing:border-box"></div>
         </div></div>
       </sc-for>
       <div style="display:grid;grid-template-columns:{{ gtc }};grid-template-rows:{{ gtr }};user-select:none">
         <div onMouseDown="{{ selAll }}" style="grid-row:1;grid-column:1;position:sticky;top:0;left:0;z-index:{{ z.corner }};background:var(--k48, #F5F5F7);border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);cursor:pointer"></div>
         <sc-for list="{{ colHeads }}" as="h" hint-placeholder-count="12">
-          <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" style="grid-row:1;grid-column:{{ h.gc }};position:sticky;top:0;left:{{ h.left }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:s-resize">
+          <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" onContextMenu="{{ h.onCtx }}" style="grid-row:1;grid-column:{{ h.gc }};position:sticky;top:0;left:{{ h.left }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:s-resize">
             {{ h.l }}
             <span onMouseDown="{{ h.onResize }}" onDoubleClick="{{ h.onAuto }}" style="position:absolute;right:-4px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2"></span>
           </div>
         </sc-for>
         <sc-for list="{{ rowHeads }}" as="h" hint-placeholder-count="20">
-          <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" style="grid-row:{{ h.gr }};grid-column:1;position:sticky;left:0;top:{{ h.top }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:e-resize">
+          <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" onContextMenu="{{ h.onCtx }}" style="grid-row:{{ h.gr }};grid-column:1;position:sticky;left:0;top:{{ h.top }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:e-resize">
             {{ h.n }}
             <span onMouseDown="{{ h.onResize }}" style="position:absolute;left:0;right:0;bottom:-4px;height:8px;cursor:row-resize;z-index:2"></span>
           </div>
         </sc-for>
         <sc-for list="{{ cells }}" as="c" hint-placeholder-count="0">
           <div onMouseDown="{{ c.onMD }}" onMouseEnter="{{ c.onME }}" onMouseLeave="{{ c.onML }}" onDoubleClick="{{ c.onDbl }}" title="{{ c.tip }}" style="grid-row:{{ c.gr }};grid-column:{{ c.gc }};position:{{ c.pos }};top:{{ c.top }};left:{{ c.left }};z-index:{{ c.z }};background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};font-style:{{ c.fst }};text-decoration:{{ c.td }};font-size:{{ c.fs }};font-family:{{ c.ff }};justify-content:{{ c.justify }};align-items:{{ c.ai }};white-space:{{ c.ws }};border-top:{{ c.bt }};border-left:{{ c.bl }};border-right:{{ c.br }};border-bottom:{{ c.bb }};padding:{{ c.pad }};display:flex;gap:4px;overflow:hidden;min-width:0;font-variant-numeric:tabular-nums;cursor:{{ c.cursor }};line-height:1.35">
-            <span style="overflow:hidden;min-width:0;flex:{{ c.flex }};text-align:{{ c.ta }};opacity:{{ c.op }}">{{ c.text }}</span>
+            <span style="overflow:hidden;min-width:0;flex:{{ c.flex }};text-align:{{ c.ta }};opacity:{{ c.op }};transform:{{ c.tr }}">{{ c.text }}</span>
             <sc-if value="{{ c.hasF }}" hint-placeholder-val="{{ false }}">
               <button onMouseDown="{{ c.onF }}" style="flex:none;width:18px;height:18px;border:1px solid var(--k10, #D1D1D6);border-radius:3px;background:{{ c.fbg }};font-size:9px;color:var(--k11, #6E6E73);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">▼</button>
             </sc-if>
@@ -167,32 +171,32 @@
   </div>
 
   </div>
-  <div style="flex:none;height:40px;display:flex;align-items:center;gap:10px;padding:0 12px;background:transparent;font-size:12.5px">
-    <div style="display:flex;align-items:center;gap:2px;overflow-x:auto;min-width:0;flex:0 1 auto;padding:3px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
+  <div style="flex:none;height:46px;display:flex;align-items:center;gap:10px;padding:0 24px;background:transparent;font-size:12.5px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)">
+    <div style="display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:0 1 auto;padding:4px;margin:-4px">
       <sc-for list="{{ sheetTabs }}" as="t" hint-placeholder-count="1">
-        <button onClick="{{ t.onClick }}" onDoubleClick="{{ t.onDbl }}" onContextMenu="{{ t.onCtx }}" style="height:26px;padding:0 14px;border:none;border-radius:999px;background:{{ t.bg }};font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ t.line }};transition:background .25s">{{ t.name }}</button>
+        <button onClick="{{ t.onClick }}" onDoubleClick="{{ t.onDbl }}" onContextMenu="{{ t.onCtx }}" onMouseDown="{{ t.onMD }}" onMouseEnter="{{ t.onME }}" style="height:28px;padding:0 14px;border:none;border-radius:var(--tab-r, 9px);background:{{ t.bg }};color:{{ t.color }};font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ t.line }};transition:background .2s,color .2s">{{ t.name }}</button>
       </sc-for>
-      <button onClick="{{ addSheet }}" title="新建工作表" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:15px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k20, rgba(255,255,255,0.7))">＋</button>
+      <button onClick="{{ addSheet }}" title="新建工作表" style="width:26px;height:26px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:15px;cursor:pointer;color:var(--ink-2, rgba(29,29,31,0.62))" style-hover="background:var(--fill, rgba(0,0,0,0.07))">＋</button>
     </div>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:16px;padding:0 4px;color:var(--k8, #8E8E93);flex:none;white-space:nowrap">
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--ink-3, rgba(29,29,31,0.36));font-size:11px;font-variant-numeric:tabular-nums;flex:none;white-space:nowrap">
       <span>{{ statText }}</span>
-      <div style="display:flex;align-items:center;gap:6px;height:28px;padding-left:12px;border-left:1px solid var(--k36, rgba(0,0,0,0.12))">
-        <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--k11, #6E6E73);width:20px">−</button>
-        <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" style="width:110px;accent-color:var(--k1, #1D1D1F)">
-        <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--k11, #6E6E73);width:20px">＋</button>
-        <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" style="width:46px;height:22px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">−</button>
+        <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" style="width:60px;height:12px;margin:0;accent-color:var(--ink-2, rgba(29,29,31,0.62))">
+        <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">＋</button>
+        <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" style="width:40px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
       </div>
     </div>
   </div>
 
   <sc-if value="{{ hasPop }}" hint-placeholder-val="{{ false }}">
     <div onMouseDown="{{ closePop }}" style="position:fixed;inset:0;z-index:90"></div>
-    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:180px;max-height:{{ popMaxH }};overflow:auto;border-radius:16px;background:linear-gradient(180deg,var(--k23, rgba(255,255,255,0.82)),var(--k40, rgba(255,255,255,0.66)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));padding:5px;display:flex;flex-direction:column">
+    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:180px;max-height:{{ popMaxH }};overflow:auto;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);padding:6px;display:flex;flex-direction:column">
       <sc-for list="{{ popItems }}" as="mi" hint-placeholder-count="0">
         <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 10px 3px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ mi.label }}</div></sc-if>
-        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:#EFEFF4;margin:4px 6px"></div></sc-if>
+        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--line, rgba(0,0,0,0.1));margin:4px 6px"></div></sc-if>
         <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:transparent;border-radius:5px;font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center" style-hover="background:var(--k27, rgba(255,255,255,0.75))"><span style="width:14px;color:var(--k35, #3F7D5C)">{{ mi.check }}</span><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
+          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:transparent;border-radius:var(--ctl-r, 8px);font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center" style-hover="background:var(--fill, rgba(0,0,0,0.07))"><span style="width:14px;color:var(--k35, #3F7D5C)">{{ mi.check }}</span><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
         </sc-if>
       </sc-for>
     </div>
@@ -232,11 +236,21 @@ const Z = { cell: [1, 5, 9], mark: [2, 6, 10], handle: [3, 7, 11], object: [4, 8
   rowHead: 13, frozenRowHead: 14, colHead: 15, frozenColHead: 16, corner: 17, mirror: 18, editor: 19, popover: 20 };
 const PAL = ['#3F7D5C', '#E3B25A', '#2F5D8A', '#B5563A', '#7A6A9A', '#5C8A8A'];
 const FILLS = [['', $t('无填充')], ['#F3E6C4', $t('暖黄')], ['#DCEBDF', $t('浅绿')], ['#DCE5F0', $t('浅蓝')], ['#F6D9D3', $t('浅红')], ['#EFEFF4', $t('浅灰')], ['#1D1D1F', $t('墨色')]];
-const FMTS = [['general', $t('常规')], ['number', $t('数值')], ['money', $t('货币 ¥')], ['usd', $t('货币 $')], ['acct', $t('会计专用')], ['pct', $t('百分比')], ['thousands', $t('千位分隔')], ['date', $t('日期')], ['time', $t('时间')], ['text', $t('文本')]];
+const FMTS = [['general', $t('常规')], ['number', $t('数值')], ['money', $t('货币 ¥')], ['usd', $t('货币 $')], ['eur', $t('货币 €')], ['acct', $t('会计专用')], ['pct', $t('百分比')], ['thousands', $t('千位分隔')], ['date', $t('日期')], ['time', $t('时间')], ['text', $t('文本')]];
+// the 日期 / 时间 codes the format menu offers, shown as they render (the menu labels a sample date with each)
+const DATE_CODES = [['date', 'yyyy/m/d'], ['date', 'yyyy-mm-dd'], ['date', 'yyyy年m月d日'], ['date', 'm月d日'], ['date', 'yyyy/m/d h:mm'], ['time', 'h:mm'], ['time', 'h:mm:ss'], ['time', 'h:mm AM/PM']]; // i18n-ok: format codes
+// Excel's preset looks for conditional formatting: [key, name, fill, text colour]
+const LOOKS = [['red', $t('浅红填充色深红色文本'), '#FFC7CE', '#9C0006'], ['yellow', $t('黄填充色深黄色文本'), '#FFEB9C', '#9C5700'], ['green', $t('绿填充色深绿色文本'), '#C6EFCE', '#006100'], ['redfill', $t('浅红色填充'), '#FFC7CE', null], ['redtext', $t('红色文本'), null, '#9C0006']];
+const BAR_COLORS = [['#638EC6', $t('蓝色')], ['#63C384', $t('绿色')], ['#FF555A', $t('红色')], ['#FFB628', $t('橙色')]];
+const SCALES = [[$t('绿 - 黄 - 红'), ['#63BE7B', '#FFEB84', '#F8696B']], [$t('红 - 黄 - 绿'), ['#F8696B', '#FFEB84', '#63BE7B']], [$t('白 - 绿'), ['#FFFFFF', '#63BE7B']], [$t('红 - 白'), ['#F8696B', '#FFFFFF']]];
+const TAB_COLORS = [[null, $t('无颜色')], ['#C0392B', $t('红色')], ['#E67E22', $t('橙色')], ['#F1C40F', $t('黄色')], ['#27AE60', $t('绿色')], ['#2F5D8A', $t('蓝色')], ['#8E44AD', $t('紫色')]];
+const CF_OPS = { greaterThan: $t('大于'), lessThan: $t('小于'), between: $t('介于'), equal: $t('等于'), notEqual: $t('不等于'), greaterThanOrEqual: $t('大于或等于'), lessThanOrEqual: $t('小于或等于'), notBetween: $t('未介于') };
+const DV_TYPES = [['any', $t('任何值')], ['list', $t('序列')], ['whole', $t('整数')], ['decimal', $t('小数')], ['date', $t('日期')], ['textLength', $t('文本长度')]];
 const FONTS = ['思源宋体', '思源黑体', 'Arial', 'Times New Roman', 'Calibri', '微软雅黑']; // i18n-ok: font family names (CSS font-family values)
 const CHART_TYPES = [['column', $t('柱形图')], ['bar', $t('条形图')], ['line', $t('折线图')], ['pie', $t('饼图')], ['area', $t('面积图')], ['scatter', $t('散点图')], ['doughnut', $t('圆环图')]];
 const LEGENDS = [['right', $t('右侧')], ['bottom', $t('底部')], ['top', $t('顶部')], ['left', $t('左侧')], ['none', $t('无图例')]];
-const BORDER_CSS = { thin: '1px solid', medium: '2px solid', thick: '3px solid', dashed: '1px dashed', dotted: '1px dotted', double: '3px double', hair: '1px solid' };
+const BORDER_CSS = { thin: '1px solid', medium: '2px solid', thick: '3px solid', dashed: '1px dashed', dotted: '1px dotted', double: '3px double', hair: '1px solid',
+  mediumDashed: '2px dashed', dashDot: '1px dashed', mediumDashDot: '2px dashed', dashDotDot: '1px dotted', mediumDashDotDot: '2px dotted', slantDashDot: '2px dashed' };
 const SIDES = ['top', 'right', 'bottom', 'left'];
 const ARROWS = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
 // Formula references (the engine's grammar): A1, $A$1, A1:B2, A:A, 3:3, Sheet1!A1, 'My Sheet'!A1; strings skipped.
@@ -254,7 +268,7 @@ const ZMIN = 0.2, ZMAX = 4;
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 
 class Component extends DCLogic {
-  state = { tab: 'home', sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null, pop: null, dlg: null, painter: null, zoom: 1, zoomEdit: null, fex: {}, showFind: false, fq: '', fr: '', fcount: null, live: null, fillTo: null, showFx: false, nameEdit: null, chartSel: null, picSel: null, picLive: null, picBusy: null };
+  state = { tab: 'home', sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null, pop: null, dlg: null, painter: null, zoom: 1, zoomEdit: null, showFind: false, fq: '', fr: '', fopt: {}, fcount: null, live: null, fillTo: null, showFx: false, nameEdit: null, chartSel: null, picSel: null, picLive: null, picBusy: null };
   wrapRef = React.createRef(); inRef = React.createRef(); fxRef = React.createRef(); findRef = React.createRef(); inMirRef = React.createRef(); fxMirRef = React.createRef(); tipRef = React.createRef();
   /** A sheet shows grid lines unless the user turned them off for it, or off by default in the settings (grid prop). */
   noGrid(sh) { return sh.noGrid != null ? !!sh.noGrid : this.props.grid === false; }
@@ -280,7 +294,7 @@ class Component extends DCLogic {
   applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
   componentDidUpdate(pp) {
     this.attachWheel();
-    if (pp.doc && pp.doc.id !== this.props.doc.id) { this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null, fex: {} }); this.clip = null; }
+    if (pp.doc && pp.doc.id !== this.props.doc.id) { this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); this.clip = null; }
     // a selected picture or chart belongs to its sheet: another sheet (tab, link, undo, a move or delete) starts with none
     const was = pp.doc && pp.doc.sheets[Math.min(pp.doc.active || 0, pp.doc.sheets.length - 1)];
     if (was && (pp.doc.id !== this.props.doc.id || was.name !== this.sh.name) && (this.state.picSel != null || this.state.chartSel != null)) this.setState({ picSel: null, chartSel: null });
@@ -382,7 +396,7 @@ class Component extends DCLogic {
     const E = this.E; r = Math.max(0, Math.min(E.NR - 1, r)); c = Math.max(0, Math.min(E.NC - 1, c));
     this.setState(s => ({ sel: { r, c }, anc: extend ? s.anc : { r, c }, pop: null })); this.wantFocus = true; this.scrollReq = true;
   }
-  move(dr, dc, extend) { const s = extend ? this.state.sel : this.act(); let r = s.r + dr, c = s.c + dc; const m = !extend && this.mergeAt(s.r, s.c); if (m) { if (dr > 0) r = m.r + m.rs; if (dc > 0) c = m.c + m.cs; } const hid = this.hidden || new Set(); while (hid.has(r) && r > 0 && r < this.E.NR - 1) r += dr || 1; this.setSel(r, c, extend); }
+  move(dr, dc, extend) { const s = extend ? this.state.sel : this.act(); let r = s.r + dr, c = s.c + dc; const m = !extend && this.mergeAt(s.r, s.c); if (m) { if (dr > 0) r = m.r + m.rs; if (dc > 0) c = m.c + m.cs; } const hid = this.hidden || new Set(), hidC = this.hiddenC || new Set(); while (hid.has(r) && r > 0 && r < this.E.NR - 1) r += dr || 1; while (hidC.has(c) && c > 0 && c < this.E.NC - 1) c += dc || 1; this.setSel(r, c, extend); }
   jump(dr, dc, extend) {
     const E = this.E, s = extend ? this.state.sel : this.act(), has = (r, c) => { const x = this.sh.cells[E.A(r, c)]; return x && x.v !== '' && x.v != null; };
     let r = s.r, c = s.c; const inb = (r, c) => r >= 0 && c >= 0 && r < E.NR && c < E.NC;
@@ -425,12 +439,13 @@ class Component extends DCLogic {
     else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) { v = t.replace(/,/g, ''); patch = { fmt: 'number', dec: dec(v) }; }
     else if (/[-/:年月.a-z]/i.test(t) && isNaN(Number(t))) {
       const d = E.dateSerial(t), hasDay = d != null && !/^\d{1,2}:\d{2}/.test(t), hasTime = /\d:\d{2}/.test(t), kind = s && s.fmt;
-      // dates go to the file as ISO text (the engine types it as a date), times and date-times as serial numbers
+      // dates and date-times go to the file as ISO text, which the engine turns into the workbook's own serial (1900 or 1904
+      // system); a time of day is the same fraction in both, so it goes as its serial
       if (d != null && hasDay && !hasTime) { v = E.fmtCode(Math.floor(d), 'yyyy-mm-dd'); patch = kind === 'date' || kind === 'custom' ? null : { fmt: 'date' }; }
       else if (d != null && !hasDay) { v = String(+d.toPrecision(12)); patch = kind === 'time' ? null : { fmt: 'time' }; }
-      else if (d != null) { v = String(+d.toPrecision(15)); patch = kind === 'date' || kind === 'custom' ? null : { fmt: 'date', code: 'yyyy/m/d h:mm' }; }
+      else if (d != null) { v = E.fmtCode(d, 'yyyy-mm-dd hh:mm:ss'); patch = kind === 'date' || kind === 'custom' ? null : { fmt: 'date', code: 'yyyy/m/d h:mm' }; }
     }
-    if (patch && s && patch.fmt === s.fmt && (patch.dec == null || patch.dec === s.dec)) patch = null; // already formatted that way
+    if (patch && s && patch.fmt === s.fmt) patch = null; // already formatted that way: as in Excel, the cell keeps its own code (12.5% in a 0.00% cell shows 12.50%)
     return { v, patch };
   }
   /** Excel gives a new formula in a General cell the date/time/currency/percent format of the first cell it refers to (=C10+30 on a date is a date). */
@@ -446,13 +461,14 @@ class Component extends DCLogic {
     sh.cells[a] = Object.assign({}, cur, { v: val });
     if (patch) { sh.cells[a].s = Object.assign({}, cur && cur.s, patch); if (!('code' in patch)) delete sh.cells[a].s.code; }
   }
-  commitEdit(dr, dc) {
+  /** Commits the edit and moves by (dr, dc); `toCol` lands the move in that column instead (Enter after Tabs). */
+  commitEdit(dr, dc, toCol) {
     const ed = this.state.edit; if (!ed) return;
     const { v, patch } = this.parseInput(ed.val, (this.sh.cells[this.E.A(ed.r, ed.c)] || {}).s);
     const bad = this.dvBad(ed.r, ed.c, v); if (bad) { this.toast($t('数据验证：{msg}', { msg: bad })); this.wantFocus = true; return; }
     if (v !== this.raw(ed.r, ed.c) || patch) this.commit(sh => this.setCellRaw(sh, ed.r, ed.c, v, patch));
     // move in the state callback, not a timer: keys typed right after Enter must land in the next cell, not the one just committed
-    this.setState({ edit: null, anc: { r: ed.r, c: ed.c }, sel: { r: ed.r, c: ed.c } }, () => { if (dr || dc) this.move(dr, dc); });
+    this.setState({ edit: null, anc: { r: ed.r, c: ed.c }, sel: { r: ed.r, c: ed.c } }, () => { if (dr || dc) { this.move(dr, dc); if (toCol != null) this.setSel(ed.r + dr, toCol); } });
     if (!dr && !dc) this.wantFocus = true;
   }
   eachCell(fn) { const r = this.rng(); for (let i = r.r1; i <= r.r2; i++) for (let j = r.c1; j <= r.c2; j++) fn(i, j); }
@@ -462,16 +478,18 @@ class Component extends DCLogic {
     const p = toggleKey ? { [toggleKey]: !cur[toggleKey] } : Object.assign({}, patch, patch && ('fmt' in patch || 'dec' in patch) && !('code' in patch) ? { code: null } : null);
     this.commit(sh => this.eachCell((r, c) => { const a = E.A(r, c); const x = sh.cells[a] || { v: '' }; const s = Object.assign({}, x.s, p); Object.keys(s).forEach(k => (s[k] === null || s[k] === undefined) && delete s[k]); sh.cells[a] = Object.assign({}, x, { s }); }));
   }
-  /** s.bd is one style for every side or {top,right,bottom,left}; kind: none|all|out|thickOut|top|bottom|dblBottom|lr. */
+  /** s.bd is one style for every side or {top,right,bottom,left}; kind: none|all|out|thickOut|inner|top|bottom|left|right|tb|thickBottom|dblBottom|lr. */
   borders(kind) {
     const E = this.E, R = this.rng();
     const want = (r, c) => {
-      const o = {}, top = r === R.r1, bottom = r === R.r2, left = c === R.c1, right = c === R.c2, st = kind === 'thickOut' ? 'medium' : kind === 'dblBottom' ? 'double' : 'thin';
+      const o = {}, top = r === R.r1, bottom = r === R.r2, left = c === R.c1, right = c === R.c2, st = kind === 'thickOut' || kind === 'thickBottom' ? 'medium' : kind === 'dblBottom' ? 'double' : 'thin';
       if (kind === 'all') SIDES.forEach(k => o[k] = st);
       if (kind === 'out' || kind === 'thickOut') { if (top) o.top = st; if (bottom) o.bottom = st; if (left) o.left = st; if (right) o.right = st; }
-      if ((kind === 'bottom' || kind === 'dblBottom') && bottom) o.bottom = st;
-      if (kind === 'top' && top) o.top = st;
-      if (kind === 'lr') { if (left) o.left = st; if (right) o.right = st; }
+      if (kind === 'inner') { if (!top) o.top = st; if (!bottom) o.bottom = st; if (!left) o.left = st; if (!right) o.right = st; }
+      if ((kind === 'bottom' || kind === 'dblBottom' || kind === 'thickBottom' || kind === 'tb') && bottom) o.bottom = st;
+      if ((kind === 'top' || kind === 'tb') && top) o.top = st;
+      if ((kind === 'lr' || kind === 'left') && left) o.left = st;
+      if ((kind === 'lr' || kind === 'right') && right) o.right = st;
       return o;
     };
     this.commit(sh => this.eachCell((r, c) => {
@@ -519,13 +537,16 @@ class Component extends DCLogic {
   seriesOf(xs, sg) {
     if (!xs.length || xs.some(x => !x || x.v === '' || x.v == null || String(x.v)[0] === '=')) return null;
     const vs = xs.map(x => String(x.v).trim()), last = vs[vs.length - 1], prev = vs[vs.length - 2];
-    if (vs.every(v => v !== '' && !isNaN(Number(v)))) {
-      const a = Number(last), b = prev != null ? Number(prev) : null;
-      if (xs.every(x => x.s && x.s.fmt === 'date') && b != null) { // +1 month when the two source dates differ by whole months, else by their day gap
+    // dates count as their serials (a file's and a typed date are ISO text) and go back as ISO text, so 2024-01-31 goes on to 2024-02-01
+    const dated = xs.every(x => x.s && x.s.fmt === 'date'), num = v => dated && isNaN(Number(v)) ? this.E.dateSerial(v) ?? NaN : Number(v);
+    if (vs.every(v => v !== '' && !isNaN(num(v)))) {
+      const a = num(last), b = prev != null ? num(prev) : null, iso = vs.some(v => isNaN(Number(v)));
+      const out = n => dated && iso ? this.E.fmtCode(n, n % 1 ? 'yyyy-mm-dd hh:mm:ss' : 'yyyy-mm-dd') : String(+n.toPrecision(12));
+      if (dated && b != null) { // +1 month when the two source dates differ by whole months, else by their day gap
         const D = n => new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 864e5), da = D(a), db = D(b), mo = (da.getUTCFullYear() - db.getUTCFullYear()) * 12 + da.getUTCMonth() - db.getUTCMonth();
-        if (mo && da.getUTCDate() === db.getUTCDate()) return k => { const d = new Date(da); d.setUTCMonth(d.getUTCMonth() + mo * k); return String(Math.round((d - Date.UTC(1899, 11, 30)) / 864e5)); };
+        if (mo && da.getUTCDate() === db.getUTCDate()) return k => { const d = new Date(da); d.setUTCMonth(d.getUTCMonth() + mo * k); return out(Math.round((d - Date.UTC(1899, 11, 30)) / 864e5)); };
       }
-      const step = b == null ? sg : a - b; return k => String(+(a + step * k).toPrecision(12));
+      const step = b == null ? sg : a - b; return k => out(+(a + step * k).toPrecision(12));
     }
     const list = SERIES.find(L => vs.every(v => L.some(w => w.toLowerCase() === v.toLowerCase())));
     if (list) { const ix = v => list.findIndex(w => w.toLowerCase() === v.toLowerCase()), i0 = ix(last), step = prev == null ? sg : ix(last) - ix(prev), up = last === last.toUpperCase() && last !== last.toLowerCase(); return k => { const w = list[((i0 + step * k) % list.length + list.length) % list.length]; return up ? w.toUpperCase() : w; }; }
@@ -585,10 +606,14 @@ class Component extends DCLogic {
       const k = axis === 'r' ? 'r' : 'c', len = axis === 'r' ? 'rs' : 'cs', span = this.spanShift(at, n);
       sh.merges = (sh.merges || []).map(m => { const s2 = span(m[k], m[k] + m[len] - 1); return s2 && Object.assign({}, m, { [k]: s2[0], [len]: s2[1] - s2[0] + 1 }); }).filter(m => m && m.rs * m.cs > 1);
       d.sheets.forEach(s2 => (s2.charts || []).forEach(ch => { const adj = s => s ? E.adjF(s, s2.name, name, axis, at, n) : s; ch.cat = adj(ch.cat); (ch.ser || []).forEach(s => { s.values = adj(s.values); if (s.name) s.name = adj(s.name); if (s.x) s.x = adj(s.x); }); }));
-      if (sh.filter) { // the autofilter range grows/shrinks with its rows and columns, like Excel; it goes only when all of it is deleted
-        const [p, q0] = String(sh.filter).split(':').map(E.parseA), q = q0 || p, s2 = p && span(p[k], q[k]);
-        sh.filter = s2 ? E.A(k === 'r' ? s2[0] : p.r, k === 'c' ? s2[0] : p.c) + ':' + E.A(k === 'r' ? s2[1] : q.r, k === 'c' ? s2[1] : q.c) : null;
-      }
+      // ranges grow/shrink with their rows and columns, like Excel; one goes only when all of it is deleted
+      const shiftRange = rg => String(rg || '').split(' ').map(one => { const [p, q0] = one.split(':').map(E.parseA), q = q0 || p; if (!p || !q) return null; const s2 = span(p[k], q[k]); if (!s2) return null; const a = E.A(k === 'r' ? s2[0] : p.r, k === 'c' ? s2[0] : p.c), b = E.A(k === 'r' ? s2[1] : q.r, k === 'c' ? s2[1] : q.c); return a === b ? a : a + ':' + b; }).filter(Boolean).join(' ') || null;
+      const shiftRules = rules => (rules || []).map(x => { const rg = shiftRange(x.range); return rg && Object.assign({}, x, { range: rg }); }).filter(Boolean);
+      if (sh.filter) { sh.filter = shiftRange(sh.filter); if (!sh.filter) { sh.filters = {}; sh.frows = []; } }
+      sh.cf = shiftRules(sh.cf); sh.dv = shiftRules(sh.dv);
+      const mvIdx = i => n < 0 && i >= at && i < at - n ? null : i >= at ? i + n : i, lines = arr => (arr || []).map(mvIdx).filter(i => i != null);
+      if (axis === 'r') { sh.hiddenRows = lines(sh.hiddenRows); sh.frows = lines(sh.frows); }
+      else { sh.hiddenCols = lines(sh.hiddenCols); const f = {}; Object.entries(sh.filters || {}).forEach(([key, v]) => { const i = mvIdx(E.colIdx(key)); if (i != null) f[E.colName(i)] = v; }); sh.filters = f; }
     });
   }
   /** Index span [i1, i2] after inserting n (> 0) or deleting -n rows/columns at `at`: grows when lines land inside it, shrinks when its lines go, null when all go. */
@@ -598,28 +623,64 @@ class Component extends DCLogic {
   }
   region() { const R = this.rng(); if (R.r1 !== R.r2 || R.c1 !== R.c2) return R; return this.E.usedRange(this.sh); }
   hasHeader(R, calc) { if (R.r2 <= R.r1) return false; let txt = 0, cnt = 0; for (let c = R.c1; c <= R.c2; c++) { const v = calc.value(this.si, R.r1, c); if (v !== '') { cnt++; if (typeof v === 'string') txt++; } } return cnt > 0 && txt === cnt; }
-  sort(asc, col) {
-    const E = this.E, R = this.region(); if (!R) return; const calc = new E.Calc(this.doc); const hdr = this.hasHeader(R, calc); const r1 = hdr ? R.r1 + 1 : R.r1; col = col ?? this.act().c;
-    const rows = []; for (let r = r1; r <= R.r2; r++) { const k = calc.value(this.si, r, col); rows.push({ r, k, cells: Array.from({ length: R.c2 - R.c1 + 1 }, (_, j) => this.sh.cells[E.A(r, R.c1 + j)]) }); }
-    rows.sort((a, b) => { const ea = a.k === '', eb = b.k === ''; if (ea || eb) return ea - eb; const na = typeof a.k === 'number', nb = typeof b.k === 'number'; let d = na && nb ? a.k - b.k : na ? -1 : nb ? 1 : String(a.k).localeCompare(String(b.k), 'zh'); return asc ? d : -d; });
-    this.commit(sh => rows.forEach((row, i) => { const tr = r1 + i; row.cells.forEach((x, j) => { const a = E.A(tr, R.c1 + j); if (!x) { delete sh.cells[a]; return; } const n = structuredClone(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), tr - row.r, 0); sh.cells[a] = n; }); }));
-    this.toast(asc ? $t('已升序排序') : $t('已降序排序'));
+  /** Sorts the region's rows by `keys` [{ c, asc }] (a text header row stays put): numbers before text, blanks last either way, as Excel; a filter in force is reapplied. */
+  sort(keys) {
+    const E = this.E, R = this.region(); if (!R || !keys.length) return; const calc = new E.Calc(this.doc); const hdr = this.hasHeader(R, calc); const r1 = hdr ? R.r1 + 1 : R.r1;
+    const rows = []; for (let r = r1; r <= R.r2; r++) rows.push({ r, ks: keys.map(k => calc.value(this.si, r, k.c)), cells: Array.from({ length: R.c2 - R.c1 + 1 }, (_, j) => this.sh.cells[E.A(r, R.c1 + j)]) });
+    const blank = v => v === '' || v == null, cmp = (a, b) => { const na = typeof a === 'number', nb = typeof b === 'number'; return na && nb ? a - b : na ? -1 : nb ? 1 : String(a).localeCompare(String(b), 'zh'); };
+    rows.sort((a, b) => { for (let i = 0; i < keys.length; i++) { const x = a.ks[i], y = b.ks[i]; if (blank(x) || blank(y)) { if (blank(x) !== blank(y)) return blank(x) - blank(y); continue; } const d = cmp(x, y); if (d) return keys[i].asc ? d : -d; } return a.r - b.r; });
+    const si = this.si;
+    this.commit((sh, d) => { rows.forEach((row, i) => { const tr = r1 + i; row.cells.forEach((x, j) => { const a = E.A(tr, R.c1 + j); if (!x) { delete sh.cells[a]; return; } const n = structuredClone(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), tr - row.r, 0); sh.cells[a] = n; }); }); if (Object.keys(sh.filters || {}).length) sh.frows = this.frowsOf(d, si); });
+    this.toast(keys.length > 1 ? $t('已排序') : keys[0].asc ? $t('已升序排序') : $t('已降序排序'));
   }
-  // sh.filter is the autofilter range ("A1:D20"); which values are hidden lives only in state.fex[sheet][col].
-  fltRect() { const f = this.sh.filter; if (!f) return null; const [a, b] = String(f).split(':'), p = this.E.parseA(a), q = this.E.parseA(b || a); if (!p || !q) return null; return { r: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) }; }
-  fex() { return (this.state.fex || {})[this.sh.name] || {}; }
-  setFex(ex) { this.setState(s => ({ fex: Object.assign({}, s.fex, { [this.sh.name]: ex }) })); }
+  // sh.filter is the autofilter range ("A1:D20"), sh.filters its criteria by column letter ({ values: [shown texts] } or { operator, value, value2 }) and
+  // sh.frows the rows they hid when they were applied: as in Excel, later edits move no row in or out until the filter is applied again
+  fltRectOf(sh) { const f = sh.filter; if (!f) return null; const [a, b] = String(f).split(':'), p = this.E.parseA(a), q = this.E.parseA(b || a); if (!p || !q) return null; return { r: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) }; }
+  fltRect() { return this.fltRectOf(this.sh); }
+  /** Whether a value passes one column's criterion: texts compare as shown and case-insensitively, numbers as numbers. */
+  passes(f, v, s) {
+    const text = this.fmtV(v, s);
+    if (f.values) return f.values.includes(text);
+    const a = Number(f.value), b = Number(f.value2), num = typeof v === 'number' && String(f.value || '').trim() !== '' && !isNaN(a), t = text.toLowerCase(), q = String(f.value == null ? '' : f.value).toLowerCase();
+    switch (f.operator || 'equal') {
+      case 'contains': return t.includes(q); case 'notContains': return !t.includes(q); case 'beginsWith': return t.startsWith(q); case 'endsWith': return t.endsWith(q);
+      case 'between': return num && !isNaN(b) ? v >= a && v <= b : t >= q && t <= String(f.value2 == null ? '' : f.value2).toLowerCase();
+      case 'notEqual': return num ? v !== a : t !== q; case 'greaterThan': return num ? v > a : t > q; case 'greaterThanOrEqual': return num ? v >= a : t >= q;
+      case 'lessThan': return num ? v < a : t < q; case 'lessThanOrEqual': return num ? v <= a : t <= q; default: return num ? v === a : t === q;
+    }
+  }
+  /** The rows of sheet `si` in `d` that its filter criteria hide. */
+  frowsOf(d, si) { const E = this.E, sh = d.sheets[si], flt = this.fltRectOf(sh), crit = Object.entries(sh.filters || {}).map(([k, f]) => [E.colIdx(k), f]); if (!flt || !crit.length) return []; const calc = new E.Calc(d), out = []; for (let r = flt.r + 1; r <= flt.r2; r++) if (!crit.every(([c, f]) => this.passes(f, calc.value(si, r, c), (sh.cells[E.A(r, c)] || {}).s))) out.push(r); return out; }
+  setFilters(filters) { const si = this.si; this.commit((sh, d) => { sh.filters = filters; sh.frows = this.frowsOf(d, si); }); }
   toggleFilter() {
     const E = this.E;
-    if (this.sh.filter) { this.setFex({}); return this.commit(sh => { sh.filter = null; }); }
+    if (this.sh.filter) return this.commit(sh => { sh.filter = null; sh.filters = {}; sh.frows = []; });
     const R = this.region(); if (!R) return this.toast($t('先输入一些数据'));
     this.commit(sh => { sh.filter = E.A(R.r1, R.c1) + ':' + E.A(R.r2, R.c2); });
   }
   freeze(kind) { const s0 = this.act(); this.commit(s => { s.frR = kind === 'row' ? 1 : kind === 'here' ? s0.r : 0; s.frC = kind === 'col' ? 1 : kind === 'here' ? s0.c : 0; }, true); }
+  /** Excel's 排序 dialog: up to three keys, columns named by their header when the region has one. */
   sortCustom() {
-    const E = this.E;
-    this.prompt($t('自定义排序'), [{ key: 'c', label: $t('排序列（列字母）'), value: E.colName(this.act().c), first: true }, { key: 'o', label: $t('顺序'), value: 'asc', options: [['asc', $t('升序')], ['desc', $t('降序')]] }],
-      v => { const c = E.colIdx(v.c.trim().toUpperCase()); if (isNaN(c) || c < 0 || c >= E.NC) return this.toast($t('列字母无效')); this.sort(v.o === 'asc', c); });
+    const E = this.E, R = this.region(); if (!R) return this.toast($t('先输入一些数据')); const calc = new E.Calc(this.doc), hdr = this.hasHeader(R, calc);
+    const cols = []; for (let c = R.c1; c <= R.c2; c++) cols.push([E.colName(c), (hdr && String(calc.value(this.si, R.r1, c))) || $t('列 {c}', { c: E.colName(c) })]);
+    const none = [['', $t('（无）')]], ord = [['asc', $t('升序')], ['desc', $t('降序')]], cur = E.colName(Math.min(Math.max(this.act().c, R.c1), R.c2));
+    this.prompt($t('自定义排序'), [{ key: 'c1', label: $t('主要关键字'), value: cur, options: cols }, { key: 'o1', label: $t('顺序'), value: 'asc', options: ord }, { key: 'c2', label: $t('次要关键字'), value: '', options: none.concat(cols) }, { key: 'o2', label: $t('顺序'), value: 'asc', options: ord }, { key: 'c3', label: $t('第三关键字'), value: '', options: none.concat(cols) }, { key: 'o3', label: $t('顺序'), value: 'asc', options: ord }],
+      v => this.sort([1, 2, 3].filter(i => v['c' + i]).map(i => ({ c: E.colIdx(v['c' + i]), asc: v['o' + i] !== 'desc' }))));
+  }
+  /** Hides or shows the selected rows (axis r) or columns (c); showing takes in the hidden lines inside the selection, as Excel's 取消隐藏 does. */
+  hideLines(axis, hide) {
+    const R = this.rng(), key = axis === 'r' ? 'hiddenRows' : 'hiddenCols', [a, b] = axis === 'r' ? [R.r1, R.r2] : [R.c1, R.c2];
+    this.commit(sh => { const set = new Set(sh[key] || []); for (let i = a; i <= b; i++) hide ? set.add(i) : set.delete(i); sh[key] = [...set].sort((x, y) => x - y); });
+  }
+  /** The width that shows every text of column c, as the header's double-click sets it. */
+  autoFit(c) { const E = this.E, sh = this.sh, calc = new E.Calc(this.doc); let w = 40; for (let r = 0; r < E.NR; r++) { const x = sh.cells[E.A(r, c)]; if (x) w = Math.max(w, this.fmtV(calc.value(this.si, r, c), x.s).length * 8 + 18); } return Math.min(400, w); }
+  fitCols() { const E = this.E, R = this.rng(), w = {}; for (let c = R.c1; c <= R.c2; c++) w[E.colName(c)] = this.autoFit(c); this.commit(sh => { sh.colW = Object.assign({}, sh.colW, w); }); }
+  sizeDialog(axis) {
+    const E = this.E, R = this.rng(), cur = axis === 'r' ? this.rowH(R.r1) : this.colW(R.c1), lo = axis === 'r' ? 16 : 24, hi = axis === 'r' ? 400 : 1000;
+    this.prompt(axis === 'r' ? $t('行高') : $t('列宽'), [{ key: 'n', label: axis === 'r' ? $t('行高（像素）') : $t('列宽（像素）'), value: String(cur), first: true }], v => {
+      const n = Math.round(parseFloat(v.n)); if (!(n >= lo && n <= hi)) return this.toast($t('请输入 {lo} 到 {hi} 之间的数值', { lo, hi }));
+      this.commit(sh => { if (axis === 'r') { sh.rowH = Object.assign({}, sh.rowH); for (let r = R.r1; r <= R.r2; r++) sh.rowH[r + 1] = n; } else { sh.colW = Object.assign({}, sh.colW); for (let c = R.c1; c <= R.c2; c++) sh.colW[E.colName(c)] = n; } });
+    });
   }
   splitCols() {
     const E = this.E, R = this.rng();
@@ -628,19 +689,52 @@ class Component extends DCLogic {
       this.commit(sh => { for (let r = R.r1; r <= R.r2; r++) { const x = sh.cells[E.A(r, R.c1)]; if (!x || x.v == null || String(x.v)[0] === '=') continue; String(x.v).split(d).forEach((part, j) => { if (R.c1 + j < E.NC) this.setCellRaw(sh, r, R.c1 + j, part.trim(), null); }); } });
     });
   }
+  // sh.dv holds the sheet's data validation rules as the file does: { range, type, operator, value, value2 | values | source, error }
+  /** "A2:A11 C2:C9" → boxes { r1, c1, r2, c2 }; an unparseable range is skipped. */
+  boxes(range) { const E = this.E; return String(range || '').split(' ').map(one => { const [a, b] = one.split(':'), p = E.parseA(a), q = b ? E.parseA(b) : p; return p && q ? { r1: Math.min(p.r, q.r), c1: Math.min(p.c, q.c), r2: Math.max(p.r, q.r), c2: Math.max(p.c, q.c) } : null; }).filter(Boolean); }
+  rangeStr(R) { const E = this.E; return E.A(R.r1, R.c1) + (R.r1 === R.r2 && R.c1 === R.c2 ? '' : ':' + E.A(R.r2, R.c2)); }
+  /** The validation rule of a cell: the last one whose range holds it (a later rule on the same cells replaces the earlier). */
+  dvAt(r, c) { const rules = this.sh.dv || []; for (let i = rules.length - 1; i >= 0; i--) if (this.boxes(rules[i].range).some(b => r >= b.r1 && r <= b.r2 && c >= b.c1 && c <= b.c2)) return rules[i]; return null; }
+  /** A list rule's choices: its values, or the texts of its source range. */
+  dvList(rule, calc) { if (rule.values) return rule.values; if (!rule.source) return []; const E = this.E, l = this.refList(rule.source.replace(/\$/g, '')), k = calc || new E.Calc(this.doc); return l.refs.map(([r, c]) => this.fmtV(k.value(l.si, r, c), (this.doc.sheets[l.si].cells[E.A(r, c)] || {}).s)).filter(x => x !== ''); }
+  /** Excel's 数据验证 dialog for the selection: 允许 (type), 数据 (operator), the values, the error text. A rule on any value removes what the selection covers. */
   dvSet() {
-    const cs = this.actStyle(), dv = cs.dv || {};
-    this.prompt($t('数据验证'), [{ key: 't', label: $t('允许'), value: dv.type || 'list', options: [['list', $t('序列（下拉列表）')], ['number', $t('数字范围')], ['none', $t('任何值')]] }, { key: 'v', label: $t('来源：列表项用逗号分隔；数字范围如 1-100'), value: dv.type === 'list' ? dv.list.join(',') : dv.type === 'number' ? dv.min + '-' + dv.max : '', first: true }], v => {
-      if (v.t === 'list') { const list = v.v.split(/[,，]/).map(x => x.trim()).filter(Boolean); if (!list.length) return this.toast($t('请输入列表项')); return this.style({ dv: { type: 'list', list } }); }
-      if (v.t === 'number') { const m = /^\s*(-?[\d.]+)\s*[-~至]\s*(-?[\d.]+)\s*$/.exec(v.v); if (!m) return this.toast($t('范围格式：最小值-最大值')); return this.style({ dv: { type: 'number', min: +m[1], max: +m[2] } }); }
-      this.style({ dv: null });
-    });
+    const E = this.E, R = this.rng(), cur = this.dvAt(this.act().r, this.act().c) || {};
+    this.prompt($t('数据验证'), [
+      { key: 't', label: $t('允许'), value: DV_TYPES.some(([k]) => k === cur.type) ? cur.type : 'any', options: DV_TYPES },
+      { key: 'o', label: $t('数据'), value: cur.operator || 'between', options: Object.entries(CF_OPS) },
+      { key: 'v', label: $t('来源（序列：项目用逗号分隔，或一个区域如 H2:H5）/ 最小值'), value: cur.values ? cur.values.join(',') : cur.source || cur.value || '', first: true },
+      { key: 'v2', label: $t('最大值'), value: cur.value2 || '' },
+      { key: 'e', label: $t('出错警告（留空用默认提示）'), value: cur.error || '' }],
+      v => {
+        const keep = sh => (sh.dv || []).filter(x => !this.boxes(x.range).every(b => b.r1 >= R.r1 && b.r2 <= R.r2 && b.c1 >= R.c1 && b.c2 <= R.c2)); // a rule the selection covers whole goes
+        if (v.t === 'any') return this.commit(sh => { sh.dv = keep(sh); });
+        const rule = { range: this.rangeStr(R), type: v.t }, src = v.v.trim();
+        if (v.t === 'list') {
+          if (/^=?(?:(?:'[^']+'|[\w一-龥]+)!)?\$?[A-Za-z]{1,3}\$?\d+:\$?[A-Za-z]{1,3}\$?\d+$/.test(src)) rule.source = src.replace(/^=/, '').replace(/\$/g, '');
+          else { rule.values = src.split(/[,，]/).map(x => x.trim()).filter(Boolean); if (!rule.values.length) return this.toast($t('请输入列表项')); }
+        } else {
+          const num = x => { const t = x.trim(); if (t === '') return null; const n = v.t === 'date' ? E.dateSerial(t) ?? Number(t) : Number(t); return isNaN(n) ? null : n; }, a = num(v.v), b = num(v.v2), two = v.o === 'between' || v.o === 'notBetween';
+          if (a == null || (two && b == null)) return this.toast(v.t === 'date' ? $t('请输入有效的日期') : $t('请输入有效的数值'));
+          rule.operator = v.o; rule.value = String(a); if (two) rule.value2 = String(b);
+        }
+        if (v.e.trim()) rule.error = v.e.trim();
+        this.commit(sh => { sh.dv = keep(sh).concat([rule]); });
+      });
   }
+  /** Why `val` may not go into the cell under its validation rule, or null; the rule's own error text wins when it has one. */
   dvBad(r, c, val) {
-    const x = this.sh.cells[this.E.A(r, c)], dv = x && x.s && x.s.dv; if (!dv || val === '' || val[0] === '=') return null;
-    if (dv.type === 'list') return dv.list.includes(val) ? null : $t('只能输入：{list}', { list: dv.list.join($lang() === 'en' ? ', ' : '、' /* i18n-ok: CJK enumeration comma */) });
-    if (dv.type === 'number') { const n = Number(val); return isNaN(n) || n < dv.min || n > dv.max ? $t('只能输入 {min} 到 {max} 之间的数字', { min: dv.min, max: dv.max }) : null; }
-    return null;
+    const E = this.E, rule = this.dvAt(r, c); if (!rule || val === '' || val[0] === '=') return null;
+    const bad = msg => rule.error || msg;
+    if (rule.type === 'list') { const list = this.dvList(rule); return list.includes(val) ? null : bad($t('只能输入：{list}', { list: list.join($lang() === 'en' ? ', ' : '、' /* i18n-ok: CJK enumeration comma */) })); }
+    if (rule.type !== 'whole' && rule.type !== 'decimal' && rule.type !== 'date' && rule.type !== 'textLength') return null; // time and custom rules are kept, not checked
+    let n; if (rule.type === 'textLength') n = val.length; else if (rule.type === 'date') n = E.dateSerial(val) ?? Number(val); else n = Number(val.replace(/,/g, ''));
+    const what = rule.type === 'textLength' ? $t('文本长度') : rule.type === 'date' ? $t('日期') : rule.type === 'whole' ? $t('整数') : $t('数字');
+    if (n == null || isNaN(n) || (rule.type === 'whole' && !Number.isInteger(n))) return bad($t('只能输入{what}', { what }));
+    const lim = x => { if (x == null) return NaN; const t = String(x); return rule.type === 'date' && isNaN(Number(t)) ? (E.dateSerial(t) ?? NaN) : Number(t); }, a = lim(rule.value), b = lim(rule.value2), show = x => rule.type === 'date' ? E.fmt(x, { fmt: 'date' }) : String(x);
+    const op = rule.operator || 'between', ok = { between: n >= a && n <= b, notBetween: n < a || n > b, equal: n === a, notEqual: n !== a, greaterThan: n > a, lessThan: n < a, greaterThanOrEqual: n >= a, lessThanOrEqual: n <= a }[op];
+    if (ok) return null;
+    return bad(op === 'between' ? $t('只能输入 {min} 到 {max} 之间的{what}', { min: show(a), max: show(b), what }) : $t('{what}须{op} {v}', { what, op: CF_OPS[op] || op, v: show(a) + (b === b ? ' ~ ' + show(b) : '') }));
   }
   setLink() {
     const E = this.E, cs = this.actStyle();
@@ -670,10 +764,11 @@ class Component extends DCLogic {
   /** Cell text through the sheet engine's formatter, plus the kinds it does not know (usd / acct / time). */
   fmtV(v, s) {
     const E = this.E; if (typeof v !== 'number' || !s || !s.fmt) return E.fmt(v, s);
-    if (s.code && (s.fmt === 'custom' || s.fmt === 'date' || s.fmt === 'time')) return E.fmt(v, s); // the file's own code, rendered as Excel would
+    if (s.code) return E.fmt(v, s); // the file's own code, rendered as Excel would
     const grp = n => E.fmt(Math.abs(n), { fmt: 'number', dec: s.dec ?? 2 });
     if (s.fmt === 'plain') return E.fmt(v, { dec: s.dec ?? 2 });
     if (s.fmt === 'usd') return (v < 0 ? '-' : '') + '$' + grp(v);
+    if (s.fmt === 'eur') return (v < 0 ? '-' : '') + '€' + grp(v);
     if (s.fmt === 'acct') return v < 0 ? '(¥ ' + grp(v) + ')' : '¥ ' + grp(v);
     if (s.fmt === 'time') { const t = Math.round(((v % 1) + 1) % 1 * 86400); return [t / 3600 | 0, (t / 60 | 0) % 60, t % 60].map(n => String(n).padStart(2, '0')).join(':'); }
     return E.fmt(v, s);
@@ -715,7 +810,43 @@ class Component extends DCLogic {
     this.commit(sh => { sh.merges = (sh.merges || []).filter(x => x.r + x.rs <= R.r1 || x.r > R.r2 || x.c + x.cs <= R.c1 || x.c > R.c2); sh.merges.push({ r: R.r1, c: R.c1, rs: R.r2 - R.r1 + 1, cs: R.c2 - R.c1 + 1 }); for (let r = R.r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) if (r !== R.r1 || c !== R.c1) delete sh.cells[E.A(r, c)]; const a = E.A(R.r1, R.c1); sh.cells[a] = Object.assign({ v: '' }, sh.cells[a]); sh.cells[a].s = Object.assign({}, sh.cells[a].s, { align: 'center' }); });
     this.setState({ sel: { r: R.r1, c: R.c1 }, anc: { r: R.r1, c: R.c1 } });
   }
-  addCF(type, val) { const R = this.rng(); this.commit(sh => { sh.cf = (sh.cf || []).concat([{ type, val, r1: R.r1, c1: R.c1, r2: R.r2, c2: R.c2 }]); }); }
+  // sh.cf holds the conditional formats as the file does: { range, type, …rule fields, fill, color, bold, italic }, the first rule that holds winning a clash
+  /** Adds a rule for the selection, or replaces rule `at` in place. */
+  addCF(rule, at) { const range = at != null ? this.sh.cf[at].range : this.rangeStr(this.rng()); this.commit(sh => { const r = Object.assign({ range }, rule); if (at != null) sh.cf[at] = r; else sh.cf = (sh.cf || []).concat([r]); }); }
+  /** The dialog behind a 条件格式 menu entry: the rule's own fields plus Excel's preset looks; `at` edits an existing rule. */
+  cfPrompt(kind, at) {
+    const cur = at != null ? this.sh.cf[at] : {}, lookOf = r => (LOOKS.find(([, , f, c]) => (r.fill || null) === f && (r.color || null) === c) || LOOKS[0])[0];
+    const look = { key: 'l', label: $t('设置为'), value: lookOf(cur), options: LOOKS.map(([k, n]) => [k, n]) };
+    const withLook = (rule, v) => { const L = LOOKS.find(([k]) => k === v.l) || LOOKS[0]; if (L[2]) rule.fill = L[2]; if (L[3]) rule.color = L[3]; return rule; };
+    const titles = { text: $t('文本包含'), dup: $t('重复值'), top: $t('前 N 项'), bottom: $t('最后 N 项'), topPct: $t('前 N%'), bottomPct: $t('最后 N%'), above: $t('高于平均值'), below: $t('低于平均值') };
+    if (kind in CF_OPS) {
+      const two = kind === 'between' || kind === 'notBetween';
+      return this.prompt(CF_OPS[kind], [{ key: 'v', label: two ? $t('最小值') : $t('为符合以下条件的单元格设置格式'), value: cur.value || '', first: true }].concat(two ? [{ key: 'v2', label: $t('最大值'), value: cur.value2 || '' }] : [], [look]),
+        v => { if (v.v.trim() === '') return; this.addCF(withLook(Object.assign({ type: 'cellIs', operator: kind, value: v.v.trim() }, two ? { value2: v.v2.trim() } : null), v), at); });
+    }
+    if (kind === 'text') return this.prompt(titles.text, [{ key: 'v', label: $t('包含以下文本'), value: cur.text || '', first: true }, look], v => { if (v.v.trim()) this.addCF(withLook({ type: 'containsText', text: v.v.trim() }, v), at); });
+    if (kind === 'dup') return this.prompt(titles.dup, [look], v => this.addCF(withLook({ type: 'duplicateValues' }, v), at));
+    if (kind === 'above' || kind === 'below') return this.prompt(titles[kind], [look], v => this.addCF(withLook(Object.assign({ type: 'aboveAverage' }, kind === 'below' ? { above: false } : null), v), at));
+    const pct = kind.endsWith('Pct'), bottom = kind.startsWith('bottom');
+    this.prompt(titles[kind], [{ key: 'n', label: pct ? $t('百分比') : $t('数量'), value: String(cur.rank || 10), first: true }, look], v => { const n = parseInt(v.n, 10); if (n > 0) this.addCF(withLook(Object.assign({ type: 'top10', rank: n }, pct ? { percent: true } : null, bottom ? { bottom: true } : null), v), at); });
+  }
+  /** What 管理规则 calls a rule. */
+  cfDescribe(r) {
+    switch (r.type) {
+      case 'cellIs': return (CF_OPS[r.operator] || r.operator) + ' ' + (r.value || '') + (r.value2 ? ' ~ ' + r.value2 : '');
+      case 'containsText': case 'notContainsText': case 'beginsWith': case 'endsWith': return $t('文本包含') + ' ' + (r.text || '');
+      case 'duplicateValues': return $t('重复值'); case 'uniqueValues': return $t('唯一值'); case 'dataBar': return $t('数据条'); case 'colorScale': return $t('色阶'); case 'iconSet': return $t('图标集');
+      case 'top10': return (r.bottom ? $t('最后') : $t('前')) + ' ' + (r.rank || 10) + (r.percent ? '%' : ''); case 'aboveAverage': return r.above === false ? $t('低于平均值') : $t('高于平均值');
+      default: return r.type;
+    }
+  }
+  /** The kind cfPrompt edits a rule as; null for the kinds it cannot (icon sets, formulas, time periods keep as they are). */
+  cfKind(r) { if (r.type === 'cellIs') return r.operator in CF_OPS ? r.operator : null; if (r.type === 'containsText') return 'text'; if (r.type === 'duplicateValues') return 'dup'; if (r.type === 'aboveAverage') return r.above === false ? 'below' : 'above'; if (r.type === 'top10') return (r.bottom ? 'bottom' : 'top') + (r.percent ? 'Pct' : ''); return null; }
+  cfManage() {
+    const rules = this.sh.cf || []; if (!rules.length) return this.toast($t('此工作表没有条件格式规则'));
+    this.prompt($t('管理规则'), [{ key: 'i', label: $t('规则（按优先级）'), value: '0', options: rules.map((r, i) => [String(i), r.range + ' · ' + this.cfDescribe(r)]) }, { key: 'a', label: $t('操作'), value: 'edit', options: [['edit', $t('编辑规则…')], ['del', $t('删除规则')], ['up', $t('上移')]] }],
+      v => { const i = +v.i, r = rules[i]; if (!r) return; if (v.a === 'del') return this.commit(sh => { sh.cf.splice(i, 1); }); if (v.a === 'up') return void (i > 0 && this.commit(sh => { [sh.cf[i - 1], sh.cf[i]] = [sh.cf[i], sh.cf[i - 1]]; })); const k = this.cfKind(r); if (k) this.cfPrompt(k, i); else this.toast($t('这类规则可以删除，但不能在这里编辑')); });
+  }
   /** Header row → series names, a text first column → categories; the chart keeps ranges, values come through the calc engine when it renders. */
   insertChart(type, stacked) {
     const E = this.E, R = this.region(); if (!R) return this.toast($t('先选择要绘图的数据'));
@@ -731,16 +862,19 @@ class Component extends DCLogic {
   }
   openPop(id, e, x, y) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && !x ? null : { id, x: x ?? r.left, y: y ?? r.bottom + 4 } }); }
   prompt(title, fields, ok) { this.setState({ dlg: { title, fields: fields.map(f => Object.assign({ value: '' }, f)), ok } }); }
+  /** The find bar's matcher (区分大小写, 单元格匹配) and the sheets it searches: this one, or the workbook from this one on. */
+  finder() { const o = this.state.fopt || {}, q = this.state.fq; if (!q) return null; const re = new RegExp((o.whole ? '^' : '') + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (o.whole ? '$' : ''), o.mc ? '' : 'i'), n = this.doc.sheets.length; return { re, order: o.book ? Array.from({ length: n }, (_, i) => (this.si + i) % n) : [this.si] }; }
   findNext() {
-    const E = this.E, q = this.state.fq.toLowerCase(); if (!q) return; const calc = new E.Calc(this.doc); const hits = [];
-    for (let r = 0; r < E.NR; r++) for (let c = 0; c < E.NC; c++) { const x = this.sh.cells[E.A(r, c)]; if (!x || x.v === '') continue; if (E.fmt(calc.value(this.si, r, c), x.s).toLowerCase().includes(q) || String(x.v).toLowerCase().includes(q)) hits.push([r, c]); }
+    const E = this.E, f = this.finder(); if (!f) return; const calc = new E.Calc(this.doc), hits = [];
+    f.order.forEach(si => { const sh = this.doc.sheets[si]; for (let r = 0; r < E.NR; r++) for (let c = 0; c < E.NC; c++) { const x = sh.cells[E.A(r, c)]; if (!x || x.v === '') continue; if (f.re.test(this.fmtV(calc.value(si, r, c), x.s)) || f.re.test(String(x.v))) hits.push([si, r, c]); } });
     this.setState({ fcount: hits.length }); if (!hits.length) return;
-    const { r, c } = this.act(); const nx = hits.find(([a, b]) => a > r || (a === r && b > c)) || hits[0]; this.setSel(nx[0], nx[1]);
+    const { r, c } = this.act(); const nx = hits.find(([si, a, b]) => si !== this.si || a > r || (a === r && b > c)) || hits[0];
+    if (nx[0] !== this.si) this.props.onChange(Object.assign({}, this.doc, { active: nx[0] }), { silent: true });
+    this.setSel(nx[1], nx[2]);
   }
   replace(all) {
-    const E = this.E, q = this.state.fq; if (!q) return; let n = 0;
-    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-    this.commit(sh => Object.entries(sh.cells).forEach(([a, x]) => { if (typeof x.v !== 'string' || x.v[0] === '=') return; const p = E.parseA(a); if (!all && (p.r !== this.act().r || p.c !== this.act().c)) return; if (re.test(x.v)) { re.lastIndex = 0; x.v = x.v.replace(re, this.state.fr); n++; } re.lastIndex = 0; }));
+    const E = this.E, f = this.finder(); if (!f) return; let n = 0; const re = new RegExp(f.re.source, f.re.flags + 'g'), act = this.act(), si0 = this.si;
+    this.commit((sh0, d) => f.order.forEach(si => Object.entries(d.sheets[si].cells).forEach(([a, x]) => { if (typeof x.v !== 'string' || x.v[0] === '=') return; const p = E.parseA(a); if (!all && (si !== si0 || p.r !== act.r || p.c !== act.c)) return; re.lastIndex = 0; if (re.test(x.v)) { re.lastIndex = 0; x.v = x.v.replace(re, this.state.fr); n++; } })));
     if (all) this.toast($t('已替换 {n} 处', { n })); else this.findNext();
   }
   onWM = e => {
@@ -748,6 +882,7 @@ class Component extends DCLogic {
     if (op.kind === 'colw') this.setState({ live: { kind: 'colw', c: op.c, w: Math.max(24, Math.round(op.w0 + (e.clientX - op.x0) / this.state.zoom)) } });
     if (op.kind === 'rowh') this.setState({ live: { kind: 'rowh', r: op.r, h: Math.max(16, Math.round(op.h0 + (e.clientY - op.y0) / this.state.zoom)) } });
     if (op.kind === 'chart') this.setState({ live: { kind: 'chart', id: op.id, x: Math.max(0, Math.round(op.cx + (e.clientX - op.x0) / this.state.zoom)), y: Math.max(0, Math.round(op.cy + (e.clientY - op.y0) / this.state.zoom)) } });
+    if (op.kind === 'chartsz') this.setState({ live: { kind: 'chartsz', id: op.id, w: Math.max(160, Math.round(op.w0 + (e.clientX - op.x0) / this.state.zoom)), h: Math.max(120, Math.round(op.h0 + (e.clientY - op.y0) / this.state.zoom)) } });
     if (op.kind === 'fill') { // fill hint follows the cursor (positioned in the scroll container, outside the zoomed grid); Ctrl/⌘ toggles copy vs series
       const w = this.wrapRef.current, rc = w && w.getBoundingClientRect(); if (rc) this.fillXY = [Math.round(e.clientX - rc.left + w.scrollLeft) + 14, Math.round(e.clientY - rc.top + w.scrollTop) + 18];
       const t = this.tipRef.current; if (t && this.fillXY) { t.style.left = this.fillXY[0] + 'px'; t.style.top = this.fillXY[1] + 'px'; }
@@ -760,6 +895,7 @@ class Component extends DCLogic {
     if (lv && lv.kind === 'colw') this.commit(sh => { sh.colW = Object.assign({}, sh.colW, { [this.E.colName(lv.c)]: lv.w }); });
     if (lv && lv.kind === 'rowh') this.commit(sh => { sh.rowH = Object.assign({}, sh.rowH, { [lv.r + 1]: lv.h }); });
     if (lv && lv.kind === 'chart') { const x = this.gridMap(lv.x, 'x', true), y = this.gridMap(lv.y, 'y', true); this.commit(sh => { const ch = sh.charts.find(c => c.id === lv.id); if (ch) { ch.x = x; ch.y = y; } }); }
+    if (lv && lv.kind === 'chartsz') this.commit(sh => { const ch = sh.charts.find(c => c.id === lv.id); if (ch) { ch.w = lv.w; ch.h = lv.h; } });
     if (lv) this.setState({ live: null });
     if (op.kind === 'sel' && this.state.painter) { const p = this.state.painter; this.setState({ painter: null }); this.commit(sh => this.eachCell((r, c) => { const a = this.E.A(r, c); sh.cells[a] = Object.assign({ v: '' }, sh.cells[a], { s: structuredClone(p) }); })); }
     if (op.kind !== 'point') this.wantFocus = true; this.forceUpdate(); // a point-drag keeps the caret where the reference was inserted
@@ -777,11 +913,14 @@ class Component extends DCLogic {
   chartVals(ch, calc) {
     const E = this.E, pos = this.chartAt(ch), d = this.doc;
     const text = (si, r, c) => this.fmtV(calc.value(si, r, c), (d.sheets[si].cells[E.A(r, c)] || {}).s);
-    const nums = rng => { const l = this.refList(rng); return l.refs.map(([r, c]) => { const v = calc.value(l.si, r, c); return typeof v === 'number' ? v : 0; }); };
-    const cat = this.refList(ch.cat);
-    const series = (ch.ser || []).map((s, i) => { const nm = s.name ? this.refList(s.name) : null; return { name: nm && nm.refs.length ? text(nm.si, ...nm.refs[0]) : (s.name || $t('系列 {n}', { n: i + 1 })), fill: PAL[i % PAL.length], vals: nums(s.values), xs: s.x ? nums(s.x) : null }; });
-    const n = Math.max(1, cat.refs.length, ...series.map(s => s.vals.length));
-    const labels = Array.from({ length: n }, (_, i) => cat.refs[i] ? text(cat.si, ...cat.refs[i]) : String(i + 1));
+    // a file's chart may hold its data as constants ({1,2,3}, {"a","b"}) and a series name as a quoted text
+    const unq = x => /^".*"$/.test(x) ? x.slice(1, -1).replace(/""/g, '"') : x;
+    const lit = rng => { const m = /^\s*\{(.*)\}\s*$/.exec(String(rng || '')); return m ? (m[1].match(/"(?:[^"]|"")*"|[^,;]+/g) || []).map(x => unq(x.trim())) : null; };
+    const nums = rng => { const k = lit(rng); if (k) return k.map(x => Number(x) || 0); const l = this.refList(rng); return l.refs.map(([r, c]) => { const v = calc.value(l.si, r, c); return typeof v === 'number' ? v : 0; }); };
+    const cat = this.refList(ch.cat), catLit = lit(ch.cat);
+    const series = (ch.ser || []).map((s, i) => { const nm = s.name ? this.refList(s.name) : null; return { name: nm && nm.refs.length ? text(nm.si, ...nm.refs[0]) : (unq(s.name || '') || $t('系列 {n}', { n: i + 1 })), fill: PAL[i % PAL.length], vals: nums(s.values), xs: s.x ? nums(s.x) : null }; });
+    const n = Math.max(1, catLit ? catLit.length : cat.refs.length, ...series.map(s => s.vals.length));
+    const labels = Array.from({ length: n }, (_, i) => catLit ? catLit[i] ?? String(i + 1) : cat.refs[i] ? text(cat.si, ...cat.refs[i]) : String(i + 1));
     const type = ch.type || 'column', round = type === 'pie' || type === 'doughnut', horiz = type === 'bar', stacked = !!ch.stacked && (type === 'column' || horiz || type === 'area'), noLg = ch.legend === 'none';
     const sw = ch.w - 2, shh = ch.h - 34 - (noLg ? 8 : 28);
     const out = { grid: [], rects: [], lines: [], dots: [], slices: [], areas: [], labels: [] };
@@ -824,6 +963,7 @@ class Component extends DCLogic {
       onMenu: e => this.openPop('cht' + ch.id, e),
       onSel: e => { e.stopPropagation(); this.setState({ chartSel: ch.id }); },
       onDrag: e => { e.preventDefault(); this.op = { kind: 'chart', id: ch.id, x0: e.clientX, y0: e.clientY, cx: pos.x, cy: pos.y }; this.setState({ chartSel: ch.id }); },
+      onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'chartsz', id: ch.id, x0: e.clientX, y0: e.clientY, w0: ch.w, h0: ch.h }; this.setState({ chartSel: ch.id }); },
       onRename: () => this.prompt($t('图表标题'), [{ key: 't', label: $t('标题'), value: ch.title, first: true }], v => this.commit(sh => { sh.charts.find(c => c.id === ch.id).title = v.t; })),
       onDelete: () => this.commit(sh => { sh.charts = sh.charts.filter(c => c.id !== ch.id); })
     });
@@ -840,11 +980,11 @@ class Component extends DCLogic {
     const E = this.E, st = this.state, d = this.doc;
     if (!E) return { md, loading: true, statText: '', tabs: [], ribbon: [], colHeads: [], rowHeads: [], cells: [], charts: [], pics: [], sheetTabs: [], gtc: '0', gtr: '0', gridW: '0', zoom: 1, refBoxes: [], fxMirror: '', inMirror: '' };
     const sh = this.sh, calc = new E.Calc(d), R = this.rng(), s0 = this.act(), a0 = E.A(s0.r, s0.c), cur = sh.cells[a0] || {}, cs = cur.s || {};
-    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick, title: o.title || label, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' });
+    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick, title: o.title || label, bg: o.on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' });
     const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value: String(value), options: options.map(([v, l]) => ({ v: String(v), l })), onChange, w, title });
     const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label, swatch: swatch || 'transparent', value: /^#[0-9a-f]{6}$/i.test(swatch || '') ? swatch : '#000000', onChange, title, fw: fw || 400 });
-    const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label, title: title || label, bg: st.pop && st.pop.id === id ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
-    const AL = (a, title) => ({ isAlign: true, title, bg: cs.align === a ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => this.style({ align: cs.align === a ? null : a }) });
+    const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label, title: title || label, bg: st.pop && st.pop.id === id ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
+    const AL = (a, title) => ({ isAlign: true, title, bg: cs.align === a ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => this.style({ align: cs.align === a ? null : a }) });
     const SEP = { isSep: true };
     const I = (label, onClick, o = {}) => ({ isItem: true, label, check: o.on ? '✓' : '', hint: o.hint || '', onClick: () => { this.setState({ pop: null }); onClick(); } });
     const HD = label => ({ isHead: true, label }), IS = { isSepI: true };
@@ -853,13 +993,22 @@ class Component extends DCLogic {
     const pic = this.P ? this.pic : null, picLook = pic ? (st.picLive && st.picLive.id === pic.id ? st.picLive.look : pic.look || {}) : null;
     if (pic) tabsDef.push(['picture', $t('图片')]);
     const tab = st.tab;
-    const tabs = tabsDef.map(([k, l]) => ({ label: l, color: tab === k ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === k ? 600 : 400, line: st.bubble && tab === k ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === k ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(k, e) }));
-    const cfMenu = M('cf', $t('条件格式'), [HD($t('突出显示单元格')), I($t('大于…'), () => this.prompt($t('大于'), [{ key: 'v', label: $t('为大于以下值的单元格设置格式'), first: true }], v => this.addCF('gt', v.v))), I($t('小于…'), () => this.prompt($t('小于'), [{ key: 'v', label: $t('为小于以下值的单元格设置格式'), first: true }], v => this.addCF('lt', v.v))), I($t('等于…'), () => this.prompt($t('等于'), [{ key: 'v', label: $t('为等于以下值的单元格设置格式'), first: true }], v => this.addCF('eq', v.v))), I($t('文本包含…'), () => this.prompt($t('文本包含'), [{ key: 'v', label: $t('包含以下文本'), first: true }], v => this.addCF('text', v.v))), I($t('重复值'), () => this.addCF('dup')), IS, I($t('数据条'), () => this.addCF('bar')), I($t('色阶'), () => this.addCF('scale')), IS, I($t('清除所选单元格的规则'), () => this.commit(s => { s.cf = (s.cf || []).filter(x => x.r2 < R.r1 || x.r1 > R.r2 || x.c2 < R.c1 || x.c1 > R.c2); })), I($t('清除整个工作表的规则'), () => this.commit(s => { s.cf = []; }))]);
+    const tabs = tabsDef.map(([k, l]) => ({ label: l, color: st.bubble && tab === k ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: st.bubble && tab === k ? 600 : 400, bg: st.bubble && tab === k ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(k, e) }));
+    const touches = x => this.boxes(x.range).some(b => !(b.r2 < R.r1 || b.r1 > R.r2 || b.c2 < R.c1 || b.c1 > R.c2));
+    const cfMenu = M('cf', $t('条件格式'), [HD($t('突出显示单元格规则')), I($t('大于…'), () => this.cfPrompt('greaterThan')), I($t('小于…'), () => this.cfPrompt('lessThan')), I($t('介于…'), () => this.cfPrompt('between')), I($t('等于…'), () => this.cfPrompt('equal')), I($t('文本包含…'), () => this.cfPrompt('text')), I($t('重复值…'), () => this.cfPrompt('dup')),
+      IS, HD($t('最前 / 最后规则')), I($t('前 10 项…'), () => this.cfPrompt('top')), I($t('前 10%…'), () => this.cfPrompt('topPct')), I($t('最后 10 项…'), () => this.cfPrompt('bottom')), I($t('最后 10%…'), () => this.cfPrompt('bottomPct')), I($t('高于平均值…'), () => this.cfPrompt('above')), I($t('低于平均值…'), () => this.cfPrompt('below')),
+      IS, HD($t('数据条'))].concat(BAR_COLORS.map(([c, n]) => I(n, () => this.addCF({ type: 'dataBar', color: c }), { hint: '▬' })), [IS, HD($t('色阶'))], SCALES.map(([n, colors]) => I(n, () => this.addCF({ type: 'colorScale', colors }))),
+      [IS, I($t('管理规则…'), () => this.cfManage()), I($t('清除所选单元格的规则'), () => this.commit(s => { s.cf = (s.cf || []).filter(x => !touches(x)); })), I($t('清除整个工作表的规则'), () => this.commit(s => { s.cf = []; }))]));
     const sumMenu = M('sum', $t('Σ 求和'), [['SUM', $t('求和@@btn')], ['AVERAGE', $t('平均值@@btn')], ['COUNT', $t('计数')], ['MAX', $t('最大值@@btn')], ['MIN', $t('最小值@@btn')]].map(([f, l]) => I(l, () => this.autoFn(f), { hint: f })));
     const fnMenu = M('fns', $t('函数库'), E.FUNC_GROUPS.flatMap(([g, fs]) => [HD($t(g))].concat(fs.map(([f, d]) => I(f, () => this.insertFn(f), { hint: $t(d) })))));
     const tb = e => this.style(null, e);
     const fmtKey = cs.fmt === 'number' && cs.dec === 0 ? 'thousands' : (cs.fmt || 'general'), fmtLabel = (FMTS.find(([k]) => k === fmtKey) || ['', $t('自定义')])[1];
-    const sortMenu = M('sort', $t('排序@@btn'), [I($t('升序 A→Z'), () => this.sort(true)), I($t('降序 Z→A'), () => this.sort(false)), IS, I($t('自定义排序…'), () => this.sortCustom())]);
+    const sortMenu = M('sort', $t('排序@@btn'), [I($t('升序 A→Z'), () => this.sort([{ c: s0.c, asc: true }])), I($t('降序 Z→A'), () => this.sort([{ c: s0.c, asc: false }])), IS, I($t('自定义排序…'), () => this.sortCustom())]);
+    const sample = 45292.5; // 2024/1/1 12:00, the date the format menu shows each code with
+    const fmtItems = FMTS.map(([k, l]) => I(l, () => this.style(k === 'general' ? { fmt: null, dec: null } : k === 'thousands' ? { fmt: 'number', dec: 0 } : { fmt: k, dec: null }), { on: fmtKey === k }))
+      .concat([IS, HD($t('日期与时间'))], DATE_CODES.map(([k, code]) => I(E.fmtCode(sample, code), () => this.style({ fmt: k, code }), { on: cs.code === code, hint: code })),
+        [IS, I($t('自定义…'), () => this.prompt($t('自定义数字格式'), [{ key: 'c', label: $t('格式代码（如 0.00、#,##0、yyyy/m/d）'), value: cs.code || '', first: true }], v => { const code = v.c.trim(); if (!code || code === 'General') return this.style({ fmt: null, dec: null }); import('./engine.js').then(m => this.style(Object.assign({ fmt: null, dec: null }, m.fmtOf(code)))); }))]);
+    const rotMenu = M('rot', '↗', [[0, $t('水平')], [45, $t('逆时针 45°')], [-45, $t('顺时针 45°')], [90, $t('向上 90°')], [-90, $t('向下 90°')]].map(([n, l]) => I(l, () => this.style({ rotate: n || null }), { on: (cs.rotate || 0) === n })), $t('文字方向'));
     let ribbon = [];
     if (tab === 'home') ribbon = [
       B('↶', () => this.props.onUndo && this.props.onUndo(), { title: $t('撤销 Ctrl+Z') }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: $t('重做 Ctrl+Y') }), SEP,
@@ -868,14 +1017,15 @@ class Component extends DCLogic {
       S(cs.fs || 11, [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].concat(cs.fs && ![9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].includes(cs.fs) ? [cs.fs] : []).map(n => [n, n + '']), e => this.style({ fs: +e.target.value }), '58px', $t('字号')),
       B('B', () => tb('b'), { on: cs.b, fw: 700, title: $t('加粗 Ctrl+B') }), B('I', () => tb('i'), { on: cs.i, fs: 'italic', title: $t('斜体 Ctrl+I') }), B('U', () => tb('u'), { on: cs.u, td: 'underline', title: $t('下划线 Ctrl+U') }), B('S', () => tb('st'), { on: cs.st, td: 'line-through', title: $t('删除线') }),
       C('A', cs.color || '#B5563A', e => this.style({ color: e.target.value }), $t('文字颜色'), 600),
+      C('◧', cs.fill || '#F3E6C4', e => this.style({ fill: e.target.value }), $t('填充颜色')),
       M('fill', $t('填充'), FILLS.map(([c, n]) => I(n, () => this.style({ fill: c || null }), { on: (cs.fill || '') === c })).concat([I($t('自定义颜色…'), () => this.prompt($t('填充颜色'), [{ key: 'c', label: $t('十六进制颜色'), value: cs.fill || '#', first: true }], v => this.style({ fill: v.c || null })))])),
-      M('bd', $t('边框'), [['none', $t('无框线')], ['all', $t('所有框线')], ['out', $t('外侧框线')], ['bottom', $t('下框线')], ['top', $t('上框线')], ['lr', $t('左右框线')], ['thickOut', $t('粗外侧框线')], ['dblBottom', $t('双底框线')]].map(([k, l]) => I(l, () => this.borders(k))).concat([IS, HD($t('线条颜色'))], [['#3A3A3C', $t('黑色')], ['#8E8E93', $t('灰色')], ['#B5563A', $t('红色')], ['#2F5D8A', $t('蓝色')], ['#3F7D5C', $t('绿色')]].map(([c, n]) => I(n, () => this.style({ bdc: c === '#3A3A3C' ? null : c }), { on: (cs.bdc || '#3A3A3C') === c })), [I($t('自定义颜色…'), () => this.prompt($t('线条颜色'), [{ key: 'c', label: $t('十六进制颜色'), value: cs.bdc || '#', first: true }], v => this.style({ bdc: /^#[0-9a-f]{6}$/i.test(v.c) ? v.c : null })))])),
+      M('bd', $t('边框'), [['none', $t('无框线')], ['all', $t('所有框线')], ['out', $t('外侧框线')], ['inner', $t('内部框线')], ['bottom', $t('下框线')], ['top', $t('上框线')], ['left', $t('左框线')], ['right', $t('右框线')], ['tb', $t('上下框线')], ['lr', $t('左右框线')], ['thickOut', $t('粗外侧框线')], ['thickBottom', $t('粗下框线')], ['dblBottom', $t('双底框线')]].map(([k, l]) => I(l, () => this.borders(k))).concat([IS, HD($t('线条颜色'))], [['#3A3A3C', $t('黑色')], ['#8E8E93', $t('灰色')], ['#B5563A', $t('红色')], ['#2F5D8A', $t('蓝色')], ['#3F7D5C', $t('绿色')]].map(([c, n]) => I(n, () => this.style({ bdc: c === '#3A3A3C' ? null : c }), { on: (cs.bdc || '#3A3A3C') === c })), [I($t('自定义颜色…'), () => this.prompt($t('线条颜色'), [{ key: 'c', label: $t('十六进制颜色'), value: cs.bdc || '#', first: true }], v => this.style({ bdc: /^#[0-9a-f]{6}$/i.test(v.c) ? v.c : null })))])),
       B('⇤', () => this.indent(-1), { title: $t('减少缩进'), dis: !cs.indent }), B('⇥', () => this.indent(1), { title: $t('增加缩进') }), SEP,
       AL('left', $t('左对齐')), AL('center', $t('居中')), AL('right', $t('右对齐')),
       M('va', $t('垂直'), [['top', $t('顶端对齐')], ['middle', $t('垂直居中')], ['bottom', $t('底端对齐')]].map(([k, l]) => I(l, () => this.style({ va: k }), { on: (cs.va || 'middle') === k }))),
-      B($t('自动换行'), () => tb('wrap'), { on: cs.wrap }),
+      rotMenu, B($t('自动换行'), () => tb('wrap'), { on: cs.wrap }),
       M('merge', $t('合并'), [I($t('合并居中'), () => this.mergeKind('center'), { on: !!this.mergeAt(s0.r, s0.c) }), I($t('跨越合并'), () => this.mergeKind('across')), I($t('取消合并'), () => this.mergeKind('un'))]), SEP,
-      M('fmt', fmtLabel, FMTS.map(([k, l]) => I(l, () => this.style(k === 'general' ? { fmt: null, dec: null } : k === 'thousands' ? { fmt: 'number', dec: 0 } : { fmt: k, dec: null }), { on: fmtKey === k })).concat([IS, I($t('自定义…'), () => this.prompt($t('自定义数字格式'), [{ key: 'c', label: $t('格式代码（如 0.00、#,##0、yyyy/m/d）'), value: cs.code || '', first: true }], v => { const code = v.c.trim(); if (!code || code === 'General') return this.style({ fmt: null, dec: null }); import('./engine.js').then(m => this.style(Object.assign({ fmt: null, dec: null }, m.fmtOf(code)))); }))]), $t('数字格式')),
+      M('fmt', fmtLabel, fmtItems, $t('数字格式')),
       B('¥', () => this.style({ fmt: 'money' }), { title: $t('货币格式') }), B('%', () => this.style({ fmt: 'pct', dec: 0 }), { title: $t('百分比') }), B(',', () => this.style({ fmt: 'number', dec: 0 }), { title: $t('千位分隔') }),
       B('.0←', () => this.decimals(1), { title: $t('增加小数位数') }), B('.00→', () => this.decimals(-1), { title: $t('减少小数位数') }), SEP,
       cfMenu,
@@ -901,8 +1051,8 @@ class Component extends DCLogic {
       B($t('显示公式'), () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF })
     ];
     if (tab === 'data') ribbon = [
-      B($t('升序'), () => this.sort(true)), B($t('降序'), () => this.sort(false)), sortMenu, SEP,
-      B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter }), B($t('清除筛选'), () => this.setFex({}), { dis: !sh.filter }), SEP,
+      B($t('升序'), () => this.sort([{ c: s0.c, asc: true }])), B($t('降序'), () => this.sort([{ c: s0.c, asc: false }])), sortMenu, SEP,
+      B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter, title: $t('筛选 Ctrl+Shift+L') }), B($t('清除筛选'), () => this.setFilters({}), { dis: !Object.keys(sh.filters || {}).length }), B($t('重新应用'), () => this.setFilters(sh.filters || {}), { dis: !Object.keys(sh.filters || {}).length, title: $t('按当前数据重新筛选') }), SEP,
       B($t('删除重复项'), () => this.dedupe()), B($t('分列'), () => this.splitCols(), { title: $t('按分隔符把所选列拆到右侧各列') }), B($t('数据验证'), () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
       B($t('向下填充'), () => this.fillDir('down'), { title: 'Ctrl+D' }), B($t('向右填充'), () => this.fillDir('right'), { title: 'Ctrl+R' })
     ];
@@ -913,10 +1063,10 @@ class Component extends DCLogic {
     ];
     if (tab === 'picture' && pic) ribbon = this.P.pictureRibbon({ B, M, I, C, SEP }, this.picTools(), picLook, st.picBusy);
     // geometry
-    const xs = [0]; for (let c = 0; c < E.NC; c++) xs.push(xs[c] + this.colW(c));
-    const hidden = new Set();
-    const flt = this.fltRect(), fex = this.fex();
-    if (flt) for (let r = flt.r + 1; r <= flt.r2; r++) for (const k of Object.keys(fex)) { const ex = fex[k]; if (ex && ex.length) { const c = +k; const v = E.fmt(calc.value(this.si, r, c), (sh.cells[E.A(r, c)] || {}).s); if (ex.includes(v)) { hidden.add(r); break; } } }
+    const hiddenC = new Set(sh.hiddenCols || []); this.hiddenC = hiddenC;
+    const xs = [0]; for (let c = 0; c < E.NC; c++) xs.push(xs[c] + (hiddenC.has(c) ? 0 : this.colW(c)));
+    const hidden = new Set([...(sh.frows || []), ...(sh.hiddenRows || [])]); // the filter's rows and the user's
+    const flt = this.fltRect(), filters = sh.filters || {};
     this.hidden = hidden;
     const ys = [0]; for (let r = 0; r < E.NR; r++) ys.push(ys[r] + (hidden.has(r) ? 0 : this.rowH(r)));
     this.xs = xs; this.ys = ys;
@@ -925,20 +1075,34 @@ class Component extends DCLogic {
     const objPane = (x, y) => { const fr = y < ys[fzR], fc = x < xs[fzC]; return { st: fr ? 0 : 'auto', sl: fc ? 0 : 'auto', z: Z.object[(fr ? 1 : 0) + (fc ? 1 : 0)] }; };
     const gtc = RHW + 'px ' + xs.slice(1).map((x, i) => (x - xs[i]) + 'px').join(' ');
     const gtr = CHH + 'px ' + ys.slice(1).map((y, i) => (y - ys[i]) + 'px').join(' ');
-    // cf precompute
+    // conditional formats: each rule's boxes and what it needs of its range (numbers for bars, scales, top/bottom and averages; counts for duplicates)
     const cfs = (sh.cf || []).map(rule => {
-      const o = Object.assign({}, rule);
-      if (rule.type === 'bar' || rule.type === 'scale') { let mn = Infinity, mx = -Infinity; for (let r = rule.r1; r <= rule.r2; r++) for (let c = rule.c1; c <= rule.c2; c++) { const v = calc.value(this.si, r, c); if (typeof v === 'number') { mn = Math.min(mn, v); mx = Math.max(mx, v); } } o.mn = mn; o.mx = mx; }
-      if (rule.type === 'dup') { const cnt = {}; for (let r = rule.r1; r <= rule.r2; r++) for (let c = rule.c1; c <= rule.c2; c++) { const v = String(calc.value(this.si, r, c)); if (v !== '') cnt[v] = (cnt[v] || 0) + 1; } o.cnt = cnt; }
+      const o = { rule, boxes: this.boxes(rule.range).map(b => ({ r1: b.r1, c1: b.c1, r2: Math.min(b.r2, E.NR - 1), c2: Math.min(b.c2, E.NC - 1) })) }, t = rule.type;
+      const each = fn => o.boxes.forEach(b => { for (let r = b.r1; r <= b.r2; r++) for (let c = b.c1; c <= b.c2; c++) fn(calc.value(this.si, r, c)); });
+      if (t === 'dataBar' || t === 'colorScale' || t === 'top10' || t === 'aboveAverage') { const ns = []; each(v => { if (typeof v === 'number') ns.push(v); }); o.mn = Math.min(...ns); o.mx = Math.max(...ns); o.n = ns.length;
+        if (t === 'top10') { const k = Math.max(1, Math.round(rule.percent ? ns.length * (rule.rank || 10) / 100 : (rule.rank || 10))); const sorted = ns.slice().sort((a, b) => rule.bottom ? a - b : b - a); o.edge = sorted.length ? sorted[Math.min(k, sorted.length) - 1] : NaN; }
+        if (t === 'aboveAverage') { const avg = ns.reduce((a, b) => a + b, 0) / (ns.length || 1), sd = Math.sqrt(ns.reduce((a, b) => a + (b - avg) ** 2, 0) / (ns.length || 1)); o.avg = avg + (rule.stdDev || 0) * sd * (rule.above === false ? -1 : 1); } }
+      if (t === 'duplicateValues' || t === 'uniqueValues') { const cnt = {}; each(v => { const k = String(v); if (k !== '') cnt[k] = (cnt[k] || 0) + 1; }); o.cnt = cnt; }
       return o;
-    });
+    }).reverse(); // applied last to first, so the first rule that holds wins a clash, as in Excel
+    const cfHolds = (o, v) => {
+      const r = o.rule, t = r.type, num = typeof v === 'number', str = String(v), lo = str.toLowerCase(), a = +r.value, b = +r.value2, txt = String(r.text || '').toLowerCase(), raw = x => String(x == null ? '' : x).replace(/^"|"$/g, '').toLowerCase();
+      if (t === 'cellIs') { switch (r.operator) { case 'greaterThan': return num && v > a; case 'lessThan': return num && v < a; case 'greaterThanOrEqual': return num && v >= a; case 'lessThanOrEqual': return num && v <= a; case 'between': return num && v >= Math.min(a, b) && v <= Math.max(a, b); case 'notBetween': return num && (v < Math.min(a, b) || v > Math.max(a, b)); case 'notEqual': return num ? v !== a : lo !== raw(r.value); default: return num ? v === a : lo === raw(r.value); } }
+      if (t === 'containsText') return lo.includes(txt); if (t === 'notContainsText') return !lo.includes(txt); if (t === 'beginsWith') return lo.startsWith(txt); if (t === 'endsWith') return lo.endsWith(txt);
+      if (t === 'duplicateValues') return o.cnt[str] > 1; if (t === 'uniqueValues') return o.cnt[str] === 1;
+      if (t === 'top10') return num && (r.bottom ? v <= o.edge : v >= o.edge); if (t === 'aboveAverage') return num && (r.above === false ? v < o.avg : v > o.avg);
+      return false; // bars and scales colour by value; icon sets, formulas and time periods are kept for the file, not drawn
+    };
     const inR = (r, c) => r >= R.r1 && r <= R.r2 && c >= R.c1 && c <= R.c2;
     const colHeads = [], rowHeads = [], cells = [];
-    for (let c = 0; c < E.NC; c++) { const on = c >= R.c1 && c <= R.c2; colHeads.push({ l: E.colName(c), gc: c + 2, left: c < (sh.frC || 0) ? RHW + xs[c] + 'px' : 'auto', z: c < (sh.frC || 0) ? Z.frozenColHead : Z.colHead, bg: on ? HEAD_ON : 'var(--k48, #F5F5F7)', color: on ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: on ? 600 : 400,
-      onMD: e => { e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r: E.NR - 1, c } }); else this.setState({ anc: { r: 0, c }, sel: { r: E.NR - 1, c } }); this.op = { kind: 'colsel' }; this.wantFocus = true; },
+    // a right-click on a header opens its menu for the whole line, selecting it first unless it is already inside the selection
+    const headCtx = (axis, i) => e => { e.preventDefault(); const inSel = axis === 'c' ? i >= R.c1 && i <= R.c2 && R.r1 === 0 && R.r2 === E.NR - 1 : i >= R.r1 && i <= R.r2 && R.c1 === 0 && R.c2 === E.NC - 1; if (!inSel) this.setState(axis === 'c' ? { anc: { r: 0, c: i }, sel: { r: E.NR - 1, c: i } } : { anc: { r: i, c: 0 }, sel: { r: i, c: E.NC - 1 } }); this.setState({ pop: { id: axis === 'c' ? 'colctx' : 'rowctx', x: e.clientX, y: e.clientY } }); };
+    for (let c = 0; c < E.NC; c++) { if (hiddenC.has(c)) continue; const on = c >= R.c1 && c <= R.c2; colHeads.push({ l: E.colName(c), gc: c + 2, left: c < (sh.frC || 0) ? RHW + xs[c] + 'px' : 'auto', z: c < (sh.frC || 0) ? Z.frozenColHead : Z.colHead, bg: on ? HEAD_ON : 'var(--k48, #F5F5F7)', color: on ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: on ? 600 : 400,
+      onMD: e => { if (e.button === 2) return; e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r: E.NR - 1, c } }); else this.setState({ anc: { r: 0, c }, sel: { r: E.NR - 1, c } }); this.op = { kind: 'colsel' }; this.wantFocus = true; },
       onME: () => { if (this.op && this.op.kind === 'colsel') this.setState({ sel: { r: E.NR - 1, c } }); },
+      onCtx: headCtx('c', c),
       onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'colw', c, x0: e.clientX, w0: this.colW(c) }; },
-      onAuto: e => { e.stopPropagation(); let w = 40; for (let r = 0; r < E.NR; r++) { const x = sh.cells[E.A(r, c)]; if (x) w = Math.max(w, E.fmt(calc.value(this.si, r, c), x.s).length * 8 + 18); } this.commit(s => { s.colW = Object.assign({}, s.colW, { [E.colName(c)]: Math.min(400, w) }); }); } }); }
+      onAuto: e => { e.stopPropagation(); const w = this.autoFit(c); this.commit(s => { s.colW = Object.assign({}, s.colW, { [E.colName(c)]: w }); }); } }); }
     const merges = sh.merges || [], covered = new Set();
     merges.forEach(m => { for (let r = m.r; r < m.r + m.rs; r++) for (let c = m.c; c < m.c + m.cs; c++) if (r !== m.r || c !== m.c) covered.add(r + ':' + c); });
     const ed = st.edit, gl = this.noGrid(sh) ? 'transparent' : 'var(--k75, #E3E3E8)';
@@ -949,22 +1113,26 @@ class Component extends DCLogic {
       if (hidden.has(r)) continue;
       const onR = r >= R.r1 && r <= R.r2;
       rowHeads.push({ n: r + 1, gr: r + 2, top: r < (sh.frR || 0) ? CHH + ys[r] + 'px' : 'auto', z: r < (sh.frR || 0) ? Z.frozenRowHead : Z.rowHead, bg: onR ? HEAD_ON : 'var(--k48, #F5F5F7)', color: onR ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: onR ? 600 : 400,
-        onMD: e => { e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r, c: E.NC - 1 } }); else this.setState({ anc: { r, c: 0 }, sel: { r, c: E.NC - 1 } }); this.op = { kind: 'rowsel' }; this.wantFocus = true; },
+        onMD: e => { if (e.button === 2) return; e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r, c: E.NC - 1 } }); else this.setState({ anc: { r, c: 0 }, sel: { r, c: E.NC - 1 } }); this.op = { kind: 'rowsel' }; this.wantFocus = true; },
         onME: () => { if (this.op && this.op.kind === 'rowsel') this.setState({ sel: { r, c: E.NC - 1 } }); },
+        onCtx: headCtx('r', r),
         onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'rowh', r, y0: e.clientY, h0: this.rowH(r) }; } });
       for (let c = 0; c < E.NC; c++) {
-        if (covered.has(r + ':' + c)) continue;
+        if (covered.has(r + ':' + c) || hiddenC.has(c)) continue;
         const a = E.A(r, c), m = merges.find(mm => mm.r === r && mm.c === c);
         let x = sh.cells[a], s = (x && x.s) || {}, v = x ? calc.value(this.si, r, c) : '';
         let text = sh.showF && x && String(x.v).startsWith('=') ? String(x.v) : this.fmtV(v, s);
         // the file's colours (fill, font, border) are drawn as they are in both themes; only the automatic ones follow the theme
-        let bg = s.fill || '', color = s.color || (s.fill === '#1D1D1F' ? '#FFFFFF' : E.isErr(v) ? '#B5563A' : '');
-        cfs.forEach(rule => {
-          if (r < rule.r1 || r > rule.r2 || c < rule.c1 || c > rule.c2 || v === '') return;
-          const n = +rule.val;
-          if ((rule.type === 'gt' && typeof v === 'number' && v > n) || (rule.type === 'lt' && typeof v === 'number' && v < n) || (rule.type === 'eq' && String(v) === String(rule.val)) || (rule.type === 'text' && String(v).includes(rule.val)) || (rule.type === 'dup' && rule.cnt[String(v)] > 1)) { bg = '#F6D9D3'; color = '#8A2F1D'; }
-          if (rule.type === 'bar' && typeof v === 'number' && rule.mx > -Infinity) { const t = rule.mx === rule.mn ? 1 : (v - Math.min(0, rule.mn)) / (rule.mx - Math.min(0, rule.mn)); bg = `linear-gradient(90deg,#A9D1B9 ${Math.round(t * 100)}%,${s.fill || '#FFFFFF'} ${Math.round(t * 100)}%)`; }
-          if (rule.type === 'scale' && typeof v === 'number') { const t = rule.mx === rule.mn ? 0.5 : (v - rule.mn) / (rule.mx - rule.mn); bg = t < 0.5 ? mix('#F4C7B8', '#FBF3D6', t * 2) : mix('#FBF3D6', '#A9D1B9', (t - 0.5) * 2); }
+        let bg = s.fill || '', color = E.fmtColor(v, s.code) || s.color || (s.fill === '#1D1D1F' ? '#FFFFFF' : E.isErr(v) ? '#B5563A' : ''), cfB = null, cfI = null;
+        cfs.forEach(o => {
+          if (v === '' || !o.boxes.some(b => r >= b.r1 && r <= b.r2 && c >= b.c1 && c <= b.c2)) return;
+          const rule = o.rule, t = rule.type;
+          if (t === 'dataBar' && typeof v === 'number' && o.n) { const lo = Math.min(0, o.mn), k = o.mx === lo ? 1 : Math.max(0, (v - lo) / (o.mx - lo)); bg = `linear-gradient(90deg,${rule.color || '#638EC6'}66 ${Math.round(k * 100)}%,${s.fill || 'transparent'} ${Math.round(k * 100)}%)`; return; }
+          if (t === 'colorScale' && typeof v === 'number' && o.n) { const cols = rule.colors && rule.colors.length >= 2 ? rule.colors : ['#F8696B', '#FFEB84', '#63BE7B'], k = o.mx === o.mn ? 0.5 : (v - o.mn) / (o.mx - o.mn), seg = (cols.length - 1) * k, i = Math.min(cols.length - 2, Math.floor(seg)); bg = mix(cols[i], cols[i + 1], seg - i); return; }
+          if (!cfHolds(o, v)) return;
+          // Excel's default look when a rule names none: 浅红填充色深红色文本
+          const noLook = !rule.fill && !rule.color && !rule.bold && !rule.italic;
+          if (rule.fill || noLook) bg = rule.fill || '#FFC7CE'; if (rule.color || noLook) color = rule.color || '#9C0006'; if (rule.bold) cfB = true; if (rule.italic) cfI = true;
         });
         if (x && x.ai) bg = 'var(--k46, #DCEBDF)';
         const own = !bg || (x && x.ai); // the sheet's own background; on a colour from the file (or a rule) automatic text keeps its light value
@@ -981,17 +1149,17 @@ class Component extends DCLogic {
         const isNum = typeof v === 'number' && !(sh.showF && x && String(x.v).startsWith('='));
         const al = s.align || (isNum ? 'right' : E.isErr(v) || typeof v === 'boolean' ? 'center' : 'left');
         const frozenR = r < (sh.frR || 0), frozenC = c < (sh.frC || 0), ind = (s.indent || 0) * 10;
-        const isF = flt && r === flt.r && c >= flt.c1 && c <= flt.c2;
+        const isF = flt && r === flt.r && c >= flt.c1 && c <= flt.c2, dvRule = !isF && !ed && r === s0.r && c === s0.c ? this.dvAt(r, c) : null, isDv = !!dvRule && dvRule.type === 'list'; // Excel shows a list's arrow on the active cell only
         cells.push({
           gr: m ? `${r + 2} / span ${m.rs}` : String(r + 2), gc: m ? `${c + 2} / span ${m.cs}` : String(c + 2),
           pos: frozenR || frozenC ? 'sticky' : 'relative', top: frozenR ? CHH + ys[r] + 'px' : 'auto', left: frozenC ? RHW + xs[c] + 'px' : 'auto', z: Z.cell[(frozenR ? 1 : 0) + (frozenC ? 1 : 0)],
-          text, bg, color, fw: s.b ? 700 : 400, fst: s.i ? 'italic' : 'normal', td: [s.u || s.link ? 'underline' : '', s.st ? 'line-through' : ''].join(' ').trim() || 'none', fs: (s.fs || 11) * 1.2 + 'px', ff: s.font ? `'${s.font}',sans-serif` : 'inherit',
-          justify: al === 'right' ? 'flex-end' : al === 'center' ? 'center' : 'flex-start', ta: al, ai: s.va === 'top' ? 'flex-start' : s.va === 'bottom' ? 'flex-end' : 'center', ws: s.wrap ? 'normal' : 'nowrap', flex: isF ? '1' : '0 1 auto',
+          text, bg, color, fw: s.b || cfB ? 700 : 400, fst: s.i || cfI ? 'italic' : 'normal', td: [s.u || s.link ? 'underline' : '', s.st ? 'line-through' : ''].join(' ').trim() || 'none', fs: (s.fs || d.fs || 11) * 1.2 + 'px', ff: s.font || d.font ? `'${s.font || d.font}','IBM Plex Sans','Noto Sans SC',sans-serif` : 'inherit', tr: s.rotate ? `rotate(${-s.rotate}deg)` : 'none',
+          justify: al === 'right' ? 'flex-end' : al === 'center' ? 'center' : 'flex-start', ta: al, ai: s.va === 'top' ? 'flex-start' : s.va === 'bottom' ? 'flex-end' : 'center', ws: s.wrap ? 'normal' : 'nowrap', flex: isF || isDv ? '1' : '0 1 auto',
           bt: side('top', 'none'), bl: side('left', 'none'), br: side('right', '1px solid ' + gl), bb: side('bottom', '1px solid ' + gl), pad: `0 ${6 + (al === 'right' ? ind : 0)}px 0 ${6 + (al === 'right' ? 0 : ind)}px`,
           tip: s.link ? s.link + $t('（Ctrl+点击打开）') : '', hasN: !!s.note, cursor: s.link ? 'pointer' : 'cell',
           onML: () => { if (st.noteAt && st.noteAt.r === r && st.noteAt.c === c) this.setState({ noteAt: null }); },
-          op, hasF: !!isF, fbg: isF && fex[c] && fex[c].length ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)',
-          onF: e => { e.preventDefault(); e.stopPropagation(); const rc = e.currentTarget.getBoundingClientRect(); this.setState({ pop: { id: 'flt' + c, x: rc.left, y: rc.bottom + 4 } }); },
+          op, hasF: !!isF || isDv, fbg: isF && filters[E.colName(c)] ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)',
+          onF: e => { e.preventDefault(); e.stopPropagation(); const rc = e.currentTarget.getBoundingClientRect(); this.setState({ pop: { id: isF ? 'flt' + c : 'dv', x: rc.left, y: rc.bottom + 4 } }); },
           onMD: e => {
             if (e.button === 2) return;
             e.preventDefault();
@@ -1041,8 +1209,8 @@ class Component extends DCLogic {
     const charts = (sh.charts || []).map(ch => {
       const set = patch => this.commit(s => Object.assign(s.charts.find(x => x.id === ch.id), patch));
       this.menus['cht' + ch.id] = [HD($t('图表类型'))].concat(CHART_TYPES.map(([k, l]) => I(l, () => set({ type: k }), { on: (ch.type || 'column') === k })), [IS, I($t('堆积'), () => set({ stacked: !ch.stacked }), { on: !!ch.stacked, hint: $t('柱形 / 条形 / 面积') }), IS, HD($t('图例'))], LEGENDS.map(([k, l]) => I(l, () => set({ legend: k }), { on: (ch.legend || 'right') === k })), [IS, I($t('数据区域…'), () => this.prompt($t('图表数据'), [{ key: 'c', label: $t('分类（如 A2:A6）'), value: ch.cat || '', first: true }, { key: 's', label: $t('系列（JSON，如 [{"name":"B1","values":"B2:B6"}]）'), value: JSON.stringify(ch.ser || []) }], v => { let ser; try { ser = JSON.parse(v.s || '[]'); } catch (e) { return this.toast($t('系列格式无效')); } set({ cat: v.c.trim(), ser }); }))]);
-      const p = this.chartAt(ch);
-      return Object.assign(this.chartVals(ch, calc), objPane(p.x, p.y));
+      const p = this.chartAt(ch), lv2 = st.live;
+      return Object.assign(this.chartVals(lv2 && lv2.kind === 'chartsz' && lv2.id === ch.id ? Object.assign({}, ch, { w: lv2.w, h: lv2.h }) : ch, calc), objPane(p.x, p.y));
     });
     // pictures, placed like charts; a picture tool's result shows at once, before the engine has answered
     const pics = (sh.images || []).map(im => {
@@ -1057,24 +1225,37 @@ class Component extends DCLogic {
     let popItems = [];
     if (st.pop) {
       if (st.pop.id.startsWith('flt')) {
-        const c = +st.pop.id.slice(3), vals = new Set(); if (flt) for (let r = flt.r + 1; r <= flt.r2; r++) vals.add(E.fmt(calc.value(this.si, r, c), (sh.cells[E.A(r, c)] || {}).s));
-        const ex = fex[c] || [];
-        const setEx = list => this.setFex(Object.assign({}, fex, { [c]: list }));
-        const keep = fn => ({ isItem: true, ...fn });
-        popItems = [I($t('升序'), () => this.sortCol(true, c, flt)), I($t('降序'), () => this.sortCol(false, c, flt)), IS,
-          keep({ label: $t('（全选）'), check: ex.length ? '' : '✓', hint: '', onClick: () => setEx([]) })].concat(Array.from(vals).sort().map(v => keep({ label: v === '' ? $t('（空白）') : v, check: ex.includes(v) ? '' : '✓', hint: '', onClick: () => setEx(ex.includes(v) ? ex.filter(x => x !== v) : ex.concat([v])) })));
+        // Excel's filter dropdown: sort, text / number criteria, then the column's values, checked when they show (no criterion checks all)
+        const c = +st.pop.id.slice(3), key = E.colName(c), vals = new Set(); if (flt) for (let r = flt.r + 1; r <= flt.r2; r++) vals.add(this.fmtV(calc.value(this.si, r, c), (sh.cells[E.A(r, c)] || {}).s));
+        const all = Array.from(vals).sort(), cur = filters[key] || null, shown = cur && cur.values ? cur.values : null;
+        const setCol = f => { const next = Object.assign({}, filters); if (f) next[key] = f; else delete next[key]; this.setFilters(next); };
+        const keep = fn => ({ isItem: true, hint: '', ...fn });
+        const ask = (op, title, two) => () => this.prompt(title, [{ key: 'v', label: two ? $t('最小值') : $t('值'), value: cur && !cur.values && cur.operator === op ? cur.value : '', first: true }].concat(two ? [{ key: 'v2', label: $t('最大值'), value: cur && cur.value2 || '' }] : []), v => { if (v.v.trim() === '') return; setCol(Object.assign({ operator: op, value: v.v.trim() }, two ? { value2: v.v2.trim() } : null)); });
+        const numeric = all.some(v => v !== '' && !isNaN(Number(v.replace(/[,¥$€%]/g, ''))));
+        popItems = [I($t('升序'), () => this.sortCol(true, c, flt)), I($t('降序'), () => this.sortCol(false, c, flt)), IS, HD(numeric ? $t('数字筛选') : $t('文本筛选')),
+          I($t('等于…'), ask('equal', $t('等于'))), I($t('不等于…'), ask('notEqual', $t('不等于'))), I($t('包含…'), ask('contains', $t('包含'))), I($t('开头是…'), ask('beginsWith', $t('开头是'))), I($t('大于…'), ask('greaterThan', $t('大于'))), I($t('小于…'), ask('lessThan', $t('小于'))), I($t('介于…'), ask('between', $t('介于'), true)),
+          IS, I($t('清除此列的筛选'), () => setCol(null), { hint: cur && !cur.values ? (CF_OPS[cur.operator] || cur.operator) + ' ' + cur.value : '' }), IS,
+          keep({ label: $t('（全选）'), check: shown ? '' : '✓', onClick: () => setCol(null) })].concat(all.map(v => keep({ label: v === '' ? $t('（空白）') : v, check: !shown || shown.includes(v) ? '✓' : '', onClick: () => {
+            const next = shown ? (shown.includes(v) ? shown.filter(x => x !== v) : shown.concat([v])) : all.filter(x => x !== v); setCol(next.length === all.length && all.every(x => next.includes(x)) ? null : { values: next }); } })));
+      } else if (st.pop.id === 'dv') {
+        const rule = this.dvAt(s0.r, s0.c), list = rule ? this.dvList(rule, calc) : [];
+        popItems = list.map(v => I(v, () => { const { r, c } = s0; this.commit(sh2 => this.setCellRaw(sh2, r, c, v, null)); this.wantFocus = true; }, { on: this.raw(s0.r, s0.c) === v }));
+      } else if (st.pop.id === 'colctx' || st.pop.id === 'rowctx') {
+        const col = st.pop.id === 'colctx', n = col ? R.c2 - R.c1 + 1 : R.r2 - R.r1 + 1, axis = col ? 'c' : 'r';
+        popItems = [I(col ? $t('插入列') : $t('插入行'), () => this.insDel(axis, col ? R.c1 : R.r1, n), { hint: n > 1 ? String(n) : '' }), I(col ? $t('删除列') : $t('删除行'), () => this.insDel(axis, col ? R.c1 : R.r1, -n)), I($t('清除内容'), () => this.clear('v')), IS]
+          .concat(col ? [I($t('列宽…'), () => this.sizeDialog('c')), I($t('自动调整列宽'), () => this.fitCols())] : [I($t('行高…'), () => this.sizeDialog('r'))],
+            [IS, I($t('隐藏'), () => this.hideLines(axis, true)), I($t('取消隐藏'), () => this.hideLines(axis, false))]);
       } else if (st.pop.id === 'tabctx') {
-        const i = st.pop.i;
-        popItems = [I($t('重命名'), () => this.renameSheet(i)), I($t('复制工作表'), () => this.copySheet(i)),
-          I($t('左移'), () => { if (i > 0) { const ss = d.sheets.slice(); [ss[i - 1], ss[i]] = [ss[i], ss[i - 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i - 1 })); } }),
-          I($t('右移'), () => { if (i < d.sheets.length - 1) { const ss = d.sheets.slice(); [ss[i + 1], ss[i]] = [ss[i], ss[i + 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i + 1 })); } }), IS,
-          I($t('删除工作表'), () => { if (d.sheets.length < 2) return this.toast($t('至少保留一个工作表')); this.props.onChange(Object.assign({}, d, { sheets: d.sheets.filter((_, j) => j !== i), active: Math.max(0, Math.min(d.active || 0, d.sheets.length - 2)) })); })];
+        const i = st.pop.i, s = d.sheets[i];
+        popItems = [I($t('重命名'), () => this.renameSheet(i)), I($t('复制工作表'), () => this.copySheet(i)), I($t('左移'), () => this.moveSheet(i, i - 1)), I($t('右移'), () => this.moveSheet(i, i + 1)), IS, HD($t('工作表标签颜色'))]
+          .concat(TAB_COLORS.map(([c, n]) => I(n, () => this.props.onChange(Object.assign({}, d, { sheets: d.sheets.map((x, j) => j === i ? Object.assign({}, x, { color: c }) : x) })), { on: (s.color || null) === c, hint: c ? '●' : '' })),
+            [IS, I($t('删除工作表'), () => { if (d.sheets.length < 2) return this.toast($t('至少保留一个工作表')); this.prompt($t('删除工作表「{name}」？', { name: s.name }), [], () => this.props.onChange(Object.assign({}, this.doc, { sheets: this.doc.sheets.filter((_, j) => j !== i), active: Math.max(0, Math.min(this.doc.active || 0, this.doc.sheets.length - 2)) }))); })]);
       } else popItems = this.menus[st.pop.id] || [];
     }
     const lv = st.live;
     const dlg = st.dlg;
     return {
-      md, loading: false, neverThumbs: false, fxML: '12px', tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), notPure: !this.props.pure,
+      md, loading: false, neverThumbs: false, showBar: !this.props.pure || !!this.props.pureTools, fxML: '12px', tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), notPure: !this.props.pure,
       showThumbs: !this.props.pure && this.props.showThumbs !== false, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       sheetThumbs: d.sheets.map((s, i) => { const u = E.usedRange(s); return { name: s.name, fw: i === this.si ? 600 : 400, bg: i === this.si ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', meta: (u ? $t('{range} · {n} 个单元格', { range: `${E.A(u.r1, u.c1)}:${E.A(u.r2, u.c2)}`, n: Object.keys(s.cells).length }) : $t('空')) + ((s.charts || []).length ? $t(' · {n} 图表', { n: s.charts.length }) : ''), onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); } } }; }),
       hasChartList: (sh.charts || []).length > 0,
@@ -1089,6 +1270,7 @@ class Component extends DCLogic {
       onFx: e => { this.setState({ edit: Object.assign(Object.assign({ mode: 'bar' }, this.act()), this.state.edit, { val: e.target.value, pt: null }) }); },
       onFxKey: e => { if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const e2 = this.state.edit; if (e2 && ARROWS[e.key] && this.ptArrow(e, e2)) return; if (e.key === 'Enter') { e.preventDefault(); this.commitEdit(1, 0); } if (e.key === 'Escape') { this.setState({ edit: null }); this.wantFocus = true; } },
       showFind: st.showFind, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 个单元格', { n: st.fcount }) : $t('未找到'),
+      findOpts: [['mc', 'Aa', $t('区分大小写')], ['whole', $t('单元格匹配'), $t('只匹配整个单元格的内容')], ['book', $t('工作簿'), $t('在整个工作簿中查找')]].map(([k, label, title]) => ({ label, title, bg: (st.fopt || {})[k] ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: () => this.setState(s => ({ fopt: Object.assign({}, s.fopt, { [k]: !(s.fopt || {})[k] }), fcount: null })) })),
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) this.findNext(); if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replace(false), replaceAll: () => this.replace(true), closeFind: () => { this.setState({ showFind: false }); this.wantFocus = true; },
@@ -1118,8 +1300,8 @@ class Component extends DCLogic {
         if (ed2 && ed2.mode !== 'bar') {
           if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
           if (k === 'Enter' && e.altKey) { e.preventDefault(); this.setState({ edit: Object.assign({}, ed2, { val: ed2.val + '\n' }) }); return; }
-          if (k === 'Enter') { e.preventDefault(); this.commitEdit(e.shiftKey ? -1 : 1, 0); }
-          else if (k === 'Tab') { e.preventDefault(); this.commitEdit(0, e.shiftKey ? -1 : 1); }
+          if (k === 'Enter') { e.preventDefault(); const back = this.tabFrom; this.tabFrom = null; this.commitEdit(e.shiftKey ? -1 : 1, 0, back); }
+          else if (k === 'Tab') { e.preventDefault(); if (this.tabFrom == null) this.tabFrom = ed2.c; this.commitEdit(0, e.shiftKey ? -1 : 1); }
           else if (k === 'Escape') { e.preventDefault(); this.setState({ edit: null }); this.wantFocus = true; }
           else if (k === 'F2') { e.preventDefault(); this.setState({ edit: Object.assign({}, ed2, { mode: ed2.mode === 'edit' ? 'type' : 'edit' }) }); } // Excel: F2 toggles Enter/Edit mode (arrows point vs move the caret)
           else if (ARROWS[k] && this.ptArrow(e, ed2)) { }
@@ -1135,12 +1317,16 @@ class Component extends DCLogic {
           else if (lk === 'r') { e.preventDefault(); this.fillDir('right'); }
           else if (lk === 'a') { e.preventDefault(); this.setState({ anc: { r: 0, c: 0 }, sel: { r: E.NR - 1, c: E.NC - 1 } }); }
           else if (lk === 'f' || lk === 'h') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
+          else if (lk === 'l' && e.shiftKey) { e.preventDefault(); this.toggleFilter(); }
+          else if (k === ' ') { e.preventDefault(); this.setState({ anc: { r: 0, c: R.c1 }, sel: { r: E.NR - 1, c: R.c2 } }); } // Ctrl+Space: the selection's columns
           else if (ARROWS[k]) { e.preventDefault(); this.jump(ARROWS[k][0], ARROWS[k][1], e.shiftKey); }
           return;
         }
+        if (k !== 'Tab' && k !== 'Enter') this.tabFrom = null; // Excel: Enter after a run of Tabs returns to the column the run began in
         if (ARROWS[k]) { e.preventDefault(); this.move(ARROWS[k][0], ARROWS[k][1], e.shiftKey); }
-        else if (k === 'Enter') { e.preventDefault(); this.move(e.shiftKey ? -1 : 1, 0); }
-        else if (k === 'Tab') { e.preventDefault(); this.move(0, e.shiftKey ? -1 : 1); }
+        else if (k === 'Enter') { e.preventDefault(); const back = this.tabFrom; this.tabFrom = null; this.move(e.shiftKey ? -1 : 1, 0); if (back != null) this.setSel(s0.r + (e.shiftKey ? -1 : 1), back); }
+        else if (k === 'Tab') { e.preventDefault(); if (this.tabFrom == null) this.tabFrom = s0.c; this.move(0, e.shiftKey ? -1 : 1); }
+        else if (k === ' ' && e.shiftKey) { e.preventDefault(); this.setState({ anc: { r: R.r1, c: 0 }, sel: { r: R.r2, c: E.NC - 1 } }); } // Shift+Space: the selection's rows
         else if (k === 'F2') { e.preventDefault(); this.startEdit(null, 'edit'); }
         else if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); this.clear('v'); }
         else if (k === 'Escape') { this.clip = null; this.setState({ painter: null }); }
@@ -1152,9 +1338,11 @@ class Component extends DCLogic {
       onCut: e => { if (this.state.edit) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copy(true)); },
       onPaste: e => { if (this.state.edit) return; e.preventDefault(); this.paste(e.clipboardData.getData('text/plain')); },
       charts, pics,
-      sheetTabs: d.sheets.map((s, i) => ({ name: s.name, bg: i === this.si ? 'var(--k31, rgba(255,255,255,0.95))' : 'transparent', fw: i === this.si ? 600 : 400, line: i === this.si ? '0 1px 3px var(--k36, rgba(0,0,0,0.12))' : 'none',
+      // a tab's colour is a stripe under its name; dragging a tab over its neighbours moves the sheet
+      sheetTabs: d.sheets.map((s, i) => ({ name: s.name, bg: i === this.si ? 'var(--tab-bg, rgba(255,255,255,0.92))' : 'transparent', color: i === this.si ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: i === this.si ? 500 : 400, line: [i === this.si ? 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))' : '', s.color ? `inset 0 -3px 0 ${s.color}` : ''].filter(Boolean).join(', ') || 'none',
         onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); this.wantFocus = true; } },
-        onDbl: () => this.renameSheet(i), onCtx: e => { e.preventDefault(); this.setState({ pop: { id: 'tabctx', i, x: e.clientX, y: e.clientY - 190 } }); } })),
+        onMD: e => { if (e.button === 0) this.op = { kind: 'tab', i }; }, onME: () => { const op = this.op; if (op && op.kind === 'tab' && op.i !== i) { this.moveSheet(op.i, i); op.i = i; } },
+        onDbl: () => this.renameSheet(i), onCtx: e => { e.preventDefault(); this.setState({ pop: { id: 'tabctx', i, x: e.clientX, y: e.clientY - 330 } }); } })),
       addSheet: () => this.addSheet(),
       statText, zoomPct: String(Math.round(st.zoom * 100)), onZoom: e => this.setZoom(+e.target.value / 100),
       zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1),
@@ -1175,7 +1363,9 @@ class Component extends DCLogic {
     };
   }
   dlgOk() { const dd = this.state.dlg; this.setState({ dlg: null }); this.wantFocus = true; if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } }
-  sortCol(asc, c, flt) { this.setState({ anc: { r: flt.r, c: flt.c1 }, sel: { r: flt.r2, c: flt.c2 } }, () => { this.sort(asc, c); this.setState({ sel: { r: flt.r + 1, c }, anc: { r: flt.r + 1, c } }); }); }
+  sortCol(asc, c, flt) { this.setState({ anc: { r: flt.r, c: flt.c1 }, sel: { r: flt.r2, c: flt.c2 } }, () => { this.sort([{ c, asc }]); this.setState({ sel: { r: flt.r + 1, c }, anc: { r: flt.r + 1, c } }); }); }
+  /** Moves sheet `from` to position `to`, keeping it active. */
+  moveSheet(from, to) { const d = this.doc; if (from === to || to < 0 || to >= d.sheets.length) return; const ss = d.sheets.slice(); const [s] = ss.splice(from, 1); ss.splice(to, 0, s); this.props.onChange(Object.assign({}, d, { sheets: ss, active: to })); }
   /** A copy is a new sheet with a name of its own (the file refuses a second one), and its charts and pictures are new objects: no
    *  engine path or id ties them to the original's, so the next save writes them with the copy and the picture tools leave the original alone. */
   copySheet(i) {

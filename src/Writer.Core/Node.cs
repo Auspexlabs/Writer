@@ -72,6 +72,12 @@ public abstract class Node
     /// <summary>Writes one canonical value that the registry has already validated.</summary>
     public virtual void SetProp(string name, string value) => throw ReadOnly();
 
+    /// <summary>Writes the props of one edit, in order. A node whose props share one record (a cell's style) writes those together.</summary>
+    public virtual void SetProps(IEnumerable<KeyValuePair<string, string>> props)
+    {
+        foreach (var (name, value) in props) SetProp(name, value);
+    }
+
     /// <summary>Creates a child at a 1-based position among this node's children (null = append) and returns it.</summary>
     public virtual Node Add(string kind, IReadOnlyDictionary<string, string> props, int? index) => throw ReadOnly();
 

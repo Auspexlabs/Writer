@@ -389,3 +389,16 @@ test('engine: sheets are saved in the editor\'s order: a copy beside its origina
     assert.deepEqual(await reopened(), sheets(doc));
   });
 });
+
+test('a floating picture sits in its paragraph by its wrap: beside the text at its offset, over or under it; a nudge moves the offset, handles keep the aspect', () => {
+  const geo = { colW: 600, pageW: 794, pageH: 1123, mL: 96, mT: 96, top: 300 }, none = { position: '', left: '', top: '', float: '', clear: '', margin: '', zIndex: '' };
+  assert.deepEqual(P.placeStyle({ wrap: 'inline' }, 100, 80, geo), none);
+  assert.deepEqual(P.placeStyle({ wrap: 'square', x: '1cm', y: '0.5cm', xFrom: 'column', yFrom: 'paragraph' }, 100, 80, geo), Object.assign({}, none, { position: 'relative', float: 'left', margin: '18.9px 12px 8px 37.8px' }));
+  assert.equal(P.placeStyle({ wrap: 'square', xAlign: 'right', xFrom: 'margin', y: '0cm', yFrom: 'paragraph' }, 100, 80, geo).float, 'right', 'a picture on the right half of the column floats right, the text on its left');
+  const front = P.placeStyle({ wrap: 'front', x: '2cm', y: '1cm', xFrom: 'page', yFrom: 'page' }, 100, 80, geo);
+  assert.deepEqual([front.position, front.left, front.top, front.zIndex], ['absolute', '-20.41px', '-262.2px', '1'], 'from the page: less the margin, less the paragraph\'s top on its page');
+  assert.equal(P.placeStyle({ wrap: 'behind', xAlign: 'center', xFrom: 'margin', yAlign: 'center', yFrom: 'margin' }, 100, 80, geo).zIndex, '-1');
+  assert.deepEqual(P.nudgePlace({ wrap: 'square', xAlign: 'right', xFrom: 'margin', y: '0cm', yFrom: 'paragraph' }, 'ArrowDown', 10, { x: 500, y: 0 }), { wrap: 'square', xFrom: 'column', yFrom: 'paragraph', x: '13.229cm', y: '0.265cm' });
+  assert.equal(P.nudgePlace({ wrap: 'inline' }, 'ArrowDown', 1, { x: 0, y: 0 }), null, 'an inline picture leaves the arrows to the caret');
+  assert.deepEqual([P.resizeMath(400, 300, 'rb', 40, 0, false), P.resizeMath(400, 300, 'l', 40, 0, false), P.resizeMath(400, 300, 'rb', 40, -100, true)], [{ w: 440, h: 330 }, { w: 360, h: 300 }, { w: 440, h: 200 }]);
+});

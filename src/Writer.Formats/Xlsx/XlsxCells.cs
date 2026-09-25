@@ -11,7 +11,7 @@ namespace Writer.Formats.Xlsx;
 /// <summary>Cell references, values and types.</summary>
 static class XlsxCells
 {
-    static readonly string[] DateFormats = ["yyyy-MM-dd", "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss"];
+    static readonly string[] DateFormats = ["yyyy-MM-dd", "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm:ss.fff", "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss", "yyyy-MM-ddTHH:mm:ss.fff"];
 
     public static string ColumnName(int index)
     {
@@ -80,6 +80,18 @@ static class XlsxCells
         return cell;
     }
 
+    /// <summary>The date an Excel serial stands for. 1900 system: 1 is 1900-01-01 and serials up to 60 sit a day off the calendar
+    /// (Excel counts a 29 February 1900); 1904 system: 0 is 1904-01-01. A serial below 1 is a time of day.</summary>
+    public static DateTime FromSerial(double serial, bool date1904) =>
+        date1904 ? new DateTime(1904, 1, 1).AddMilliseconds(Math.Round(serial * 86400000)) : DateTime.FromOADate(serial >= 1 && serial < 61 ? serial + 1 : serial);
+
+    public static double ToSerial(DateTime date, bool date1904)
+    {
+        if (date1904) return (date - new DateTime(1904, 1, 1)).TotalDays;
+        var oa = date.ToOADate();
+        return oa >= 1 && oa < 61 ? oa - 1 : oa;
+    }
+
     public static string Display(XlsxDocument doc, Cell cell)
     {
         var raw = cell.CellValue?.Text ?? "";
@@ -91,10 +103,11 @@ static class XlsxCells
             case "b": return raw == "1" ? "true" : "false";
             case "e": return raw;
         }
-        if (raw.Length > 0 && doc.Styles.IsDate(doc.Styles.FormatOf(cell)) && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var serial))
+        if (raw.Length > 0 && doc.Styles.IsDate(doc.Styles.FormatOf(cell)) && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var serial)
+            && serial is > -1 and < 2958466)
         {
-            var date = DateTime.FromOADate(serial);
-            return date.TimeOfDay == TimeSpan.Zero ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : date.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            var date = FromSerial(serial, doc.Date1904);
+            return date.ToString(date.TimeOfDay == TimeSpan.Zero ? "yyyy-MM-dd" : date.Millisecond == 0 ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
         }
         return raw;
     }
@@ -112,41 +125,77 @@ static class XlsxCells
         return doc.Styles.IsDate(doc.Styles.FormatOf(cell)) ? "date" : "number";
     }
 
-    /// <summary>Stores a value, typing it from its shape: true/false, numbers and ISO dates are typed; everything else is text.</summary>
-    public static void SetValue(XlsxDocument doc, Cell cell, string value)
+    /// <summary>The cell's formula as a user would type it: a shared group's dependents (<c>&lt;f t="shared" si="n"/&gt;</c>) get the
+    /// master's text shifted to their own position, as Excel shows it.</summary>
+    public static string? Formula(XlsxSheet sheet, Cell cell)
     {
-        cell.RemoveAllChildren<CellFormula>();
-        cell.RemoveAllChildren<InlineString>();
-        var trimmed = value.Trim();
-        if (trimmed.Length == 0)
-        {
-            cell.CellValue = null;
-            cell.DataType = null;
-            return;
-        }
-        if (trimmed.Equals("true", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("false", StringComparison.OrdinalIgnoreCase))
-        {
-            SetBool(cell, trimmed.Equals("true", StringComparison.OrdinalIgnoreCase));
-            return;
-        }
-        if (double.TryParse(trimmed, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var number) && !trimmed.Contains(','))
-        {
-            SetNumber(cell, number);
-            return;
-        }
-        if (DateTime.TryParseExact(trimmed, DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-        {
-            SetDate(doc, cell, date);
-            return;
-        }
-        SetString(doc, cell, value);
+        if (cell.CellFormula is not { } f) return null;
+        if (f.Text.Length > 0 || f.FormulaType?.InnerText != "shared") return f.Text;
+        if (f.SharedIndex?.Value is not { } si || sheet.SharedMaster(si) is not { } master) return "";
+        var (mc, mr) = Position(master);
+        var (c, r) = Position(cell);
+        return XlsxRefs.Shift(master.CellFormula!.Text, r - mr, c - mc);
     }
 
-    public static void SetTyped(XlsxDocument doc, Cell cell, string type, string current)
+    /// <summary>Before a cell of a shared-formula group changes: every member gets its own formula (the master's, shifted), so the
+    /// others keep computing and keep their cached values. Called wherever a formula is replaced, removed or moved.</summary>
+    public static void Unshare(XlsxSheet sheet, Cell cell)
+    {
+        if (cell.CellFormula is not { } f || f.FormulaType?.InnerText != "shared" || f.SharedIndex?.Value is not { } si) return;
+        var master = sheet.SharedMaster(si);
+        var members = sheet.Data.Descendants<CellFormula>().Where(x => x.FormulaType?.InnerText == "shared" && x.SharedIndex?.Value == si && x.Parent is Cell).ToList();
+        var text = master?.CellFormula?.Text;
+        var (mc, mr) = master is null ? (0, 0) : Position(master);
+        foreach (var member in members)
+        {
+            var owner = (Cell)member.Parent!;
+            if (text is null) { member.Remove(); continue; } // a group without its master: the cells keep their values as constants
+            var (c, r) = Position(owner);
+            owner.CellFormula = new CellFormula(XlsxRefs.Shift(text, r - mr, c - mc));
+        }
+        sheet.ForgetShared();
+    }
+
+    /// <summary>Takes the formula off a cell that is getting a constant (or none). Excel's calc chain is dropped with it; Excel rebuilds it.</summary>
+    static void DropFormula(XlsxDocument doc, XlsxSheet sheet, Cell cell)
+    {
+        if (cell.CellFormula is null) return;
+        Unshare(sheet, cell);
+        cell.RemoveAllChildren<CellFormula>();
+        doc.DropCalcChain();
+    }
+
+    /// <summary>Stores a value, typing it from its shape: true/false, numbers and ISO dates are typed; everything else is text.
+    /// A value the cell already holds, in the same type, leaves the cell untouched.</summary>
+    public static void SetValue(XlsxDocument doc, XlsxSheet sheet, Cell cell, string value)
+    {
+        var trimmed = value.Trim();
+        double number = 0;
+        DateTime date = default;
+        var isBool = trimmed.Equals("true", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("false", StringComparison.OrdinalIgnoreCase);
+        var isNumber = !isBool && double.TryParse(trimmed, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out number) && !trimmed.Contains(',');
+        var isDate = !isBool && !isNumber && DateTime.TryParseExact(trimmed, DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
+        var kind = trimmed.Length == 0 ? null : isBool ? "bool" : isNumber ? "number" : isDate ? "date" : "string";
+        if (kind is not null && cell.CellFormula is null && TypeOf(doc, cell) == kind && Display(doc, cell) == value) return;
+        DropFormula(doc, sheet, cell);
+        if (kind is null)
+        {
+            cell.RemoveAllChildren<InlineString>();
+            cell.CellValue = null;
+            cell.DataType = null;
+        }
+        else if (isBool) SetBool(cell, trimmed.Equals("true", StringComparison.OrdinalIgnoreCase));
+        else if (isNumber) SetNumber(cell, number);
+        else if (isDate) SetDate(doc, cell, date);
+        else SetString(doc, cell, value);
+    }
+
+    public static void SetTyped(XlsxDocument doc, XlsxSheet sheet, Cell cell, string type, string current)
     {
         switch (type)
         {
             case "string":
+                DropFormula(doc, sheet, cell);
                 SetString(doc, cell, current);
                 break;
             case "number":
@@ -162,53 +211,86 @@ static class XlsxCells
                 break;
             case "date":
                 if (DateTime.TryParseExact(current.Trim(), DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) SetDate(doc, cell, date);
-                else if (double.TryParse(current.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var serial)) SetDate(doc, cell, DateTime.FromOADate(serial));
+                else if (double.TryParse(current.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var serial) && serial is > -1 and < 2958466) SetDate(doc, cell, FromSerial(serial, doc.Date1904));
                 else throw new WriterException(ErrorCode.Validation, $"'{current}' is not a date", "Use yyyy-mm-dd or yyyy-mm-dd hh:mm.");
                 break;
         }
     }
 
-    static void SetString(XlsxDocument doc, Cell cell, string value)
+    /// <summary>Writes text the way the cell already stores text: an inline string stays inline, a formula-string cell keeps its
+    /// <c>t="str"</c>, anything else goes to the shared string table (reusing an entry with the same text).</summary>
+    internal static void SetString(XlsxDocument doc, Cell cell, string value)
     {
-        cell.RemoveAllChildren<CellFormula>();
+        var kind = cell.DataType?.InnerText;
+        if (kind is "s" or "str" or "inlineStr" && Display(doc, cell) == value) return;
+        switch (kind)
+        {
+            case "inlineStr":
+                cell.InlineString = new InlineString(new Text(value) { Space = SpaceProcessingModeValues.Preserve });
+                cell.CellValue = null;
+                return;
+            case "str":
+                cell.CellValue = new CellValue(value);
+                return;
+        }
+        cell.RemoveAllChildren<InlineString>();
         cell.DataType = CellValues.SharedString;
         cell.CellValue = new CellValue(doc.Strings.Add(value).ToString(CultureInfo.InvariantCulture));
     }
 
-    static void SetNumber(Cell cell, double number)
+    internal static void SetNumber(Cell cell, double number)
     {
-        cell.DataType = null;
+        cell.RemoveAllChildren<InlineString>();
+        if (cell.DataType?.InnerText != "n") cell.DataType = null; // an explicit t="n" is kept as written
         cell.CellValue = new CellValue(number.ToString("R", CultureInfo.InvariantCulture));
     }
 
-    static void SetBool(Cell cell, bool value)
+    internal static void SetBool(Cell cell, bool value)
     {
+        cell.RemoveAllChildren<InlineString>();
         cell.DataType = CellValues.Boolean;
         cell.CellValue = new CellValue(value ? "1" : "0");
     }
 
-    static void SetDate(XlsxDocument doc, Cell cell, DateTime date)
+    internal static void SetDate(XlsxDocument doc, Cell cell, DateTime date)
     {
+        cell.RemoveAllChildren<InlineString>();
         cell.DataType = null;
-        cell.CellValue = new CellValue(date.ToOADate().ToString("R", CultureInfo.InvariantCulture));
+        cell.CellValue = new CellValue(ToSerial(date, doc.Date1904).ToString("R", CultureInfo.InvariantCulture));
         if (!doc.Styles.IsDate(doc.Styles.FormatOf(cell)))
             doc.Styles.Apply(cell, xf => { xf.NumberFormatId = doc.Styles.NumberFormatId(date.TimeOfDay == TimeSpan.Zero ? "yyyy-mm-dd" : "yyyy-mm-dd hh:mm:ss"); xf.ApplyNumberFormat = true; });
     }
 
-    public static void SetFormula(XlsxDocument doc, Cell cell, string formula)
+    /// <summary>Writes a formula. The same text as the cell already computes changes nothing (a shared group stays shared, the cached
+    /// result stays). A new text first gives every cell of a shared group its own formula; an array formula keeps its range. The
+    /// cell's last result is kept for readers that do not calculate, and Excel is asked to recalculate on load.</summary>
+    public static void SetFormula(XlsxDocument doc, XlsxSheet sheet, Cell cell, string formula)
     {
         var text = formula.Trim().TrimStart('=');
-        cell.RemoveAllChildren<CellFormula>();
-        cell.RemoveAllChildren<InlineString>();
-        if (text.Length == 0) return;
-        cell.CellValue = null;
-        cell.DataType = null;
-        cell.CellFormula = new CellFormula(text);
+        if (text.Length == 0)
+        {
+            DropFormula(doc, sheet, cell);
+            return;
+        }
+        if (text == Formula(sheet, cell)) return;
+        Unshare(sheet, cell);
+        var old = cell.CellFormula;
+        if (old is null || cell.DataType?.InnerText is "s" or "inlineStr")
+        {
+            // a constant becoming a formula: its text was never this formula's result
+            cell.RemoveAllChildren<InlineString>();
+            cell.CellValue = null;
+            cell.DataType = null;
+        }
+        cell.CellFormula = old?.FormulaType?.InnerText == "array"
+            ? new CellFormula(text) { FormulaType = CellFormulaValues.Array, Reference = old.Reference?.Value }
+            : new CellFormula(text);
+        doc.DropCalcChain();
         doc.RecalculateOnLoad();
     }
 
-    /// <summary>Minimal CSV: commas, quotes, doubled quotes, CRLF or LF lines.</summary>
-    public static List<List<string>> ParseCsv(string text)
+    /// <summary>Minimal CSV: commas (or the given delimiter), quotes, doubled quotes, CRLF or LF lines.</summary>
+    public static List<List<string>> ParseCsv(string text, char delimiter = ',')
     {
         var rows = new List<List<string>>();
         var row = new List<string>();
@@ -227,7 +309,7 @@ static class XlsxCells
             switch (ch)
             {
                 case '"': quoted = true; break;
-                case ',': row.Add(field.ToString()); field.Clear(); break;
+                case var d when d == delimiter: row.Add(field.ToString()); field.Clear(); break;
                 case '\r': break;
                 case '\n': row.Add(field.ToString()); field.Clear(); rows.Add(row); row = []; break;
                 default: field.Append(ch); break;
@@ -258,7 +340,7 @@ sealed class XlsxStyles(WorkbookPart workbook)
 
     /// <summary>Formatting properties shared by the cell and range kinds; all written through <see cref="Set"/>.</summary>
     public static readonly string[] Props =
-        ["bold", "italic", "underline", "strike", "size", "font", "color", "fill", "format", "align", "valign", "wrap", "indent", "border", "borders", "borderColor"];
+        ["bold", "italic", "underline", "strike", "size", "font", "color", "fill", "format", "align", "valign", "wrap", "indent", "rotate", "border", "borders", "borderColor"];
 
     static readonly string[] Sides = ["top", "right", "bottom", "left"];
 
@@ -271,6 +353,19 @@ sealed class XlsxStyles(WorkbookPart workbook)
         [22] = "m/d/yyyy h:mm", [37] = "#,##0 ;(#,##0)", [38] = "#,##0 ;[Red](#,##0)", [39] = "#,##0.00;(#,##0.00)", [40] = "#,##0.00;[Red](#,##0.00)",
         [45] = "mm:ss", [46] = "[h]:mm:ss", [47] = "mmss.0", [48] = "##0.0E+0", [49] = "@",
     };
+
+    XlsxColors? _colors;
+
+    /// <summary>Theme, indexed and rgb colours as RRGGBB (and back to the file's theme references on writes).</summary>
+    public XlsxColors Colors => _colors ??= new XlsxColors(workbook);
+
+    /// <summary>What a fill shows: a solid pattern's colour, or a gradient's first stop. Other patterns are left out.</summary>
+    public string? FillColor(Fill? fill) =>
+        fill?.PatternFill is { } pattern ? pattern.PatternType?.InnerText == "solid" ? Colors.Resolve(pattern.ForegroundColor) ?? Colors.Resolve(pattern.BackgroundColor) : null
+        : Colors.Resolve(fill?.GradientFill?.GetFirstChild<GradientStop>()?.Color);
+
+    /// <summary>The workbook's default font (the first one, as Normal uses): name and size, as cells without their own show them.</summary>
+    public (string? Name, double? Size) Normal => Existing?.Fonts?.GetFirstChild<Font>() is { } f ? (f.FontName?.Val?.Value, f.FontSize?.Val?.Value) : (null, null);
 
     /// <summary>The stylesheet for reading; null when the workbook has none. Reads never create parts.</summary>
     Stylesheet? Existing => workbook.WorkbookStylesPart?.Stylesheet;
@@ -314,7 +409,7 @@ sealed class XlsxStyles(WorkbookPart workbook)
         if (id is >= 14 and <= 22 or >= 45 and <= 47) return true;
         if (id < 164) return false;
         var code = NumberFormatCode(format) ?? "";
-        var stripped = System.Text.RegularExpressions.Regex.Replace(code, "\\[[^\\]]*\\]|\"[^\"]*\"", "");
+        var stripped = System.Text.RegularExpressions.Regex.Replace(code, "\\[[^\\]]*\\]|\"[^\"]*\"|[\\\\_*].", ""); // brackets, quoted text, escaped, padding and fill characters
         return stripped.IndexOfAny(['y', 'd', 'h', 'Y', 'D', 'H']) >= 0 || (stripped.Contains('m') && !stripped.Contains('0') && !stripped.Contains('#'));
     }
 
@@ -330,9 +425,8 @@ sealed class XlsxStyles(WorkbookPart workbook)
         if (On(font?.Strike)) props["strike"] = "true";
         if (font?.FontSize?.Val?.Value is { } size && size != (normal?.FontSize?.Val?.Value ?? 11)) props["size"] = size.ToString("0.##", CultureInfo.InvariantCulture);
         if (font?.FontName?.Val?.Value is { } name && name != normal?.FontName?.Val?.Value) props["font"] = name;
-        if (Rgb(font?.Color?.Rgb?.Value) is { } color && color != "000000") props["color"] = color;
-        if (FillOf(format)?.PatternFill is { } pattern && pattern.PatternType?.InnerText == "solid" && Rgb(pattern.ForegroundColor?.Rgb?.Value) is { } fill)
-            props["fill"] = fill;
+        if (Colors.Resolve(font?.Color) is { } color && color != "000000") props["color"] = color;
+        if (FillColor(FillOf(format)) is { } fill) props["fill"] = fill;
         if (NumberFormatCode(format) is { } code) props["format"] = code;
         if (format?.Alignment is { } al)
         {
@@ -340,6 +434,8 @@ sealed class XlsxStyles(WorkbookPart workbook)
             if (al.Vertical?.InnerText is ("top" or "center" or "bottom") and { } v) props["valign"] = v == "center" ? "middle" : v;
             if (al.WrapText?.Value == true) props["wrap"] = "true";
             if (al.Indent?.Value is > 0 and var indent) props["indent"] = indent.ToString(CultureInfo.InvariantCulture);
+            // Excel: 0–90 counter-clockwise, 91–180 clockwise (90 + degrees), 255 stacked; the engine speaks -90..90
+            if (al.TextRotation?.Value is > 0 and <= 180 and var rot) props["rotate"] = (rot <= 90 ? (int)rot : 90 - (int)rot).ToString(CultureInfo.InvariantCulture);
         }
         var styled = SidesOf(BorderOf(format)).Where(s => s.Style != "none").ToList();
         if (styled.Count == 0) return;
@@ -355,63 +451,92 @@ sealed class XlsxStyles(WorkbookPart workbook)
         if (styled.Select(s => s.Color).Distinct().ToList() is [{ } one]) props["borderColor"] = one;
     }
 
-    /// <summary>Writes one formatting property (see <see cref="Props"/>), keeping the cell's other style attributes.
-    /// borderColor is the color pending for border writes made in the same edit.</summary>
-    public void Set(Cell cell, string name, string value, string? borderColor = null)
+    /// <summary>An edit's props split into the cell's style ones and the rest, each in the order given.</summary>
+    public static (List<KeyValuePair<string, string>> Style, List<KeyValuePair<string, string>> Other) Split(IEnumerable<KeyValuePair<string, string>> props)
     {
-        switch (name)
-        {
-            case "bold" or "italic" or "underline" or "strike" or "size" or "font" or "color":
-                var font = (Font)(FontOf(FormatOf(cell)) ?? Sheet.Fonts?.GetFirstChild<Font>() ?? new Font()).CloneNode(true);
-                switch (name)
-                {
-                    case "bold": font.Bold = value == "true" ? new Bold() : null; break;
-                    case "italic": font.Italic = value == "true" ? new Italic() : null; break;
-                    case "underline": font.Underline = value == "true" ? new Underline() : null; break;
-                    case "strike": font.Strike = value == "true" ? new Strike() : null; break;
-                    case "size": font.FontSize = new FontSize { Val = double.Parse(value, CultureInfo.InvariantCulture) }; break;
-                    case "font": font.FontName = new FontName { Val = value }; break;
-                    default: font.Color = value == "none" ? null : new Color { Rgb = "FF" + value }; break;
-                }
-                var fontId = Index(Sheet.Fonts ??= new Fonts(), font, n => Sheet.Fonts!.Count = n);
-                Apply(cell, xf => { xf.FontId = fontId; xf.ApplyFont = true; });
-                break;
-            case "fill":
-                var fillId = value == "none"
-                    ? 0u
-                    : Index(Sheet.Fills ??= new Fills(), new Fill(new PatternFill(new ForegroundColor { Rgb = "FF" + value }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }), n => Sheet.Fills!.Count = n);
-                Apply(cell, xf => { xf.FillId = fillId; xf.ApplyFill = value != "none"; });
-                break;
-            case "format":
-                var formatId = NumberFormatId(value.Trim());
-                Apply(cell, xf => { xf.NumberFormatId = formatId; xf.ApplyNumberFormat = true; });
-                break;
-            case "align" or "valign" or "wrap" or "indent":
-                Apply(cell, xf =>
-                {
+        var list = props.ToList();
+        return (list.Where(p => Props.Contains(p.Key)).ToList(), list.Where(p => !Props.Contains(p.Key)).ToList());
+    }
+
+    /// <summary>Writes formatting properties (see <see cref="Props"/>) as one new format for the cell, keeping its other style attributes:
+    /// the font, border and format each go through their tables once, whatever the number of props. borderColor is the colour
+    /// pending for border writes made in the same edit.</summary>
+    public void Set(Cell cell, IReadOnlyList<KeyValuePair<string, string>> changes, string? borderColor = null)
+    {
+        var xf = (CellFormat)(FormatOf(cell) ?? new CellFormat { NumberFormatId = 0U, FontId = 0U, FillId = 0U, BorderId = 0U }).CloneNode(true);
+        Font? font = null;
+        Border? border = null;
+        foreach (var (name, value) in changes)
+            switch (name)
+            {
+                case "bold" or "italic" or "underline" or "strike" or "size" or "font" or "color":
+                    font ??= (Font)(FontOf(xf) ?? Sheet.Fonts?.GetFirstChild<Font>() ?? new Font()).CloneNode(true);
+                    switch (name)
+                    {
+                        case "bold": font.Bold = value == "true" ? new Bold() : null; break;
+                        case "italic": font.Italic = value == "true" ? new Italic() : null; break;
+                        case "underline": font.Underline = value == "true" ? new Underline() : null; break;
+                        case "strike": font.Strike = value == "true" ? new Strike() : null; break;
+                        case "size": font.FontSize = new FontSize { Val = double.Parse(value, CultureInfo.InvariantCulture) }; break;
+                        case "font": font.FontName = new FontName { Val = value }; break;
+                        default: font.Color = value == "none" ? null : Colors.Like<Color>(value); break;
+                    }
+                    break;
+                case "fill":
+                    xf.FillId = value == "none"
+                        ? 0u
+                        : Index(Sheet.Fills ??= new Fills(), new Fill(new PatternFill(Colors.Like<ForegroundColor>(value), new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }), n => Sheet.Fills!.Count = n);
+                    xf.ApplyFill = value != "none" ? true : null;
+                    break;
+                case "format":
+                    xf.NumberFormatId = NumberFormatId(value.Trim());
+                    xf.ApplyNumberFormat = true;
+                    break;
+                case "align" or "valign" or "wrap" or "indent" or "rotate":
                     var al = xf.Alignment ??= new Alignment();
                     switch (name)
                     {
                         case "align": al.Horizontal = new HorizontalAlignmentValues(value); break;
                         case "valign": al.Vertical = new VerticalAlignmentValues(value == "middle" ? "center" : value); break;
                         case "wrap": al.WrapText = value == "true" ? true : null; break;
+                        case "rotate": var deg = int.Parse(value, CultureInfo.InvariantCulture); al.TextRotation = deg == 0 ? null : (uint)(deg > 0 ? deg : 90 - deg); break;
                         default: al.Indent = value == "0" ? null : uint.Parse(value, CultureInfo.InvariantCulture); break;
                     }
                     xf.ApplyAlignment = true;
-                });
-                break;
-            case "border": SetBorder(cell, Sides.Select(s => new KeyValuePair<string, string>(s, value)), borderColor); break;
-            case "borders": SetBorder(cell, ParseSides(value), borderColor); break;
-            case "borderColor":
-                SetBorder(cell, SidesOf(BorderOf(FormatOf(cell))).Where(s => s.Style != "none").Select(s => new KeyValuePair<string, string>(s.Side, s.Style)), value);
-                break;
+                    break;
+                case "border": border = SetSides(border ?? BorderClone(xf), Sides.Select(s => new KeyValuePair<string, string>(s, value)), borderColor); break;
+                case "borders": border = SetSides(border ?? BorderClone(xf), ParseSides(value), borderColor); break;
+                case "borderColor":
+                    border ??= BorderClone(xf);
+                    border = SetSides(border, SidesOf(border).Where(s => s.Style != "none").Select(s => new KeyValuePair<string, string>(s.Side, s.Style)), value);
+                    break;
+            }
+        if (xf.Alignment is { } alignment)
+        {
+            // Excel's defaults (general, bottom) are no alignment at all: a cell set back to them is the cell it was
+            if (alignment.Horizontal?.InnerText == "general") alignment.Horizontal = null;
+            if (alignment.Vertical?.InnerText == "bottom") alignment.Vertical = null;
+            if (!alignment.HasAttributes && !alignment.HasChildren) (xf.Alignment, xf.ApplyAlignment) = (null, null);
         }
+        if (font is not null)
+        {
+            xf.FontId = Index(Sheet.Fonts ??= new Fonts(), font, n => Sheet.Fonts!.Count = n);
+            xf.ApplyFont = true;
+        }
+        if (border is not null)
+        {
+            xf.BorderId = Index(Sheet.Borders ??= new Borders(), border, n => Sheet.Borders!.Count = n);
+            xf.ApplyBorder = true;
+        }
+        cell.StyleIndex = Index(Sheet.CellFormats ??= new CellFormats(), xf, n => Sheet.CellFormats!.Count = n);
+        Touched = true;
     }
 
+    Border BorderClone(CellFormat xf) => (Border)(BorderOf(xf) ?? Sheet.Borders?.GetFirstChild<Border>() ?? new Border()).CloneNode(true);
+
     /// <summary>Sets the style of the given sides ("none" clears one) and, when a color is given, their color.</summary>
-    void SetBorder(Cell cell, IEnumerable<KeyValuePair<string, string>> sides, string? color)
+    Border SetSides(Border border, IEnumerable<KeyValuePair<string, string>> sides, string? color)
     {
-        var border = (Border)(BorderOf(FormatOf(cell)) ?? Sheet.Borders?.GetFirstChild<Border>() ?? new Border()).CloneNode(true);
         foreach (var (side, style) in sides)
         {
             var element = side switch
@@ -423,10 +548,9 @@ sealed class XlsxStyles(WorkbookPart workbook)
             };
             element.Style = style == "none" ? null : new BorderStyleValues(style);
             if (style == "none" || color == "none") element.Color = null;
-            else if (color is not null) element.Color = new Color { Rgb = "FF" + color };
+            else if (color is not null) element.Color = Colors.Like<Color>(color);
         }
-        var id = Index(Sheet.Borders ??= new Borders(), border, n => Sheet.Borders!.Count = n);
-        Apply(cell, xf => { xf.BorderId = id; xf.ApplyBorder = true; });
+        return border;
     }
 
     static List<KeyValuePair<string, string>> ParseSides(string json)
@@ -445,13 +569,13 @@ sealed class XlsxStyles(WorkbookPart workbook)
         return sides;
     }
 
-    static (string Side, string Style, string? Color)[] SidesOf(Border? border) =>
+    (string Side, string Style, string? Color)[] SidesOf(Border? border) =>
     [
         Side("top", border?.TopBorder), Side("right", border?.RightBorder), Side("bottom", border?.BottomBorder), Side("left", border?.LeftBorder),
     ];
 
-    static (string Side, string Style, string? Color) Side(string side, BorderPropertiesType? element) =>
-        (side, element?.Style?.InnerText ?? "none", Rgb(element?.Color?.Rgb?.Value));
+    (string Side, string Style, string? Color) Side(string side, BorderPropertiesType? element) =>
+        (side, element?.Style?.InnerText ?? "none", Colors.Resolve(element?.Color));
 
     /// <summary>Gives the cell the format that is its current one with the change applied, reusing an identical entry when one exists.</summary>
     public void Apply(Cell cell, Action<CellFormat> change)
@@ -460,6 +584,49 @@ sealed class XlsxStyles(WorkbookPart workbook)
         var xf = (CellFormat)source.CloneNode(true);
         change(xf);
         cell.StyleIndex = Index(Sheet.CellFormats ??= new CellFormats(), xf, n => Sheet.CellFormats!.Count = n);
+        Touched = true;
+    }
+
+    /// <summary>A cell's format was written since the workbook was opened: <see cref="Trim"/> has work at save.</summary>
+    public bool Touched { get; private set; }
+
+    /// <summary>At save, after style writes: the trailing formats no cell, row or column uses any more go, and then the trailing fonts,
+    /// fills and borders no format uses. Earlier entries keep their places (every index after them would move), so the tables end
+    /// where the workbook's styles end instead of growing with each edit that left an entry behind. Worksheets not loaded are read
+    /// as streams, not parsed.</summary>
+    public void Trim(IEnumerable<WorksheetPart> sheets)
+    {
+        if (!Touched || Existing?.CellFormats is not { } xfs) return;
+        var used = new HashSet<uint>();
+        foreach (var part in sheets)
+        {
+            if (part.IsRootElementLoaded)
+            {
+                foreach (var e in part.Worksheet!.Descendants())
+                    if (e is Cell { StyleIndex.Value: var s }) used.Add(s);
+                    else if (e is Row { StyleIndex.Value: var rs }) used.Add(rs);
+                    else if (e is Column { Style.Value: var cs }) used.Add(cs);
+                continue;
+            }
+            using var stream = part.GetStream(FileMode.Open, FileAccess.Read);
+            using var reader = System.Xml.XmlReader.Create(stream);
+            while (reader.Read())
+                if (reader.NodeType == System.Xml.XmlNodeType.Element && (reader.LocalName is "c" or "row" ? reader.GetAttribute("s") : reader.LocalName == "col" ? reader.GetAttribute("style") : null) is { } v
+                    && uint.TryParse(v, out var index)) used.Add(index);
+        }
+        Shrink(xfs, 1, i => used.Contains(i), n => xfs.Count = n);
+        var formats = xfs.Elements<CellFormat>().Concat(Existing.CellStyleFormats?.Elements<CellFormat>() ?? []).ToList();
+        if (Existing.Fonts is { } fonts) Shrink(fonts, 1, i => formats.Any(f => f.FontId?.Value == i), n => fonts.Count = n);
+        if (Existing.Fills is { } fills) Shrink(fills, 2, i => formats.Any(f => f.FillId?.Value == i), n => fills.Count = n);
+        if (Existing.Borders is { } borders) Shrink(borders, 1, i => formats.Any(f => f.BorderId?.Value == i), n => borders.Count = n);
+    }
+
+    static void Shrink(OpenXmlCompositeElement table, int keep, Func<uint, bool> used, Action<uint> setCount)
+    {
+        var entries = table.ChildElements.ToList();
+        var count = entries.Count;
+        while (count > keep && !used((uint)count - 1)) entries[--count].Remove();
+        if (count < entries.Count) setCount((uint)count);
     }
 
     /// <summary>The index of an entry identical to the given one in a style table, appending it when there is none.</summary>
@@ -487,7 +654,9 @@ sealed class XlsxStyles(WorkbookPart workbook)
         void Write(OpenXmlElement e)
         {
             sb.Append('<').Append(e.LocalName);
-            foreach (var a in e.GetAttributes().OrderBy(a => a.LocalName, StringComparer.Ordinal)) sb.Append(' ').Append(a.LocalName).Append('=').Append(a.Value);
+            // applyFont="1" and the like say what a format's own ids already say: an entry with or without them is the same entry
+            foreach (var a in e.GetAttributes().Where(a => !(a.LocalName.StartsWith("apply", StringComparison.Ordinal) && a.Value is "1" or "true")).OrderBy(a => a.LocalName, StringComparer.Ordinal))
+                sb.Append(' ').Append(a.LocalName).Append('=').Append(a.Value);
             sb.Append('>');
             if (e is OpenXmlLeafTextElement leaf) sb.Append(leaf.Text);
             foreach (var child in e.ChildElements) Write(child);
@@ -495,8 +664,37 @@ sealed class XlsxStyles(WorkbookPart workbook)
         }
     }
 
+    /// <summary>What a conditional format's dxf changes: fill, color, bold, italic.</summary>
+    public IEnumerable<(string Name, string Value)> Dxf(uint id)
+    {
+        var dxf = Existing?.DifferentialFormats?.Elements<DifferentialFormat>().ElementAtOrDefault((int)id);
+        if (dxf is null) yield break;
+        var pattern = dxf.Fill?.PatternFill;
+        if ((Colors.Resolve(pattern?.BackgroundColor) ?? Colors.Resolve(pattern?.ForegroundColor)) is { } fill) yield return ("fill", fill);
+        if (Colors.Resolve(dxf.Font?.Color) is { } color) yield return ("color", color);
+        if (On(dxf.Font?.Bold)) yield return ("bold", "true");
+        if (On(dxf.Font?.Italic)) yield return ("italic", "true");
+    }
+
+    /// <summary>The dxf index for a conditional format's look, reusing an identical entry when one exists.</summary>
+    public uint DxfId(string? fill, string? color, bool bold, bool italic)
+    {
+        var dxf = new DifferentialFormat();
+        if (color is not null || bold || italic)
+        {
+            var font = new Font();
+            if (bold) font.Append(new Bold());
+            if (italic) font.Append(new Italic());
+            if (color is not null) font.Append(Colors.Like<Color>(color));
+            dxf.Append(font);
+        }
+        if (fill is not null) dxf.Append(new Fill(new PatternFill(Colors.Like<BackgroundColor>(fill)) { PatternType = PatternValues.Solid }));
+        return Index(Sheet.DifferentialFormats ??= new DifferentialFormats(), dxf, n => Sheet.DifferentialFormats!.Count = n);
+    }
+
     public uint NumberFormatId(string code)
     {
+        if (code.Length == 0 || code.Equals("General", StringComparison.OrdinalIgnoreCase)) return 0;
         foreach (var (id, builtin) in Builtin)
             if (builtin == code) return id;
         var formats = Sheet.NumberingFormats;

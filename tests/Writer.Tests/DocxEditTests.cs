@@ -119,6 +119,35 @@ public class DocxEditTests
         Assert.Contains("list", ex.Message);
     }
 
+    [Fact]
+    public void Outline_and_chinese_lists_count_in_numbering_xml_and_numbering_restarts_where_asked()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        var a = Mutations.Add(body, "paragraph", Props(("text", "第一章"), ("list", "chinese")), null);
+        var b = Mutations.Add(body, "paragraph", Props(("text", "第一节"), ("list", "chinese"), ("level", "1")), null);
+        var c = Mutations.Add(body, "paragraph", Props(("text", "again from one"), ("list", "chinese"), ("restart", "true")), null);
+        var d = Mutations.Add(body, "paragraph", Props(("text", "two"), ("list", "chinese")), null);
+        var o = Mutations.Add(body, "paragraph", Props(("text", "1.1"), ("list", "outline"), ("level", "1")), null);
+        Assert.Equal(("chinese", "1"), (b.GetProps()["list"], b.GetProps()["level"]));
+        Assert.Equal(NumId(a), NumId(b));
+        Assert.Equal("true", c.GetProps()["restart"]);
+        Assert.NotEqual(NumId(a), NumId(c));
+        Assert.Equal(NumId(c), NumId(d)); // the item after the restart follows it
+        Assert.False(d.GetProps().ContainsKey("restart"));
+        Assert.Equal("outline", o.GetProps()["list"]);
+        var numbering = ((DocxDocument)doc).Main.NumberingDefinitionsPart!.Numbering!.OuterXml;
+        Assert.Contains("chineseCountingThousand", numbering);
+        Assert.Contains("（%2）", numbering);
+        Assert.Contains("%1.%2", numbering);
+        var joined = Mutations.Set(c, Props(("restart", "false")));
+        Assert.Equal(NumId(a), NumId(joined));
+        Assert.Equal(NumId(a), NumId(Mutations.Refresh(d)));
+        Assert.False(joined.GetProps().ContainsKey("restart"));
+        Assert.Equal("chinese", Mutations.Set(joined, Props(("list", "chinese"))).GetProps()["list"]); // the same kind again keeps counting
+        Assert.Equal(NumId(a), NumId(Mutations.Refresh(joined)));
+    }
+
     static string NumId(Node paragraph) =>
         XElement.Parse(paragraph.GetRaw()).Descendants().First(e => e.Name.LocalName == "numId").Attributes().First().Value;
 

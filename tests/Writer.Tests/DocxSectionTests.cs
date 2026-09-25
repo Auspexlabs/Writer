@@ -193,4 +193,72 @@ public class DocxSectionTests
         Assert.Equal(new[] { "paragraph", "paragraph", "paragraph" }, reopened.Root.Children.Single().Children.Select(c => c.Kind));
         Assert.DoesNotContain("pagebreak", Views.Outline(reopened.Root));
     }
+
+    [Fact]
+    public void A_paragraph_ends_a_section_with_its_own_page_setup()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        var first = Mutations.Add(body, "paragraph", Props(("text", "竖排的第一节"), ("sectionBreak", "nextPage"), ("orientation", "landscape"), ("columns", "2"), ("margin", "narrow")), null);
+        Mutations.Add(body, "paragraph", Props(("text", "第二节")), null);
+        Assert.Throws<WriterException>(() => Mutations.Set(PathResolver.Single(doc.Root, "/body/paragraph[2]"), Props(("columns", "2"))));
+        AssertValidSection(doc);
+
+        using var reopened = Reopen(doc);
+        var got = PathResolver.Single(reopened.Root, "/body/paragraph[1]").GetProps();
+        Assert.Equal(("nextPage", "landscape", "2", "narrow", "A4"), (got["sectionBreak"], got["orientation"], got["columns"], got["margin"], got["page"]));
+        Assert.False(PathResolver.Single(reopened.Root, "/body/paragraph[2]").GetProps().ContainsKey("sectionBreak"));
+        var root = reopened.Root.GetProps();
+        Assert.Equal(("portrait", "1"), (root["orientation"], root["columns"])); // the document's last section keeps its own
+
+        var p = Mutations.Set(PathResolver.Single(reopened.Root, "/body/paragraph[1]"), Props(("sectionBreak", "continuous")));
+        Assert.Equal(("continuous", "landscape"), (p.GetProps()["sectionBreak"], p.GetProps()["orientation"]));
+        p = Mutations.Set(p, Props(("sectionBreak", "none")));
+        Assert.False(p.GetProps().ContainsKey("sectionBreak"));
+        Assert.False(p.GetProps().ContainsKey("orientation"));
+        Assert.Null(((DocxDocument)reopened).Main.Document!.Body!.GetFirstChild<W.Paragraph>()!.ParagraphProperties);
+    }
+
+    [Fact]
+    public void Line_numbers_and_hyphenation_round_trip()
+    {
+        using var doc = new DocxAdapter().Create();
+        Mutations.Set(doc.Root, Props(("lineNumbers", "true"), ("hyphenation", "true")));
+        AssertValidSection(doc);
+        using var reopened = Reopen(doc);
+        var got = reopened.Root.GetProps();
+        Assert.Equal(("true", "true"), (got["lineNumbers"], got["hyphenation"]));
+        Mutations.Set(reopened.Root, Props(("lineNumbers", "false"), ("hyphenation", "false")));
+        got = reopened.Root.GetProps();
+        Assert.False(got.ContainsKey("lineNumbers"));
+        Assert.False(got.ContainsKey("hyphenation"));
+    }
+
+    [Fact]
+    public void Footnotes_and_endnotes_round_trip_at_their_offsets()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        var p = Mutations.Add(body, "paragraph", Props(("text", "Hello world")), null);
+        var note = Mutations.Add(p, "footnote", Props(("text", "First note"), ("at", "5")), null);
+        Mutations.Add(p, "footnote", Props(("kind", "endnote"), ("text", "Line one\nLine two")), null);
+        Assert.Equal("Hello world", p.GetProps()["text"]); // the marks are not text
+        var errors = new OpenXmlValidator().Validate(((DocxDocument)doc).Package).Where(e => e.Part is FootnotesPart or EndnotesPart || e.Part is MainDocumentPart).Select(e => e.Description).ToList();
+        Assert.Empty(errors);
+
+        using var reopened = Reopen(doc);
+        var notes = PathResolver.Query(reopened.Root, "//footnote").ToList();
+        Assert.Equal(2, notes.Count);
+        var (a, b) = (notes[0].GetProps(), notes[1].GetProps());
+        Assert.Equal(("footnote", "First note", "5"), (a["kind"], a["text"], a["at"]));
+        Assert.Equal(("endnote", "Line one\nLine two", "11"), (b["kind"], b["text"], b["at"]));
+        var n = PathResolver.Single(reopened.Root, $"//footnote[@id={a["id"]}]");
+        n = Mutations.Set(n, Props(("text", "Changed"), ("at", "0")));
+        Assert.Equal(("Changed", "0"), (n.GetProps()["text"], n.GetProps()["at"]));
+        Assert.Equal("Hello world", PathResolver.Single(reopened.Root, "/body/paragraph[1]").GetProps()["text"]);
+        PathResolver.Single(reopened.Root, "/body/paragraph[1]").Remove();
+        Assert.Empty(PathResolver.Query(reopened.Root, "//footnote"));
+        var main = ((DocxDocument)reopened).Main;
+        Assert.DoesNotContain(main.FootnotesPart!.Footnotes!.Elements<W.Footnote>(), f => f.Id?.Value > 0); // only the separators are left
+    }
 }

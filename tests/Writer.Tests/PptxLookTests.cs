@@ -66,16 +66,16 @@ public class PptxLookTests
         var title = slide.Children.Single(n => n.GetProps().GetValueOrDefault("placeholder") == "title");
         var subtitle = slide.Children.Single(n => n.GetProps().GetValueOrDefault("placeholder") == "subtitle");
         var t = Computed(title);
-        // colour and theme fonts from the master's titleStyle, size from the Title layout's own list style (60pt, not 44pt)
-        Assert.Equal(("000000", "Calibri Light", "60"), (t["color"], t["font"], t["size"]));
+        // colour, theme fonts and bold from the master's titleStyle, size from the Title Slide layout's own list style (48pt, not 36pt)
+        Assert.Equal(("000000", "Calibri Light", "48", "true"), (t["color"], t["font"], t["size"], t["bold"]));
         Assert.Equal("Microsoft YaHei", t["fontEa"]);
-        var s = Computed(subtitle);
-        Assert.Equal(("000000", "Calibri", "24"), (s["color"], s["font"], s["size"]));
+        var s = Computed(subtitle); // the layout's secondary text colour (tx2 → dk2)
+        Assert.Equal(("1F2937", "Calibri", "24"), (s["color"], s["font"], s["size"]));
 
         var (doc2, content) = Deck("Content");
         using var __ = doc2;
         var plainTitle = content.Children.Single(n => n.GetProps().GetValueOrDefault("placeholder") == "title");
-        Assert.Equal("44", Computed(plainTitle)["size"]);
+        Assert.Equal("36", Computed(plainTitle)["size"]);
     }
 
     [Fact]

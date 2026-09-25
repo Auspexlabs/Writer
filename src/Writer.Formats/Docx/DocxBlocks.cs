@@ -48,7 +48,7 @@ static class DocxBlocks
     public static Node Wrap(DocxDocument doc, OpenXmlElement element) => element switch
     {
         W.Paragraph p when DocxToc.HasTocField(p) => new DocxToc(doc, DocxToc.BareField(p)),
-        W.Paragraph p when DocxImage.IsPictureParagraph(p) => new DocxImage(doc, p),
+        W.Paragraph p when DocxImage.IsPictureParagraph(p) => DocxImage.Block(doc, p),
         W.Paragraph p when DocxPageBreak.IsPageBreak(p) => new DocxPageBreak(doc, p),
         W.Paragraph p => new DocxParagraph(doc, p),
         W.Table t => new DocxTable(doc, t),

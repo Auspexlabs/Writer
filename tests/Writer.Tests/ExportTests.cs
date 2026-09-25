@@ -20,7 +20,7 @@ public class HtmlTests
         Mutations.Add(body, "table", new Dictionary<string, string> { ["data"] = "[[\"a\",\"b\"],[\"1\",\"2\"]]" }, null);
         var html = HtmlWriter.Render(doc);
         Assert.Contains("<title>Report &lt;1&gt;</title>", html);
-        Assert.Contains("<h1>Report &lt;1&gt;</h1>", html);
+        Assert.Matches("<h1 style=\"[^\"]*font-size:16pt[^\"]*\">Report &lt;1&gt;</h1>", html); // Heading 1 as the template defines it, not the browser
         Assert.Contains("<p style=\"text-align:center\">Revenue <strong>grew</strong> <a href=\"https://x.y\">here</a></p>", html);
         Assert.Matches("<tr><td[^>]*>a</td><td[^>]*>b</td></tr>", html);
         Assert.Matches("<tr><td[^>]*>1</td><td[^>]*>2</td></tr>", html);

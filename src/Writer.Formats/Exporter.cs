@@ -18,6 +18,13 @@ public static class Exporter
     {
         if (!targetAdapter.CanWrite)
             throw new WriterException(ErrorCode.FormatReadonly, $"{targetAdapter.Format} cannot be written", "Export to md, docx, pptx, xlsx, mm, html or json.");
+        if (source is MindMap.MmDocument { FromXmind: true } && targetAdapter.Format == "mm") return (source, []); // an .xmind opens as this map already
+        // a compatibility format already is a Word, Excel or PowerPoint document in memory: hand it over as it is
+        if (source is Compat.CompatDocument compat && compat.Inner.Format == targetAdapter.Format)
+        {
+            compat.Inner.SourcePath = targetPath;
+            return (compat.Inner, compat.Warnings.ToList());
+        }
         if (source.Format == "mm" && targetAdapter.Format != "mm") return FromMindMap(source, targetAdapter, targetPath);
         var warnings = new List<string>();
         var target = targetAdapter.Create();

@@ -87,3 +87,25 @@ test('automatic text takes the colour Word gives it on the fill behind it: dark 
   assert.match(asked, /\[style\*="background"\]/);
   assert.match(asked, /\[data-ink\]/, 'marks left by a fill that went are found too');
 });
+
+test('Word pictures in paragraphs: the tree gives them with their place, the html carries it, and a save moves and places them by id', async () => {
+  const blocks = EN.blocksOf([
+    { kind: 'image', path: '/body/image[1]', props: { id: '2', width: '4cm', height: '3cm', wrap: 'inline' } },
+    { kind: 'paragraph', path: '/body/paragraph[1]', props: { text: 'Text' }, children: [{ kind: 'image', path: '/body/paragraph[1]/image[1]', props: { id: '5', width: '2cm', height: '2cm', wrap: 'square', x: '1cm', y: '0.5cm', xFrom: 'column', yFrom: 'paragraph' } }] },
+    { kind: 'paragraph', path: '/body/paragraph[2]', props: { text: 'More' } }], 'a.docx');
+  assert.equal(blocks[0].path, '//image[@id=2]', 'named by id: the same wherever it moves');
+  assert.deepEqual(blocks[1].pics.map(p => [p.path, p.place, p.width]), [['//image[@id=5]', { wrap: 'square', x: '1cm', y: '0.5cm', xFrom: 'column', yFrom: 'paragraph' }, 2 / 2.54 * 96]]);
+  assert.match(EN.blocksToHtml(blocks), /<p data-path="\/body\/paragraph\[1\]"><img data-path="\/\/image\[@id=5\]" data-fw="76" data-fh="76" data-w-wrap="square" data-w-x="1cm" data-w-y="0.5cm" data-w-xfrom="column" data-w-yfrom="paragraph" data-placed="1" src="[^"]+" style="max-width:100%;vertical-align:middle;width:76px;position:relative;float:left;margin:18.9px 12px 8px 37.8px">Text<\/p>/);
+  // the block picture dragged into paragraph 2 to float in front of its text, the floating one dragged out to stand on its own before paragraph 1
+  const moved = [Object.assign({}, blocks[0], { path: '//image[@id=5]', place: { wrap: 'inline' } }), Object.assign({}, blocks[1], { pics: undefined }),
+    Object.assign({}, blocks[2], { pics: [Object.assign({}, blocks[0], { kind: undefined, place: { wrap: 'front', x: '2cm', y: '1cm', xFrom: 'column', yFrom: 'paragraph' } })] })];
+  const calls = [], exec = async argv => { calls.push(argv.slice(2).join(' ')); return {}; };
+  const mv = EN.pictureMoves(blocks, moved);
+  assert.deepEqual([[...mv.out], [...mv.in].map(b => b.path)], [['//image[@id=2]'], ['//image[@id=5]']]);
+  await EN.planPicturesBefore('a.docx', blocks, moved, exec);
+  assert.equal(await EN.planDocxBlocks('a.docx', blocks.filter(o => !mv.out.has(o.path)), moved.filter(b => !mv.in.has(b)), exec), 0, 'the block diff leaves both pictures alone');
+  await EN.planPicturesAfter('a.docx', blocks, moved, exec, null, true);
+  assert.deepEqual(calls, ['//image[@id=5] --to /body --after /body/paragraph[1]', '//image[@id=2] --to /body/paragraph[2]', '//image[@id=5] --to /body --before /body/paragraph[1]', '//image[@id=2] --prop wrap=front --prop x=2cm --prop y=1cm']);
+  assert.deepEqual(EN.placeDiff({ wrap: 'square', xAlign: 'right', xFrom: 'margin', y: '0cm', yFrom: 'paragraph' }, { wrap: 'square', x: '3cm', y: '0cm', xFrom: 'column', yFrom: 'paragraph' }), { xFrom: 'column', x: '3cm' }, 'an offset replaces the alignment');
+  assert.deepEqual(EN.placeDiff({ wrap: 'front', x: '1cm' }, { wrap: 'inline' }), { wrap: 'inline' });
+});

@@ -69,8 +69,12 @@ public sealed class XlsxDocument : Document
     public override string Format => "xlsx";
     public override Node Root => new XlsxRoot(this);
 
+    /// <summary>The workbook counts days from 1904-01-01 (Excel for Mac's old default) instead of 1900.</summary>
+    internal bool Date1904 => Workbook.Workbook!.WorkbookProperties?.Date1904?.Value == true;
+
     public override void Save(Stream stream)
     {
+        Styles.Trim(Sheets.Select(s => s.Part));
         using var clone = Package.Clone(stream);
     }
 
@@ -168,29 +172,51 @@ public sealed class XlsxDocument : Document
         var calc = Workbook.Workbook!.CalculationProperties ??= new CalculationProperties { CalculationId = 0U };
         calc.FullCalculationOnLoad = true;
     }
+
+    /// <summary>Excel's calculation chain lists every formula cell; one that names a cell whose formula went away makes Excel repair
+    /// the file, so the part goes when formulas change. Excel writes a new one on save.</summary>
+    internal void DropCalcChain()
+    {
+        if (Workbook.CalculationChainPart is { } chain) Workbook.DeletePart(chain);
+    }
 }
 
 /// <summary>Shared string table access.</summary>
 sealed class XlsxStrings(WorkbookPart workbook)
 {
     List<string>? _cache;
+    Dictionary<string, int>? _plain; // text → index of an entry that is plain text (rich-text entries are never handed to another cell)
 
     public string Get(int index)
     {
-        _cache ??= workbook.SharedStringTablePart?.SharedStringTable?.Elements<SharedStringItem>().Select(i => i.InnerText).ToList() ?? [];
-        return index >= 0 && index < _cache.Count ? _cache[index] : "";
+        Load();
+        return index >= 0 && index < _cache!.Count ? _cache[index] : "";
     }
 
+    void Load()
+    {
+        if (_cache is not null) return;
+        _cache = [];
+        _plain = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var item in workbook.SharedStringTablePart?.SharedStringTable?.Elements<SharedStringItem>() ?? [])
+        {
+            _cache.Add(item.InnerText);
+            if (item.ChildElements.All(e => e is Text) && !_plain.ContainsKey(item.InnerText)) _plain[item.InnerText] = _cache.Count - 1;
+        }
+    }
+
+    /// <summary>The index of a shared string with this text: an existing plain entry when there is one, else a new one.</summary>
     public int Add(string text)
     {
-        _ = Get(0);
+        Load();
+        if (_plain!.TryGetValue(text, out var existing)) return existing;
         var part = workbook.SharedStringTablePart ?? workbook.AddNewPart<SharedStringTablePart>();
         var table = part.SharedStringTable ??= new SharedStringTable();
         table.Append(new SharedStringItem(new Text(text) { Space = SpaceProcessingModeValues.Preserve }));
         _cache!.Add(text);
-        var count = (uint)_cache.Count;
-        table.Count = count;
-        table.UniqueCount = count;
+        _plain[text] = _cache.Count - 1;
+        table.Count = (table.Count?.Value ?? (uint)(_cache.Count - 1)) + 1;
+        table.UniqueCount = (uint)_cache.Count;
         return _cache.Count - 1;
     }
 }

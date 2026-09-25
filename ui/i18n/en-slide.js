@@ -7,7 +7,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '没有幻灯片 · 点击左侧「＋ 新幻灯片」': 'No slides · click "+ New Slide" on the left',
   '单击此处添加备注': 'Click here to add notes',
   '＋': '+', '适应窗口': 'Fit to Window', '适应窗口 Ctrl+0': 'Fit to Window Ctrl+0',
-  '缩小 Ctrl+−': 'Zoom Out Ctrl+−', '放大 Ctrl+＋': 'Zoom In Ctrl+＋',
+  '缩小 Ctrl+−': 'Zoom Out Ctrl+−', '放大 Ctrl+＋': 'Zoom In Ctrl+＋', // i18n-ok: the full-width plus is the key's
   '输入缩放比例后回车（20–400，100 = 适应窗口）': 'Enter a zoom percentage and press Return (20–400, 100 = fit to window)',
 
   // ribbon tabs
@@ -20,14 +20,52 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '文字颜色': 'Text Color', '左对齐': 'Align Left', '居中': 'Center', '右对齐': 'Align Right',
   '垂直对齐': 'Vertical Align', '顶端': 'Top', '底端': 'Bottom',
   '• 列表': '• List', '1. 列表': '1. List', '行距': 'Line Spacing',
+  '减少缩进 ⇧Tab': 'Decrease Indent ⇧Tab', '增加缩进 Tab': 'Increase Indent Tab', '⇤': '⇤', '⇥': '⇥',
+  '段落': 'Paragraph', '段落间距': 'Paragraph Spacing', '段前': 'Before', '段后': 'After', '{n} 磅': '{n} pt',
+  '字距': 'Spacing', '字符间距': 'Character Spacing', '紧缩': 'Tight', '常规': 'Normal', '宽松': 'Loose', '很松': 'Very Loose', '极松': 'Extra Loose',
+  '分栏': 'Columns', '一栏': 'One Column', '两栏': 'Two Columns', '三栏': 'Three Columns',
+  '自动调整': 'Autofit', '不自动调整': 'Do Not Autofit', '溢出时缩排文字': 'Shrink Text on Overflow', '根据文字调整形状大小': 'Resize Shape to Fit Text',
+  '文字方向': 'Text Direction', '横排': 'Horizontal', '竖排': 'Vertical', '竖排（东亚）': 'Stacked (East Asian)', '所有文字旋转 270°': 'Rotate All Text 270°',
+  '艺术字': 'WordArt', '描边': 'Outline', '渐变填充': 'Gradient Fill', '描边 + 阴影': 'Outline + Shadow', '渐变 + 阴影': 'Gradient + Shadow', '空心描边': 'Hollow Outline',
   '撤销 Ctrl+Z': 'Undo Ctrl+Z', '重做 Ctrl+Y': 'Redo Ctrl+Y',
 
   // slide management: new/duplicate/delete, layouts (office-io.js LAYOUTS, used at the call site)
   '新建幻灯片': 'New Slide', '版式': 'Layout', '复制@@dup': 'Duplicate', '复制幻灯片': 'Duplicate Slide',
   '删除': 'Delete', '删除幻灯片': 'Delete Slide', '至少保留一页': 'Keep at least one slide',
   '从此页放映': 'Play from This Slide',
-  '标题幻灯片': 'Title Slide', '标题和内容': 'Title and Content', '两栏内容': 'Two Content',
-  '数据卡片': 'Stat Cards', '节标题': 'Section Header', '仅标题': 'Title Only', '空白': 'Blank',
+  '标题幻灯片': 'Title Slide', '标题和内容': 'Title and Content', '节标题': 'Section Header', '两栏内容': 'Two Content',
+  '比较': 'Comparison', '仅标题': 'Title Only', '空白': 'Blank', '内容与标题': 'Content with Caption',
+  '图片与标题': 'Picture with Caption', '引用': 'Quote',
+
+  // ✦ 美化: the assistant designs a slide or the deck (the requests it is sent)
+  '美化': 'Polish', '让助手美化本页或整份': 'Have the assistant polish this slide or the whole deck',
+  '美化本页': 'Polish This Slide', '美化整份': 'Polish the Whole Deck',
+  '美化第 {n} 页幻灯片：统一字号层级、对齐与留白，缩小溢出的文字，需要时换版式或配色；只改这一页，不改动文字内容。':
+    'Polish slide {n}: unify the type scale, alignment and margins, shrink overflowing text, and change the layout or palette if needed; change only this slide and leave the wording as it is.',
+  '美化整份幻灯片：先为全稿定一套配色（palette）和字体（fonts），再逐页统一字号层级、对齐与留白，缩小溢出的文字，需要时换版式；不改动文字内容。':
+    'Polish the whole deck: first pick one palette and one pair of fonts for all of it, then go slide by slide to unify the type scale, alignment and margins, shrink overflowing text, and change layouts where needed; leave the wording as it is.',
+
+  // 动画 and 切换 (office-io.js FX / TRANS at the call site)
+  '进入': 'Entrance', '退出@@fx': 'Exit', '出现': 'Appear', '浮入': 'Float In', '擦除': 'Wipe', '放大/缩小': 'Grow/Shrink', '陀螺旋': 'Spin', '透明': 'Transparency',
+  '消失': 'Disappear', '淡出': 'Fade Out', '飞出': 'Fly Out', '收缩': 'Shrink', '其他效果': 'Other effect', '分割': 'Split', '覆盖': 'Cover', '平滑': 'Morph',
+  '单击时': 'On Click', '与上一动画同时': 'With Previous', '上一动画之后': 'After Previous', '动画开始方式': 'Start', '持续时间': 'Duration', '持续时间（秒）': 'Duration (seconds)',
+  '延迟': 'Delay', '延迟（秒）': 'Delay (seconds)', '添加进入动画': 'Add an entrance effect', '添加强调动画': 'Add an emphasis effect', '添加退出动画': 'Add an exit effect',
+  '动画窗格': 'Animation Pane', '其他对象': 'Other object', '先在动画窗格中选中一个动画': 'Select an effect in the Animation Pane first',
+  '选中对象后，从「进入」「强调」「退出」添加动画': 'Select an object, then add an effect from Entrance, Emphasis or Exit',
+
+  '拖动以调整备注窗格的高度': 'Drag to resize the notes pane',
+  // sections and 幻灯片浏览
+  '默认节': 'Default Section', '无标题节': 'Untitled Section', '新增节': 'Add Section', '删除节': 'Remove Section', '节名': 'Section name', '{n} 张': '{n} slides',
+  '幻灯片浏览': 'Slide Sorter', '普通视图': 'Normal',
+  // 放映: presenter view (office-io.js presenterHtml), tools and keys
+  '演示者视图': 'Presenter View', '循环放映': 'Loop', '放映到最后一张后从头开始，按 Esc 结束': 'Start over after the last slide; Esc ends the show',
+  '上一张': 'Previous', '下一张': 'Next', '黑屏': 'Black Screen', '重置计时': 'Reset Timer', '结束放映': 'End Show', '放映结束': 'End of show', '备注@@notes': 'Notes', '跳转到第 {n} 张': 'Go to slide {n}',
+
+  // 表格工具 (office-io.js TABLE_STYLES at the call site)
+  '表格工具': 'Table Tools', '上方插入行': 'Insert Above', '下方插入行': 'Insert Below', '左侧插入列': 'Insert Left', '右侧插入列': 'Insert Right',
+  '删除行': 'Delete Row', '删除列': 'Delete Column', '合并单元格': 'Merge Cells', '拆分单元格': 'Split Cell',
+  '单元格填充': 'Cell Fill', '单元格边框': 'Cell Borders', '表格样式': 'Table Styles', '标题行': 'Header Row', '镶边行': 'Banded Rows', '第一列': 'First Column',
+  '中等样式 2': 'Medium Style 2', '浅色样式 1': 'Light Style 1', '浅色样式 2': 'Light Style 2', '深色样式 1': 'Dark Style 1', '网格': 'Table Grid', '无样式': 'No Style',
 
   // insert tab
   '文本框': 'Text Box', '形状': 'Shape', '表格': 'Table', '日期': 'Date', '页码': 'Page Number',
@@ -38,7 +76,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '背景': 'Background', "本页背景颜色": "This slide's background color",
   '背景应用到全部': 'Apply Background to All', '重置背景': 'Reset Background',
   '幻灯片大小': 'Slide Size', '宽屏 16:9': 'Widescreen (16:9)', '标准 4:3': 'Standard (4:3)',
-  '墨色': 'Ink', '素白': 'Paper', '海蓝': 'Sea', '陶土': 'Clay',
+  '墨色': 'Ink', '素白': 'Paper', '海蓝': 'Sea', '陶土': 'Clay', '雾灰': 'Mist', '暖沙': 'Sand', '玫红': 'Rose', '夜蓝': 'Night',
 
   // transitions + animations (shared words first)
   '无': 'None', '缩放': 'Zoom', '预览': 'Preview', '应用到全部': 'Apply to All',
@@ -63,16 +101,28 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '透明度': 'Transparency', '更改形状': 'Change Shape',
   '旋转': 'Rotate', '向右旋转 90°': 'Rotate Right 90°', '向左旋转 90°': 'Rotate Left 90°', '重置旋转': 'Reset Rotation',
 
+  // shape gallery (office-io.js SHAPE_GALLERY), outline, gradients, groups, exact size
+  '基本形状': 'Basic Shapes', '直角三角形': 'Right Triangle', '平行四边形': 'Parallelogram', '梯形': 'Trapezoid', '五边形': 'Pentagon', '八边形': 'Octagon',
+  '右箭头': 'Right Arrow', '左箭头': 'Left Arrow', '上箭头': 'Up Arrow', '下箭头': 'Down Arrow', '左右箭头': 'Left-Right Arrow', '燕尾形': 'Chevron',
+  '星形与标注': 'Stars and Callouts', '四角星': '4-Point Star', '六角星': '6-Point Star', '矩形标注': 'Rectangular Callout', '圆角矩形标注': 'Rounded Rectangular Callout', '椭圆标注': 'Oval Callout',
+  '直线': 'Line', '双箭头': 'Double Arrow', '肘形连接符': 'Elbow Connector', '线型': 'Line Type',
+  '实线': 'Solid', '短划线': 'Dash', '长划线': 'Long Dash', '圆点': 'Dot', '划线–点': 'Dash-Dot', '方点划线': 'Square Dot',
+  '三角箭头': 'Triangle Arrow', '开放箭头': 'Open Arrow', '燕尾箭头': 'Stealth Arrow', '圆形': 'Oval',
+  '线条': 'Line', '线条颜色': 'Line Color', '线条粗细': 'Line Weight', '虚线': 'Dashes', '虚线类型': 'Dash Type',
+  '起点箭头': 'Begin Arrow', '终点箭头': 'End Arrow',
+  '渐变': 'Gradient', '无渐变': 'No Gradient', '浅 → 深': 'Light → Dark', '深 → 浅': 'Dark → Light', '左 → 右': 'Left → Right', '对角': 'Diagonal', '强调色 → 卡片色': 'Accent → Card',
+  '组合': 'Group', '取消组合': 'Ungroup', '先选中两个以上的对象': 'Select two or more objects first', '锁定纵横比': 'Lock Aspect Ratio',
+  '宽': 'W', '高': 'H',
+
   // status bar
   '幻灯片 {i} / {n}': 'Slide {i} / {n}',
   '{type}  X {x}  Y {y}  宽 {w}  高 {h}{rot}': '{type}  X {x}  Y {y}  W {w}  H {h}{rot}',
   '旋转 {deg}°': 'Rotation {deg}°', '主题「{name}」': 'Theme "{name}"',
 
-  // new-slide/new-object placeholder content (office-io.js, guarded — new slides only, existing ones are untouched)
-  '单击添加标题': 'Click to add title', '单击添加副标题': 'Click to add subtitle',
-  '单击添加文本': 'Click to add text', '单击输入文本': 'Click to enter text',
-  '左栏要点': 'Left column bullet point', '右栏要点': 'Right column bullet point',
-  '指标': 'Stat', '标题 {n}': 'Header {n}',
+  // placeholder prompts (office-io.js: drawn over an empty placeholder, never part of its text) and new-object content
+  '单击此处添加标题': 'Click to add title', '单击此处添加副标题': 'Click to add subtitle',
+  '单击此处添加文本': 'Click to add text', '单击此处添加图片': 'Click to add picture',
+  '单击输入文本': 'Click to enter text', '标题 {n}': 'Header {n}',
   "暂不支持 .{ext} 文件": "Doesn't support .{ext} files yet",
   '引擎还没有就绪': "The engine isn't ready yet",
 

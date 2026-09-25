@@ -6,7 +6,7 @@ namespace Writer.Formats.Markdown;
 public sealed class MdAdapter : IFormatAdapter
 {
     public string Format => "md";
-    public IReadOnlyList<string> Extensions { get; } = [".md", ".markdown"];
+    public IReadOnlyList<string> Extensions { get; } = [".md", ".markdown", ".txt"];
     public bool CanWrite => true;
 
     public Document Create() => new MdDocument("", hadBom: false);

@@ -300,7 +300,7 @@ public class DocxRevisionTests
     }
 
     [Fact]
-    public void Edits_inside_links_and_insertions_split_them_and_stay_valid()
+    public void Edits_inside_links_and_insertions_keep_them_whole_and_stay_valid()
     {
         using var doc = new DocxAdapter().Create();
         var p = Mutations.Add(doc.Root.Children.Single(), "paragraph",
@@ -311,8 +311,11 @@ public class DocxRevisionTests
         const string url = "https://example.com";
         var runs = p.Children.Where(c => c.Kind == "run")
             .Select(c => (c.Text, c.GetProps().GetValueOrDefault("link"), c.GetProps().GetValueOrDefault("change"), c.GetProps().GetValueOrDefault("author"))).ToList();
-        Assert.Equal([("Go ", null, null, null), ("to ", url, null, null), ("our", url, null, null), (" site", url, null, null), (" ", null, null, null),
-            ("now ", null, "inserted", "Ann"), ("and", null, "inserted", "Ann"), (" later", null, "inserted", "Ann")], runs);
+        Assert.Equal([("Go ", null, null, null), ("to our site", url, null, null), (" ", null, null, null), ("now and later", null, "inserted", "Ann")], runs);
+        var body = ((DocxDocument)doc).Main.Document!.Body!;
+        Assert.Single(body.Descendants<W.Hyperlink>());
+        Assert.Single(((DocxDocument)doc).Main.HyperlinkRelationships);
+        Assert.Single(body.Descendants<W.InsertedRun>());
         var ids = System.Text.RegularExpressions.Regex.Matches(p.GetRaw(), "w:id=\"(\\d+)\"").Select(m => m.Groups[1].Value).ToList();
         Assert.Equal(ids.Distinct().Count(), ids.Count);
         AssertValid(doc);

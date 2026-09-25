@@ -23,7 +23,8 @@ public class ChatTests : IDisposable
             Assert.Equal("k-1", request.Headers.GetValues("x-api-key").Single());
             Requests.Add(await request.Content!.ReadAsStringAsync(ct));
             var (status, body) = replies[Math.Min(_n++, replies.Length - 1)];
-            return new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+            // a body of server-sent events is what the real API returns to stream: true; a JSON body is what a proxy that ignores it returns
+            return new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, body.StartsWith("event:", StringComparison.Ordinal) ? "text/event-stream" : "application/json") };
         }
     }
 
@@ -204,6 +205,25 @@ public class ChatTests : IDisposable
     }
 
     [Fact]
+    public async Task A_slide_deck_puts_the_slide_design_rules_and_their_tools_in_the_prompt()
+    {
+        var deck = Path.Combine(_dir, "deck.pptx");
+        using (var doc = new Writer.Formats.Pptx.PptxAdapter().Create()) using (var fs = File.Create(deck)) doc.Save(fs);
+        File.WriteAllBytes(Path.Combine(_dir, "doc.docx"), Docx(P("Text")));
+        var api = new FakeApi((HttpStatusCode.OK, """{"content":[{"type":"text","text":"Done."}],"stop_reason":"end_turn"}"""));
+        var chat = new Chat("k-1", "model-x", "https://fake.test", api);
+        using var history = JsonDocument.Parse(Messages(("user", "美化第 1 页幻灯片")));
+
+        await chat.RunAsync(deck, _dir, history.RootElement, (_, _) => Task.CompletedTask, CancellationToken.None);
+
+        var system = JsonDocument.Parse(api.Requests.Single()).RootElement.GetProperty("system").GetString()!;
+        Assert.Contains("## Slide design", system);
+        foreach (var tool in new[] { "palette=", "fonts=", "layout=", "align=edge:paths", "distribute=axis:paths", "fit=shrink", "overflow=true" }) Assert.Contains(tool, system);
+        Assert.Contains("Colour palette and fonts for the whole deck", system); // the properties themselves are in the command reference that follows
+        Assert.DoesNotContain("## Slide design", Chat.SystemPrompt(Path.Combine(_dir, "doc.docx"), _dir));
+    }
+
+    [Fact]
     public async Task Web_search_and_web_fetch_are_offered_alongside_writer_by_default_and_dropped_when_web_is_off()
     {
         var api = new FakeApi((HttpStatusCode.OK, """{"content":[{"type":"text","text":"Hi."}],"stop_reason":"end_turn"}"""));
@@ -212,12 +232,12 @@ public class ChatTests : IDisposable
 
         await chat.RunAsync(null, _dir, history.RootElement, (_, _) => Task.CompletedTask, CancellationToken.None);
         var on = JsonDocument.Parse(api.Requests[0]).RootElement;
-        Assert.Equal(["writer", "web_search", "web_fetch"], on.GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
+        Assert.Equal(["writer", "batch", "plan", "web_search", "web_fetch"], on.GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
         Assert.Contains("Use web_search and web_fetch", on.GetProperty("system").GetString());
 
         await chat.RunAsync(null, _dir, history.RootElement, (_, _) => Task.CompletedTask, CancellationToken.None, web: false);
         var off = JsonDocument.Parse(api.Requests[1]).RootElement;
-        Assert.Equal(["writer"], off.GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
+        Assert.Equal(["writer", "batch", "plan"], off.GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
         Assert.DoesNotContain("web_search", off.GetProperty("system").GetString());
     }
 
@@ -268,15 +288,16 @@ public class ChatTests : IDisposable
     }
 
     [Fact]
-    public async Task OpenAi_streams_text_deltas_into_one_text_event()
+    public async Task OpenAi_streams_text_deltas_as_they_arrive_then_the_whole_text()
     {
         var api = new FakeOpenAi((HttpStatusCode.OK, Sse(Delta("""{"role":"assistant","content":"Hel"}"""), Delta("""{"content":"lo"}"""), Delta("{}", "stop"))));
         var chat = new Chat("k-1", "gpt-x", "https://fake.test/v1/", api, openAi: true);
 
         var events = await Run(chat, null, _dir, ("user", "hi"));
 
-        Assert.Equal(["text", "done"], events.Select(e => e.Name));
-        Assert.Equal("Hello", events[0].Data.GetProperty("text").GetString());
+        Assert.Equal(["delta", "delta", "text", "done"], events.Select(e => e.Name));
+        Assert.Equal(["Hel", "lo"], events.Take(2).Select(e => e.Data.GetProperty("text").GetString()));
+        Assert.Equal("Hello", events[2].Data.GetProperty("text").GetString());
         var (url, auth, body) = api.Requests.Single();
         Assert.Equal("https://fake.test/v1/chat/completions", url);
         Assert.Equal("Bearer k-1", auth);
@@ -305,10 +326,11 @@ public class ChatTests : IDisposable
 
         var events = await Run(chat, file, _dir, ("user", "Change the first paragraph to Hi"));
 
-        Assert.Equal(["tool", "text", "done"], events.Select(e => e.Name));
+        Assert.Equal(["tool", "delta", "text", "done"], events.Select(e => e.Name));
         Assert.Equal("set doc.docx /body/paragraph[1] --prop text=Hi", events[0].Data.GetProperty("command").GetString());
         Assert.Equal(0, events[0].Data.GetProperty("code").GetInt32());
-        Assert.Equal("Done.", events[1].Data.GetProperty("text").GetString());
+        Assert.True(events[0].Data.GetProperty("wrote").GetBoolean());
+        Assert.Equal("Done.", events[2].Data.GetProperty("text").GetString());
         using (var doc = OpenDocx(File.ReadAllBytes(file))) Assert.Equal("Hi", doc.Root.Children[0].Children[0].Text);
 
         var second = api.Requests[1].Body.GetProperty("messages");
@@ -338,8 +360,9 @@ public class ChatTests : IDisposable
 
         var events = await Run(chat, null, _dir, ("user", "What does it say?"));
 
-        Assert.Equal(["text", "tool", "tool", "text", "done"], events.Select(e => e.Name));
+        Assert.Equal(["delta", "text", "tool", "tool", "delta", "text", "done"], events.Select(e => e.Name));
         Assert.Equal(["view doc.docx text", "view doc.docx outline"], events.Where(e => e.Name == "tool").Select(e => e.Data.GetProperty("command").GetString()));
+        Assert.All(events.Where(e => e.Name == "tool"), e => Assert.False(e.Data.GetProperty("wrote").GetBoolean()));
         Assert.Null(api.Requests[0].Auth); // no key, no Authorization header
         var second = api.Requests[1].Body.GetProperty("messages");
         Assert.Equal(["a", "b"], second[2].GetProperty("tool_calls").EnumerateArray().Select(c => c.GetProperty("id").GetString()));
@@ -355,9 +378,9 @@ public class ChatTests : IDisposable
         async Task<JsonElement> Failing(HttpMessageHandler handler, bool openAi = true)
         {
             var events = await Run(new Chat(key, "m", "https://fake.test", handler, openAi), null, _dir, ("user", "hi"));
-            Assert.Equal("error", events.Single().Name);
-            Assert.DoesNotContain(key, events[0].Data.GetRawText());
-            return events[0].Data;
+            Assert.Equal("error", events[^1].Name); // text streamed before a mid-stream error stays on screen; the error follows it
+            Assert.All(events, e => Assert.DoesNotContain(key, e.Data.GetRawText()));
+            return events[^1].Data;
         }
 
         var unauthorized = await Failing(new FakeOpenAi((HttpStatusCode.Unauthorized, $$$"""{"error":{"message":"Incorrect API key provided: {{{key}}}","type":"invalid_request_error"}}""")));
@@ -394,7 +417,7 @@ public class ChatTests : IDisposable
 
         var events = await Run(chat, null, _dir, ("user", "Summarise it"), ("assistant", "It is about Q3."), ("user", "Shorter"));
 
-        Assert.Equal(["text", "done"], events.Select(e => e.Name));
+        Assert.Equal(["delta", "text", "done"], events.Select(e => e.Name));
         Assert.Equal(2, api.Requests.Count);
         var retried = api.Requests[1].Body.GetProperty("messages");
         Assert.Equal(["system", "user"], retried.EnumerateArray().Select(m => m.GetProperty("role").GetString()));
@@ -417,12 +440,143 @@ public class ChatTests : IDisposable
 
         var events = await Run(chat, null, _dir, ("user", "hi"));
 
-        Assert.Equal(["text", "done"], events.Select(e => e.Name));
+        Assert.Equal(["delta", "text", "done"], events.Select(e => e.Name));
         Assert.Equal(2, api.Requests.Count);
         Assert.False(api.Requests[0].Body.TryGetProperty("reasoning_effort", out _), "older models refuse the parameter, so it is not sent up front");
         Assert.Equal("none", api.Requests[1].Body.GetProperty("reasoning_effort").GetString());
         Assert.Null(await chat.TestAsync(CancellationToken.None));
         Assert.Equal(3, api.Requests.Count); // from then on it goes with the first request
+    }
+
+    [Fact]
+    public async Task Anthropic_streams_text_deltas_and_tool_input_pieces_from_the_event_stream()
+    {
+        var file = Path.Combine(_dir, "doc.docx");
+        File.WriteAllBytes(file, Docx(P("Old text")));
+        static string Ev(string type, string json) => "event: " + type + "\ndata: " + json + "\n\n";
+        var streamed = Ev("message_start", """{"type":"message_start","message":{"id":"m1","role":"assistant","content":[]}}""")
+            + Ev("content_block_start", """{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}""")
+            + Ev("content_block_delta", """{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Let me "}}""")
+            + Ev("content_block_delta", """{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"look."}}""")
+            + Ev("content_block_stop", """{"type":"content_block_stop","index":0}""")
+            + Ev("content_block_start", """{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"t1","name":"writer","input":{}}}""")
+            + Ev("content_block_delta", """{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"command\": \"set doc.docx /body/para"}}""")
+            + Ev("content_block_delta", """{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"graph[1] --prop text=Hi\"}"}}""")
+            + Ev("content_block_stop", """{"type":"content_block_stop","index":1}""")
+            + Ev("message_delta", """{"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":9}}""")
+            + Ev("message_stop", """{"type":"message_stop"}""");
+        var api = new FakeApi((HttpStatusCode.OK, streamed), (HttpStatusCode.OK, """{"content":[{"type":"text","text":"Done."}],"stop_reason":"end_turn"}"""));
+        var chat = new Chat("k-1", "model-x", "https://fake.test", api);
+
+        var events = await Run(chat, file, _dir, ("user", "Change the first paragraph to Hi"));
+
+        Assert.Equal(["delta", "delta", "text", "tool", "text", "done"], events.Select(e => e.Name));
+        Assert.Equal(["Let me ", "look."], events.Take(2).Select(e => e.Data.GetProperty("text").GetString()));
+        Assert.Equal("Let me look.", events[2].Data.GetProperty("text").GetString());
+        Assert.Equal(("set doc.docx /body/paragraph[1] --prop text=Hi", 0, true), (events[3].Data.GetProperty("command").GetString(), events[3].Data.GetProperty("code").GetInt32(), events[3].Data.GetProperty("wrote").GetBoolean()));
+        using (var doc = OpenDocx(File.ReadAllBytes(file))) Assert.Equal("Hi", doc.Root.Children[0].Children[0].Text);
+        var first = JsonDocument.Parse(api.Requests[0]).RootElement;
+        Assert.True(first.GetProperty("stream").GetBoolean());
+        var transcript = JsonDocument.Parse(api.Requests[1]).RootElement.GetProperty("messages")[1].GetProperty("content");
+        Assert.Equal("Let me look.", transcript[0].GetProperty("text").GetString());
+        Assert.Equal(("tool_use", "t1", "set doc.docx /body/paragraph[1] --prop text=Hi"), (transcript[1].GetProperty("type").GetString(), transcript[1].GetProperty("id").GetString(), transcript[1].GetProperty("input").GetProperty("command").GetString()));
+    }
+
+    [Fact]
+    public async Task Batch_tool_lands_its_commands_together_under_one_label_and_writes_nothing_when_one_fails()
+    {
+        var file = Path.Combine(_dir, "doc.docx");
+        File.WriteAllBytes(file, Docx(P("One"), P("Two")));
+        var api = new FakeApi(
+            (HttpStatusCode.OK, """{"content":[{"type":"tool_use","id":"b1","name":"batch","input":{"label":"正在改第 1 节…","commands":["set doc.docx /body/paragraph[1] --prop text=Eins","add doc.docx /body --type paragraph --prop md=\"**Drei**\" --after /body/paragraph[2]"]}}],"stop_reason":"tool_use"}"""),
+            (HttpStatusCode.OK, """{"content":[{"type":"tool_use","id":"b2","name":"batch","input":{"commands":["set doc.docx /body/paragraph[2] --prop text=Zwei","set doc.docx /body/paragraph[9] --prop text=Nein"]}}],"stop_reason":"tool_use"}"""),
+            (HttpStatusCode.OK, """{"content":[{"type":"text","text":"改好了第 1 节。"}],"stop_reason":"end_turn"}"""));
+        var chat = new Chat("k-1", "model-x", "https://fake.test", api);
+
+        var events = await Run(chat, file, _dir, ("user", "改一下"));
+
+        Assert.Equal(["tool", "tool", "text", "done"], events.Select(e => e.Name));
+        var good = events[0].Data;
+        Assert.Equal(("正在改第 1 节…", 0, true), (good.GetProperty("command").GetString(), good.GetProperty("code").GetInt32(), good.GetProperty("wrote").GetBoolean()));
+        Assert.Contains("\"commands\": 2", good.GetProperty("output").GetString());
+        var bad = events[1].Data;
+        Assert.Equal(("批量修改 2 条", false), (bad.GetProperty("command").GetString(), bad.GetProperty("wrote").GetBoolean()));
+        Assert.NotEqual(0, bad.GetProperty("code").GetInt32());
+        Assert.Contains("Command 2 of 2 failed, nothing was written", bad.GetProperty("output").GetString());
+        using var doc = OpenDocx(File.ReadAllBytes(file));
+        Assert.Equal(["Eins", "Two", "Drei"], doc.Root.Children[0].Children.Select(p => p.Text)); // the first batch whole, the second not at all
+        var results = JsonDocument.Parse(api.Requests[2]).RootElement.GetProperty("messages")[4].GetProperty("content");
+        Assert.True(results[0].GetProperty("is_error").GetBoolean()); // the failure goes back to the model, and the turn goes on
+        var schema = JsonDocument.Parse(api.Requests[0]).RootElement.GetProperty("tools")[1];
+        Assert.Equal("batch", schema.GetProperty("name").GetString());
+        Assert.Equal("commands", schema.GetProperty("input_schema").GetProperty("required")[0].GetString());
+    }
+
+    [Fact]
+    public async Task Plan_tool_shows_as_a_step_and_writes_nothing()
+    {
+        var api = new FakeApi(
+            (HttpStatusCode.OK, """{"content":[{"type":"tool_use","id":"p1","name":"plan","input":{"text":"1. 读第 2 节\n2. 改写\n3. 补表格"}}],"stop_reason":"tool_use"}"""),
+            (HttpStatusCode.OK, """{"content":[{"type":"text","text":"ok"}],"stop_reason":"end_turn"}"""));
+        var chat = new Chat("k-1", "model-x", "https://fake.test", api);
+
+        var events = await Run(chat, null, _dir, ("user", "go"));
+
+        var step = events.Single(e => e.Name == "tool").Data;
+        Assert.Equal(("计划 1. 读第 2 节 / 2. 改写 / 3. 补表格", 0, false), (step.GetProperty("command").GetString(), step.GetProperty("code").GetInt32(), step.GetProperty("wrote").GetBoolean()));
+        Assert.Contains("Plan noted", step.GetProperty("output").GetString());
+    }
+
+    [Fact]
+    public void Each_format_gets_its_own_rules_and_a_long_document_is_shown_as_its_structure()
+    {
+        var docx = Path.Combine(_dir, "doc.docx");
+        File.WriteAllBytes(docx, Docx(P("Heading", "Heading1"), P("Text")));
+        var word = Chat.SystemPrompt(docx, _dir);
+        Assert.Contains("## Word (docx)", word);
+        Assert.Contains("## Current outline", word);
+        Assert.Contains("/body/heading[1]", word);
+        foreach (var verb in new[] { "search ", "section ", "replace ", "formula ", "batch " }) Assert.Contains(verb, word); // the command reference lists them
+        Assert.DoesNotContain("## Excel", word);
+        Assert.DoesNotContain("## Markdown", word);
+
+        var md = Path.Combine(_dir, "notes.md");
+        File.WriteAllText(md, "# T\n\n" + string.Join("\n\n", Enumerable.Range(1, 700).Select(i => $"Paragraph number {i} with some words in it")) + "\n");
+        var markdown = Chat.SystemPrompt(md, _dir);
+        Assert.Contains("## Markdown (md)", markdown);
+        Assert.Contains("## Structure", markdown);
+        Assert.DoesNotContain("## Current outline", markdown);
+        Assert.Contains("700 paragraphs  /body/paragraph[1] … /body/paragraph[700]", markdown);
+        Assert.True(markdown.Length < word.Length + 4000, "the structure keeps a long document short");
+
+        var xlsx = Path.Combine(_dir, "book.xlsx");
+        using (var book = new Writer.Formats.Xlsx.XlsxAdapter().Create())
+        {
+            Writer.Core.Mutations.Set(Writer.Core.PathResolver.Single(book.Root, "/sheet[1]/range[A1:B3]"), new Dictionary<string, string> { ["values"] = """[["Name","Score"],["Ann",90],["Bob",80]]""" });
+            using var fs = File.Create(xlsx);
+            book.Save(fs);
+        }
+        var excel = Chat.SystemPrompt(xlsx, _dir);
+        Assert.Contains("## Excel (xlsx)", excel);
+        Assert.Contains("## Structure", excel);
+        Assert.Contains("header (row 1): A Name | B Score", excel);
+        Assert.Contains("row 2: Ann | 90", excel);
+        Assert.Contains("sort=", excel); // the range's new properties are in the command reference
+    }
+
+    [Fact]
+    public void Writes_tells_reading_commands_from_writing_ones()
+    {
+        Assert.True(Chat.Writes(["set", "a.docx", "/body/paragraph[1]", "--prop", "text=x"]));
+        Assert.True(Chat.Writes(["writer", "section", "a.md", "/body/heading[1]", "--md", "# T"]));
+        Assert.True(Chat.Writes(["section", "a.md", "/body/heading[1]", "--remove"]));
+        Assert.True(Chat.Writes(["replace", "a.docx", "--find", "a", "--with", "b"]));
+        Assert.True(Chat.Writes(["formula", "a.xlsx", "/sheet[1]/cell[A1]", "SUM(B1:B2)"]));
+        Assert.False(Chat.Writes(["section", "a.md", "/body/heading[1]"]));
+        Assert.False(Chat.Writes(["replace", "a.docx", "--find", "a", "--preview"]));
+        Assert.False(Chat.Writes(["formula", "a.xlsx", "/sheet[1]/cell[A1]", "SUM(B1:B2)", "--check"]));
+        Assert.False(Chat.Writes(["view", "a.docx", "structure"]));
+        Assert.False(Chat.Writes(["search", "a.docx", "set"]));
     }
 
     public void Dispose() => Directory.Delete(_dir, true);

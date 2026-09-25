@@ -19,6 +19,9 @@ sealed class XlsxRoot(XlsxDocument doc) : Node
     {
         var props = new Dictionary<string, string> { ["format"] = "xlsx", ["sheets"] = doc.Sheets.Count.ToString(CultureInfo.InvariantCulture) };
         if (doc.Package.PackageProperties.Title is { Length: > 0 } title) props["title"] = title;
+        var (font, size) = doc.Styles.Normal;
+        if (font is not null) props["font"] = font;
+        if (size is { } points) props["size"] = points.ToString("0.##", CultureInfo.InvariantCulture);
         return props;
     }
 
@@ -48,6 +51,19 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
     internal string SheetName => sheet.Name?.Value ?? "";
     internal XlsxLayout.Grid Grid => new(Ws);
 
+    Dictionary<uint, Cell>? _masters;
+
+    /// <summary>The cell holding the text of shared-formula group si (found once per projection of the sheet).</summary>
+    internal Cell? SharedMaster(uint si)
+    {
+        _masters ??= Data.Descendants<CellFormula>()
+            .Where(f => f.FormulaType?.InnerText == "shared" && f.SharedIndex?.Value is not null && f.Text.Length > 0 && f.Parent is Cell)
+            .GroupBy(f => f.SharedIndex!.Value).ToDictionary(g => g.Key, g => (Cell)g.First().Parent!);
+        return _masters.GetValueOrDefault(si);
+    }
+
+    internal void ForgetShared() => _masters = null;
+
     protected override IEnumerable<Node> ProjectChildren() =>
         Data.Elements<Row>().Where(r => r.RowIndex?.Value is not null).Select(r => (Node)new XlsxRow(doc, this, (int)r.RowIndex!.Value)).Concat(XlsxCharts.Of(doc, this)).Concat(XlsxImages.Of(doc, this));
 
@@ -63,7 +79,13 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
         if (XlsxLayout.Widths(Ws) is { } widths) props["widths"] = widths;
         if (XlsxLayout.Heights(Data) is { } heights) props["heights"] = heights;
         if (XlsxLayout.Freeze(Ws) is { } freeze) props["freeze"] = freeze;
+        if (XlsxLayout.Gridlines(Ws) is { } gridlines) props["gridlines"] = gridlines;
         if (XlsxLayout.Filter(Ws) is { } filter) props["filter"] = filter;
+        if (XlsxRules.Filters(Ws) is { } filters) props["filters"] = filters;
+        if (XlsxRules.Cf(Ws, doc.Styles) is { } cf) props["cf"] = cf;
+        if (XlsxRules.Validations(Ws) is { } validations) props["validations"] = validations;
+        if (XlsxRules.Hidden(Ws) is { } hidden) props["hidden"] = hidden;
+        if (XlsxRules.TabColor(Ws, doc.Styles) is { } color) props["color"] = color;
         return props;
     }
 
@@ -94,7 +116,13 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
             case "widths": XlsxLayout.SetWidths(Ws, value); break;
             case "heights": XlsxLayout.SetHeights(Data, value); break;
             case "freeze": XlsxLayout.SetFreeze(Ws, value); break;
+            case "gridlines": XlsxLayout.SetGridlines(Ws, value); break;
             case "filter": XlsxLayout.SetFilter(doc, sheet, Ws, value); break;
+            case "filters": XlsxRules.SetFilters(Ws, value); break;
+            case "cf": XlsxRules.SetCf(Ws, doc.Styles, value); break;
+            case "validations": XlsxRules.SetValidations(Ws, value); break;
+            case "hidden": XlsxRules.SetHidden(Ws, Data, value); break;
+            case "color": XlsxRules.SetTabColor(Ws, doc.Styles, value); break;
         }
     }
 
@@ -118,6 +146,7 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
         try
         {
             part.Worksheet = new Worksheet(RawXml.WithNamespaces(raw, doc.Namespaces));
+            ForgetShared();
         }
         catch (Exception ex) when (ex is not WriterException)
         {
@@ -166,7 +195,7 @@ sealed class XlsxRow(XlsxDocument doc, XlsxSheet sheet, int index) : Node
         if (name != "data") return;
         var values = ParseValues(value);
         for (var col = 1; col <= values.Count; col++)
-            XlsxCells.SetValue(doc, XlsxCells.GetOrCreateCell(sheet.Data, col, index), values[col - 1]);
+            XlsxCells.SetValue(doc, sheet, XlsxCells.GetOrCreateCell(sheet.Data, col, index), values[col - 1]);
     }
 
     internal static List<string> ParseValues(string json)
@@ -194,8 +223,18 @@ sealed class XlsxRow(XlsxDocument doc, XlsxSheet sheet, int index) : Node
     }
 
     public override string GetRaw() => Current?.OuterXml ?? $"<row r=\"{index}\"/>";
-    public override void SetRaw(string raw) => RawXml.Replace(Current ?? XlsxCells.GetOrCreateRow(sheet.Data, index), raw, doc.Namespaces);
-    public override void Remove() => Current?.Remove();
+
+    public override void SetRaw(string raw)
+    {
+        RawXml.Replace(Current ?? XlsxCells.GetOrCreateRow(sheet.Data, index), raw, doc.Namespaces);
+        sheet.ForgetShared();
+    }
+
+    public override void Remove()
+    {
+        foreach (var cell in Current?.Elements<Cell>().Where(c => c.CellFormula is not null).ToList() ?? []) XlsxCells.Unshare(sheet, cell);
+        Current?.Remove();
+    }
 }
 
 sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row) : Node
@@ -222,7 +261,7 @@ sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row) : Nod
         if (cell is not null)
         {
             if (XlsxCells.TypeOf(doc, cell) is { } type) props["type"] = type;
-            if (cell.CellFormula?.Text is { Length: > 0 } formula) props["formula"] = formula;
+            if (XlsxCells.Formula(sheet, cell) is { Length: > 0 } formula) props["formula"] = formula;
             doc.Styles.Read(cell, props);
         }
         if (XlsxNotes.Link(Part, Key) is { } link) props["link"] = link;
@@ -237,25 +276,42 @@ sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row) : Nod
         {
             case "value":
                 _written = value;
-                XlsxCells.SetValue(doc, cell, value);
+                XlsxCells.SetValue(doc, sheet, cell, value);
                 break;
-            case "type": XlsxCells.SetTyped(doc, cell, value, _written ?? XlsxCells.Display(doc, cell)); break;
-            case "formula": XlsxCells.SetFormula(doc, cell, value); break;
+            case "type": XlsxCells.SetTyped(doc, sheet, cell, value, _written ?? XlsxCells.Display(doc, cell)); break;
+            case "formula": XlsxCells.SetFormula(doc, sheet, cell, value); break;
             case "link": XlsxNotes.SetLink(Part, Key, value); break;
             case "note": XlsxNotes.SetNote(Part, Key, value); break;
             default:
                 if (name == "borderColor") _borderColor = value;
-                doc.Styles.Set(cell, name, value, _borderColor);
+                doc.Styles.Set(cell, [new(name, value)], _borderColor);
                 break;
         }
     }
 
+    /// <summary>The style props of one edit become one new format (not one per prop); then the value, type, formula, link and note.</summary>
+    public override void SetProps(IEnumerable<KeyValuePair<string, string>> props)
+    {
+        var (style, rest) = XlsxStyles.Split(props);
+        if (style.Count > 0) doc.Styles.Set(Ensure(), style, _borderColor = style.LastOrDefault(p => p.Key == "borderColor").Value ?? _borderColor);
+        foreach (var (name, value) in rest) SetProp(name, value);
+    }
+
     public override string GetRaw() => Current?.OuterXml ?? $"<c r=\"{Key}\"/>";
-    public override void SetRaw(string raw) => RawXml.Replace(Ensure(), raw, doc.Namespaces);
+
+    public override void SetRaw(string raw)
+    {
+        RawXml.Replace(Ensure(), raw, doc.Namespaces);
+        sheet.ForgetShared();
+    }
 
     public override void Remove()
     {
-        Current?.Remove();
+        if (Current is { } cell)
+        {
+            XlsxCells.Unshare(sheet, cell);
+            cell.Remove();
+        }
         XlsxNotes.RemoveLink(Part, Key);
         XlsxNotes.RemoveNote(Part, Key);
     }
@@ -311,16 +367,98 @@ sealed class XlsxRange(XlsxDocument doc, XlsxSheet sheet, string reference) : No
 
     public override void SetProp(string name, string value)
     {
+        if (name == "formula")
+        {
+            foreach (var (c, r) in Cells()) XlsxCells.SetFormula(doc, sheet, XlsxCells.GetOrCreateCell(sheet.Data, c, r), XlsxRefs.Shift(value.Trim().TrimStart('='), r - _box.Row1, c - _box.Col1));
+            return;
+        }
+        if (name == "sort")
+        {
+            Sort(value);
+            return;
+        }
         if (name != "values")
         {
             if (name == "borderColor") _borderColor = value;
-            foreach (var (c, r) in Cells()) doc.Styles.Set(XlsxCells.GetOrCreateCell(sheet.Data, c, r), name, value, _borderColor);
+            foreach (var (c, r) in Cells()) doc.Styles.Set(XlsxCells.GetOrCreateCell(sheet.Data, c, r), [new(name, value)], _borderColor);
             return;
         }
         var rows = value.TrimStart().StartsWith('[') ? ParseRows(value) : XlsxCells.ParseCsv(value);
         for (var r = 0; r < rows.Count; r++)
             for (var c = 0; c < rows[r].Count; c++)
-                XlsxCells.SetValue(doc, XlsxCells.GetOrCreateCell(sheet.Data, _box.Col1 + c, _box.Row1 + r), rows[r][c]);
+                XlsxCells.SetValue(doc, sheet, XlsxCells.GetOrCreateCell(sheet.Data, _box.Col1 + c, _box.Row1 + r), rows[r][c]);
+    }
+
+    public override void SetProps(IEnumerable<KeyValuePair<string, string>> props)
+    {
+        var (style, rest) = XlsxStyles.Split(props);
+        if (style.Count > 0)
+        {
+            _borderColor = style.LastOrDefault(p => p.Key == "borderColor").Value ?? _borderColor;
+            foreach (var (c, r) in Cells()) doc.Styles.Set(XlsxCells.GetOrCreateCell(sheet.Data, c, r), style, _borderColor);
+        }
+        foreach (var (name, value) in rest) SetProp(name, value);
+    }
+
+    /// <summary>Reorders the range's rows by one column (B or B:desc): numbers before text, blanks last, ties in their old order. The
+    /// cells move as Excel moves them — style, value and formula together, a formula's relative references following its new row.</summary>
+    void Sort(string spec)
+    {
+        var parts = spec.Split(':', 2);
+        var letters = parts[0].Trim().ToUpperInvariant();
+        var desc = parts.Length > 1 && parts[1].Trim().Equals("desc", StringComparison.OrdinalIgnoreCase);
+        var col = letters.Length is >= 1 and <= 3 && letters.All(char.IsAsciiLetterUpper) ? XlsxCells.ColumnIndex(letters) : 0;
+        if (col < _box.Col1 || col > _box.Col2)
+            throw new WriterException(ErrorCode.Validation, $"sort: '{spec}' does not name a column of {Key}", "Give a column letter inside the range, optionally :desc. Example: sort=B:desc");
+        var rows = Enumerable.Range(_box.Row1, _box.Row2 - _box.Row1 + 1).ToList();
+        var keys = rows.Select(r =>
+        {
+            var cell = XlsxCells.FindRow(sheet.Data, r) is { } row ? XlsxCells.FindCell(row, col) : null;
+            var text = cell is null ? "" : XlsxCells.Display(doc, cell);
+            var number = cell is not null && XlsxCells.TypeOf(doc, cell) is "number" or "date" or "bool" && double.TryParse(cell.CellValue?.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) ? n : (double?)null;
+            return (Row: r, Number: number, Text: text);
+        }).ToList();
+        int Compare((int Row, double? Number, string Text) a, (int Row, double? Number, string Text) b)
+        {
+            var blankA = a.Number is null && a.Text.Length == 0;
+            var blankB = b.Number is null && b.Text.Length == 0;
+            if (blankA || blankB) return blankA.CompareTo(blankB);
+            var c = (a.Number, b.Number) switch
+            {
+                ({ } x, { } y) => x.CompareTo(y),
+                ({ }, null) => -1,
+                (null, { }) => 1,
+                _ => string.Compare(a.Text, b.Text, StringComparison.OrdinalIgnoreCase),
+            };
+            return desc ? -c : c;
+        }
+        var order = keys.OrderBy(k => k, Comparer<(int, double?, string)>.Create(Compare)).Select(k => k.Row).ToList(); // OrderBy is stable
+        if (order.SequenceEqual(rows)) return;
+        var taken = new Dictionary<int, List<Cell>>();
+        foreach (var r in rows)
+        {
+            var cells = XlsxCells.FindRow(sheet.Data, r)?.Elements<Cell>().Where(c => XlsxCells.Position(c).Col is var x && x >= _box.Col1 && x <= _box.Col2).ToList() ?? [];
+            foreach (var cell in cells) XlsxCells.Unshare(sheet, cell); // a moved cell takes its own formula along
+            foreach (var cell in cells) cell.Remove();
+            taken[r] = cells;
+        }
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var target = rows[i];
+            var source = order[i];
+            var row = XlsxCells.GetOrCreateRow(sheet.Data, target);
+            foreach (var cell in taken[source])
+            {
+                var (c, _) = XlsxCells.Position(cell);
+                cell.CellReference = XlsxCells.Reference(c, target);
+                if (cell.CellFormula?.Text is { Length: > 0 } formula) cell.CellFormula.Text = XlsxRefs.Shift(formula, target - source, 0);
+                var after = row.Elements<Cell>().FirstOrDefault(x => XlsxCells.Position(x).Col > c);
+                if (after is null) row.Append(cell);
+                else row.InsertBefore(cell, after);
+            }
+        }
+        doc.DropCalcChain();
+        doc.RecalculateOnLoad();
     }
 
     static List<List<string>> ParseRows(string json)
@@ -345,7 +483,11 @@ sealed class XlsxRange(XlsxDocument doc, XlsxSheet sheet, string reference) : No
         {
             var row = XlsxCells.FindRow(sheet.Data, r);
             if (row is null) continue;
-            foreach (var cell in row.Elements<Cell>().Where(c => XlsxCells.Position(c).Col is var col && col >= _box.Col1 && col <= _box.Col2).ToList()) cell.Remove();
+            foreach (var cell in row.Elements<Cell>().Where(c => XlsxCells.Position(c).Col is var col && col >= _box.Col1 && col <= _box.Col2).ToList())
+            {
+                XlsxCells.Unshare(sheet, cell);
+                cell.Remove();
+            }
         }
     }
 }

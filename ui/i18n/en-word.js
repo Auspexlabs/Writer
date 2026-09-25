@@ -11,7 +11,14 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   // style-picker labels (font list, block styles, highlight colors)
   '思源宋体': 'Noto Serif SC', '思源黑体': 'Noto Sans SC', '等宽': 'Monospace',
   '正文': 'Body', '标题 1': 'Heading 1', '标题 2': 'Heading 2', '标题 3': 'Heading 3', '引用': 'Quote', '代码': 'Code',
-  '黄色': 'Yellow', '绿色': 'Green', '蓝色': 'Blue', '红色': 'Red', '无': 'None',
+  '标题@@title': 'Title', '副标题': 'Subtitle', '列表段落': 'List Paragraph', '无间隔': 'No Spacing', '题注': 'Caption', '强调': 'Emphasis', '明显强调': 'Strong', '强烈强调': 'Intense Emphasis', '不明显强调': 'Subtle Emphasis',
+  '样式': 'Styles', '字符样式': 'Character Styles', '清除字符样式': 'Clear Character Style', '修改样式以匹配所选内容': 'Update Style to Match Selection', '新建样式…': 'New Style…', '新建样式': 'New Style', '样式名称': 'Style Name',
+  '样式「{name}」已更新': 'Style "{name}" updated', '先选中要应用字符样式的文字': 'Select the text to style first',
+  '黄色': 'Yellow', '绿色': 'Green', '蓝色': 'Blue', '红色': 'Red', '无': 'None', '鲜绿色': 'Bright Green', '青绿色': 'Turquoise', '粉红色': 'Pink', '深蓝色': 'Dark Blue', '青色': 'Teal', '紫罗兰': 'Violet', '深红色': 'Dark Red', '深黄色': 'Dark Yellow', '深灰色': 'Gray 50%', '灰色-25%': 'Gray 25%', '黑色': 'Black',
+  '苹方': 'PingFang SC', '宋体-简': 'Songti SC', '黑体-简': 'Heiti SC', '楷体-简': 'Kaiti SC', '华文宋体': 'STSong', '华文楷体': 'STKaiti', '华文仿宋': 'STFangsong', '华文细黑': 'STXihei', '宋体': 'SimSun', '黑体': 'SimHei', '微软雅黑': 'Microsoft YaHei', '楷体': 'KaiTi', '仿宋': 'FangSong', '等线': 'DengXian',
+  '字符间距': 'Character Spacing', '紧缩 1 磅': 'Condensed 1 pt', '标准': 'Normal', '加宽 1 磅': 'Expanded 1 pt', '加宽 2 磅': 'Expanded 2 pt', '加宽 3 磅': 'Expanded 3 pt',
+  '文字效果': 'Text Effects', '轮廓': 'Outline', '阴影': 'Shadow', '更改大小写': 'Change Case', '句首字母大写': 'Sentence case', '小写': 'lowercase', '大写': 'UPPERCASE', '每个单词首字母大写': 'Capitalize Each Word', '切换大小写': 'tOGGLE cASE', '半角': 'Half-width', '全角': 'Full-width',
+  '先选中要设置的文字': 'Select the text first',
 
   // tabs
   '开始': 'Home', '插入': 'Insert', '布局': 'Layout', '审阅': 'Review', '视图': 'View', '表格': 'Table', '图片': 'Picture',
@@ -22,12 +29,21 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '字体': 'Font', '字号': 'Size', '增大字号 Ctrl+Shift+>': 'Grow Font Ctrl+Shift+>', '减小字号 Ctrl+Shift+<': 'Shrink Font Ctrl+Shift+<',
   '加粗 Ctrl+B': 'Bold Ctrl+B', '斜体 Ctrl+I': 'Italic Ctrl+I', '下划线 Ctrl+U': 'Underline Ctrl+U', '删除线': 'Strikethrough',
   '上标': 'Superscript', '下标': 'Subscript', '文字颜色': 'Text Color', '高亮': 'Highlight', '段落样式': 'Paragraph Style',
-  '左对齐': 'Align Left', '居中': 'Center', '右对齐': 'Align Right', '两端对齐': 'Justify',
-  '• 列表': '• List', '1. 列表': '1. List', '减少缩进': 'Decrease Indent', '增加缩进': 'Increase Indent', '行距': 'Line Spacing',
+  '左对齐': 'Align Left', '居中': 'Center', '右对齐': 'Align Right', '两端对齐': 'Justify', '分散对齐': 'Distribute',
+  '固定值…': 'Exactly…', '行距（磅）': 'Line Spacing (pt)', '段落…': 'Paragraph…', '段落': 'Paragraph',
+  '段前（磅）': 'Before (pt)', '段后（磅）': 'After (pt)', '行距（倍数或磅）': 'Line Spacing (multiple or pt)', '左缩进（厘米）': 'Left Indent (cm)', '右缩进（厘米）': 'Right Indent (cm)', '首行缩进（字符，负数为悬挂）': 'First Line Indent (characters; negative hangs)',
+  '边框': 'Borders', '下框线': 'Bottom Border', '上框线': 'Top Border', '左框线': 'Left Border', '右框线': 'Right Border', '外侧框线': 'Outside Borders', '段落底纹': 'Paragraph Shading',
+  '悬挂缩进 2 字符': 'Hanging Indent 2 Characters', '换行和分页': 'Line and Page Breaks', '与下段同页': 'Keep with Next', '段中不分页': 'Keep Lines Together', '段前分页': 'Page Break Before',
+  '标尺': 'Ruler', '制表位 {pos}（点击切换类型或移除）': 'Tab stop at {pos} (click to change its kind or remove it)',
+  '点击标尺添加制表位；点击制表位切换 左 / 居中 / 右 / 小数点，再点一次移除': 'Click the ruler to add a tab stop; click a stop to cycle left / center / right / decimal, once more to remove it',
+  '• 列表': '• List', '1. 列表': '1. List', '减少缩进 Shift+Tab': 'Decrease Indent Shift+Tab', '增加缩进 Tab': 'Increase Indent Tab', '行距': 'Line Spacing',
+  '编号': 'Numbering', '编号库': 'Numbering Library', '重新开始编号': 'Restart Numbering', '继续编号': 'Continue Numbering',
+  '编号样式：1. a. i.、1. 1.1 1.1.1、一、（一）1.；Tab / Shift+Tab 升降级': 'Numbering styles: 1. a. i., 1. 1.1 1.1.1, 一、（一）1.; Tab / Shift+Tab change the level',
   '查找替换': 'Find & Replace',
 
   // insert ribbon
   '链接': 'Link', '分隔线': 'Horizontal Line', '分页符': 'Page Break',
+  '标题@@sel': 'Heading', '改写': 'Rewrite', // the Focus Mode selection bar
   '页眉': 'Header', '编辑页眉（也可双击页面顶部）': 'Edit the header (or double-click the top of the page)',
   '页脚': 'Footer', '编辑页脚（也可双击页面底部）': 'Edit the footer (or double-click the bottom of the page)',
   '页码': 'Page Number', '在页脚居中插入「第 X 页 / 共 Y 页」': 'Insert "Page X of Y" centered in the footer',
@@ -42,6 +58,33 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '水印': 'Watermark', '机密': 'Confidential', '草稿': 'Draft', '严禁复制': 'Do Not Copy',
   '自定义…': 'Custom…', '自定义水印': 'Custom Watermark', '水印文字': 'Watermark Text',
   '段前': 'Before', '段后': 'After', '首行缩进': 'First Line Indent', '2 字符': '2 Characters',
+  '应用于本节': 'Applies to this section', '分隔符': 'Breaks', '分节符': 'Section Breaks', '分节符（{kind}）': 'Section Break ({kind})', '偶数页': 'Even Page', '奇数页': 'Odd Page', '删除分节符': 'Remove Section Break',
+  '分页符与分节符：每节可以有自己的纸张、方向、页边距和分栏': 'Page and section breaks: each section can have its own paper, orientation, margins and columns',
+  '行号@@word': 'Line Numbers', '在页边显示行号（Word 中显示）': 'Line numbers in the margin (shown in Word)',
+  '断字': 'Hyphenation', '英文单词在行尾自动断字（Word 中生效）': 'Hyphenate English words at line ends (applied in Word)',
+
+  // references ribbon and the notes panel
+  '引用@@tab': 'References', '插入脚注': 'Insert Footnote', '在光标处插入脚注，注释显示在页面底端': 'Insert a footnote at the caret; its text goes at the foot of the page',
+  '插入尾注': 'Insert Endnote', '在光标处插入尾注，注释显示在文档末尾': 'Insert an endnote at the caret; its text goes at the end of the document',
+  '脚注 {n}': 'Footnote {n}', '尾注 {n}': 'Endnote {n}', '脚注和尾注 · {{ noteCount }}': 'Notes · {{ noteCount }}', '输入注释文字…': 'Type the note…',
+  '插入题注': 'Insert Caption', '图、表、公式的题注，编号自动更新': 'Captions for figures, tables and equations, numbered automatically',
+  '交叉引用': 'Cross-reference', '没有可引用的标题、题注或书签': 'No headings, captions or bookmarks to refer to', '引用标题、题注或书签；在 Word 中按住 Ctrl 点击可跳转': 'Refer to a heading, caption or bookmark; Ctrl-click it in Word to go there',
+
+  // insert: text boxes, shapes, equations, cover pages, drop caps, bookmarks
+  '插入文本框，可拖到页面任意位置': 'Insert a text box you can drag anywhere on the page',
+  '公式@@word': 'Equation', '用 LaTeX 输入公式，保存为 Word 公式': 'Type an equation in LaTeX; it is saved as a Word equation',
+  '插入公式': 'Insert Equation', '编辑公式': 'Edit Equation', '输入 LaTeX，例如 x^{2}+\\frac{1}{2}': 'Type LaTeX, e.g. x^{2}+\\frac{1}{2}',
+  '分式': 'Fraction', '根式': 'Radical', '积分': 'Integral', '极限': 'Limit', '矩阵': 'Matrix', '分段函数': 'Cases', '二次公式': 'Quadratic Formula',
+  '封面': 'Cover Page', '简约': 'Simple', '商务': 'Business', '学术': 'Academic', '在文档开头插入一页封面': 'Insert a cover page at the start of the document',
+  '文档标题': 'Document Title', '项目报告': 'Project Report', '作者': 'Author', '单位名称': 'Institution', '论文题目': 'Thesis Title', '作者：': 'Author: ', '日期：': 'Date: ',
+  '首字下沉': 'Drop Cap', '下沉': 'Dropped', '悬挂': 'In Margin', '段落的第一个字放大到三行高': 'The paragraph\'s first letter, three lines high', '这一段没有文字可以下沉': 'This paragraph has no text to drop',
+  '书签': 'Bookmark', '添加书签…': 'Add Bookmark…', '删除书签': 'Remove Bookmark', '定位': 'Go To', '给所在段落加上书签，交叉引用和链接可以跳到这里': 'Bookmark this paragraph so cross-references and links can go to it',
+  '书签名（字母开头，可含数字和下划线）': 'Bookmark name (a letter first, then letters, digits or _)', '书签名须以字母开头，只含字母、数字和下划线': 'A bookmark name starts with a letter and holds only letters, digits and _',
+  '已添加书签「{name}」': 'Bookmark "{name}" added', '（空）': '(empty)',
+
+  // shape format tab
+  '形状格式': 'Shape Format', '形状填充': 'Shape Fill', '形状轮廓': 'Shape Outline', '无轮廓': 'No Outline', '上下型': 'Top and Bottom',
+  '大小…': 'Size…', '宽度（厘米）': 'Width (cm)', '高度（厘米）': 'Height (cm)', '删除形状': 'Delete Shape',
 
   // review ribbon
   '字数统计': 'Word Count', '新建批注': 'New Comment', '删除所有批注': 'Delete All Comments',
@@ -53,6 +96,8 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '网页视图': 'Web View', '连续阅读，不分页': 'Continuous, no page breaks', '连续': 'Continuous',
   '缩略图': 'Thumbnails', '页眉页脚': 'Headers & Footers', '点击切换纸张方向': 'Click to switch page orientation',
   '适应宽度': 'Fit Width', '阅读模式': 'Reading Mode', '沉浸阅读 Ctrl+.': 'Immersive Reading Ctrl+.',
+  '页面移动': 'Page Movement', '并排': 'Side to Side', '页面上下翻，或并排左右翻': 'Turn pages top to bottom, or side by side left to right',
+  '缩放：{pct}': 'Zoom: {pct}', '页宽': 'Page Width', '整页': 'Whole Page', '多页': 'Multiple Pages',
 
   // table ribbon and table-insert popover
   '上方插入行': 'Insert Row Above', '下方插入行': 'Insert Row Below', '左侧插入列': 'Insert Column Left', '右侧插入列': 'Insert Column Right',
@@ -60,11 +105,18 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '合并右侧单元格': 'Merge Right', '合并下方单元格': 'Merge Down', '拆分单元格': 'Split Cells',
   '把合并的单元格拆回一格一格': 'Splits a merged cell back into separate cells',
   '底纹': 'Shading', '单元格底纹': 'Cell Shading', '表格样式': 'Table Style', '网格': 'Grid', '三线表': 'Three-Line Table', '无框线': 'No Borders',
+  '简明表格（隔行底纹）': 'Plain Table (banded rows)', '网格表 4（彩色标题行）': 'Grid Table 4 (coloured header row)', '单元格边框': 'Cell Borders', '所有框线': 'All Borders', '随表格': 'As the Table',
+  '对齐方式': 'Alignment', '靠上左对齐': 'Top Left', '靠上居中': 'Top Center', '靠上右对齐': 'Top Right', '中部左对齐': 'Middle Left', '中部居中': 'Middle Center', '中部右对齐': 'Middle Right', '靠下左对齐': 'Bottom Left', '靠下居中': 'Bottom Center', '靠下右对齐': 'Bottom Right',
+  '行高': 'Row Height', '自动': 'Auto', '标题行重复': 'Repeat Header Row', '所在行在每页顶端重复': 'Repeat this row at the top of every page',
+  '排序': 'Sort', '升序': 'Ascending', '降序': 'Descending', '按所在列排序，数字按大小': 'Sort by the caret\'s column; numbers by value', '转换为文本': 'Convert to Text', '表格属性…': 'Table Properties…', '表格属性': 'Table Properties',
+  '表格宽度（如 100% 或 12cm）': 'Table width (e.g. 100% or 12cm)', '对齐方式（left / center / right）': 'Alignment (left / center / right)', '边框颜色（如 808080）': 'Border colour (e.g. 808080)',
+  '文本转换成表格（按 Tab）': 'Convert Text to Table (at tabs)', '文本转换成表格（按逗号）': 'Convert Text to Table (at commas)', '文本转换成表格（按空格）': 'Convert Text to Table (at spaces)',
   '{r} × {c} 表格': '{r} × {c} Table', '插入表格': 'Insert Table', '自定义行列…': 'Custom Rows & Columns…', '行数': 'Rows', '列数': 'Columns',
 
   // image tab
   '大小': 'Size', '版心宽度的 {pct}': '{pct} of text width', '位置': 'Position',
-  '靠左': 'Left', '靠右': 'Right', '文字环绕': 'Wrap Text', '删除图片': 'Delete Picture',
+  '环绕': 'Wrap', '嵌入型': 'In Line with Text', '四周型': 'Square', '浮于文字上方': 'In Front of Text', '衬于文字下方': 'Behind Text',
+  '嵌入行内，或浮在页面上任意拖动': 'In the line of text, or floating anywhere on the page', '删除图片': 'Delete Picture',
 
   // word count dialog
   '字数': 'Words', '字符数（不计空格）': 'Characters (no spaces)', '段落数': 'Paragraphs', '页数': 'Pages',
@@ -75,6 +127,9 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   // comments panel
   '批注 · {{ commentCount }}': 'Comments · {{ commentCount }}', '删除': 'Delete', '输入批注…': 'Add a comment…',
   '我': 'Me', '先选中要批注的文字': 'Select the text to comment on first',
+  '回复…（回车发送）': 'Reply… (Return to send)', '解决': 'Resolve', '重新打开': 'Reopen', '这条批注已解决，点击重新打开': 'This comment is resolved; click to reopen it', '标记为已解决': 'Mark as resolved',
+  '显示标记': 'Show Markup', '显示以供审阅': 'Display for Review', '所有标记': 'All Markup', '无标记': 'No Markup', '原始版本': 'Original',
+  '所有标记：修订和批注都显示；无标记：显示修改后的样子；原始版本：显示修改前的样子': 'All Markup shows changes and comments; No Markup shows the result; Original shows the text before the changes',
 
   // toasts
   '已接受所有修订': 'All changes accepted', '已拒绝所有修订': 'All changes rejected',

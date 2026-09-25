@@ -40,23 +40,85 @@ static class DocxReplace
         var hunks = Hunks(oldText, Keys(pieces.Select(x => x.Spec), Key), newText, Keys(specs, Key));
         var author = DocxRevisions.Author(doc);
         var now = DocxRevisions.Now();
+        var before = new HashSet<OpenXmlElement>(p.Descendants(), ReferenceEqualityComparer.Instance);
         // From the end backwards, so the offsets of the stretches still to do stay valid.
         for (var i = hunks.Count - 1; i >= 0; i--)
         {
             var (a, b, c, d) = hunks[i];
-            Apply(doc, p, a, b, Take(specs, c, d), source, tracked, revisions, author, now);
+            Apply(doc, p, a, b, Take(specs, c, d), source, Key, tracked, revisions, author, now);
         }
+        if (hunks.Count > 0) Tidy(p, before);
     }
 
-    /// <summary>Rewrites old characters [a, b) as the given runs.</summary>
-    static void Apply(DocxDocument doc, W.Paragraph p, int a, int b, List<RunSpec> middle, Source source, bool tracked, bool revisions, string author, string now)
+    /// <summary>Puts back together what the edit cut apart, so a paragraph does not end up in more pieces with every save: a run, link or
+    /// revision mark the edit made or split joins the one before it when the two look the same, and a run it left empty goes. Things
+    /// that sat side by side before the edit stay as they were.</summary>
+    static void Tidy(OpenXmlElement container, HashSet<OpenXmlElement> before)
+    {
+        foreach (var e in container.ChildElements.ToList())
+        {
+            var made = !before.Contains(e);
+            if (made && e is W.Run && !e.ChildElements.Any(c => c is not W.RunProperties)) { e.Remove(); continue; }
+            if (e.PreviousSibling() is not { } previous || !made && before.Contains(previous) || !Same(previous, e)) continue;
+            if (previous is W.Run run) Join(run, (W.Run)e);
+            else
+            {
+                foreach (var c in e.ChildElements.ToList()) { c.Remove(); previous.Append(c); }
+                e.Remove();
+            }
+            if (!made) before.Add(previous);
+        }
+        foreach (var e in container.ChildElements.Where(e => e is W.Hyperlink or W.RunTrackChangeType or W.SdtRun or W.SdtContentRun or W.SimpleField or W.CustomXmlRun))
+            Tidy(e, before);
+    }
+
+    static bool Same(OpenXmlElement a, OpenXmlElement b) => (a, b) switch
+    {
+        (W.Run x, W.Run y) => OnlyText(x) && OnlyText(y) && Look(x) == Look(y),
+        (W.Hyperlink x, W.Hyperlink y) => x.Id?.Value == y.Id?.Value && x.Anchor?.Value == y.Anchor?.Value,
+        (W.RunTrackChangeType x, W.RunTrackChangeType y) => x.GetType() == y.GetType() && x.Author?.Value == y.Author?.Value && x.Date?.InnerText == y.Date?.InnerText,
+        _ => false,
+    };
+
+    static string Look(W.Run run) => run.RunProperties is { HasChildren: true } rp ? rp.OuterXml : "";
+
+    static bool OnlyText(W.Run run) => run.ChildElements.All(c => c is W.RunProperties || DocxRuns.IsTextElement(c));
+
+    /// <summary>Moves the second run's text into the first, the two w:t at the seam becoming one.</summary>
+    static void Join(W.Run first, W.Run second)
+    {
+        foreach (var c in second.ChildElements.Where(c => c is not W.RunProperties).ToList())
+        {
+            c.Remove();
+            if (first.LastChild is W.TextType t && c is W.TextType u && t.GetType() == u.GetType())
+            {
+                t.Text += u.Text;
+                Preserve(t);
+            }
+            else first.Append(c);
+        }
+        second.Remove();
+    }
+
+    /// <summary>xml:space="preserve" where the text needs it (spaces at either end); an existing one stays.</summary>
+    static void Preserve(W.TextType t)
+    {
+        if (t.Text.Length > 0 && (char.IsWhiteSpace(t.Text[0]) || char.IsWhiteSpace(t.Text[^1]))) t.Space = SpaceProcessingModeValues.Preserve;
+    }
+
+    /// <summary>Rewrites old characters [a, b) as the given runs. New text that looks like the text it replaces or continues (the same
+    /// formatting key, the same link) takes that run's properties exactly, so the two can join again.</summary>
+    static void Apply(DocxDocument doc, W.Paragraph p, int a, int b, List<RunSpec> middle, Source source, Func<RunSpec, RunSpec?> key, bool tracked, bool revisions, string author, string now)
     {
         var pieces = Pieces(doc, p, revisions);
         Cut(pieces, b);
         Cut(pieces, a);
         pieces = Pieces(doc, p, revisions);
         var region = pieces.Where(x => x.Start >= a && x.End <= b && x.End > x.Start).ToList();
-        var adjacent = region.FirstOrDefault() ?? pieces.LastOrDefault(x => x.End == a && x.End > x.Start) ?? pieces.FirstOrDefault(x => x.Start >= a && x.End > x.Start);
+        var left = pieces.LastOrDefault(x => x.End == a && x.End > x.Start);
+        var right = pieces.FirstOrDefault(x => x.Start >= b && x.End > x.Start);
+        var adjacent = region.FirstOrDefault() ?? left ?? right;
+        var looks = region.Append(left).Append(right).OfType<Piece>().Select(x => (Key: key(x.Spec), x.Spec.Link, x.Run.RunProperties, Whole: OnlyText(x.Run))).ToList();
         var baseProperties = Base(adjacent, source);
         var placeholder = Placeholder(doc, p, pieces, region, a);
         var emptied = new List<OpenXmlElement>();
@@ -67,7 +129,19 @@ static class DocxReplace
             else foreach (var run in TextOnly(x.Run)) deletion = Delete(doc, run, deletion, author, now);
         }
         if (tracked) middle = middle.Select(s => s with { Change = "inserted", Author = author, Date = now }).ToList();
-        foreach (var e in DocxRuns.MakeRuns(doc, middle, baseProperties)) placeholder.InsertBeforeSelf(e);
+        foreach (var spec in middle)
+        {
+            var like = looks.FindIndex(x => x.Link == spec.Link && Equals(x.Key, key(spec)));
+            if (like < 0)
+            {
+                placeholder.InsertBeforeSelf(DocxRuns.MakeRuns(doc, [spec], baseProperties)[0]);
+                continue;
+            }
+            var rp = looks[like].RunProperties?.CloneNode(true) as W.RunProperties;
+            // A format change stays with text typed into its run (the two join again); an insertion, or a run that stays apart, starts without it.
+            if (tracked || !looks[like].Whole) rp?.RunPropertiesChange?.Remove();
+            placeholder.InsertBeforeSelf(DocxRuns.MakeRun(doc, spec, rp));
+        }
         placeholder.Remove();
         foreach (var e in emptied) RemoveIfEmpty(e);
     }
@@ -85,12 +159,13 @@ static class DocxReplace
         return list;
     }
 
-    static RunSpec?[] Keys(IEnumerable<RunSpec> specs, Func<RunSpec, RunSpec?> key) =>
+    internal static RunSpec?[] Keys(IEnumerable<RunSpec> specs, Func<RunSpec, RunSpec?> key) =>
         specs.SelectMany(s => Enumerable.Repeat(key(s), s.Text.Length)).ToArray();
 
     /// <summary>The stretches that differ, as old characters [A, B) becoming new characters [C, D), in order. Tokens are words
-    /// (letters and digits), CJK characters and every other character on its own, compared with their formatting keys.</summary>
-    static List<(int A, int B, int C, int D)> Hunks(string oldText, RunSpec?[] oldKeys, string newText, RunSpec?[] newKeys)
+    /// (letters and digits), CJK characters and every other character on its own, compared with their formatting keys; a word
+    /// also ends where its formatting changes (H2O with a subscript 2 is three tokens).</summary>
+    internal static List<(int A, int B, int C, int D)> Hunks(string oldText, RunSpec?[] oldKeys, string newText, RunSpec?[] newKeys)
     {
         var ids = new Dictionary<string, int>();
         var keyIds = new Dictionary<RunSpec, int>();
@@ -102,17 +177,24 @@ static class DocxReplace
             var s = sb.ToString();
             return ids.TryGetValue(s, out var id) ? id : ids[s] = ids.Count;
         }
-        var oldTokens = Tokens(oldText);
-        var newTokens = Tokens(newText);
+        var oldTokens = Tokens(oldText, oldKeys);
+        var newTokens = Tokens(newText, newKeys);
         var x = oldTokens.Select(t => Id(oldText, oldKeys, t)).ToArray();
         var y = newTokens.Select(t => Id(newText, newKeys, t)).ToArray();
+        int At(List<(int Start, int End)> tokens, int i, int length) => i < tokens.Count ? tokens[i].Start : length;
+        return Spans(x, y).Select(h => (At(oldTokens, h.A, oldText.Length), At(oldTokens, h.B, oldText.Length),
+            At(newTokens, h.C, newText.Length), At(newTokens, h.D, newText.Length))).ToList();
+    }
 
+    /// <summary>Where two sequences differ, as x[A, B) becoming y[C, D), in order (longest common subsequence).</summary>
+    internal static List<(int A, int B, int C, int D)> Spans(int[] x, int[] y)
+    {
         var start = 0;
         while (start < x.Length && start < y.Length && x[start] == y[start]) start++;
         var end = 0;
         while (end < x.Length - start && end < y.Length - start && x[^(end + 1)] == y[^(end + 1)]) end++;
         int n = x.Length - start - end, m = y.Length - start - end;
-        var spans = new List<(int, int, int, int)>();
+        var spans = new List<(int A, int B, int C, int D)>();
         if ((long)n * m > 4_000_000) spans.Add((start, start + n, start, start + m)); // ponytail: quadratic match; one stretch beyond ~2000 x 2000 changed tokens
         else if (n > 0 || m > 0)
         {
@@ -133,19 +215,18 @@ static class DocxReplace
                 spans.Add((start + i0, start + oi, start + j0, start + nj));
             }
         }
-        int At(List<(int Start, int End)> tokens, int i, int length) => i < tokens.Count ? tokens[i].Start : length;
-        return spans.Select(h => (At(oldTokens, h.Item1, oldText.Length), At(oldTokens, h.Item2, oldText.Length),
-            At(newTokens, h.Item3, newText.Length), At(newTokens, h.Item4, newText.Length))).ToList();
+        return spans;
     }
 
-    /// <summary>Words of letters and digits; any other character (a CJK character, a surrogate pair) on its own.</summary>
-    static List<(int Start, int End)> Tokens(string text)
+    /// <summary>Words of letters and digits (cut where the keys, when given, change); any other character (a CJK character, a
+    /// surrogate pair) on its own.</summary>
+    static List<(int Start, int End)> Tokens(string text, RunSpec?[]? keys = null)
     {
         var tokens = new List<(int, int)>();
         for (var i = 0; i < text.Length;)
         {
             var j = i + 1;
-            if (IsWordChar(text[i])) while (j < text.Length && IsWordChar(text[j])) j++;
+            if (IsWordChar(text[i])) while (j < text.Length && IsWordChar(text[j]) && (keys is null || Equals(keys[j], keys[i]))) j++;
             else if (char.IsHighSurrogate(text[i]) && j < text.Length && char.IsLowSurrogate(text[j])) j++;
             tokens.Add((i, j));
             i = j;
@@ -156,7 +237,7 @@ static class DocxReplace
     static bool IsWordChar(char c) => char.IsLetterOrDigit(c) && c < '\u2E80';
 
     /// <summary>The specs covering characters [from, to), cut at the ends.</summary>
-    static List<RunSpec> Take(List<RunSpec> specs, int from, int to)
+    internal static List<RunSpec> Take(List<RunSpec> specs, int from, int to)
     {
         var result = new List<RunSpec>();
         var pos = 0;
@@ -182,9 +263,11 @@ static class DocxReplace
         _ => 0,
     };
 
-    /// <summary>Cuts a run in two at a character offset of its text; the second half follows it with the same properties.</summary>
+    /// <summary>Cuts a run in two at a character offset of its text; the second half follows it with the same properties. An offset at
+    /// either end of the text cuts nothing (no empty run is left behind).</summary>
     public static void SplitRun(W.Run run, int offset)
     {
+        if (offset <= 0 || offset >= run.ChildElements.Sum(Length)) return;
         var tail = (W.Run)run.CloneNode(false);
         if (run.RunProperties is { } rp) tail.AppendChild(rp.CloneNode(true));
         var pos = 0;
@@ -202,7 +285,8 @@ static class DocxReplace
                 var rest = (W.TextType)text.CloneNode(true);
                 rest.Text = text.Text[(offset - pos)..];
                 text.Text = text.Text[..(offset - pos)];
-                text.Space = rest.Space = SpaceProcessingModeValues.Preserve;
+                Preserve(text);
+                Preserve(rest);
                 tail.AppendChild(rest);
             }
             pos += length;
@@ -220,7 +304,8 @@ static class DocxReplace
         Func<OpenXmlElement, bool> stated = source switch
         {
             Source.Html => e => e is W.Bold or W.BoldComplexScript or W.Italic or W.ItalicComplexScript or W.Strike or W.Underline
-                or W.Color or W.FontSize or W.FontSizeComplexScript or W.Shading or W.Highlight,
+                or W.Color or W.FontSize or W.FontSizeComplexScript or W.Shading or W.Highlight or W.RunStyle
+                or W.VerticalTextAlignment or W.Spacing or W.Outline or W.Shadow,
             Source.Markdown => e => e is W.Bold or W.BoldComplexScript or W.Italic or W.ItalicComplexScript or W.Strike,
             _ => _ => false,
         };
@@ -232,7 +317,8 @@ static class DocxReplace
 
     /// <summary>Marks where the new runs go: after the replaced text, else after the text before it (past the end of a field whose result
     /// that is), else before the text after it. The mark leaves links and revision marks, splitting them when it sits inside, so new runs
-    /// carry their own; it leaves a field or content control at its edge unless the replaced text was inside it.</summary>
+    /// carry their own; it leaves a field, content control or move (which the text cannot state) at its edge unless the replaced text
+    /// was inside it.</summary>
     static W.Run Placeholder(DocxDocument doc, W.Paragraph p, List<Piece> pieces, List<Piece> region, int a)
     {
         var placeholder = new W.Run();
@@ -257,7 +343,7 @@ static class DocxReplace
         }
         while (anchor.Parent is { } parent and not W.Paragraph)
         {
-            var transparent = parent is W.Hyperlink or W.InsertedRun or W.DeletedRun or W.MoveToRun or W.MoveFromRun;
+            var transparent = parent is W.Hyperlink or W.InsertedRun or W.DeletedRun;
             if (!transparent && region.Any(x => x.Run.Ancestors().Contains(parent))) break;
             var edge = after ? anchor.NextSibling() is null : ReferenceEquals(parent.ChildElements.FirstOrDefault(e => !IsProperties(e)), anchor);
             if (!edge)

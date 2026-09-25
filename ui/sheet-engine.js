@@ -231,6 +231,7 @@ function fmtCode(v, code) {
     if (ch === '*') { i += 2; continue; }
     if (ch === '[') { const j = sec.indexOf(']', i); const b = sec.slice(i + 1, j < 0 ? sec.length : j); i = j < 0 ? sec.length : j + 1; if (b[0] === '$') toks.push({ k: 'lit', v: b.slice(1).split('-')[0] }); else if (/^(h+|m+|s+)$/i.test(b)) toks.push({ k: 'date', v: '[' + b.toLowerCase() + ']' }); continue; }
     let m;
+    if (/^general/i.test(sec.slice(i))) { toks.push({ k: 'num', v: '@' }); i += 7; continue; } // [Red]General, "$"General
     if ((m = /^(AM\/PM|A\/P|上午\/下午)/i.exec(sec.slice(i)))) { toks.push({ k: 'ap', v: m[1] }); i += m[1].length; continue; }
     if ((m = /^(E[+-])/i.exec(sec.slice(i)))) { toks.push({ k: 'num', v: 'E' }); i += 2; continue; }
     if ((m = /^(y+|d+|h+|s+|m+|a+)/i.exec(sec.slice(i)))) { toks.push({ k: 'date', v: m[1].toLowerCase() }); i += m[1].length; continue; }
@@ -258,6 +259,8 @@ function fmtCode(v, code) {
     });
     return out;
   }
+  const fr = /(\?+)\s*\/\s*(\?+|\d+)/.exec(sec.replace(/"[^"]*"/g, ''));
+  if (fr) return fraction(v, /[#0]\s*\?/.test(sec), fr[2]); // # ?/?, # ??/??, ?/4
   if (toks.some(t => t.k === 'num' && t.v === '@')) return toks.map(t => t.k === 'num' && t.v === '@' ? general(v) : t.k === 'lit' ? t.v : '').join('');
   const mask = toks.filter(t => t.k === 'num').map(t => t.v).join('');
   if (!/[0#?]/.test(mask)) return (neg ? '-' : '') + toks.map(t => t.k === 'lit' ? t.v : t.v === '%' ? '%' : '').join('');
@@ -276,8 +279,27 @@ function fmtCode(v, code) {
   if (grouping && intS) intS = intS.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const numS = intS + (decS ? '.' + decS : '') + exp;
   let out = '', placed = false;
-  toks.forEach(t => { if (t.k === 'lit') out += t.v; else if (t.k === 'num') { if (t.v === '%') out += '%'; else if (!placed) { out += (neg ? '-' : '') + numS; placed = true; } } });
-  return out;
+  toks.forEach(t => { if (t.k === 'lit') out += t.v; else if (t.k === 'num') { if (t.v === '%') out += '%'; else if (!placed) { out += numS; placed = true; } } });
+  return (neg ? '-' : '') + out; // Excel leads with the sign: "$"#,##0 shows -5 as -$5
+}
+/** A fraction as Excel writes it: a whole part when the code has one, the nearest fraction with at most as many denominator digits as
+ *  the code's ?s (or its fixed denominator). */
+function fraction(v, whole, den) {
+  const x = Math.abs(v); let ip = whole ? Math.floor(x) : 0, n = 0, d = 1;
+  const f = x - ip;
+  if (/^\d+$/.test(den)) { d = +den; n = Math.round(f * d); }
+  else { let err = Infinity; for (let q = 1; q < 10 ** den.length; q++) { const p = Math.round(f * q), e = Math.abs(f - p / q); if (e < err - 1e-12) { err = e; n = p; d = q; } } }
+  if (whole && n === d) { ip++; n = 0; }
+  const text = whole ? (n ? (ip ? ip + ' ' : '') + n + '/' + d : String(ip)) : n + '/' + d;
+  return (v < 0 ? '-' : '') + text;
+}
+const FMT_COLORS = { black: '#000000', blue: '#0000FF', cyan: '#00FFFF', green: '#00FF00', magenta: '#FF00FF', red: '#FF0000', white: '#FFFFFF', yellow: '#FFFF00' };
+/** The colour a format code's section gives a number ([Red] in #,##0;[Red]-#,##0), or null. */
+export function fmtColor(v, code) {
+  if (typeof v !== 'number' || !code) return null;
+  const secs = code.split(';'), sec = v < 0 && secs.length > 1 ? secs[1] : v === 0 && secs.length > 2 ? secs[2] : secs[0];
+  const m = /\[(black|blue|cyan|green|magenta|red|white|yellow)\]/i.exec(sec);
+  return m ? FMT_COLORS[m[1].toLowerCase()] : null;
 }
 export { fmtCode, parseDate as dateSerial };
 export function decimalsOf(v) { if (typeof v !== 'number' || Number.isInteger(v)) return 0; const s = String(+v.toPrecision(10)); return (s.split('.')[1] || '').length; }
@@ -288,7 +310,7 @@ export function fmt(v, s) {
   if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
   if (typeof v === 'number') {
     const d = s.dec;
-    if (s.code && (s.fmt === 'custom' || s.fmt === 'date' || s.fmt === 'time')) { try { return fmtCode(v, s.code); } catch (e) { return '#####'; } } // the file's own code, as Excel would show it
+    if (s.code) { try { return fmtCode(v, s.code); } catch (e) { return '#####'; } } // the file's own code, as Excel would show it
     switch (s.fmt) {
       case 'number': return grp(v, d ?? 2);
       case 'money': return (v < 0 ? '-' : '') + '¥' + grp(Math.abs(v), d ?? 2);

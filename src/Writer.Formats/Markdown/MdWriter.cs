@@ -41,9 +41,9 @@ static class MdWriter
             for (var deeper = level + 1; deeper < lastList.Length; deeper++) lastList[deeper] = null;
             var indent = level == 0 ? 0 : indentAt[level] > 0 ? indentAt[level] : 2 * level;
             string marker;
-            if (item.List == "number")
+            if (item.List != "bullet") // number, and the Word kinds markdown has no marker for (outline, chinese)
             {
-                counters[level] = lastList[level] == "number" ? counters[level] + 1 : 1;
+                counters[level] = lastList[level] == item.List ? counters[level] + 1 : 1;
                 marker = counters[level].ToString(CultureInfo.InvariantCulture) + ". ";
             }
             else marker = "- ";

@@ -22,28 +22,29 @@ public class PptxTests
         Assert.Equal("0", doc.Root.GetProps()["slides"]);
         var title = Mutations.Add(doc.Root, "slide", Props(("layout", "Title"), ("title", "Q4 Results")), null);
         Assert.Equal("/slide[1]", title.Path);
-        Assert.Equal(("Q4 Results", "Title"), (title.GetProps()["title"], title.GetProps()["layout"]));
-        var shapes = title.Children;
+        Assert.Equal(("Q4 Results", "Title Slide"), (title.GetProps()["title"], title.GetProps()["layout"]));
+        var shapes = title.Children.Where(c => c.Kind == "shape").ToList();
         Assert.Equal(2, shapes.Count);
         Assert.Equal("title", shapes[0].GetProps()["placeholder"]);
         Assert.Equal("subtitle", shapes[1].GetProps()["placeholder"]);
-        Assert.Equal("4.233cm", Registry.ToDisplay("shape", shapes[0].GetProps())["x"]);
+        Assert.Equal("2.709cm", Registry.ToDisplay("shape", shapes[0].GetProps())["x"]);
 
         var content = Mutations.Add(doc.Root, "slide", Props(("title", "Agenda")), null);
-        Assert.Equal("Content", content.GetProps()["layout"]);
+        Assert.Equal("Title and Content", content.GetProps()["layout"]);
         var blank = Mutations.Add(doc.Root, "slide", Props(("layout", "blank")), 1);
         Assert.Equal("/slide[1]", blank.Path);
         Assert.Empty(blank.Children);
-        Assert.Equal(new[] { "Blank", "Title", "Content" }, doc.Root.Children.Select(s => s.GetProps()["layout"]));
+        Assert.Equal(new[] { "Blank", "Title Slide", "Title and Content" }, doc.Root.Children.Select(s => s.GetProps()["layout"]));
         Assert.Equal("3", doc.Root.GetProps()["slides"]);
         var ex = Assert.Throws<WriterException>(() => Mutations.Add(doc.Root, "slide", Props(("layout", "Fancy")), null));
-        Assert.Contains("Title, Content, Blank", ex.Hint);
+        Assert.Contains("Title Slide, Title and Content", ex.Hint);
+        Assert.Contains("two, comparison", ex.Hint);
 
         var moved = Mutations.Move(PathResolver.Single(doc.Root, "/slide[3]"), doc.Root, 1);
         Assert.Equal("/slide[1]", moved.Path);
         Assert.Equal("Agenda", moved.GetProps()["title"]);
         PathResolver.Single(doc.Root, "/slide[2]").Remove();
-        Assert.Equal(new[] { "Content", "Title" }, doc.Root.Children.Select(s => s.GetProps()["layout"]));
+        Assert.Equal(new[] { "Title and Content", "Title Slide" }, doc.Root.Children.Select(s => s.GetProps()["layout"]));
 
         using var reopened = new PptxAdapter().Open(new MemoryStream(Save(doc)));
         Assert.Equal("Agenda", reopened.Root.Children[0].GetProps()["title"]);

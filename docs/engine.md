@@ -59,7 +59,12 @@ set <file> <path> [--prop k=v]... [--raw xml] [--all]   change properties, or re
 remove <file> <path> [--all]                            delete elements
 move <file> <path> --to parent [--index n]              move an element
 copy <file> <path> --to parent [--index n]              copy a pptx slide, or a shape, picture or table, exactly
-view <file> [outline|text|html|json]                    the whole document
+view <file> [outline|structure|text|html|json]          the whole document; structure is the short form
+search <file> <text> [--ignore-case]                    blocks whose text contains the words, with paths
+section <file> <heading path> [--md text | --remove]    a heading with its blocks: print, rewrite from markdown, remove
+replace <file> [path] --find a --with b [--preview]     find and replace; Word paragraphs keep their formatting
+formula <file> <cell|range path> <formula> [--check]    xlsx: write (a range fills like Excel) and report references
+batch <file> --run "command" [--run ...]                several commands, one save; nothing written when one fails
 export <file> --to out.ext                              md, docx, pptx, xlsx, html, json
 help [format] [element] [--json]                        elements and properties, generated from the registry
 mcp                                                     MCP server over stdio
@@ -109,7 +114,7 @@ preview with a one-time code that the first visit swaps for an HttpOnly cookie, 
 | `GET /files` | the documents in the workspace (`--dir`, `--list-depth` levels deep, the 500 newest), plus whether the assistant is configured |
 | `GET /file?file=`, `PUT /file?file=` (`&from=` renames) | raw bytes of a workspace file, served as a download; uploads and renames |
 | `GET /binary?file=&path=` | the bytes of an image node |
-| `POST /chat` with `{"file","messages":[{"role","content"}]}` | the assistant: server-sent events `text`, `tool`, `done`, `error`; needs `ANTHROPIC_API_KEY` |
+| `POST /chat` with `{"file","messages":[{"role","content"}]}` | the assistant: server-sent events `delta` (streamed text), `text`, `tool` (with `wrote`), `done`, `error`; needs a configured model |
 | `GET /app/` | the editor app |
 
 Relative file paths in every endpoint and in `/run` commands resolve against the workspace folder.

@@ -453,6 +453,10 @@ public sealed class Serve : IDisposable
             w.WriteBoolean("chat", chat is not null);
             if (chat is not null) w.WriteString("model", chat.Model);
             if (Drafts is not null) w.WriteString("drafts", Drafts.Replace('\\', '/'));
+            // every extension the engine reads and the editor it opens in; the page builds its open dialog and drop rules from it
+            w.WriteStartObject("open");
+            foreach (var (ext, editor) in Adapters.OpensAs.OrderBy(x => x.Key, StringComparer.Ordinal)) w.WriteString(ext, editor);
+            w.WriteEndObject();
             w.WriteStartArray("files");
             foreach (var (full, info) in entries)
             {

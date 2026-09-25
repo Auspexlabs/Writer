@@ -1,7 +1,12 @@
-// In-app updates, in the builds that update themselves (the App Store updates the store build): a check 10 s after
-// launch and once a day while Writer runs, unless 设置 › 通用 › 自动更新 is off, and 检查更新… (the Writer menu on
-// macOS, the W menu on Windows). An automatic check shows nothing; 检查更新… ends in one dialog: 已是最新版本, or
-// 新版本已下载 with 立即重启 / 好.
+// In-app updates, in the builds that update themselves (the App Store updates the store build): a check a few seconds
+// after the first window of a launch is up and then once a day, unless 设置 › 通用 › 自动更新 is off, and 检查更新… (the
+// Writer menu on macOS, the W menu on Windows, 关于 Writer).
+//
+// What it finds shows in the front document window (ui/UpdateNotice.dc.html, window.__writerUpdate): once an update is
+// downloaded, a notice 「Writer 0.1.3 已准备好 · 查看更新内容 · 立即更新」; 立即更新 restarts into it, and ignored it
+// installs when Writer quits. The first launch that runs it shows 「Writer 已更新到 0.1.3」 with the notes, once
+// (update.json keeps them across the restart). 检查更新… shows the notice again, or 已是最新版本; one that fails ends in
+// a dialog.
 //
 // New versions (tauri-plugin-updater): latest.json on the website, then on the newest GitHub release
 // (plugins.updater.endpoints in tauri.macos.conf.json / tauri.windows.conf.json). A newer version downloads in the
@@ -22,35 +27,37 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering::SeqCst};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Mutex, MutexGuard, OnceLock, TryLockError};
 use std::time::Duration;
 
 use base64::Engine;
-use serde_json::{Map, Value};
-use tauri::AppHandle;
+use serde_json::{json, Map, Value};
+use tauri::{AppHandle, Manager, WebviewWindow};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_updater::UpdaterExt;
 
-// Everything the updater shows, in one place; the English is in t() in main.rs. {v} is a version.
+// What the updater says natively, in one place; the English is in t() in main.rs. The notice and What's New are the
+// page's (ui/UpdateNotice.dc.html).
 pub const MENU: &str = "检查更新…";
-const DOWNLOADED: &str = "新版本已下载";
-const DOWNLOADED_BODY: &str = "重新打开 Writer 后生效。";
-const RESTART: &str = "立即重启";
 const OK: &str = "好";
-const LATEST: &str = "已是最新版本";
-const LATEST_BODY: &str = "Writer {v} 是目前的最新版本。";
 const CHECK_FAILED: &str = "无法检查更新";
 const FAILED: &str = "更新失败";
 const FAILED_BODY: &str = "请稍后再试，或前往 https://github.com/Auspexlabs/writer/releases 下载最新版本。";
 const OPEN: &str = "前往下载页";
 const RELEASES: &str = "https://github.com/Auspexlabs/writer/releases";
+/// In <app data>: the notes of the update last downloaded, for the launch that runs it (downloaded, applied).
+const NOTES: &str = "update.json";
 
 type Error = Box<dyn std::error::Error>;
 
-/// A check, a download or its dialog is under way.
-static BUSY: AtomicBool = AtomicBool::new(false);
-/// A new version (PENDING) or interface package waits for the next launch.
-static READY: AtomicBool = AtomicBool::new(false);
+/// A check or its download is under way.
+static BUSY: Mutex<()> = Mutex::new(());
+/// The update that waits for the next launch (a new version in PENDING, or an interface package), as its notice says it.
+static READY: Mutex<Option<Value>> = Mutex::new(None);
+/// What waits for a document window to report in: What's New at launch, the notice, the answer to 检查更新….
+static WAITING: Mutex<Vec<Value>> = Mutex::new(Vec::new());
+/// The launch check has been started.
+static LAUNCHED: AtomicBool = AtomicBool::new(false);
 /// Installs the downloaded version; true: open Writer again afterwards.
 type Install = Box<dyn FnOnce(bool) + Send>;
 /// The downloaded version's install, run when Writer quits. ponytail: the download is held in memory until then (tens of
@@ -61,24 +68,65 @@ static PACKAGE: OnceLock<Option<(PathBuf, u64)>> = OnceLock::new();
 /// state.json is written by the update thread and when a window does not report in.
 static STATE: Mutex<()> = Mutex::new(());
 
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 pub fn start(app: &AppHandle) -> tauri::Result<()> {
-    ui_package(app); // this run's interface, chosen before a check can unpack a newer one
+    let build = ui_package(app).map(|(_, build)| *build); // this run's interface, chosen before a check can unpack a newer one
     if cfg!(feature = "appstore") {
         return Ok(());
     }
     app.plugin(tauri_plugin_updater::Builder::new().build())?;
+    let version = app.package_info().version.to_string();
+    if let Some(notes) = applied(&crate::data_file(app, NOTES), &version, build) {
+        lock(&WAITING).push(json!({ "kind": "new", "version": label(&version, build), "notes": notes }));
+    }
     let app = app.clone();
-    std::thread::spawn(move || {
-        let mut wait = Duration::from_secs(10);
-        loop {
-            std::thread::sleep(wait);
-            wait = Duration::from_secs(24 * 3600);
-            if automatic(&app) {
-                check(&app, false);
-            }
+    std::thread::spawn(move || loop {
+        std::thread::sleep(Duration::from_secs(24 * 3600));
+        if automatic(&app) {
+            check(&app, false);
         }
     });
     Ok(())
+}
+
+/// A document window reported in (main.rs shell_state): it shows what waits for one, and the first this run starts the
+/// launch check a few seconds later.
+pub fn page_ready(app: &AppHandle, window: &WebviewWindow) {
+    for what in lock(&WAITING).drain(..) {
+        tell(window, &what);
+    }
+    if !cfg!(feature = "appstore") && !LAUNCHED.swap(true, SeqCst) {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_secs(3));
+            if automatic(&app) {
+                check(&app, false);
+            }
+        });
+    }
+}
+
+/// Shows `what` in the front document window, or in the first to report in when none has yet (at launch; after
+/// 检查更新… with every window closed, which opens one).
+fn show(app: &AppHandle, what: Value) {
+    let mut waiting = lock(&WAITING); // held until it is queued, so that page_ready cannot drain in between
+    let label = {
+        let s = crate::shell(app);
+        let up = |label: &String| s.windows.get(label).is_some_and(|f| !f.state.is_null());
+        s.front.clone().filter(up).or_else(|| s.windows.keys().find(|label| up(label)).cloned())
+    };
+    match label.and_then(|label| app.get_webview_window(&label)) {
+        Some(window) => tell(&window, &what),
+        None => waiting.push(what),
+    }
+}
+
+/// Leaves `what` in the page's mailbox, which the page reads as soon as its UpdateNotice is loaded.
+fn tell(window: &WebviewWindow, what: &Value) {
+    let _ = window.eval(format!("(window.__writerUpdates = window.__writerUpdates || []).push({what}); window.__writerUpdate && window.__writerUpdate()"));
 }
 
 /// 设置 › 通用 › 自动更新, on unless turned off.
@@ -87,79 +135,112 @@ fn automatic(app: &AppHandle) -> bool {
     settings.and_then(|s| s.get("autoUpdate")?.as_bool()).unwrap_or(true)
 }
 
-/// 检查更新… in the W menu (ui/win.dc.html, capabilities/writer-win-shell.json).
+/// 检查更新… in the W menu (ui/win.dc.html) and 关于 Writer (capabilities/writer-*-shell.json).
 #[tauri::command]
 pub fn check_update(app: AppHandle) {
     check(&app, true);
 }
 
-/// Looks for a new version, then for a newer interface package, and downloads what it finds. Only a `manual` check (the
-/// menu item) says how it went: the website or GitHub may not be reachable, and an automatic check stays silent.
+/// Looks for a new version, then for a newer interface package, and downloads what it finds. Only a `manual` check
+/// (检查更新…) also says when there is nothing new or the website and GitHub cannot be reached; an automatic one stays
+/// quiet about that.
 pub fn check(app: &AppHandle, manual: bool) {
-    if BUSY.swap(true, SeqCst) {
-        return;
-    }
     let app = app.clone();
     std::thread::spawn(move || {
+        let busy = BUSY.try_lock();
+        let _busy = match busy {
+            Ok(busy) => busy,
+            Err(TryLockError::Poisoned(busy)) => busy.into_inner(),
+            Err(TryLockError::WouldBlock) if !manual => return, // one is under way
+            Err(TryLockError::WouldBlock) => lock(&BUSY),       // 检查更新… waits for it, then answers
+        };
         run(&app, manual);
-        BUSY.store(false, SeqCst);
     });
 }
 
 fn run(app: &AppHandle, manual: bool) {
-    if !READY.load(SeqCst) {
-        if let Err(title) = fetch(app, manual) {
-            if manual {
-                failed(app, crate::t(title));
+    let ready = lock(&READY).clone();
+    let found = match ready {
+        Some(_) if !manual => return, // its notice was shown
+        Some(ready) => Some(ready),
+        None => match fetch(app, manual) {
+            Ok(found) => found,
+            Err(title) => {
+                if manual {
+                    failed(app, crate::t(title));
+                }
+                return;
             }
-            return;
+        },
+    };
+    match found {
+        Some(notice) => show(app, notice),
+        None if manual => {
+            let version = label(&app.package_info().version.to_string(), ui_package(app).map(|(_, build)| *build));
+            show(app, json!({ "kind": "latest", "version": version }));
         }
-    }
-    if !manual {
-        return;
-    }
-    if READY.load(SeqCst) {
-        let buttons = MessageDialogButtons::OkCancelCustom(crate::t(RESTART).into(), crate::t(OK).into());
-        if ask(app, crate::t(DOWNLOADED), crate::t(DOWNLOADED_BODY), buttons) {
-            app.request_restart(); // RunEvent::Exit installs a downloaded version first
-        }
-    } else {
-        let mut version = app.package_info().version.to_string();
-        if let Some((_, build)) = ui_package(app) {
-            version = format!("{version} ({build})");
-        }
-        let body = crate::t(LATEST_BODY).replace("{v}", &version);
-        ask(app, crate::t(LATEST), &body, MessageDialogButtons::OkCustom(crate::t(OK).into()));
+        None => {}
     }
 }
 
-/// Downloads a new version for PENDING or, when there is none, a newer interface package; READY once either is in
-/// place. Err: the title of what failed.
-fn fetch(app: &AppHandle, manual: bool) -> Result<(), &'static str> {
+/// Downloads a new version for PENDING or, when there is none, a newer interface package; returns its notice once it is
+/// in place. Err: the title of what failed.
+fn fetch(app: &AppHandle, manual: bool) -> Result<Option<Value>, &'static str> {
     let found = tauri::async_runtime::block_on(async { app.updater()?.check().await });
-    match found {
+    let (version, build, notes) = match found {
         Ok(Some(update)) => {
             if !manual && !replaceable() {
-                return Ok(());
+                return Ok(None);
             }
             // checks the signature against plugins.updater.pubkey; nothing is installed yet
             let bytes = tauri::async_runtime::block_on(update.download(|_, _| {}, || {})).map_err(|_| FAILED)?;
-            *PENDING.lock().unwrap_or_else(|e| e.into_inner()) = Some(Box::new(move |relaunch| {
+            let release = (update.version.clone(), None, update.body.clone().unwrap_or_default());
+            *lock(&PENDING) = Some(Box::new(move |relaunch| {
                 let _ = update.restart_after_install(relaunch).install(bytes);
             }));
-            READY.store(true, SeqCst);
+            release
         }
         Ok(None) => match stage_ui(app) {
-            Ok(staged) => READY.store(staged, SeqCst),
+            Ok(Some((build, notes))) => (app.package_info().version.to_string(), Some(build), notes),
+            Ok(None) => return Ok(None),
             // a missing or broken package is not worth a dialog: this version is the latest
             Err(_error) => {
                 #[cfg(feature = "test-hooks")]
                 eprintln!("interface package: {_error}");
+                return Ok(None);
             }
         },
         Err(_) => return Err(CHECK_FAILED),
+    };
+    Ok(Some(downloaded(&crate::data_file(app, NOTES), &version, build, &notes)))
+}
+
+/// An update is in place: its notes are kept for the launch that runs it ({"version", "build": its interface build or
+/// null, "notes"}), and READY holds its notice.
+fn downloaded(file: &Path, version: &str, build: Option<u64>, notes: &str) -> Value {
+    crate::write_json(file, &json!({ "version": version, "build": build, "notes": notes }));
+    let notice = json!({ "kind": "ready", "version": label(version, build), "notes": notes });
+    *lock(&READY) = Some(notice.clone());
+    notice
+}
+
+/// The notes kept by `downloaded` when this launch runs that update, once: the file goes. Another version or interface
+/// build (the update not installed yet, a package found bad) leaves them for later.
+fn applied(file: &Path, version: &str, build: Option<u64>) -> Option<String> {
+    let saved = crate::read_json(file);
+    if saved["version"].as_str() != Some(version) || saved["build"].as_u64() != build {
+        return None;
     }
-    Ok(())
+    let _ = fs::remove_file(file);
+    Some(saved["notes"].as_str().unwrap_or_default().to_string())
+}
+
+/// A version as 关于 Writer shows it: 0.1.2, or 0.1.2 (3) on build 3 of its interface.
+fn label(version: &str, build: Option<u64>) -> String {
+    match build {
+        Some(build) => format!("{version} ({build})"),
+        None => version.to_string(),
+    }
 }
 
 /// macOS: whether this user may replace the app bundle, so that installing at quit asks for no administrator password.
@@ -183,8 +264,8 @@ fn replaceable() -> bool {
 }
 
 /// On the way out (RunEvent::Exit, after the engines stopped): a downloaded version installs now. macOS replaces the app
-/// bundle; Windows starts the installer, which runs quietly, and this process exits. `relaunch` (a restart: 立即重启, or
-/// after a language change) opens Writer again: Tauri's restart on macOS, the installer's /R on Windows. If the install
+/// bundle; Windows starts the installer, which runs quietly, and this process exits. `relaunch` (a restart: the notice's
+/// 立即更新, or after a language change) opens Writer again: Tauri's restart on macOS, the installer's /R on Windows. If the install
 /// fails, Writer restarts or quits as it was going to.
 pub fn install_on_exit(relaunch: bool) {
     let Some(install) = PENDING.lock().unwrap_or_else(|e| e.into_inner()).take() else { return };
@@ -284,9 +365,9 @@ pub fn reject_package(app: &AppHandle) {
     crate::write_json(&root.join("state.json"), &Value::Object(state));
 }
 
-/// A newer interface package for exactly this version, downloaded, checked and unpacked for the next launch; true when
-/// there was one.
-fn stage_ui(app: &AppHandle) -> Result<bool, Error> {
+/// A newer interface package for exactly this version, downloaded, checked and unpacked for the next launch; its build and
+/// notes when there was one.
+fn stage_ui(app: &AppHandle) -> Result<Option<(u64, String)>, Error> {
     let config = app.config().plugins.0.get("updater").cloned().unwrap_or_default();
     let insecure = config["dangerousInsecureTransportProtocol"].as_bool() == Some(true);
     let endpoints = config["uiEndpoints"].as_array().cloned().unwrap_or_default();
@@ -304,7 +385,7 @@ fn stage_ui(app: &AppHandle) -> Result<bool, Error> {
         let manifest: Value = serde_json::from_slice(&found.ok_or("no ui.json")?)?;
         let build = manifest["build"].as_u64().unwrap_or(0);
         if manifest["base"].as_str() != Some(&version) || build <= newest(&read_state(&root), &version) {
-            return Ok(false);
+            return Ok(None);
         }
         let archive = get(manifest["url"].as_str().ok_or("ui.json has no url")?).await?.bytes().await?;
         let signature = manifest["signature"].as_str().ok_or("ui.json has no signature")?;
@@ -316,7 +397,7 @@ fn stage_ui(app: &AppHandle) -> Result<bool, Error> {
         let mut state = read_state(&root);
         state.insert(name, "ready".into());
         crate::write_json(&root.join("state.json"), &Value::Object(state));
-        Ok::<_, Error>(true)
+        Ok::<_, Error>(Some((build, manifest["notes"].as_str().unwrap_or_default().to_string())))
     })
 }
 
@@ -389,6 +470,25 @@ mod tests {
         let config: Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
         let writer_key = config["plugins"]["updater"]["pubkey"].as_str().unwrap();
         assert!(verify(data, SIGNED_UI_3, writer_key, "0.1.2-ui.3").is_err(), "another key");
+    }
+
+    #[test]
+    fn an_update_says_what_changed_once_on_the_launch_that_runs_it() {
+        let file = std::env::temp_dir().join(format!("writer-update-test-{}.json", std::process::id()));
+        // pending: 0.1.3 downloaded while 0.1.2 runs
+        let notice = downloaded(&file, "0.1.3", None, "- 更快的启动");
+        assert_eq!(notice, json!({ "kind": "ready", "version": "0.1.3", "notes": "- 更快的启动" }));
+        assert_eq!(lock(&READY).as_ref(), Some(&notice), "检查更新… shows the same notice again");
+        assert_eq!(applied(&file, "0.1.2", None), None, "not installed yet (still 0.1.2): kept for later");
+        // applied: the first launch of 0.1.3 says what changed, once
+        assert_eq!(applied(&file, "0.1.3", None).as_deref(), Some("- 更快的启动"));
+        assert_eq!(applied(&file, "0.1.3", None), None, "What's New only once");
+        // an interface package: build 4 of 0.1.2
+        assert_eq!(downloaded(&file, "0.1.2", Some(4), "")["version"], "0.1.2 (4)");
+        assert_eq!(applied(&file, "0.1.2", None), None, "on the bundled ui/ (package 4 found bad): not this update");
+        assert_eq!(applied(&file, "0.1.2", Some(3)), None);
+        assert_eq!(applied(&file, "0.1.2", Some(4)).as_deref(), Some(""), "without notes it still says so");
+        assert!(!file.exists());
     }
 
     #[test]

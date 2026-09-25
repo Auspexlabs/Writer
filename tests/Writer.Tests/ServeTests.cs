@@ -26,7 +26,7 @@ public class ServeTests : IDisposable
         Doc("report.docx", P("Hello"));
         Directory.CreateDirectory(Path.Combine(_dir, "sub"));
         File.WriteAllText(Path.Combine(_dir, "sub", "notes.md"), "# Notes\n");
-        File.WriteAllText(Path.Combine(_dir, "ignore.txt"), "x");
+        File.WriteAllText(Path.Combine(_dir, "ignore.xyz"), "x");
 
         var listed = JsonDocument.Parse(await (await _client.SendAsync(Request(HttpMethod.Get, "/files"))).Content.ReadAsStringAsync()).RootElement;
         Assert.Equal(_dir, listed.GetProperty("workspace").GetString());
@@ -34,7 +34,7 @@ public class ServeTests : IDisposable
         var files = listed.GetProperty("files").EnumerateArray().Select(f => f.GetProperty("path").GetString()).ToList();
         Assert.Contains("report.docx", files);
         Assert.Contains("sub/notes.md", files);
-        Assert.DoesNotContain("ignore.txt", files);
+        Assert.DoesNotContain("ignore.xyz", files);
 
         var relative = await _client.SendAsync(Request(HttpMethod.Get, "/outline?file=report.docx"));
         Assert.Equal(HttpStatusCode.OK, relative.StatusCode);
@@ -447,7 +447,7 @@ public class ServeTests : IDisposable
         Assert.Equal("PATH_NOT_FOUND", badResult.GetProperty("error").GetProperty("code").GetString());
 
         var html = await (await _client.SendAsync(Request(HttpMethod.Get, "/html" + q))).Content.ReadAsStringAsync();
-        Assert.Contains("<h1>Intro</h1>", html);
+        Assert.Matches("<h1[^>]*>Intro</h1>", html);
         Assert.Contains("Changed", html);
 
         var json = await _client.SendAsync(Request(HttpMethod.Get, "/json" + q));

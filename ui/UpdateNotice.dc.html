@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div>
+  <sc-if value="{{ hasPill }}" hint-placeholder-val="{{ true }}">
+    <!-- above the editors' status pill (bottom 14px) and the shell's toasts (bottom 40px) -->
+    <div style="position:absolute;left:0;right:0;bottom:88px;z-index:340;display:flex;justify-content:center;pointer-events:none">
+      <div data-update="ready" data-pop="hud" style="pointer-events:auto;height:40px;display:flex;align-items:center;gap:6px;padding:0 5px 0 13px;border-radius:999px;background:linear-gradient(180deg,var(--k23, rgba(255,255,255,0.82)),var(--k24, rgba(255,255,255,0.64)));backdrop-filter:blur(20px) saturate(190%);-webkit-backdrop-filter:blur(20px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k25, #fff),0 14px 40px var(--k26, rgba(0,0,0,0.16)),0 1px 3px var(--k19, rgba(0,0,0,0.1));font-size:13px;color:var(--k1, #1D1D1F);white-space:nowrap">
+        <img src="./assets/writer-glyph.svg" alt="" style="width:16px;height:16px;flex:none;display:block;filter:var(--gmark, none)">
+        <span style="font-weight:500;padding-right:2px">{{ readyText }}</span>
+        <sc-if value="{{ hasNotes }}" hint-placeholder-val="{{ true }}"><button data-update-notes="1" onClick="{{ openNotes }}" style="height:30px;padding:0 10px;border:none;border-radius:999px;background:transparent;font-size:12.5px;color:var(--k11, #6E6E73);cursor:default;transition:background .15s,color .15s" style-hover="background:var(--k20, rgba(255,255,255,0.7));color:var(--k1, #1D1D1F)">查看更新内容</button></sc-if>
+        <button data-update-now="1" onClick="{{ updateNow }}" style="height:30px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;font-weight:500;cursor:default;transition:opacity .15s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="opacity:0.86" style-active="transform:scale(0.94)">立即更新</button>
+        <button onClick="{{ dismiss }}" title="关闭" style="width:28px;height:28px;flex:none;padding:0;border:none;border-radius:50%;background:transparent;color:var(--k8, #8E8E93);cursor:default;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s" style-hover="background:var(--k36, rgba(0,0,0,0.06));color:var(--k1, #1D1D1F)"><svg width="9" height="9" viewBox="0 0 10 10" style="display:block"><path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg></button>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasSheet }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeSheet }}" onKeyDown="{{ sheetKey }}" style="position:absolute;inset:0;z-index:380;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--k26, rgba(0,0,0,0.16))">
+      <div data-update="{{ sheetKind }}" data-pop="center" data-dlg="1" role="dialog" aria-modal="true" aria-label="{{ sheetTitle }}" onMouseDown="{{ stop }}" style="width:380px;max-width:100%;max-height:100%;display:flex;flex-direction:column;gap:16px;padding:22px 22px 16px;border-radius:18px;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.86),rgba(246,246,248,0.78)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 24px 60px rgba(0,0,0,0.24);color:var(--k1, #1D1D1F)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;flex:none;border-radius:10px;overflow:hidden;box-shadow:0 0 0 0.5px var(--k19, rgba(0,0,0,0.1)),0 6px 16px var(--k22, rgba(0,0,0,0.12))">
+            <img class="wr-logo-light" src="./assets/writer-logo-light.svg" alt="" style="width:44px;height:44px;display:block"><img class="wr-logo-dark" src="./assets/writer-logo-dark.svg" alt="" style="width:44px;height:44px;display:block">
+          </div>
+          <div style="min-width:0;display:flex;flex-direction:column;gap:3px">
+            <div style="font-size:15px;font-weight:600;line-height:1.3">{{ sheetTitle }}</div>
+            <sc-if value="{{ sheetReady }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;line-height:1.45;color:var(--k11, #6E6E73)">现在更新，或者下次打开 Writer 时自动生效。</div></sc-if>
+          </div>
+        </div>
+        <sc-if value="{{ hasSheetNotes }}" hint-placeholder-val="{{ true }}">
+          <div data-update-text="1" style="min-height:0;max-height:260px;overflow:auto;padding:12px 14px;border-radius:12px;background:var(--gcard, rgba(255,255,255,0.5));box-shadow:inset 0 0 0 1px var(--gline, rgba(0,0,0,0.08));font-size:13px;line-height:1.65;color:var(--k9, #3A3A3C);white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text">{{ sheetNotes }}</div>
+        </sc-if>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <sc-if value="{{ sheetReady }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ later }}" style="height:30px;padding:0 16px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.7)),var(--k16, rgba(255,255,255,0.4)));border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 4px 12px var(--k22, rgba(0,0,0,0.08));font-size:13px;color:var(--k1, #1D1D1F);cursor:default;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">稍后</button>
+            <button ref="{{ mainRef }}" data-update-now="1" onClick="{{ updateNow }}" style="height:30px;padding:0 18px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13px;font-weight:500;cursor:default;transition:opacity .15s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="opacity:0.86" style-active="transform:scale(0.94)">立即更新</button>
+          </sc-if>
+          <sc-if value="{{ sheetNew }}" hint-placeholder-val="{{ true }}">
+            <button ref="{{ mainRef }}" data-update-ok="1" onClick="{{ closeSheet }}" style="height:30px;min-width:76px;padding:0 18px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13px;font-weight:500;cursor:default;transition:opacity .15s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="opacity:0.86" style-active="transform:scale(0.94)">好</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;bottom:40px;z-index:400;display:flex;justify-content:center;pointer-events:none">
+      <div data-update="latest" data-pop="hud" style="padding:11px 18px;border-radius:999px;background:var(--k43, rgba(29,29,31,0.72));backdrop-filter:blur(12px) saturate(180%);-webkit-backdrop-filter:blur(12px) saturate(180%);color:#fff;font-size:13px;box-shadow:inset 0 1px 0 var(--k44, rgba(255,255,255,0.18)),0 12px 32px var(--k45, rgba(0,0,0,0.2));white-space:nowrap">{{ toast }}</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+// Updates, in the document window (the shell imports this). desktop/src-tauri/src/update.rs, in the front window only,
+// pushes onto window.__writerUpdates (it may come before this component has loaded) and calls window.__writerUpdate():
+//   { kind: 'ready', version, notes }  an update is downloaded: a pill; 立即更新 restarts into it, 查看更新内容 shows the
+//                                      notes. Dismissed or ignored, it still installs when Writer quits.
+//   { kind: 'new', version, notes }    the first launch that runs it: 「Writer 已更新到 …」 with the notes, once
+//   { kind: 'latest', version }        检查更新… found nothing newer: a short toast
+const restart = () => { const t = window.__TAURI_INTERNALS__; if (t && t.invoke) Promise.resolve(t.invoke('restart_app')).catch(() => { }); };
+/** The notes as the feed has them (plain text), list markers shown as bullets. */
+const notesText = s => String(s || '').trim().replace(/^[ \t]*[-*][ \t]+/gm, '• ');
+
+class Component extends DCLogic {
+  state = { ready: null, sheet: null, toast: null };
+  mainRef = React.createRef();
+
+  componentDidMount() { window.__writerUpdate = () => this.take(); this.take(); }
+  take() {
+    for (const u of (window.__writerUpdates || []).splice(0)) {
+      if (u.kind === 'ready') this.setState({ ready: u });
+      else if (u.kind === 'new') this.setState({ sheet: u });
+      else if (u.kind === 'latest') {
+        clearTimeout(this.tt);
+        this.setState({ toast: $t('Writer {v} 已是最新版本', { v: u.version }) });
+        this.tt = setTimeout(() => this.setState({ toast: null }), 2600);
+      }
+    }
+  }
+  // the sheet takes the focus while it is open and gives it back (DC passes no prevState, so remember the last value)
+  componentDidUpdate() {
+    const open = !!this.state.sheet;
+    if (open && !this._open) { this._back = document.activeElement; if (this.mainRef.current) this.mainRef.current.focus(); }
+    if (!open && this._open && this._back && this._back.focus) this._back.focus();
+    this._open = open;
+  }
+  componentWillUnmount() { delete window.__writerUpdate; clearTimeout(this.tt); }
+
+  renderVals() {
+    const { ready, sheet, toast } = this.state, isNew = !!sheet && sheet.kind === 'new', notes = notesText(sheet && sheet.notes);
+    const close = () => this.setState({ sheet: null });
+    return {
+      hasPill: !!ready && !sheet, readyText: ready ? $t('Writer {v} 已准备好', { v: ready.version }) : '',
+      hasNotes: !!notesText(ready && ready.notes), openNotes: () => this.setState({ sheet: ready }),
+      updateNow: restart, // RunEvent::Exit installs the downloaded version, then Writer opens again
+      dismiss: () => this.setState({ ready: null }),
+      hasSheet: !!sheet, sheetKind: sheet ? sheet.kind : '', sheetNew: isNew, sheetReady: !!sheet && !isNew,
+      sheetTitle: !sheet ? '' : isNew ? $t('Writer 已更新到 {v}', { v: sheet.version }) : $t('Writer {v} 已准备好', { v: sheet.version }),
+      hasSheetNotes: !!notes, sheetNotes: notes,
+      later: () => this.setState({ sheet: null, ready: null }), closeSheet: close, stop: e => e.stopPropagation(),
+      sheetKey: e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } },
+      mainRef: this.mainRef,
+      hasToast: !!toast, toast: toast || ''
+    };
+  }
+}
+</script>
+</body>
+</html>

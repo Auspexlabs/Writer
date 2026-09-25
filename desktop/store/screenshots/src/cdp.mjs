@@ -61,9 +61,9 @@ export async function launch({ width = 1440, height = 900, scale = 2 } = {}) {
     async hover(x, y) { await page.mouse('mouseMoved', x, y, { button: 'none' }); },
     async wheel(x, y, deltaX, deltaY) { await page.mouse('mouseWheel', x, y, { button: 'none', deltaX, deltaY }); },
     async type(text) { await s('Input.insertText', { text }); },
-    /** PNG of the viewport. */
-    async shot(file) {
-      const r = await s('Page.captureScreenshot', { format: 'png', fromSurface: true });
+    /** PNG of the viewport; opts go to Page.captureScreenshot as they are (format, quality, clip). */
+    async shot(file, opts) {
+      const r = await s('Page.captureScreenshot', Object.assign({ format: 'png', fromSurface: true }, opts));
       writeFileSync(file, Buffer.from(r.data, 'base64'));
       return file;
     },

@@ -91,7 +91,9 @@ test('typed input gets the value and format Excel would store', () => {
   assert.deepEqual(p('2024/3/5'), { v: '2024-03-05', patch: { fmt: 'date' } }, 'dates go to the engine as ISO text');
   assert.deepEqual(p('2024年3月5日'), { v: '2024-03-05', patch: { fmt: 'date' } });
   assert.deepEqual(p('9:30'), { v: '0.395833333333', patch: { fmt: 'time' } });
-  assert.deepEqual(p('2024-03-05 12:00'), { v: '45356.5', patch: { fmt: 'date', code: 'yyyy/m/d h:mm' } });
+  assert.deepEqual(p('2024-03-05 12:00'), { v: '2024-03-05 12:00:00', patch: { fmt: 'date', code: 'yyyy/m/d h:mm' } }, 'date-times too: the engine writes the workbook\'s own serial (1900 or 1904)');
+  assert.deepEqual(p('12.5%', { fmt: 'pct', dec: 2, code: '0.00%' }), { v: '0.125', patch: null }, 'a percent cell keeps its code, as in Excel');
+  assert.deepEqual(p('$7', { fmt: 'usd', dec: 2, code: '"$"#,##0.00_);("$"#,##0.00)' }), { v: '7', patch: null });
   assert.deepEqual(p('12.55%'), { v: '0.1255', patch: { fmt: 'pct', dec: 2 } });
   assert.deepEqual(p('$1,200.50'), { v: '1200.50', patch: { fmt: 'usd', dec: 2 } });
   assert.deepEqual(p('¥1,200'), { v: '1200', patch: { fmt: 'money', dec: 0 } });
@@ -274,4 +276,164 @@ test('the selected cell\'s row and column headers stay opaque, so cells scrolled
     assert.ok(base, h.bg);
     assert.match(dark.match(new RegExp(base[1] + ':([^;]+);'))[1], /^#[0-9A-F]{6}$/i, '…and in dark mode');
   }
+});
+
+test('conditional formats: Excel-shaped rules colour cells, the first rule that holds wins, presets come from the menu dialog, rules move with inserted rows and clear by selection', () => {
+  const x = editor([{ name: 'Data', cells: { A1: { v: '5' }, A2: { v: '50' }, A3: { v: '50' }, B1: { v: 'an error here' }, C1: { v: '1' }, C2: { v: '3' } },
+    cf: [{ range: 'A1:A3', type: 'cellIs', operator: 'greaterThan', value: '10', fill: '#C6EFCE', color: '#006100' }, { range: 'A1:A3', type: 'duplicateValues' }, { range: 'B1', type: 'containsText', text: 'ERROR', bold: true }, { range: 'C1:C2', type: 'colorScale', colors: ['#FFFFFF', '#63BE7B'] }] }]), c = x.component;
+  const look = () => Object.fromEntries(c.renderVals().cells.filter(k => k.text).map(k => [k.text, [k.bg, k.color, k.fw]]));
+  const L = look();
+  assert.deepEqual(L['50'], ['#C6EFCE', '#006100', 400], 'greater-than (green, first) wins over duplicate values (the default red look)');
+  assert.deepEqual(L['5'], ['var(--k0, #FFFFFF)', 'var(--k7, #1D1D1F)', 400]);
+  assert.deepEqual(L['an error here'], ['var(--k0, #FFFFFF)', 'var(--k7, #1D1D1F)', 700], 'text contains is case-insensitive; a look of only bold changes only the weight');
+  assert.deepEqual([L['1'][0], L['3'][0]], ['#ffffff', '#63be7b'], 'a two-colour scale runs from the smallest to the largest');
+  Object.assign(c.state, { anc: { r: 0, c: 2 }, sel: { r: 1, c: 2 } }); c.renderVals(); c.menus.cf.find(i => i.label === '大于…').onClick();
+  c.state.dlg.fields[0].value = '2'; c.state.dlg.fields[1].value = 'yellow'; c.dlgOk();
+  assert.deepEqual(plain(x.doc.sheets[0].cf.at(-1)), { range: 'C1:C2', type: 'cellIs', operator: 'greaterThan', value: '2', fill: '#FFEB9C', color: '#9C5700' });
+  assert.equal(look()['3'][0], '#63be7b', 'the earlier colour scale still wins');
+  c.cfManage(); c.state.dlg.fields[0].value = '4'; c.state.dlg.fields[1].value = 'up'; c.dlgOk();
+  assert.equal(look()['3'][0], '#FFEB9C', 'moved up, the new rule wins');
+  c.insDel('r', 0, 1);
+  assert.deepEqual(plain(x.doc.sheets[0].cf.map(r => r.range)), ['A2:A4', 'A2:A4', 'B2', 'C2:C3', 'C2:C3']);
+  Object.assign(c.state, { anc: { r: 1, c: 1 }, sel: { r: 1, c: 1 } }); c.renderVals(); c.menus.cf.find(i => i.label === '清除所选单元格的规则').onClick();
+  assert.deepEqual(plain(x.doc.sheets[0].cf.map(r => r.type)), ['cellIs', 'duplicateValues', 'cellIs', 'colorScale']);
+});
+
+test('data validation: rules by range as the file keeps them, the list arrow and picker on the active cell, Excel\'s dialog, error texts', () => {
+  const x = editor([{ name: 'Data', cells: { H1: { v: 'East' }, H2: { v: 'West' } }, dv: [{ range: 'A1:A5', type: 'list', values: ['Yes', 'No'], error: 'Yes or No' }, { range: 'B1:B5', type: 'whole', operator: 'between', value: '1', value2: '10' }, { range: 'C1:C5', type: 'list', source: 'H1:H2' }, { range: 'D1', type: 'date', operator: 'greaterThan', value: '45292' }] }]), c = x.component;
+  assert.equal(c.dvBad(0, 0, 'Maybe'), 'Yes or No'); assert.equal(c.dvBad(0, 0, 'Yes'), null); assert.equal(c.dvBad(0, 0, ''), null, 'blank passes');
+  assert.match(c.dvBad(0, 1, '11'), /1 到 10/); assert.match(c.dvBad(0, 1, '2.5'), /整数/); assert.equal(c.dvBad(0, 1, '7'), null);
+  assert.equal(c.dvBad(0, 2, 'West'), null); assert.match(c.dvBad(0, 2, 'North'), /East、West/);
+  assert.equal(c.dvBad(0, 3, '2024-03-05'), null); assert.match(c.dvBad(0, 3, '2023-12-31'), /大于 2024\/1\/1/);
+  Object.assign(c.state, { anc: { r: 0, c: 2 }, sel: { r: 0, c: 2 } });
+  let v = c.renderVals();
+  assert.ok(v.cells.find(k => k.gr === '2' && k.gc === '4').hasF, 'the arrow on the active list cell'); assert.ok(!v.cells.find(k => k.gr === '3' && k.gc === '4').hasF, 'not on the others');
+  c.state.pop = { id: 'dv', x: 0, y: 0 }; v = c.renderVals(); assert.deepEqual(plain(v.popItems.map(i => i.label)), ['East', 'West']);
+  v.popItems[1].onClick(); assert.equal(x.doc.sheets[0].cells.C1.v, 'West');
+  Object.assign(c.state, { anc: { r: 0, c: 1 }, sel: { r: 4, c: 1 }, pop: null }); c.dvSet();
+  const f = k => c.state.dlg.fields.find(y => y.key === k); assert.deepEqual([f('t').value, f('o').value, f('v').value, f('v2').value], ['whole', 'between', '1', '10']);
+  f('o').value = 'greaterThan'; f('v').value = '0'; f('e').value = 'Positive only'; c.dlgOk();
+  assert.deepEqual(plain(x.doc.sheets[0].dv.filter(r => r.range === 'B1:B5')), [{ range: 'B1:B5', type: 'whole', operator: 'greaterThan', value: '0', error: 'Positive only' }], 'the rule the selection covers is replaced');
+  assert.equal(c.dvBad(0, 1, '-3'), 'Positive only');
+});
+
+test('filter criteria hide rows until the filter is applied again, the dropdown offers sort, text/number criteria and values, the sort dialog takes three keys', () => {
+  const x = editor([{ name: 'Data', filter: 'A1:C5', cells: { A1: { v: 'Region' }, B1: { v: 'Item' }, C1: { v: 'Sales' }, A2: { v: 'East' }, B2: { v: 'Pen' }, C2: { v: '120' }, A3: { v: 'West' }, B3: { v: 'Pencil' }, C3: { v: '80' }, A4: { v: 'East' }, B4: { v: 'Ink' }, C4: { v: '200' }, A5: { v: 'West' }, B5: { v: 'Pad' }, C5: { v: '20' } } }]), c = x.component;
+  c.setFilters({ A: { values: ['East'] } }); assert.deepEqual(plain(x.doc.sheets[0].frows), [2, 4]);
+  c.setFilters({ A: { values: ['East'] }, C: { operator: 'greaterThan', value: '150' } }); assert.deepEqual(plain(x.doc.sheets[0].frows), [1, 2, 4]);
+  c.setFilters({ B: { operator: 'contains', value: 'pen' } }); assert.deepEqual(plain(x.doc.sheets[0].frows), [3, 4], 'text criteria ignore case');
+  assert.ok(!c.renderVals().rowHeads.some(h => h.n === 4 || h.n === 5), 'hidden rows are not drawn');
+  c.state.pop = { id: 'flt0', x: 0, y: 0 }; let items = c.renderVals().popItems;
+  assert.deepEqual(plain(items.filter(i => i.isItem && i.check === '✓').map(i => i.label)), ['（全选）', 'East', 'West'], 'no criterion on A: every value shows');
+  items.find(i => i.label === 'West').onClick(); assert.deepEqual(plain(x.doc.sheets[0].filters), { B: { operator: 'contains', value: 'pen' }, A: { values: ['East'] } });
+  c.state.pop = { id: 'flt2', x: 0, y: 0 }; items = c.renderVals().popItems; items.find(i => i.label === '介于…').onClick();
+  c.state.dlg.fields[0].value = '50'; c.state.dlg.fields[1].value = '150'; c.dlgOk();
+  assert.deepEqual(plain(x.doc.sheets[0].filters.C), { operator: 'between', value: '50', value2: '150' }); assert.deepEqual(plain(x.doc.sheets[0].frows), [2, 3, 4]);
+  c.commit(sh => { sh.cells.A5.v = 'East'; sh.cells.B5.v = 'Pen'; sh.cells.C5.v = '100'; });
+  assert.deepEqual(plain(x.doc.sheets[0].frows), [2, 3, 4], 'an edit moves no row until 重新应用');
+  c.setFilters(x.doc.sheets[0].filters); assert.deepEqual(plain(x.doc.sheets[0].frows), [2, 3]);
+  c.toggleFilter(); assert.deepEqual([x.doc.sheets[0].filter, plain(x.doc.sheets[0].filters), plain(x.doc.sheets[0].frows)], [null, {}, []], 'turning the filter off clears its criteria and rows');
+  Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 4, c: 2 } }); c.sortCustom();
+  assert.deepEqual(plain(c.state.dlg.fields[0].options.map(o => o[1])), ['Region', 'Item', 'Sales'], 'keys are named by the header row');
+  c.state.dlg.fields[0].value = 'A'; c.state.dlg.fields[2].value = 'C'; c.state.dlg.fields[3].value = 'desc'; c.dlgOk();
+  assert.deepEqual([2, 3, 4, 5].map(r => x.doc.sheets[0].cells['A' + r].v + ' ' + x.doc.sheets[0].cells['C' + r].v), ['East 200', 'East 120', 'East 100', 'West 80']);
+});
+
+test('freeze panes: 首行 / 首列 / 至当前单元格 / 取消 from the view tab', () => {
+  const x = editor([{ name: 'Data', cells: {} }]), c = x.component; c.state.tab = 'view';
+  Object.assign(c.state, { anc: { r: 2, c: 1 }, sel: { r: 2, c: 1 } }); c.renderVals();
+  const item = l => c.menus.frz.find(i => i.label === l), panes = () => [x.doc.sheets[0].frR, x.doc.sheets[0].frC];
+  item('冻结至当前单元格').onClick(); assert.deepEqual(panes(), [2, 1]);
+  c.renderVals(); item('冻结首行').onClick(); assert.deepEqual(panes(), [1, 0]);
+  c.renderVals(); item('冻结首列').onClick(); assert.deepEqual(panes(), [0, 1]);
+  c.renderVals(); assert.equal(item('冻结首列').check, '✓'); item('取消冻结').onClick(); assert.deepEqual(panes(), [0, 0]);
+});
+
+test('number formats: 货币 €, the date and time codes offered by example, all written as codes', async () => {
+  const before = [{ name: 'Data', path: '/sheet[1]', cells: { A1: { v: '1234.5' }, A2: { v: '45292.75' } } }];
+  const x = editor(structuredClone(before)), c = x.component;
+  c.renderVals(); const item = l => c.menus.fmt.find(i => i.label === l), text = a => c.renderVals().cells.find(k => k.gr === String(E.parseA(a).r + 2) && k.gc === String(E.parseA(a).c + 2)).text;
+  item('货币 €').onClick(); assert.deepEqual(plain(x.doc.sheets[0].cells.A1.s), { fmt: 'eur' }); assert.equal(text('A1'), '€1,234.50');
+  Object.assign(c.state, { anc: { r: 1, c: 0 }, sel: { r: 1, c: 0 } }); c.renderVals();
+  item('2024年1月1日').onClick(); assert.deepEqual(plain(x.doc.sheets[0].cells.A2.s), { fmt: 'date', code: 'yyyy年m月d日' }); assert.equal(text('A2'), '2024年1月1日');
+  c.renderVals(); item('12:00 PM').onClick(); assert.deepEqual(plain(x.doc.sheets[0].cells.A2.s), { fmt: 'time', code: 'h:mm AM/PM' }); assert.equal(text('A2'), '6:00 PM');
+  const commands = []; await planXlsx('book.xlsx', before, x.doc.sheets, async argv => { commands.push(argv); return {}; });
+  assert.ok(commands.some(cmd => cmd[2] === '/sheet[1]/cell[A1]' && cmd.includes('format="€"#,##0.00')));
+  assert.ok(commands.some(cmd => cmd[2] === '/sheet[1]/cell[A2]' && cmd.includes('format=h:mm AM/PM')));
+});
+
+test('cell styling: inner borders, text rotation and the fill colour picker, all written to the file', async () => {
+  const before = [{ name: 'Data', path: '/sheet[1]', cells: { A1: { v: 'a' } } }], x = editor(structuredClone(before)), c = x.component;
+  Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 1, c: 1 } }); c.renderVals(); c.menus.bd.find(i => i.label === '内部框线').onClick();
+  const bd = a => plain(x.doc.sheets[0].cells[a].s.bd);
+  assert.deepEqual([bd('A1'), bd('B1'), bd('A2'), bd('B2')], [{ right: 'thin', bottom: 'thin' }, { left: 'thin', bottom: 'thin' }, { top: 'thin', right: 'thin' }, { top: 'thin', left: 'thin' }]);
+  c.renderVals(); c.menus.rot.find(i => i.label === '逆时针 45°').onClick(); assert.equal(x.doc.sheets[0].cells.A1.s.rotate, 45);
+  assert.equal(c.renderVals().cells.find(k => k.gr === '2' && k.gc === '2').tr, 'rotate(-45deg)');
+  c.renderVals().ribbon.find(i => i.isColor && i.title === '填充颜色').onChange({ target: { value: '#ffff00' } }); assert.equal(x.doc.sheets[0].cells.A1.s.fill, '#ffff00');
+  const commands = []; await planXlsx('book.xlsx', before, x.doc.sheets, async argv => { commands.push(argv); return {}; });
+  const a1 = commands.find(cmd => cmd[2] === '/sheet[1]/cell[A1]');
+  assert.ok(a1.includes('rotate=45') && a1.includes('fill=FFFF00') && a1.includes('borders={"right":"thin","bottom":"thin"}'), a1.join(' '));
+});
+
+test('rows and columns: the header menu hides, shows, sizes and fits lines; hidden lines skip drawing and arrow moves, shift with insertions and reach the file', async () => {
+  const x = editor([{ name: 'Data', path: '/sheet[1]', cells: { A1: { v: 'x' }, B1: { v: 'hidden col' }, C1: { v: 'z' } } }]), c = x.component;
+  Object.assign(c.state, { anc: { r: 0, c: 1 }, sel: { r: 79, c: 1 }, pop: { id: 'colctx', x: 0, y: 0 } });
+  let v = c.renderVals(); assert.deepEqual(plain(v.popItems.filter(i => i.isItem).map(i => i.label)), ['插入列', '删除列', '清除内容', '列宽…', '自动调整列宽', '隐藏', '取消隐藏']);
+  v.popItems.find(i => i.label === '隐藏').onClick(); assert.deepEqual(plain(x.doc.sheets[0].hiddenCols), [1]);
+  v = c.renderVals(); assert.ok(!v.colHeads.some(h => h.l === 'B') && !v.cells.some(k => k.text === 'hidden col'), 'a hidden column is not drawn'); assert.equal(v.gtc.split(' ')[2], '0px');
+  Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 0, c: 0 } }); c.move(0, 1); assert.deepEqual(plain(c.state.sel), { r: 0, c: 2 }, 'the arrow skips it');
+  c.insDel('c', 0, 1); assert.deepEqual(plain(x.doc.sheets[0].hiddenCols), [2], 'an inserted column shifts it');
+  Object.assign(c.state, { anc: { r: 0, c: 1 }, sel: { r: 0, c: 3 } }); c.hideLines('c', false); assert.deepEqual(plain(x.doc.sheets[0].hiddenCols), []);
+  Object.assign(c.state, { anc: { r: 2, c: 0 }, sel: { r: 3, c: 0 } }); c.hideLines('r', true); assert.deepEqual(plain(x.doc.sheets[0].hiddenRows), [2, 3]);
+  c.sizeDialog('r'); c.state.dlg.fields[0].value = '40'; c.dlgOk(); assert.deepEqual(plain(x.doc.sheets[0].rowH), { 3: 40, 4: 40 });
+  Object.assign(c.state, { anc: { r: 0, c: 2 }, sel: { r: 0, c: 2 } }); c.fitCols(); assert.equal(x.doc.sheets[0].colW.C, 'hidden col'.length * 8 + 18);
+  const commands = []; await planXlsx('book.xlsx', [{ name: 'Data', path: '/sheet[1]', cells: {} }], x.doc.sheets, async argv => { commands.push(argv); return {}; });
+  const sheet = commands.find(cmd => cmd[2] === '/sheet[1]'); assert.ok(sheet.includes('hidden={"rows":[3,4],"cols":[]}'), sheet.join(' '));
+});
+
+test('find & replace: match case, whole cell and workbook scope', () => {
+  const x = editor([{ name: 'One', cells: { A1: { v: 'Apple pie' }, A2: { v: 'apple' } } }, { name: 'Two', cells: { B2: { v: 'apple' } } }]), c = x.component;
+  c.state.fq = 'apple'; c.findNext(); assert.deepEqual([c.state.fcount, plain(c.state.sel)], [2, { r: 1, c: 0 }], 'the next hit after the active cell');
+  c.state.fopt = { mc: true }; c.findNext(); assert.deepEqual([c.state.fcount, plain(c.state.sel)], [1, { r: 1, c: 0 }]);
+  c.state.fopt = { whole: true }; Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 0, c: 0 } }); c.findNext(); assert.deepEqual([c.state.fcount, plain(c.state.sel)], [1, { r: 1, c: 0 }]);
+  c.state.fopt = { book: true }; c.findNext(); assert.deepEqual([c.state.fcount, x.doc.active, plain(c.state.sel)], [3, 1, { r: 1, c: 1 }], 'from A2 the next hit is on the second sheet');
+  c.state.fr = 'pear'; c.replace(true); assert.deepEqual([x.doc.sheets[0].cells.A1.v, x.doc.sheets[0].cells.A2.v, x.doc.sheets[1].cells.B2.v], ['pear pie', 'pear', 'pear']);
+});
+
+test('a chart resizes from its corner handle: the drag shows live, the drop writes the size', () => {
+  const x = editor([{ name: 'Data', cells: { A1: { v: 'a' }, B1: { v: '5' } }, charts: [{ id: 'c1', type: 'column', title: 'T', cat: 'A1:A1', ser: [{ values: 'B1:B1' }], x: 0, y: 0, w: 460, h: 300 }] }]), c = x.component;
+  c.renderVals().charts[0].onResize({ preventDefault() { }, stopPropagation() { }, clientX: 100, clientY: 100 });
+  c.onWM({ clientX: 160, clientY: 140 }); assert.deepEqual(plain(c.state.live), { kind: 'chartsz', id: 'c1', w: 520, h: 340 });
+  assert.equal(c.renderVals().charts[0].w, '520px', 'drawn at the live size');
+  c.onWU({}); assert.deepEqual([x.doc.sheets[0].charts[0].w, x.doc.sheets[0].charts[0].h, c.state.live], [520, 340, null]);
+});
+
+test('sheet tabs: a colour stripe, drag reorder, delete asks first', () => {
+  const x = editor([{ name: 'A', cells: {} }, { name: 'B', cells: {} }, { name: 'C', cells: {} }]), c = x.component;
+  c.state.pop = { id: 'tabctx', i: 1, x: 0, y: 0 }; let items = c.renderVals().popItems;
+  items.find(i => i.label === '绿色').onClick(); assert.equal(x.doc.sheets[1].color, '#27AE60');
+  assert.match(c.renderVals().sheetTabs[1].line, /inset 0 -3px 0 #27AE60/);
+  const tabs = c.renderVals().sheetTabs; tabs[0].onMD({ button: 0 }); tabs[2].onME(); assert.deepEqual([plain(x.doc.sheets.map(s => s.name)), x.doc.active], [['B', 'C', 'A'], 2]); c.op = null;
+  c.state.pop = { id: 'tabctx', i: 0, x: 0, y: 0 }; items = c.renderVals().popItems; items.find(i => i.label === '删除工作表').onClick();
+  assert.equal(x.doc.sheets.length, 3, 'nothing goes before the dialog is confirmed'); assert.match(c.state.dlg.title, /删除工作表「B」/);
+  c.dlgOk(); assert.deepEqual(plain(x.doc.sheets.map(s => s.name)), ['C', 'A']);
+});
+
+test('Excel\'s keys: Enter after a run of Tabs returns to the column the run began in; Ctrl+Space and Shift+Space select columns and rows; Ctrl+Shift+L toggles the filter', () => {
+  const x = editor([{ name: 'Data', cells: { A1: { v: '1' }, B1: { v: '2' } } }]), c = x.component, key = (k, o = {}) => c.renderVals().onInKey(Object.assign({ key: k, preventDefault() { }, nativeEvent: {} }, o));
+  Object.assign(c.state, { anc: { r: 0, c: 1 }, sel: { r: 0, c: 1 } });
+  key('Tab'); key('Tab'); key('Enter'); assert.deepEqual(plain(c.state.sel), { r: 1, c: 1 });
+  key('ArrowRight'); key('Enter'); assert.deepEqual(plain(c.state.sel), { r: 2, c: 2 }, 'an arrow ends the run');
+  key(' ', { ctrlKey: true }); assert.deepEqual([plain(c.state.anc), plain(c.state.sel)], [{ r: 0, c: 2 }, { r: 79, c: 2 }]);
+  Object.assign(c.state, { anc: { r: 3, c: 1 }, sel: { r: 4, c: 1 } }); key(' ', { shiftKey: true }); assert.deepEqual([plain(c.state.anc), plain(c.state.sel)], [{ r: 3, c: 0 }, { r: 4, c: 19 }]);
+  Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 0, c: 0 } }); key('l', { ctrlKey: true, shiftKey: true }); assert.equal(x.doc.sheets[0].filter, 'A1:B1');
+});
+
+test('the fill handle runs dates on as dates: ISO text in and out, across a month end and by whole months', () => {
+  const d = v => ({ v, s: { fmt: 'date', code: 'yyyy-mm-dd' } });
+  const x = editor([{ name: 'Data', cells: { A1: d('2024-01-30'), A2: d('2024-01-31'), B1: d('2024-01-15'), B2: d('2024-02-15'), C1: d('2024-02-28') } }]);
+  const fill = (c, r2, to) => plain(x.component.previewFill(x.doc.sheets[0].cells, { r1: 0, c1: c, r2, c2: c }, { r: to, c }, false).items.map(i => i.cell.v));
+  assert.deepEqual(fill(0, 1, 3), ['2024-02-01', '2024-02-02']);
+  assert.deepEqual(fill(1, 1, 3), ['2024-03-15', '2024-04-15']);
+  assert.deepEqual(fill(2, 0, 2), ['2024-02-29', '2024-03-01']);
 });

@@ -84,22 +84,27 @@ static class XlsxLayout
                 if (existing.GetAttributes().All(a => a.LocalName is "min" or "max")) existing.Remove();
                 continue;
             }
-            if (existing is null)
-            {
-                if (cols is null) ws.AddChild(cols = new Columns());
-                existing = new Column { Min = (uint)col, Max = (uint)col };
-                var next = cols.Elements<Column>().FirstOrDefault(c => c.Min?.Value > (uint)col);
-                if (next is null) cols.Append(existing);
-                else cols.InsertBefore(existing, next);
-            }
+            existing ??= ColumnAt(ws, ref cols, col);
             existing.Width = width;
             existing.CustomWidth = true;
         }
         if (cols is not null && !cols.HasChildren) cols.Remove();
     }
 
+    /// <summary>The col element for exactly this column: an existing span isolated, or a new one in order (creating cols when needed).</summary>
+    internal static Column ColumnAt(Worksheet ws, ref Columns? cols, int col)
+    {
+        if (cols is not null && Isolate(cols, col) is { } existing) return existing;
+        if (cols is null) ws.AddChild(cols = new Columns());
+        var column = new Column { Min = (uint)col, Max = (uint)col };
+        var next = cols.Elements<Column>().FirstOrDefault(c => c.Min?.Value > (uint)col);
+        if (next is null) cols.Append(column);
+        else cols.InsertBefore(column, next);
+        return column;
+    }
+
     /// <summary>The col element covering exactly this column, splitting a wider span so its other columns keep their settings.</summary>
-    static Column? Isolate(Columns cols, int col)
+    internal static Column? Isolate(Columns cols, int col)
     {
         var span = cols.Elements<Column>().FirstOrDefault(c => c.Min?.Value <= (uint)col && (uint)col <= c.Max?.Value);
         if (span is null) return null;
@@ -213,6 +218,26 @@ static class XlsxLayout
             ActivePane = col > 1 && row > 1 ? PaneValues.BottomRight : row > 1 ? PaneValues.BottomLeft : PaneValues.TopRight,
             State = PaneStateValues.Frozen,
         };
+    }
+
+    /// <summary>"false" when the sheet hides its grid lines; null when it shows them (Excel's default).</summary>
+    public static string? Gridlines(Worksheet ws) => ws.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.ShowGridLines?.Value == false ? "false" : null;
+
+    public static void SetGridlines(Worksheet ws, string value)
+    {
+        var view = ws.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>();
+        if (value == "true")
+        {
+            if (view is not null) view.ShowGridLines = null;
+            return;
+        }
+        if (view is null)
+        {
+            var views = ws.GetFirstChild<SheetViews>();
+            if (views is null) ws.AddChild(views = new SheetViews());
+            view = views.AppendChild(new SheetView { WorkbookViewId = 0U });
+        }
+        view.ShowGridLines = false;
     }
 
     public static string? Filter(Worksheet ws) => ws.GetFirstChild<AutoFilter>()?.Reference?.Value;
@@ -366,6 +391,22 @@ static class XlsxRefs
         var bang = formula.LastIndexOf('!');
         if (bang < 0 || !string.Equals(Unquote(formula[..bang]), oldName, StringComparison.OrdinalIgnoreCase)) return formula;
         return Quote(newName) + formula[bang..];
+    }
+
+    /// <summary>A1-style references in a formula, outside string literals; the groups are the optional $ signs, the column and the row.</summary>
+    static readonly System.Text.RegularExpressions.Regex Ref = new(@"(?<![\w.$])(\$?)([A-Za-z]{1,3})(\$?)(\d{1,7})(?![\w(])|""[^""]*""", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>The formula as Excel's fill handle writes it dRow rows down and dCol columns right: relative references move, $ pins one.</summary>
+    public static string Shift(string formula, int dRow, int dCol)
+    {
+        if (dRow == 0 && dCol == 0) return formula;
+        return Ref.Replace(formula, m =>
+        {
+            if (m.Groups[2].Length == 0) return m.Value; // a string literal
+            var col = m.Groups[1].Length > 0 ? m.Groups[2].Value : XlsxCells.ColumnName(Math.Max(1, XlsxCells.ColumnIndex(m.Groups[2].Value.ToUpperInvariant()) + dCol));
+            var row = m.Groups[3].Length > 0 ? m.Groups[4].Value : Math.Max(1, int.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture) + dRow).ToString(CultureInfo.InvariantCulture);
+            return m.Groups[1].Value + col + m.Groups[3].Value + row;
+        });
     }
 
     static string Absolute(int col, int row) => "$" + XlsxCells.ColumnName(col) + "$" + row.ToString(CultureInfo.InvariantCulture);

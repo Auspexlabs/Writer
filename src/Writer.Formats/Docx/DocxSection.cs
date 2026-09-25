@@ -27,6 +27,16 @@ static partial class DocxSection
     {
         var section = doc.Main.Document!.Body!.GetFirstChild<W.SectionProperties>();
         if (section is null) return;
+        ReadPage(section, props);
+        foreach (var (name, header, first) in Slots)
+            if (Part(doc, section, header, first) is { } part && Html(doc, part) is { Length: > 0 } html) props[name] = html;
+        if (DocxRun.On(section.GetFirstChild<W.TitlePage>())) props["titlePg"] = "true";
+        if (section.GetFirstChild<W.LineNumberType>() is not null) props["lineNumbers"] = "true";
+    }
+
+    /// <summary>Paper, orientation, margins and columns of one section: the document's last (the body's sectPr) or one a paragraph ends.</summary>
+    public static void ReadPage(W.SectionProperties section, Dictionary<string, string> props)
+    {
         if (section.GetFirstChild<W.PageSize>() is { } size && size.Width?.Value is { } w && size.Height?.Value is { } h)
         {
             var landscape = IsLandscape(size);
@@ -43,10 +53,58 @@ static partial class DocxSection
             props["margin"] = preset.Name ?? $"{Cm(top)} {Cm(right)} {Cm(bottom)} {Cm(left)}";
         }
         props["columns"] = (section.GetFirstChild<W.Columns>()?.ColumnCount?.Value ?? 1).ToString(CultureInfo.InvariantCulture);
-        foreach (var (name, header, first) in Slots)
-            if (Part(doc, section, header, first) is { } part && Html(doc, part) is { Length: > 0 } html) props[name] = html;
-        if (DocxRun.On(section.GetFirstChild<W.TitlePage>())) props["titlePg"] = "true";
     }
+
+    /// <summary>A section's page as lengths, whatever preset its props name, for drawing it: pageSize (width x height as laid out),
+    /// pageMargin (top right bottom left), headerDistance and footerDistance from the page's edges, columnGap.</summary>
+    public static void ReadGeometry(W.SectionProperties section, Dictionary<string, string> props)
+    {
+        if (section.GetFirstChild<W.PageSize>() is { } size && size.Width?.Value is { } w && size.Height?.Value is { } h) props["pageSize"] = $"{Cm(w)} x {Cm(h)}";
+        if (section.GetFirstChild<W.PageMargin>() is { } m)
+        {
+            // a negative top or bottom margin lets the text run under the header or footer: the text still starts that far in
+            props["pageMargin"] = $"{Cm(Math.Abs(m.Top?.Value ?? 1440))} {Cm(m.Right?.Value ?? 1440)} {Cm(Math.Abs(m.Bottom?.Value ?? 1440))} {Cm(m.Left?.Value ?? 1440)}";
+            if (m.Header?.Value is { } header) props["headerDistance"] = Cm(header);
+            if (m.Footer?.Value is { } footer) props["footerDistance"] = Cm(footer);
+        }
+        if (section.GetFirstChild<W.Columns>() is { } columns && columns.ColumnCount?.Value > 1)
+            props["columnGap"] = Cm(long.TryParse(columns.Space?.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var space) ? space : 720);
+    }
+
+    /// <summary>Line numbers in the margin, every line, counted through the document (Word's 行号 › 连续).</summary>
+    public static void SetLineNumbers(DocxDocument doc, bool on)
+    {
+        var section = Section(doc);
+        section.RemoveAllChildren<W.LineNumberType>();
+        if (on) section.AddChild(new W.LineNumberType { CountBy = 1, Restart = W.LineNumberRestartValues.Continuous });
+    }
+
+    /// <summary>The section a paragraph ends (w:pPr/w:sectPr), made when missing as a copy of the document's last section (its paper,
+    /// margins, columns, headers and footers), so the text before the break keeps its look; the type says how the next section starts.</summary>
+    public static void SetSectionBreak(DocxDocument doc, W.Paragraph p, string type)
+    {
+        var pp = p.ParagraphProperties ??= new W.ParagraphProperties();
+        if (type is "none" or "")
+        {
+            pp.SectionProperties?.Remove();
+            if (!pp.HasChildren) pp.Remove();
+            return;
+        }
+        var section = pp.SectionProperties ??= (W.SectionProperties)Section(doc).CloneNode(true);
+        section.RemoveAllChildren<W.SectionType>();
+        var kind = type switch
+        {
+            "continuous" => W.SectionMarkValues.Continuous,
+            "evenPage" => W.SectionMarkValues.EvenPage,
+            "oddPage" => W.SectionMarkValues.OddPage,
+            _ => W.SectionMarkValues.NextPage,
+        };
+        section.AddChild(new W.SectionType { Val = kind });
+    }
+
+    public static string? SectionBreakOf(W.Paragraph p) => p.ParagraphProperties?.SectionProperties is { } section
+        ? section.GetFirstChild<W.SectionType>()?.Val?.InnerText switch { "continuous" => "continuous", "evenPage" => "evenPage", "oddPage" => "oddPage", _ => "nextPage" }
+        : null;
 
     /// <summary>The document props for the section's header and footer references.</summary>
     static readonly (string Name, bool Header, bool First)[] Slots = [("header", true, false), ("footer", false, false), ("firstHeader", true, true), ("firstFooter", false, true)];
@@ -63,9 +121,11 @@ static partial class DocxSection
     static string Cm(long twips) => (twips * Twip / 360000.0).ToString("0.##", CultureInfo.InvariantCulture) + "cm";
     static bool IsLandscape(W.PageSize size) => size.Orient?.Value == W.PageOrientationValues.Landscape || size.Width?.Value > size.Height?.Value;
 
-    public static void SetPage(DocxDocument doc, string value)
+    public static void SetPage(DocxDocument doc, string value) => SetPage(Section(doc), value);
+
+    public static void SetPage(W.SectionProperties section, string value)
     {
-        var size = PageSize(doc);
+        var size = PageSize(section);
         uint w, h;
         var paper = Papers.FirstOrDefault(p => string.Equals(p.Name, value.Trim(), StringComparison.OrdinalIgnoreCase));
         if (paper.Name is not null) (w, h) = (paper.W, paper.H);
@@ -81,9 +141,11 @@ static partial class DocxSection
         size.Height = h;
     }
 
-    public static void SetOrientation(DocxDocument doc, string value)
+    public static void SetOrientation(DocxDocument doc, string value) => SetOrientation(Section(doc), value);
+
+    public static void SetOrientation(W.SectionProperties section, string value)
     {
-        var size = PageSize(doc);
+        var size = PageSize(section);
         var landscape = value == "landscape";
         if (landscape != IsLandscape(size))
         {
@@ -94,9 +156,10 @@ static partial class DocxSection
         size.Orient = landscape ? W.PageOrientationValues.Landscape : W.PageOrientationValues.Portrait;
     }
 
-    public static void SetMargin(DocxDocument doc, string value)
+    public static void SetMargin(DocxDocument doc, string value) => SetMargin(Section(doc), value);
+
+    public static void SetMargin(W.SectionProperties section, string value)
     {
-        var section = Section(doc);
         var m = section.GetFirstChild<W.PageMargin>()
             ?? Add(section, new W.PageMargin { Top = 1440, Right = 1440U, Bottom = 1440, Left = 1440U, Header = 720U, Footer = 720U, Gutter = 0U });
         var preset = Margins.FirstOrDefault(x => string.Equals(x.Name, value.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -119,9 +182,10 @@ static partial class DocxSection
         m.Left = sides[3];
     }
 
-    public static void SetColumns(DocxDocument doc, string value)
+    public static void SetColumns(DocxDocument doc, string value) => SetColumns(Section(doc), value);
+
+    public static void SetColumns(W.SectionProperties section, string value)
     {
-        var section = Section(doc);
         var n = int.Parse(value, CultureInfo.InvariantCulture);
         var cols = section.GetFirstChild<W.Columns>();
         if (n <= 1)
@@ -135,11 +199,8 @@ static partial class DocxSection
         cols.ColumnCount = (short)n;
     }
 
-    static W.PageSize PageSize(DocxDocument doc)
-    {
-        var section = Section(doc);
-        return section.GetFirstChild<W.PageSize>() ?? Add(section, new W.PageSize { Width = 11906U, Height = 16838U });
-    }
+    static W.PageSize PageSize(W.SectionProperties section) =>
+        section.GetFirstChild<W.PageSize>() ?? Add(section, new W.PageSize { Width = 11906U, Height = 16838U });
 
     /// <summary>Adds a singleton child (page size, margins, columns) where the schema puts it.</summary>
     static T Add<T>(W.SectionProperties section, T child) where T : OpenXmlElement

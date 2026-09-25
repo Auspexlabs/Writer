@@ -29,11 +29,22 @@ use tauri_plugin_shell::ShellExt;
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
 mod bookmarks;
+mod default_app;
 mod storage;
 mod update;
 mod win;
 
-const DOC_EXTS: [&str; 7] = ["docx", "xlsx", "pptx", "md", "markdown", "mm", "pdf"];
+/// Every file type the engine opens (the 打开 dialog's filter, files dropped on the Dock, the command line): Writer's own
+/// types, then the compatibility formats it reads into a Word, Excel or PowerPoint draft (Office 97-2003, WPS,
+/// macro-enabled and template OOXML, OpenDocument, RTF, HTML, CSV). Mirrors Adapters.OpensAs in the engine.
+const DOC_EXTS: [&str; 44] = [
+    "docx", "xlsx", "pptx", "md", "markdown", "txt", "mm", "xmind", "pdf",
+    "doc", "dot", "wps", "wpt", "docm", "dotx", "dotm", "odt", "ott", "rtf", "html", "htm",
+    "xls", "xlt", "et", "ett", "xlsm", "xltx", "xltm", "ods", "ots", "csv", "tsv",
+    "ppt", "pot", "pps", "dps", "dpt", "pptm", "potx", "potm", "ppsx", "ppsm", "odp", "otp",
+];
+/// The types a draft can be saved as: the ones the engine writes.
+const SAVE_EXTS: [&str; 5] = ["docx", "xlsx", "pptx", "md", "mm"];
 /// localStorage keys every window shares (settings, the collapsed toolbar, the sidebar/assistant panel); kept in
 /// <app data>/web-storage.json.
 const SHARED_KEYS: [&str; 2] = ["writer-settings", "writer-mac"];
@@ -65,6 +76,8 @@ struct Folder {
     ready: bool,
     queue: Vec<PathBuf>,
     state: Value,
+    /// Opened for a tab torn off another window (tear_off): the page opens nothing by itself, only what it is sent.
+    solo: bool,
 }
 
 #[derive(Default)]
@@ -133,14 +146,15 @@ fn show_error(window: &WebviewWindow, message: &str) {
 
 /// Every window gets the shared localStorage keys and the native glue (native.js) before its page runs, plus the
 /// system's preferred language for ui/i18n.js (WKWebView's navigator.language reports the app's own localization);
-/// __WRITER_NATIVE__.lang is the language this launch chose, for the splash page; uiBuild is the build of the interface
-/// package this run serves, for 关于 Writer (update.rs).
+/// __WRITER_NATIVE__.lang is the language this launch chose, for the splash page; version and uiBuild (the build of the
+/// interface package this run serves, update.rs) are for 关于 Writer and 设置 › 通用 › 更新.
 fn init_script(app: &AppHandle, kind: &str) -> String {
     let store = shell(app).store.clone();
     let lang = sys_locale::get_locale().unwrap_or_default();
     let native = json!({
         "kind": kind, "store": store, "opaque": cfg!(feature = "appstore"), "updater": !cfg!(feature = "appstore"),
-        "uiBuild": update::ui_package(app).map(|(_, build)| build), "lang": if ENGLISH.load(Ordering::Relaxed) { "en" } else { "zh" }
+        "version": app.package_info().version.to_string(), "uiBuild": update::ui_package(app).map(|(_, build)| build),
+        "lang": if ENGLISH.load(Ordering::Relaxed) { "en" } else { "zh" }
     });
     format!("window.__WRITER_NATIVE__ = {native};\nwindow.__WRITER_SYS_LANG = {};\n{}", json!(lang), include_str!("native.js"))
 }
@@ -209,6 +223,9 @@ fn t(zh: &'static str) -> &'static str {
         "另存为…" => "Save As…",
         "导出为…" => "Export As…",
         "打印…" => "Print…",
+        "用「预览」打开" => "Open in Preview",
+        "用 Acrobat 打开" => "Open in Acrobat",
+        "选择打开方式…" => "Open With…",
         "编辑" => "Edit",
         "撤销" => "Undo",
         "重做" => "Redo",
@@ -261,11 +278,6 @@ fn t(zh: &'static str) -> &'static str {
         "文档引擎未能启动。请重新启动 Writer。" => "The document engine couldn’t start. Please restart Writer.",
         // the updater (src/update.rs)
         "检查更新…" => "Check for Updates…",
-        "新版本已下载" => "Update Downloaded",
-        "重新打开 Writer 后生效。" => "It takes effect the next time you open Writer.",
-        "立即重启" => "Restart Now",
-        "已是最新版本" => "You’re Up to Date",
-        "Writer {v} 是目前的最新版本。" => "Writer {v} is the latest version.",
         "无法检查更新" => "Couldn’t Check for Updates",
         "更新失败" => "Update Failed",
         "请稍后再试，或前往 https://github.com/Auspexlabs/writer/releases 下载最新版本。" => "Try again later, or download the latest version from https://github.com/Auspexlabs/writer/releases.",
@@ -326,6 +338,12 @@ fn send_open(app: &AppHandle, window: &WebviewWindow, file: PathBuf) {
 
 /// A new document window on `dir`, listing `depth` folder levels; returns its label.
 fn open_folder(app: &AppHandle, dir: PathBuf, depth: u32) -> Option<String> {
+    new_window(app, dir, depth, None)
+}
+
+/// open_folder, or for a tab torn off at `torn` (tear_off: the pointer on the screen, logical px) a window there, its title
+/// strip under the pointer, that shows only the document it is sent.
+fn new_window(app: &AppHandle, dir: PathBuf, depth: u32, torn: Option<(f64, f64)>) -> Option<String> {
     let (label, near) = {
         let mut s = shell(app);
         s.count += 1;
@@ -337,23 +355,26 @@ fn open_folder(app: &AppHandle, dir: PathBuf, depth: u32) -> Option<String> {
         .ok()?
         .title(dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Writer".into()))
         .initialization_script(init_script(app, "main"));
-    let cascaded = near.and_then(|l| app.get_webview_window(&l));
+    let cascaded = near.and_then(|l| app.get_webview_window(&l)).filter(|_| torn.is_none());
     if let Some(prev) = &cascaded {
         if let (Ok(pos), Ok(scale)) = (prev.outer_position(), prev.scale_factor()) {
             let pos = pos.to_logical::<f64>(scale);
             builder = builder.position(pos.x + 26.0, pos.y + 26.0);
         }
     }
+    if let Some((x, y)) = torn {
+        builder = builder.position(x - config.width / 2.0, y - 19.0).initialization_script("window.__WRITER_NATIVE__.solo = true;");
+    }
     let window = builder.build().ok()?;
     // Opened next to another window: keep the 26px cascade above. Otherwise (the first window this run), come back
     // where the document windows were last time (tauri-plugin-window-state tracks them as they move and resize).
-    if cascaded.is_none() {
+    if cascaded.is_none() && torn.is_none() {
         let _ = window.restore_state(StateFlags::SIZE | StateFlags::POSITION);
     }
     hide_lights(&window);
     shell(app).windows.insert(
         label.clone(),
-        Folder { dir: dir.clone(), origin: None, engine: None, ready: false, queue: vec![], state: Value::Null },
+        Folder { dir: dir.clone(), origin: None, engine: None, ready: false, queue: vec![], state: Value::Null, solo: torn.is_some() },
     );
     start_engine(app, window, dir, depth);
     Some(label)
@@ -385,7 +406,10 @@ fn remembered_port(app: &AppHandle, dir: &Path) -> Option<u16> {
 }
 
 fn start_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32) {
-    let port = remembered_port(app, &dir);
+    // a second drafts window, for a torn-off tab, does not try the drafts window's port (taken: the engine would exit and
+    // be started again on a free one)
+    let solo = shell(app).windows.get(window.label()).is_some_and(|f| f.solo);
+    let port = if solo { None } else { remembered_port(app, &dir) };
     spawn_engine(app, window, dir, depth, port);
 }
 
@@ -417,7 +441,8 @@ fn spawn_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32
         folder.engine = Some(child);
     }
     let app = app.clone();
-    let remember = dir == drafts_folder(&app);
+    // a tab torn off into a second drafts window leaves the drafts window's port alone
+    let remember = dir == drafts_folder(&app) && shell(&app).windows.get(window.label()).is_some_and(|f| !f.solo);
     tauri::async_runtime::spawn(async move {
         let mut buffer = String::new();
         let mut ready = false;
@@ -549,6 +574,9 @@ fn open_panel(app: &AppHandle, which: &str, tab: Option<String>) {
         .resizable(false)
         .minimizable(false)
         .maximizable(false)
+        // the page's close button acts on the first click, also while the panel is not key (like the native one; the
+        // document windows get this from tauri.conf.json)
+        .accept_first_mouse(true)
         .initialization_script(init_script(app, which))
         .center();
     #[cfg(target_os = "macos")]
@@ -581,15 +609,16 @@ fn shell_state(app: AppHandle, window: WebviewWindow, request: Request<'_>) {
     #[cfg(feature = "test-hooks")]
     eprintln!("shell_state {} {}", window.label(), state);
     // On load the shell opens the folder's newest document by itself; files asked for wait until that has happened,
-    // or the shell's own open could finish last and take the front tab (seen with a slow .xlsx).
+    // or the shell's own open could finish last and take the front tab (seen with a slow .xlsx). A window for a torn-off
+    // tab opens nothing by itself.
     let settled = state.get("path").is_some_and(|p| !p.is_null()) || state.get("docs").and_then(Value::as_u64) == Some(0);
-    let (dir, front, first) = {
+    let (dir, front, first, solo) = {
         let mut s = shell(&app);
         let front = s.front.is_none() || s.front.as_deref() == Some(window.label());
         let Some(folder) = s.windows.get_mut(window.label()) else { return };
         let first = folder.state.is_null();
         folder.state = state.clone();
-        (folder.dir.clone(), front, first)
+        (folder.dir.clone(), front, first, folder.solo)
     };
     let title = state.get("title").and_then(Value::as_str).filter(|t| !t.is_empty()).unwrap_or("Writer");
     let _ = window.set_title(title);
@@ -599,7 +628,7 @@ fn shell_state(app: AppHandle, window: WebviewWindow, request: Request<'_>) {
     if front {
         apply_menu(&app, state);
     }
-    if settled {
+    if settled || solo {
         flush_opens(&app, &window);
     } else if first {
         // the shell's first document may fail to open: do not wait for it forever
@@ -609,6 +638,7 @@ fn shell_state(app: AppHandle, window: WebviewWindow, request: Request<'_>) {
             flush_opens(&app, &window);
         });
     }
+    update::page_ready(&app, &window); // What's New, the update notice
 }
 
 /// The page is ready for window.__writerOpen: open what was asked for while it loaded.
@@ -627,6 +657,75 @@ fn flush_opens(app: &AppHandle, window: &WebviewWindow) {
 #[tauri::command]
 async fn open_window(app: AppHandle, which: String, tab: Option<String>) {
     open_panel(&app, &which, tab);
+}
+
+/// A tab dragged off its window's title strip and let go (ui/tabs.js): its document, saved by the page, opens alone in a
+/// new window where the pointer is, also when another window has its folder. The page closes the tab when this answers
+/// true. `path` is the page's: relative to the window's folder, or absolute. Async: a window made in a synchronous
+/// command deadlocks on Windows.
+#[tauri::command]
+async fn tear_off(app: AppHandle, window: WebviewWindow, path: String) -> bool {
+    let Some(dir) = shell(&app).windows.get(window.label()).map(|f| f.dir.clone()) else { return false };
+    let file = dir.join(path);
+    if !is_doc(&file) || !file.is_file() {
+        return false;
+    }
+    let Some(at) = pointer(&app) else { return false };
+    let file = file.canonicalize().map(win::plain_path).unwrap_or(file);
+    #[cfg(feature = "test-hooks")]
+    eprintln!("tear_off {} at {at:?}", file.display());
+    let Some(label) = file.parent().and_then(|d| new_window(&app, d.to_path_buf(), 0, Some(at))) else { return false };
+    grant(&app, &label, "list", &file);
+    if let Some(folder) = shell(&app).windows.get_mut(&label) {
+        folder.queue.push(file);
+    }
+    true
+}
+
+/// The pointer on the screen in the logical pixels WebviewWindowBuilder::position takes (a WKWebView page does not know
+/// where its window is): tao scales it by the primary monitor on macOS, and places a window by the monitor under the
+/// point on Windows.
+fn pointer(app: &AppHandle) -> Option<(f64, f64)> {
+    let p = app.cursor_position().ok()?;
+    let monitor = if cfg!(target_os = "macos") { app.primary_monitor() } else { app.monitor_from_point(p.x, p.y) };
+    let scale = monitor.ok().flatten()?.scale_factor();
+    Some((p.x / scale, p.y / scale))
+}
+
+/// The other PDF viewers 打开方式 can hand a file to: (key, label, program and its arguments before the file).
+fn pdf_viewers() -> Vec<(&'static str, &'static str, Vec<&'static str>)> {
+    if cfg!(target_os = "macos") {
+        let mut apps = vec![("preview", t("用「预览」打开"), vec!["open", "-a", "Preview"])];
+        for app in ["Adobe Acrobat", "Adobe Acrobat Reader", "Adobe Acrobat DC/Adobe Acrobat"] {
+            if Path::new("/Applications").join(format!("{app}.app")).exists() {
+                apps.push(("acrobat", t("用 Acrobat 打开"), vec!["open", "-a", app]));
+                break;
+            }
+        }
+        apps
+    } else if cfg!(windows) {
+        vec![("chooser", t("选择打开方式…"), vec!["rundll32", "shell32.dll,OpenAs_RunDLL"])]
+    } else {
+        vec![]
+    }
+}
+
+/// 打开方式 for a PDF the window shows (ui/PdfEditor.dc.html): "apps" lists what this machine offers; another key hands the
+/// file to that viewer. The path is the engine's (relative to the window's folder, or absolute for a draft) and must be a PDF.
+#[tauri::command]
+fn open_with(app: AppHandle, window: WebviewWindow, path: String, with: String) -> Result<Value, String> {
+    let viewers = pdf_viewers();
+    if with == "apps" {
+        return Ok(json!(viewers.iter().map(|(key, label, _)| json!({ "key": key, "label": label })).collect::<Vec<_>>()));
+    }
+    let dir = shell(&app).windows.get(window.label()).map(|f| f.dir.clone()).ok_or("no folder")?;
+    let file = dir.join(&path).canonicalize().map_err(|e| e.to_string())?;
+    if !file.is_file() || !file.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("pdf")) {
+        return Err("not a PDF".into());
+    }
+    let (_, _, argv) = viewers.into_iter().find(|(key, _, _)| *key == with).ok_or("unknown viewer")?;
+    std::process::Command::new(argv[0]).args(&argv[1..]).arg(&file).spawn().map(drop).map_err(|e| e.to_string())?;
+    Ok(Value::Null)
 }
 
 /// Double-click on the title strip, as the system setting says: zoom (or fill), minimize, or nothing.
@@ -898,7 +997,12 @@ fn on_menu(app: &AppHandle, id: &str) {
         "settings" => open_panel(app, "settings", None),
         "gestures" => open_panel(app, "gestures", None),
         "shortcuts" => open_panel(app, "settings", Some("keys".into())),
-        "checkUpdate" => update::check(app, true),
+        "checkUpdate" => {
+            update::check(app, true); // the answer shows in a document window
+            if shell(app).windows.is_empty() {
+                open_folder(app, drafts_folder(app), 3);
+            }
+        }
         "open" => {
             let handle = app.clone();
             app.dialog().file().set_title(t("打开")).add_filter(t("Writer 文稿"), &DOC_EXTS).pick_files(move |files| {
@@ -1087,8 +1191,8 @@ fn main() {
         )
         .manage(Writer(Mutex::new(Shell::default())))
         .invoke_handler(tauri::generate_handler![
-            shell_state, open_window, toggle_zoom, settings_set, aux_close, restart_app, win::open_files, win::snap_window,
-            storage::save_dialog, storage::recent_files, storage::open_recent, update::check_update
+            shell_state, open_window, tear_off, toggle_zoom, settings_set, aux_close, restart_app, open_with, win::open_files, win::snap_window,
+            storage::save_dialog, storage::recent_files, storage::open_recent, update::check_update, default_app::default_app
         ])
         .on_menu_event(|app, event| on_menu(app, event.id().as_ref()))
         .on_window_event(|window, event| {

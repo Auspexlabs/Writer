@@ -54,6 +54,8 @@ public sealed class PptxDocument(PresentationDocument package) : Document
 
     public override void Save(Stream stream)
     {
+        foreach (var slide in Slides) PptxAnim.Prune(slide);
+        PptxSections.Normalize(this);
         using var clone = Package.Clone(stream);
     }
 
@@ -77,7 +79,9 @@ public sealed class PptxDocument(PresentationDocument package) : Document
 
     internal IEnumerable<SlideLayoutPart> Layouts => Presentation.SlideMasterParts.SelectMany(m => m.SlideLayoutParts);
 
-    /// <summary>A layout by name (case-insensitive) or by type keyword; the first layout when none is asked for.</summary>
+    /// <summary>A layout by name (case-insensitive), else the standard layout a name stands for (a key such as two or quote,
+    /// PowerPoint's English or Chinese name, see <see cref="PptxTemplate.Layouts"/>): the deck's own of that type when it has one,
+    /// otherwise made in its first master from the standard spec. The deck's content layout when none is asked for.</summary>
     internal SlideLayoutPart FindLayout(string? name)
     {
         var layouts = Layouts.ToList();
@@ -85,16 +89,35 @@ public sealed class PptxDocument(PresentationDocument package) : Document
         if (name is null) return layouts.FirstOrDefault(l => LayoutType(l) == "obj") ?? layouts[0];
         var byName = layouts.FirstOrDefault(l => string.Equals(LayoutName(l), name, StringComparison.OrdinalIgnoreCase));
         if (byName is not null) return byName;
-        var type = name.ToLowerInvariant() switch { "title" => "title", "content" => "obj", "blank" => "blank", "section" => "secHead", "two" => "twoObj", _ => null };
-        var byType = type is null ? null : layouts.FirstOrDefault(l => LayoutType(l) == type);
-        return byType ?? throw new WriterException(ErrorCode.Validation, $"No layout called '{name}'",
-            $"Layouts in this file: {string.Join(", ", layouts.Select(LayoutName))}.");
+        var spec = PptxTemplate.Standard(name) ?? throw new WriterException(ErrorCode.Validation, $"No layout called '{name}'",
+            $"Layouts in this file: {string.Join(", ", layouts.Select(LayoutName))}; standard ones (made when missing): {string.Join(", ", PptxTemplate.Layouts.Select(l => l.Key))}.");
+        return layouts.FirstOrDefault(l => Is(l, spec)) ?? AddLayout(spec);
+    }
+
+    /// <summary>A layout of the deck is the standard one when its type says so (a quote layout, which has no type of its own, by name).</summary>
+    static bool Is(SlideLayoutPart layout, PptxTemplate.LayoutSpec spec) => spec.Type == "cust"
+        ? LayoutName(layout).Contains("quote", StringComparison.OrdinalIgnoreCase) || LayoutName(layout).Contains(spec.Chinese, StringComparison.Ordinal)
+        : LayoutType(layout) == spec.Type;
+
+    /// <summary>A standard layout added to the first master, sized to the deck, under a layout id no master or layout has.</summary>
+    SlideLayoutPart AddLayout(PptxTemplate.LayoutSpec spec)
+    {
+        var master = Presentation.SlideMasterParts.First();
+        var (width, height) = SlideSize;
+        var layout = master.AddNewPart<SlideLayoutPart>();
+        layout.SlideLayout = new P.SlideLayout(PptxTemplate.LayoutXml(spec, width, height));
+        layout.AddPart(master);
+        var used = (Presentation.Presentation!.SlideMasterIdList?.Elements<P.SlideMasterId>().Select(m => m.Id?.Value ?? 0u) ?? [])
+            .Concat(Presentation.SlideMasterParts.SelectMany(m => m.SlideMaster?.SlideLayoutIdList?.Elements<P.SlideLayoutId>().Select(l => l.Id?.Value ?? 0u) ?? []));
+        var list = master.SlideMaster!.SlideLayoutIdList ??= new P.SlideLayoutIdList();
+        list.Append(new P.SlideLayoutId { Id = Math.Max(2147483648u, used.DefaultIfEmpty(0u).Max() + 1), RelationshipId = master.GetIdOfPart(layout) });
+        return layout;
     }
 
     internal static string LayoutName(SlideLayoutPart layout) =>
         layout.SlideLayout?.CommonSlideData?.Name?.Value ?? layout.SlideLayout?.Type?.InnerText ?? "Layout";
 
-    static string? LayoutType(SlideLayoutPart layout) => layout.SlideLayout?.Type?.InnerText;
+    internal static string? LayoutType(SlideLayoutPart layout) => layout.SlideLayout?.Type?.InnerText;
 
     internal SlidePart AddSlide(string? layoutName, int? index)
     {

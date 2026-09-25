@@ -7,31 +7,47 @@
 </head>
 <body>
 <x-dc>
-<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
-  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--k36, rgba(0,0,0,0.12));margin-right:4px"></span></div>
+<helmet>
+<style>
+.pt-tl{position:absolute;left:0;top:0;overflow:hidden;line-height:1;transform-origin:0 0;text-size-adjust:none;-webkit-text-size-adjust:none;forced-color-adjust:none;user-select:text;-webkit-user-select:text}
+.pt-tl>span{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
+.pt-tl br{user-select:none}
+.pt-tl ::selection{background:rgba(0,110,255,0.32)} /* theme: keep */
+.pt-tl .pt-hit{color:transparent;background:rgba(255,205,0,0.5);border-radius:2px} /* theme: keep */
+.pt-tl .pt-hit.cur{background:rgba(255,130,0,0.62)} /* theme: keep */
+[data-ph]:empty::before{content:attr(data-ph);color:var(--ink-3, rgba(29,29,31,0.36))}
+.pt-range{-webkit-appearance:none;appearance:none;width:60px;height:3px;border-radius:2px;background:var(--line, rgba(0,0,0,0.1));outline:none;cursor:pointer}
+.pt-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:9px;height:9px;border-radius:50%;background:var(--ink-2, rgba(29,29,31,0.62));border:none}
+</style>
+</helmet>
+<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
+  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
     <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
-      <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">文件</button>
+      <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));background:transparent;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
       <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
-        <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.sh }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
+        <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;color:{{ t.fg }};background:{{ t.bg }};transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
       </sc-for>
-      </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
+      </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:28px;height:28px;padding:0;flex:none;border:none;border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"></circle><path d="M6.6 5.6v4.8L10.6 8z" fill="currentColor" stroke="none"></path></svg></button></div>
     </div></div>
     <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k72, rgba(255,255,255,0.74)),var(--k32, rgba(255,255,255,0.5)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px">
+    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px">
       <sc-for list="{{ tools }}" as="it" hint-placeholder-count="0">
-        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:20px;background:var(--k36, rgba(0,0,0,0.12));margin:0 6px;flex:none"></span></sc-if>
+        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
         <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:32px;min-width:32px;padding:0 11px;border:none;border-radius:10px;background:{{ it.bg }};font-size:13px;cursor:pointer;white-space:nowrap;flex:none;color:{{ it.color }};transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k27, rgba(255,255,255,0.75))" style-active="transform:scale(0.92)">{{ it.label }}</button>
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;cursor:pointer;white-space:nowrap;flex:none;color:{{ it.color }};transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.92)">{{ it.label }}</button>
         </sc-if>
         <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}">
-          <label title="颜色" style="position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;flex:none" style-hover="background:var(--k27, rgba(255,255,255,0.75))">
+          <label title="颜色" style="position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--ctl-r, 8px);cursor:pointer;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
             <span style="width:16px;height:16px;border-radius:50%;background:{{ it.value }};box-shadow:inset 0 0 0 1px var(--k45, rgba(0,0,0,0.2))"></span>
             <input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
           </label>
         </sc-if>
+        <sc-if value="{{ it.isText }}" hint-placeholder-val="{{ false }}">
+          <input value="{{ it.value }}" placeholder="{{ it.ph }}" title="{{ it.title }}" onChange="{{ it.onChange }}" onKeyDown="{{ it.onKey }}" style="height:26px;width:118px;padding:0 9px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:var(--tab-bg, rgba(255,255,255,0.92));font:inherit;font-size:12.5px;color:var(--ink, #1D1D1F);outline:none;margin:0 2px;flex:none">
+        </sc-if>
         <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}">
-          <select data-val="{{ it.value }}" title="字号" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:28px;padding:0 4px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:9px;background:var(--k30, rgba(255,255,255,0.6));font-size:12.5px;width:58px;flex:none;margin:0 2px">
+          <select data-val="{{ it.value }}" title="字号" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:26px;padding:0 4px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:var(--tab-bg, rgba(255,255,255,0.92));color:var(--ink, #1D1D1F);font-size:12.5px;width:58px;flex:none;margin:0 2px">
             <sc-for list="{{ it.options }}" as="o" hint-placeholder-count="3"><option value="{{ o }}">{{ o }}</option></sc-for>
           </select>
         </sc-if>
@@ -39,24 +55,60 @@
     </div></div>
     </sc-if>
   </sc-if>
+  <input ref="{{ mergeRef }}" type="file" accept=".pdf,application/pdf" multiple="{{ true }}" onChange="{{ onMergePick }}" style="display:none">
+  <sc-if value="{{ findOpen }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="find" style="position:absolute;top:{{ findTop }};right:{{ findRight }};z-index:41;height:36px;display:flex;align-items:center;gap:4px;padding:0 5px 0 12px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
+      <input ref="{{ findRef }}" value="{{ findQ }}" onChange="{{ onFindInput }}" onKeyDown="{{ onFindKey }}" placeholder="查找" style="width:170px;height:28px;border:none;background:transparent;outline:none;font:inherit;font-size:13px;color:var(--ink, #1D1D1F)">
+      <span style="min-width:48px;text-align:center;font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap">{{ findCount }}</span>
+      <button onMouseDown="{{ md }}" onClick="{{ findPrev }}" title="上一个 ⇧⌘G" style="width:26px;height:26px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:15px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)">‹</button>
+      <button onMouseDown="{{ md }}" onClick="{{ findNext }}" title="下一个 ⌘G" style="width:26px;height:26px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:15px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)">›</button>
+      <button onMouseDown="{{ md }}" onClick="{{ closeFind }}" title="关闭" style="width:26px;height:26px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink-2, rgba(29,29,31,0.62))">✕</button>
+    </div>
+  </sc-if>
+  <sc-if value="{{ selPopOn }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="sel" onMouseDown="{{ md }}" style="position:absolute;left:{{ spX }};top:{{ spY }};translate:-50% 0;z-index:42;height:36px;display:flex;align-items:center;gap:1px;padding:0 4px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));white-space:nowrap">
+      <button onClick="{{ markHl }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">高亮</button>
+      <button onClick="{{ markUl }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">下划线</button>
+      <button onClick="{{ markSo }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">删除线</button>
+      <span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span>
+      <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="4"><button onClick="{{ s.onClick }}" title="{{ s.title }}" style="width:22px;height:22px;flex:none;border-radius:50%;border:none;background:{{ s.color }};box-shadow:{{ s.ring }};cursor:pointer;margin:0 1px"></button></sc-for>
+      <span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span>
+      <button onClick="{{ copySel }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">复制</button>
+    </div>
+  </sc-if>
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ cols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ showThumbs }}" hint-placeholder-val="{{ false }}">
-      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:164px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,var(--k32, rgba(255,255,255,0.5)),var(--k33, rgba(255,255,255,0.32)));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 14px 40px var(--k19, rgba(0,0,0,0.1))"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 10px 0 18px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k11, #6E6E73);cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k31, rgba(255,255,255,0.95))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:0 14px 24px;display:flex;flex-direction:column;gap:14px;align-items:center">
+      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:{{ panelW }};z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:var(--panel-r, 16px);overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95));transition:width .45s cubic-bezier(.2,1,.3,1)"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 12px">
+        <sc-if value="{{ hasOutline }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:1px;padding:2px;border-radius:var(--tab-r, 9px);background:var(--fill, rgba(0,0,0,0.07))"><button onClick="{{ showThumbList }}" style="height:24px;padding:0 10px;border:none;border-radius:7px;font-size:12px;cursor:pointer;background:{{ thumbTabBg }};box-shadow:{{ thumbTabSh }};color:var(--ink, #1D1D1F)">缩略图</button><button onClick="{{ showOutline }}" style="height:24px;padding:0 10px;border:none;border-radius:7px;font-size:12px;cursor:pointer;background:{{ outlineTabBg }};box-shadow:{{ outlineTabSh }};color:var(--ink, #1D1D1F)">目录</button></div></sc-if>
+        <sc-if value="{{ hasOutline }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+        <button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));cursor:pointer;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink-2, rgba(29,29,31,0.62))" style-active="transform:scale(0.88)">✕</button></div>
+      <sc-if value="{{ outlineOn }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-height:0;overflow:auto;padding:0 10px 24px;display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ outlineItems }}" as="o" hint-placeholder-count="0">
+            <div onClick="{{ o.onClick }}" title="{{ o.title }}" style="padding:5px 8px 5px {{ o.pad }};border-radius:var(--ctl-r, 8px);font-size:12.5px;line-height:1.35;cursor:pointer;color:{{ o.color }};background:{{ o.bg }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" style-hover="background:var(--fill, rgba(0,0,0,0.07))">{{ o.title }}</div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ outlineOn }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;min-height:0;overflow:auto;padding:0 14px 24px;display:flex;flex-direction:column;gap:14px;align-items:center">
         <sc-for list="{{ pages }}" as="p" hint-placeholder-count="3">
-          <div onClick="{{ p.onThumb }}" style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer">
-            <canvas ref="{{ p.tref }}" style="width:{{ p.tw }};height:{{ p.th }};background:var(--k51, #fff);box-shadow:0 1px 3px var(--k76, rgba(0,0,0,0.15));outline:{{ p.tline }};outline-offset:2px"></canvas>
-            <span style="font-size:11.5px;color:var(--k11, #6E6E73)">{{ p.n }}</span>
+          <div onClick="{{ p.onThumb }}" draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onDragOver="{{ p.onDragOver }}" onDrop="{{ p.onDrop }}" onDragEnd="{{ p.onDragEnd }}" title="拖动可调整页序" style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab;padding-top:6px;margin-top:-6px;border-top:{{ p.dropLine }}">
+            <canvas ref="{{ p.tref }}" style="width:{{ p.tw }};height:{{ p.th }};background:var(--k51, #fff);border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,0.06),0 3px 10px rgba(0,0,0,0.06);outline:{{ p.tline }};outline-offset:3px;pointer-events:none"></canvas>
+            <span style="font-size:11px;color:var(--ink-2, rgba(29,29,31,0.62))">{{ p.n }}</span>
           </div>
         </sc-for>
-      </div></div>
+        </div>
+      </sc-if>
+      </div>
     </sc-if>
     <div ref="{{ scRef }}" onScroll="{{ onScroll }}" style="grid-column:2;overflow:auto;min-width:0;position:relative">
-      <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}"><div style="padding:40px;text-align:center;font-size:13px;color:var(--k8, #8E8E93)">{{ loadText }}</div></sc-if>
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}"><div style="padding:40px;text-align:center;font-size:13px;color:var(--ink-3, rgba(29,29,31,0.36))">{{ loadText }}</div></sc-if>
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:{{ scJ }};gap:20px;padding:{{ scPad }};min-width:max-content;min-height:{{ scMinH }};box-sizing:border-box">
         <sc-for list="{{ mainPages }}" as="p" hint-placeholder-count="0">
-          <div data-page="{{ p.id }}" style="position:relative;width:{{ p.w }};height:{{ p.h }};background:var(--k51, #fff);box-shadow:0 1px 2px var(--k19, rgba(0,0,0,0.1)),0 8px 24px var(--k19, rgba(0,0,0,0.1));flex:none;outline:{{ p.line }}">
+          <div data-page="{{ p.id }}" style="position:relative;width:{{ p.w }};height:{{ p.h }};background:var(--k51, #fff);box-shadow:var(--paper-sh, 0 0 0 1px rgba(0,0,0,0.05),0 10px 34px rgba(0,0,0,0.06));flex:none;outline:{{ p.line }}">
             <canvas ref="{{ p.ref }}" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
             <div onMouseDown="{{ p.onMD }}" style="position:absolute;inset:0;cursor:{{ cursor }};overflow:hidden">
+              <div ref="{{ p.lref }}" class="pt-tl" style="width:{{ p.w0 }};height:{{ p.h0 }};transform:{{ p.ltf }};pointer-events:{{ tlPE }}"></div>
               <sc-for list="{{ p.items }}" as="t" hint-placeholder-count="0">
                 <div onMouseDown="{{ t.onMD }}" title="点击修改这段文字" style="position:absolute;left:{{ t.x }};top:{{ t.y }};width:{{ t.w }};height:{{ t.h }};cursor:text;border-radius:2px" style-hover="background:color-mix(in srgb, var(--k59, #3F7D5C) 12%, transparent);box-shadow:0 0 0 1px var(--k59, #3F7D5C)"></div>
               </sc-for>
@@ -66,14 +118,28 @@
                 </sc-for>
               </svg>
               <sc-for list="{{ p.annots }}" as="a" hint-placeholder-count="0">
-                <div onMouseDown="{{ a.onMD }}" onDoubleClick="{{ a.onDbl }}" style="position:absolute;left:{{ a.x }};top:{{ a.y }};width:{{ a.w }};height:{{ a.h }};background:{{ a.bg }};opacity:{{ a.op }};border:{{ a.border }};outline:{{ a.line }};outline-offset:1px;cursor:{{ a.cur }};box-sizing:border-box">
+                <div onMouseDown="{{ a.onMD }}" onDoubleClick="{{ a.onDbl }}" style="position:absolute;left:{{ a.x }};top:{{ a.y }};width:{{ a.w }};height:{{ a.h }};background:{{ a.bg }};opacity:{{ a.op }};mix-blend-mode:{{ a.blend }};border-radius:{{ a.radius }};box-shadow:{{ a.sh }};border:{{ a.border }};outline:{{ a.line }};outline-offset:1px;cursor:{{ a.cur }};box-sizing:border-box">
                   <sc-if value="{{ a.hasText }}" hint-placeholder-val="{{ false }}">
                     <div data-aid="{{ a.id }}" contentEditable="{{ a.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ a.onBlur }}" style="width:100%;min-height:100%;padding:{{ a.pad }};font-size:{{ a.fs }};line-height:1.3;color:{{ a.color }};font-weight:{{ a.fw }};white-space:pre-wrap;word-break:break-word;outline:none;font-family:'Noto Sans SC','IBM Plex Sans',sans-serif;display:flex;align-items:{{ a.ai }};cursor:{{ a.tcur }}">{{ a.text }}</div>
+                  </sc-if>
+                  <sc-if value="{{ a.isNote }}" hint-placeholder-val="{{ false }}">
+                    <div onMouseDown="{{ stop }}" onDoubleClick="{{ stop }}" style="position:absolute;left:{{ a.npx }};top:0;width:220px;padding:8px 10px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));z-index:6;cursor:text;mix-blend-mode:normal">
+                      <div data-aid="{{ a.id }}" data-ph="{{ a.notePh }}" contentEditable="{{ true }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ a.onBlur }}" style="min-height:40px;font-size:12.5px;line-height:1.45;color:var(--ink, #1D1D1F);outline:none;white-space:pre-wrap;word-break:break-word;font-family:'Noto Sans SC','IBM Plex Sans',sans-serif">{{ a.text }}</div>
+                    </div>
                   </sc-if>
                   <sc-if value="{{ a.sel }}" hint-placeholder-val="{{ false }}">
                     <span onMouseDown="{{ a.onResize }}" style="position:absolute;right:-6px;bottom:-6px;width:10px;height:10px;background:var(--k0, #FFFFFF);border:1.5px solid var(--k59, #3F7D5C);border-radius:2px;cursor:nwse-resize"></span>
                   </sc-if>
                 </div>
+              </sc-for>
+              <sc-for list="{{ p.fields }}" as="f" hint-placeholder-count="0">
+                <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ false }}"><input data-theme-keep="1" value="{{ f.value }}" onChange="{{ f.onChange }}" onMouseDown="{{ stop }}" readOnly="{{ f.ro }}" maxLength="{{ f.maxLen }}" title="{{ f.name }}" style="position:absolute;left:{{ f.x }};top:{{ f.y }};width:{{ f.w }};height:{{ f.h }};padding:0 {{ f.pad }};border:1px solid rgba(0,0,0,0.18);border-radius:2px;background:rgba(0,120,255,0.07);color:#000;font:{{ f.fs }} 'Noto Sans SC','IBM Plex Sans',sans-serif;box-sizing:border-box;outline:none;pointer-events:{{ tlPE }}" style-focus="background:rgba(0,120,255,0.12);border-color:rgba(0,120,255,0.6)"></sc-if>
+                <sc-if value="{{ f.isArea }}" hint-placeholder-val="{{ false }}"><textarea data-theme-keep="1" value="{{ f.value }}" onChange="{{ f.onChange }}" onMouseDown="{{ stop }}" readOnly="{{ f.ro }}" title="{{ f.name }}" style="position:absolute;left:{{ f.x }};top:{{ f.y }};width:{{ f.w }};height:{{ f.h }};padding:{{ f.pad }};border:1px solid rgba(0,0,0,0.18);border-radius:2px;background:rgba(0,120,255,0.07);color:#000;font:{{ f.fs }} 'Noto Sans SC','IBM Plex Sans',sans-serif;line-height:1.25;box-sizing:border-box;outline:none;resize:none;pointer-events:{{ tlPE }}" style-focus="background:rgba(0,120,255,0.12);border-color:rgba(0,120,255,0.6)"></textarea></sc-if>
+                <sc-if value="{{ f.isBox }}" hint-placeholder-val="{{ false }}"><input data-theme-keep="1" type="{{ f.type }}" checked="{{ f.checked }}" onChange="{{ f.onToggle }}" onMouseDown="{{ stop }}" disabled="{{ f.ro }}" title="{{ f.name }}" style="position:absolute;left:{{ f.x }};top:{{ f.y }};width:{{ f.w }};height:{{ f.h }};margin:0;accent-color:#1D1D1F;cursor:pointer;pointer-events:{{ tlPE }}"></sc-if>
+                <sc-if value="{{ f.isChoice }}" hint-placeholder-val="{{ false }}"><select data-theme-keep="1" data-val="{{ f.value }}" value="{{ f.value }}" onChange="{{ f.onChange }}" onMouseDown="{{ stop }}" disabled="{{ f.ro }}" title="{{ f.name }}" style="position:absolute;left:{{ f.x }};top:{{ f.y }};width:{{ f.w }};height:{{ f.h }};border:1px solid rgba(0,0,0,0.18);border-radius:2px;background:rgba(0,120,255,0.07);color:#000;font:{{ f.fs }} 'Noto Sans SC','IBM Plex Sans',sans-serif;box-sizing:border-box;outline:none;pointer-events:{{ tlPE }}"><sc-for list="{{ f.options }}" as="o" hint-placeholder-count="0"><option value="{{ o.v }}">{{ o.t }}</option></sc-for></select></sc-if>
+              </sc-for>
+              <sc-for list="{{ p.fann }}" as="f" hint-placeholder-count="0">
+                <div onMouseDown="{{ f.onMD }}" title="{{ f.title }}" style="position:absolute;left:{{ f.x }};top:{{ f.y }};width:{{ f.w }};height:{{ f.h }};outline:{{ f.line }};outline-offset:1px;background:{{ f.bg }};cursor:pointer;pointer-events:{{ tlPE }}"></div>
               </sc-for>
               <sc-if value="{{ p.hasLive }}" hint-placeholder-val="{{ false }}">
                 <div style="position:absolute;left:{{ p.lx }};top:{{ p.ly }};width:{{ p.lw }};height:{{ p.lh }};border:1.5px dashed var(--k59, #3F7D5C);background:color-mix(in srgb, var(--k59, #3F7D5C) 8%, transparent);pointer-events:none"></div>
@@ -84,36 +150,44 @@
       </div>
     </div>
   </div>
+  <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out">{{ pageText }}</div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:30;height:34px;display:flex;align-items:center;gap:14px;padding:0 16px;border-radius:999px;background:var(--k69, rgba(255,255,255,0.38));backdrop-filter:blur(14px) saturate(180%);-webkit-backdrop-filter:blur(14px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 6px 20px var(--k53, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k11, #6E6E73);opacity:0.32;transition:opacity .45s cubic-bezier(.2,1,.3,1),background .45s;white-space:nowrap" style-hover="opacity:1;background:var(--k15, rgba(255,255,255,0.62))">
-      <span>{{ pageText }}</span><span>{{ annotText }}</span><span style="color:var(--k8, #8E8E93)">{{ hint }}</span>
-      <div style="flex:1"></div>
+    <div style="position:absolute;right:18px;bottom:12px;z-index:30;display:flex;align-items:center;gap:10px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap">
+      <span style="display:flex;align-items:center;gap:4px;white-space:nowrap">{{ pagePre }}<input value="{{ pageEdit }}" onChange="{{ onPageText }}" onKeyDown="{{ onPageKey }}" onFocus="{{ onPageFocus }}" onBlur="{{ onPageBlur }}" title="输入页码后回车" style="width:30px;height:18px;padding:0;border:none;border-radius:5px;background:var(--fill, rgba(0,0,0,0.07));font:inherit;color:var(--ink-2, rgba(29,29,31,0.62));text-align:center;outline:none">{{ pagePost }}</span><span>{{ annotText }}</span><span>{{ hint }}</span>
       <sc-if value="{{ single }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ prevPage }}" title="上一页 PageUp" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--k11, #6E6E73)">上一页</button>
-        <button onClick="{{ nextPage }}" title="下一页 PageDown" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--k11, #6E6E73)">下一页</button>
+        <button onClick="{{ prevPage }}" title="上一页 PageUp" style="height:18px;padding:0 3px;border:none;border-radius:5px;background:transparent;cursor:pointer;font-size:11px;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">上一页</button>
+        <button onClick="{{ nextPage }}" title="下一页 PageDown" style="height:18px;padding:0 3px;border:none;border-radius:5px;background:transparent;cursor:pointer;font-size:11px;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">下一页</button>
       </sc-if>
-      <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:14px;width:20px;color:var(--k11, #6E6E73)">−</button>
-      <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" style="width:100px;accent-color:var(--k1, #1D1D1F)">
-      <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:14px;width:20px;color:var(--k11, #6E6E73)">＋</button>
-      <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" style="width:46px;height:22px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
-      <button onClick="{{ fitWidth }}" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--k11, #6E6E73)">适应宽度</button>
-      <button onClick="{{ fitPage }}" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--k11, #6E6E73)">适应页面</button>
+      <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="width:18px;height:18px;padding:0;border:none;border-radius:5px;background:transparent;cursor:pointer;font-size:13px;line-height:1;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">−</button>
+      <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" class="pt-range">
+      <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="width:18px;height:18px;padding:0;border:none;border-radius:5px;background:transparent;cursor:pointer;font-size:13px;line-height:1;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">＋</button>
+      <select data-val="{{ zoomSel }}" value="{{ zoomSel }}" onChange="{{ onZoomSel }}" title="缩放比例" style="height:18px;padding:0 2px;border:none;border-radius:5px;background:transparent;font:inherit;font-size:11px;color:inherit;outline:none;cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
+        <sc-for list="{{ zoomOpts }}" as="z" hint-placeholder-count="3"><option value="{{ z }}">{{ z }}%</option></sc-for>
+      </select>
+      <button onClick="{{ fitWidth }}" style="height:18px;padding:0 3px;border:none;border-radius:5px;background:transparent;cursor:pointer;font-size:11px;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">适应宽度</button>
+      <button onClick="{{ fitPage }}" style="height:18px;padding:0 3px;border:none;border-radius:5px;background:transparent;cursor:pointer;font-size:11px;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">适应页面</button>
     </div>
   </sc-if>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;doc&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(doc, opts) =&gt; void&quot;},&quot;onUndo&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onRedo&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onConvert&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(kind, payload) =&gt; void&quot;},&quot;toast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(msg) =&gt; void&quot;},&quot;showThumbs&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;pure&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onToggleThumbs&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
 const md = e => e.preventDefault();
-const TOOLS = [['select', '选择', 'V'], ['edit', '改文字', 'E'], ['text', '添加文字', 'T'], ['hl', '高亮', 'H'], ['rect', '方框', 'R'], ['ink', '画笔', 'P'], ['white', '遮盖', 'W']];
-const HINTS = { select: '点击选中批注，拖动移动，双击编辑文字', edit: '点击页面上的原有文字即可修改', text: '在页面上点击添加文字', hl: '拖动框选要高亮的区域', rect: '拖动画一个方框', ink: '按住拖动自由绘制', white: '拖动遮盖不需要的内容' };
+const TOOLS = [['select', '选择', 'V'], ['edit', '改文字', 'E'], ['text', '添加文字', 'T'], ['note', '便签', 'N'], ['hl', '高亮', 'H'], ['rect', '方框', 'R'], ['ink', '画笔', 'P'], ['white', '遮盖', 'W']];
+const pk = pg => (pg.from || '') + ':' + pg.src + ':' + (pg.rot || 0); // cache key of a page as displayed
+const HINTS = { select: '拖动选择文字；点击选中批注，拖动移动，双击编辑文字', edit: '点击页面上的原有文字即可修改', text: '在页面上点击添加文字', note: '在页面上点击放置便签', hl: '拖动框选要高亮的区域', rect: '拖动画一个方框', ink: '按住拖动自由绘制', white: '拖动遮盖不需要的内容' };
+const SWATCHES = [['#FFE066', '黄'], ['#B5F2A1', '绿'], ['#FFB3C7', '粉'], ['#A9D4FF', '蓝']];
+const FSUB = { Highlight: '高亮', Underline: '下划线', StrikeOut: '删除线', Square: '方框', Ink: '画笔', Text: '便签', FreeText: '文字', Stamp: '图章' }; // what the file's own annotations are called
+const noteBg = (c, s) => `linear-gradient(#fff,#fff) ${4 * s}px ${6 * s}px/${12 * s}px ${1.5 * s}px no-repeat,linear-gradient(#fff,#fff) ${4 * s}px ${10 * s}px/${12 * s}px ${1.5 * s}px no-repeat,linear-gradient(#fff,#fff) ${4 * s}px ${14 * s}px/${8 * s}px ${1.5 * s}px no-repeat,${c}`; // theme: keep
+const stop = e => e.stopPropagation();
 const ZMIN = 0.2, ZMAX = 4;
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 class Component extends DCLogic {
-  state = { tool: 'select', scale: null, zoomEdit: null, view: 'continuous', color: '#B5563A', fs: 14, sel: null, editing: null, live: null, infos: {}, items: {}, cur: null, err: null };
-  scRef = React.createRef(); cv = {}; tcv = {};
+  state = { tool: 'select', scale: null, view: 'continuous', color: '#B5563A', fs: 14, sel: null, editing: null, live: null, infos: {}, items: {}, cur: null, err: null, findOpen: false, findQ: '', find: null, outline: null, panel: 'thumbs', pageEdit: null, dragOver: null, selPop: null, mk: '#FFE066', fann: {}, fields: {}, fvals: {} };
+  scRef = React.createRef(); findRef = React.createRef(); mergeRef = React.createRef(); cv = {}; tcv = {}; tl = {};
   componentDidMount() {
     import('./pdf-kit.js').then(K => { this.K = K; this.loadInfos(); });
     import('./glass.js');
+    if (window.__TAURI_INTERNALS__ && window.__WRITER_NATIVE__) window.__TAURI_INTERNALS__.invoke('open_with', { path: '', with: 'apps' }).then(apps => this.setState({ apps }), () => { });
     window.addEventListener('mousemove', this.onWM); window.addEventListener('mouseup', this.onWU);
     this.attachWheel();
   }
@@ -127,7 +201,6 @@ class Component extends DCLogic {
     this.setState({ scale: z }, () => { sc.scrollLeft = (sx + ax - pl) * r + pl - ax; sc.scrollTop = (sy + ay - pt) * r + pt - ay; });
   }
   onWheel = e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom((this.state.scale || 1) * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
-  applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
   /** The widest / tallest page, or the current one in single-page view: what "fit" measures against. */
   fitBox() { const pg = this.state.view === 'single' && this.curPage(), inf = pg && this.info(pg); if (inf) return inf; const all = Object.values(this.state.infos); return { w: Math.max(...all.map(i => i.w), 1), h: Math.max(...all.map(i => i.h), 1) }; }
   go(dir) { const d = this.doc, i = d.pages.findIndex(p => p.id === this.state.cur), j = Math.max(0, Math.min(d.pages.length - 1, (i < 0 ? 0 : i) + dir)); if (d.pages[j]) this.scrollTo(d.pages[j].id); }
@@ -137,6 +210,7 @@ class Component extends DCLogic {
     if (pp.doc.id !== this.props.doc.id) { this.cv = {}; this.tcv = {}; this.setState({ infos: {}, items: {}, scale: null, sel: null, editing: null }, () => this.loadInfos()); return; }
     if (pp.doc.pages !== this.props.doc.pages) this.loadInfos();
     this.schedule();
+    if (this.focusFind && this.findRef.current) { this.focusFind = false; this.findRef.current.focus(); this.findRef.current.select(); }
     if (this.focusA) { const el = this.scRef.current && this.scRef.current.querySelector(`[data-aid="${this.focusA}"]`); if (el) { this.focusA = null; el.focus(); const r = document.createRange(); r.selectNodeContents(el); if (!this.selAll) r.collapse(false); this.selAll = false; const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } }
   }
   get doc() { return this.props.doc; }
@@ -144,26 +218,31 @@ class Component extends DCLogic {
     const K = this.K; if (!K) return; const d = this.doc;
     if (!K.store[d.id]) return this.setState({ err: $t('文件数据已丢失，请重新打开这个 PDF。') });
     try {
-      const infos = {};
-      for (const pg of d.pages) infos[pg.id + ':' + (pg.rot || 0)] = await K.pageInfo(d.id, pg);
-      const u = { infos, err: null };
+      const infos = {}, fann = {}, fields = {};
+      for (const pg of d.pages) { infos[pk(pg)] = await K.pageInfo(d.id, pg); fann[pk(pg)] = await K.fileAnnots(d.id, pg).catch(() => []); fields[pk(pg)] = await K.widgets(d.id, pg).catch(() => []); }
+      const u = { infos, fann, fields, fvals: {}, err: null };
       if (this.state.scale == null) { const w = this.scRef.current ? this.scRef.current.clientWidth : 900; const mx = Math.max(...Object.values(infos).map(i => i.w), 1); u.scale = Math.max(0.4, Math.min(1.6, Math.floor((w - 80) / mx * 20) / 20)); }
       if (!this.state.cur && d.pages[0]) u.cur = d.pages[0].id;
       this.setState(u);
       if (this.state.tool === 'edit') this.loadItems();
+      const okey = d.pages[0] && d.pages[0].src >= 0 ? K.keyOf(d.id, d.pages[0]) : null;
+      if (okey && this.okey !== okey) { this.okey = okey; K.outline(okey).then(o => this.setState({ outline: o }), () => this.setState({ outline: [] })); }
     } catch (e) { this.setState({ err: $t('无法读取 PDF：{msg}', { msg: e.message || e }) }); }
   }
-  async loadItems() { const K = this.K, d = this.doc; const items = {}; for (const pg of d.pages) items[pg.id + ':' + (pg.rot || 0)] = await K.textItems(d.id, pg); this.setState({ items }); }
+  async loadItems() { const K = this.K, d = this.doc; const items = {}; for (const pg of d.pages) items[pk(pg)] = await K.textItems(d.id, pg); this.setState({ items }); }
   schedule() { if (this.raf) return; this.raf = requestAnimationFrame(() => { this.raf = null; this.renderAll(); }); }
   async renderAll() {
     const K = this.K, d = this.doc, sc = this.state.scale; if (!K || !sc || this.rendering) { if (this.rendering) this.again = true; return; }
     this.rendering = true;
     try {
       for (const pg of d.pages) {
-        const c = this.cv[pg.id], t = this.tcv[pg.id], key = d.id + ':' + pg.src + ':' + (pg.rot || 0) + ':' + sc;
+        const forms = (this.state.fields[pk(pg)] || []).length ? 2 : undefined; // pages with fields: the inputs stand in for the widgets, so the canvas leaves them out
+        const c = this.cv[pg.id], t = this.tcv[pg.id], key = K.keyOf(d.id, pg) + ':' + pg.src + ':' + (pg.rot || 0) + ':' + sc + ':' + (forms || '');
         if (c) {
+          const l = this.tl[pg.id], lk = K.keyOf(d.id, pg) + ':' + pg.src; // the text layer is built unrotated at scale 1: rotation and zoom are CSS
+          if (l && l.__key !== lk) { l.__key = lk; try { await K.textLayer(d.id, pg, l); } catch (e) { } }
           if (c.__key === key) continue; c.__key = key;
-          await K.renderPage(d.id, pg, c, sc);
+          await K.renderPage(d.id, pg, c, sc, forms);
           if (t) { t.__key = key; t.width = c.width / 4 || 1; t.height = c.height / 4 || 1; t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); }
         } else if (t) { // single-page view: pages off screen render their thumbnail directly
           const tk = key + ':thumb'; if (t.__key === tk) continue; t.__key = tk;
@@ -171,10 +250,63 @@ class Component extends DCLogic {
         }
       }
     } catch (e) { }
+    this.applyMarks();
     this.rendering = false; if (this.again) { this.again = false; this.renderAll(); }
   }
-  change(fn) { const d = structuredClone(this.doc); d.annots = d.annots || []; fn(d); this.props.onChange && this.props.onChange(d); }
-  info(pg) { return this.state.infos[pg.id + ':' + (pg.rot || 0)]; }
+  // ----- search (⌘F): every page's text once, hits marked in the text layers, ⌘G / ⇧⌘G walk them across pages -----
+  openFind() { this.focusFind = true; this.setState({ findOpen: true }); }
+  closeFind() { this.setState({ findOpen: false, find: null }); const r = this.scRef.current && this.scRef.current.closest('[data-edroot]'); if (r) r.focus({ preventScroll: true }); }
+  runFind(q) {
+    this.setState({ findQ: q }); clearTimeout(this.findT);
+    this.findT = setTimeout(async () => {
+      const K = this.K, d = this.doc; if (!K) return;
+      const texts = await Promise.all(d.pages.map(pg => K.pageText(d.id, pg).catch(() => '')));
+      const hits = K.findIn(texts, q).map(h => Object.assign(h, { page: d.pages[h.p].id }));
+      this.setState({ find: { q, hits, cur: 0 } }); if (hits.length) this.gotoHit(0);
+    }, 160);
+  }
+  gotoHit(i) {
+    const f = this.state.find; if (!f || !f.hits.length) return; i = (i + f.hits.length) % f.hits.length; const h = f.hits[i];
+    this.scrollHit = true; this.setState({ find: Object.assign({}, f, { cur: i }) });
+    if (h.page !== this.state.cur) this.scrollTo(h.page);
+  }
+  applyMarks() {
+    const K = this.K, f = this.state.find, d = this.doc; if (!K) return;
+    for (const pg of d.pages) { const l = this.tl[pg.id]; if (l) K.markHits(l, f ? f.hits.filter(h => h.page === pg.id) : [], f ? f.cur : -1); }
+    if (this.scrollHit && f) { const el = this.scRef.current && this.scRef.current.querySelector('.pt-hit.cur'); if (el) { this.scrollHit = false; el.scrollIntoView({ block: 'center', inline: 'nearest' }); } }
+  }
+  change(fn) { const d = structuredClone(this.doc); d.annots = d.annots || []; d.removed = d.removed || []; fn(d); this.props.onChange && this.props.onChange(d); }
+  /** A form field's new value: into pdf.js's storage (saved with the file) and shown at once; the document counts as changed. */
+  setField(pg, f, value, group) {
+    this.K.setField(this.doc.id, pg, f.id, value, group).catch(() => { });
+    const fvals = Object.assign({}, this.state.fvals, { [f.id]: value }); (group || []).forEach(o => { if (o !== f.id) fvals[o] = false; });
+    this.setState({ fvals }); this.change(d => { d.form = (d.form || 0) + 1; });
+  }
+  /** Deletes the selected annotation: one of the editor's own, or one already in the file (dropped from the page's /Annots at the next save). */
+  removeSel() { const s = this.state.sel; if (!s) return; this.change(d => { if (s.startsWith('f:')) d.removed.push(s.slice(2)); else d.annots = d.annots.filter(a => a.id !== s); }); this.setState({ sel: null }); }
+  // ----- text selection → 高亮 / 下划线 / 删除线 -----
+  /** After a mouse-up in the 选择 tool: the selection's line boxes per page (page units), and where to show the pop. */
+  checkSelection() {
+    const s = window.getSelection(), root = this.rootEl;
+    if (!s || !root || s.isCollapsed || !s.rangeCount) { if (this.state.selPop) this.setState({ selPop: null }); return; }
+    const an = s.anchorNode && (s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement); if (!an || !an.closest('.pt-tl')) return;
+    const sc = this.state.scale || 1, els = Array.from(root.querySelectorAll('[data-page]')).map(el => ({ id: el.getAttribute('data-page'), r: el.getBoundingClientRect() })), per = {};
+    for (const cr of s.getRangeAt(0).getClientRects()) {
+      const cx = cr.left + cr.width / 2, cy = cr.top + cr.height / 2, p = els.find(e => cx >= e.r.left && cx <= e.r.right && cy >= e.r.top && cy <= e.r.bottom); if (!p) continue;
+      (per[p.id] = per[p.id] || []).push({ x: (cr.left - p.r.left) / sc, y: (cr.top - p.r.top) / sc, w: cr.width / sc, h: cr.height / sc });
+    }
+    const pages = Object.entries(per).map(([id, rs]) => ({ id, rects: this.K.mergeRects(rs) })).filter(p => p.rects.length); if (!pages.length) return;
+    const b = s.getRangeAt(0).getBoundingClientRect(), rr = root.getBoundingClientRect();
+    this.setState({ selPop: { pages, x: b.left + b.width / 2 - rr.left, y: Math.max(8, b.top - rr.top - 46) } });
+  }
+  markSel(t) {
+    const sp = this.state.selPop; if (!sp) return; const color = t === 'hl' ? this.state.mk : this.state.color;
+    this.change(d => sp.pages.forEach(p => { const rs = p.rects, x = Math.min(...rs.map(r => r.x)), y = Math.min(...rs.map(r => r.y)); d.annots.push({ id: this.newId(), page: p.id, t, quads: rs.map(r => [+r.x.toFixed(2), +r.y.toFixed(2), +r.w.toFixed(2), +r.h.toFixed(2)]), x, y, w: Math.max(...rs.map(r => r.x + r.w)) - x, h: Math.max(...rs.map(r => r.y + r.h)) - y, color }); }));
+    window.getSelection().removeAllRanges(); this.setState({ selPop: null });
+  }
+  info(pg) { return this.state.infos[pk(pg)]; }
+  /** ⌘A: the current page's text, as a browser selection (⌘C copies it). */
+  selectPageText() { const pg = this.curPage(), l = pg && this.tl[pg.id]; if (!l || !l.__tl) return; const r = document.createRange(); r.selectNodeContents(l); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
   curPage() { const d = this.doc; return d.pages.find(p => p.id === this.state.cur) || d.pages[0]; }
   newId() { return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
   toPt(e, el) { const r = el.getBoundingClientRect(), s = this.state.scale; return [(e.clientX - r.left) / s, (e.clientY - r.top) / s]; }
@@ -185,13 +317,33 @@ class Component extends DCLogic {
     this.change(d => list.forEach(([pg, inf]) => { const W = inf.w, H = inf.h; const p = d.pages.find(x => x.id === pg.id); p.rot = (((p.rot || 0) + (dir > 0 ? 90 : 270)) % 360); d.annots.filter(a => a.page === pg.id).forEach(a => { if (dir > 0) { if (a.pts) a.pts = a.pts.map(([x, y]) => [H - y, x]); else { const nx = H - (a.y + a.h), ny = a.x; a.x = nx; a.y = ny; [a.w, a.h] = [a.h, a.w]; } } else { if (a.pts) a.pts = a.pts.map(([x, y]) => [y, W - x]); else { const nx = a.y, ny = W - (a.x + a.w); a.x = nx; a.y = ny; [a.w, a.h] = [a.h, a.w]; } } }); }));
   }
   movePage(dir) { const pg = this.curPage(); if (!pg) return; this.change(d => { const i = d.pages.findIndex(p => p.id === pg.id), j = i + dir; if (j < 0 || j >= d.pages.length) return; [d.pages[i], d.pages[j]] = [d.pages[j], d.pages[i]]; }); setTimeout(() => this.scrollTo(pg.id), 50); }
+  // ----- pages as files: extract a range, merge other PDFs after the current page, a page as PNG -----
+  async extract(indices, label) {
+    const K = this.K, d = this.doc, toast = m => this.props.toast && this.props.toast(m); if (!indices || !indices.length) return toast($t('页码格式不对，请写成 1-3,5'));
+    try { toast($t('正在生成 PDF…')); const name = d.title + '-' + label + '.pdf'; K.download(await K.extractPdf(d.id, d, indices), name); toast($t('已下载「{name}」', { name })); }
+    catch (e) { toast($t('导出失败：{msg}', { msg: e.message || e })); }
+  }
+  async merge(files) {
+    const K = this.K, pg = this.curPage(), toast = m => this.props.toast && this.props.toast(m), added = [];
+    for (const f of files) { try { added.push(...await K.importPdf(f, 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5))); } catch (e) { toast($t('无法读取 {name}', { name: f.name })); } }
+    if (!added.length) return;
+    this.change(d => { const i = d.pages.findIndex(p => p.id === (pg && pg.id)); d.pages.splice(i + 1, 0, ...added); });
+    toast($t('已合并 {n} 页', { n: added.length })); setTimeout(() => this.scrollTo(added[0].id), 80);
+  }
+  async pagePng() {
+    const K = this.K, d = this.doc, pg = this.curPage(), toast = m => this.props.toast && this.props.toast(m); if (!pg) return;
+    try { const name = d.title + '-p' + (d.pages.indexOf(pg) + 1) + '.png'; K.download(await K.pagePng(d.id, pg, (d.annots || []).filter(a => a.page === pg.id)), name, 'image/png'); toast($t('已下载「{name}」', { name })); }
+    catch (e) { toast($t('导出失败：{msg}', { msg: e.message || e })); }
+  }
   scrollTo(id) { const sc = this.scRef.current; if (this.state.view === 'single') { if (sc) sc.scrollTop = 0; } else { const el = sc && sc.querySelector(`[data-page="${id}"]`); if (el) sc.scrollTop = el.offsetTop - 20; } this.setState({ cur: id }); }
   async convert() { const K = this.K, d = this.doc; this.props.toast && this.props.toast($t('正在提取文字…')); const pages = await K.extractText(d.id, d.pages); const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); const html = pages.map((ps, i) => ps.map((p, j) => (i === 0 && j === 0 && p.length < 40 ? `<h1>${esc(p)}</h1>` : `<p>${esc(p)}</p>`)).join('') || '<p><br></p>').join('<hr data-pb="1">'); const text = pages.flat().join('\n\n'); this.props.onConvert && this.props.onConvert('docx', { title: d.title, html, text }); }
   async save(print) {
     const K = this.K, d = this.doc; this.props.toast && this.props.toast(print ? $t('正在准备打印…') : $t('正在生成 PDF…'));
-    try { const bytes = await K.exportPdf(d.id, d); if (!print) { K.download(bytes, d.title + '.pdf'); this.props.toast && this.props.toast($t('已下载「{name}」', { name: d.title + '.pdf' })); } else { const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0'; f.src = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); document.body.appendChild(f); f.onload = () => { try { f.contentWindow.print(); } catch (e) { K.download(bytes, d.title + '.pdf'); } }; } }
+    try { if (print) await K.printPdf(d.id, d); else { K.download(await K.exportPdf(d.id, d), d.title + '.pdf'); this.props.toast && this.props.toast($t('已下载「{name}」', { name: d.title + '.pdf' })); } }
     catch (e) { this.props.toast && this.props.toast($t('导出失败：{msg}', { msg: e.message || e })); }
   }
+  /** 打开方式: the app's own command hands the file to another PDF viewer (Preview, Acrobat; Windows' Open with dialog). */
+  openWith(key) { const d = this.doc; window.__TAURI_INTERNALS__.invoke('open_with', { path: d.path, with: key }).catch(e => this.props.toast && this.props.toast($t('无法打开：{msg}', { msg: e.message || e }))); }
   onWM = e => {
     const op = this.op; if (!op) return; const s = this.state.scale;
     const [x, y] = [(e.clientX - op.r.left) / s, (e.clientY - op.r.top) / s];
@@ -201,7 +353,9 @@ class Component extends DCLogic {
     if (op.kind === 'resize') this.setState({ live: { id: op.id, w: Math.max(8, op.w0 + x - op.x0), h: Math.max(8, op.h0 + y - op.y0) } });
   };
   onWU = () => {
-    const op = this.op; this.op = null; if (!op) return; const lv = this.state.live; this.setState({ live: null });
+    const op = this.op; this.op = null;
+    if (!op) { if (this.state.tool === 'select') setTimeout(() => this.checkSelection(), 0); return; }
+    const lv = this.state.live; this.setState({ live: null });
     if (op.kind === 'draw' && lv && lv.w > 4 && lv.h > 4) this.addAnnot({ id: this.newId(), page: op.page, t: op.t, x: lv.x, y: lv.y, w: lv.w, h: lv.h, color: op.t === 'hl' ? '#FFE066' : this.state.color, sw: 2 });
     if (op.kind === 'ink' && op.pts.length > 1) this.addAnnot({ id: this.newId(), page: op.page, t: 'ink', pts: op.pts, color: this.state.color, sw: 2.5 });
     if (op.kind === 'move' && lv && op.moved) this.change(d => { const a = d.annots.find(z => z.id === op.id); if (!a) return; if (a.pts) a.pts = a.pts.map(([px, py]) => [px + lv.dx, py + lv.dy]); else { a.x += lv.dx; a.y += lv.dy; } });
@@ -209,84 +363,123 @@ class Component extends DCLogic {
   };
   renderVals() {
     const st = this.state, d = this.doc, sc = st.scale || 1, pure = !!this.props.pure, K = this.K;
-    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick, title: o.title || label, bg: o.on ? 'var(--k6, #E5E5EA)' : 'transparent', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' });
+    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick, title: o.title || label, bg: o.on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--ink, #1D1D1F)' });
     const SEP = { isSep: true };
     const single = st.view === 'single';
     const setTool = t => { this.setState({ tool: t, sel: null, editing: null }); if (t === 'edit' && !Object.keys(st.items).length) this.loadItems(); };
-    const selA = (d.annots || []).find(a => a.id === st.sel);
+    const selA = (d.annots || []).find(a => a.id === st.sel), selF = !!(st.sel && st.sel.startsWith('f:'));
     const tools = TOOLS.map(([k, l, key]) => { const lbl = $t(l); return B(lbl, () => setTool(k), { on: st.tool === k, title: $t('{label}（{key}）', { label: lbl, key }) }); }).concat([
       { isColor: true, value: st.color, onChange: e => { const c = e.target.value; this.setState({ color: c }); if (selA && selA.t !== 'hl' && selA.t !== 'white') this.change(dd => { dd.annots.find(a => a.id === selA.id).color = c; }); } },
       { isSel: true, value: String(selA && selA.fs ? Math.round(selA.fs) : st.fs), options: ['9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '32', '40', '48'], sref: el => { const v = String(selA && selA.fs ? Math.round(selA.fs) : st.fs); if (el) setTimeout(() => { if (el.value !== v) el.value = v; }, 0); }, onChange: e => { const v = +e.target.value; this.setState({ fs: v }); if (selA && selA.fs) this.change(dd => { dd.annots.find(a => a.id === selA.id).fs = v; }); } },
-      B($t('删除批注'), () => { if (selA) { this.change(dd => { dd.annots = dd.annots.filter(a => a.id !== selA.id); }); this.setState({ sel: null }); } }, { dis: !selA }), SEP,
+      B($t('删除批注'), () => this.removeSel(), { dis: !selA && !selF }), SEP,
       B($t('连续'), () => this.setView('continuous'), { on: !single, title: $t('连续滚动浏览所有页') }), B($t('单页'), () => this.setView('single'), { on: single, title: $t('一次只看一页') }),
       B('↺', () => this.rotatePage(-1), { title: $t('向左旋转当前页') }), B('↻', () => this.rotatePage(1), { title: $t('向右旋转当前页') }), B($t('旋转全部'), () => this.rotatePage(1, true), { title: $t('所有页向右旋转 90°') }),
       B($t('上移'), () => this.movePage(-1), { title: $t('当前页上移') }), B($t('下移'), () => this.movePage(1), { title: $t('当前页下移') }),
       B($t('插入空白页'), () => { const pg = this.curPage(); this.change(dd => { const i = dd.pages.findIndex(p => p.id === (pg && pg.id)); dd.pages.splice(i + 1, 0, { id: 'p' + Date.now().toString(36), src: -1, rot: 0 }); }); }),
-      B($t('删除页'), () => { const pg = this.curPage(); if (!pg || d.pages.length < 2) return this.props.toast && this.props.toast($t('至少保留一页')); this.change(dd => { dd.pages = dd.pages.filter(p => p.id !== pg.id); dd.annots = dd.annots.filter(a => a.page !== pg.id); }); this.setState({ cur: null }); }), SEP,
-      B($t('转为 Word 文档'), () => this.convert()), B($t('打印'), () => this.save(true)), B($t('下载 PDF'), () => this.save(false))
-    ]);
+      B($t('删除页'), () => { const pg = this.curPage(); if (!pg || d.pages.length < 2) return this.props.toast && this.props.toast($t('至少保留一页')); this.change(dd => { dd.pages = dd.pages.filter(p => p.id !== pg.id); dd.annots = dd.annots.filter(a => a.page !== pg.id); }); this.setState({ cur: null }); }),
+      B($t('提取当前页'), () => { const i = d.pages.indexOf(this.curPage()); this.extract(i < 0 ? [0] : [i], 'p' + (Math.max(0, i) + 1)); }, { title: $t('当前页另存为一个 PDF') }),
+      { isText: true, value: st.range || '', ph: $t('提取页码，如 1-3,5'), title: $t('输入要提取的页码后回车，另存为一个 PDF'), onChange: e => this.setState({ range: e.target.value }), onKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.extract(K.parseRange(st.range, d.pages.length), (st.range || '').replace(/[^\d\-–~,，;]/g, '').replace(/[，;]/g, ',') || 'pages'); } } },
+      B($t('合并 PDF…'), () => this.mergeRef.current && this.mergeRef.current.click(), { title: $t('把其他 PDF 的页面插到当前页之后') }),
+      B($t('导出 PNG'), () => this.pagePng(), { title: $t('当前页另存为 PNG 图片') }), SEP,
+      B($t('转为 Word 文档'), () => this.convert()), B($t('打印'), () => this.save(true), { title: $t('用系统打印对话框打印 Ctrl+P') }), B($t('下载 PDF'), () => this.save(false))
+    ], (st.apps || []).map(a => B(a.label, () => this.openWith(a.key), { title: $t('用另一个应用打开这个文件') })));
     const parts = [[]]; tools.forEach(t => { if (t.isSep) parts.push([]); else parts[parts.length - 1].push(t); });
     const TL = TOOLS.find(t => t[0] === st.tool);
     const tabDefs = [['tool', $t('工具 · {tool}', { tool: TL ? $t(TL[1]) : '' })], ['page', $t('页面')], ['out', $t('导出')]];
     const tab = st.tab || 'tool', shown = tab === 'tool' ? parts[0] : tab === 'page' ? parts[1] : parts[2];
-    const tabs = tabDefs.map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
+    const tabs = tabDefs.map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
     const lv = st.live;
     const pages = d.pages.map((pg, i) => {
-      const inf = this.info(pg) || { w: 595, h: 842 }, W = inf.w * sc, H = inf.h * sc;
+      const inf = this.info(pg) || { w: 595, h: 842, w0: 595, h0: 842, rot: 0 }, W = inf.w * sc, H = inf.h * sc;
       const ann = (d.annots || []).filter(a => a.page === pg.id).map(a => { if (lv && lv.id === a.id) { if (lv.dx != null) return a.pts ? Object.assign({}, a, { pts: a.pts.map(([x, y]) => [x + lv.dx, y + lv.dy]) }) : Object.assign({}, a, { x: a.x + lv.dx, y: a.y + lv.dy }); return Object.assign({}, a, { w: lv.w, h: lv.h }); } return a; });
-      const mkMD = a => e => { if (st.editing === a.id) { e.stopPropagation(); return; } e.stopPropagation(); e.preventDefault(); const a0 = document.activeElement; if (a0 && a0.isContentEditable) a0.blur(); const ov = e.currentTarget.closest('[data-page]'); const r = ov.getBoundingClientRect(); this.op = { kind: 'move', id: a.id, r, x0: (e.clientX - r.left) / sc, y0: (e.clientY - r.top) / sc }; this.setState({ sel: a.id, cur: pg.id }); ov.closest('[tabindex]') && ov.closest('[tabindex]').focus({ preventScroll: true }); };
-      const items = st.tool === 'edit' ? (st.items[pg.id + ':' + (pg.rot || 0)] || []).map(t => ({ x: t.x * sc + 'px', y: t.y * sc + 'px', w: t.w * sc + 'px', h: t.h * sc + 'px', onMD: e => { e.stopPropagation(); e.preventDefault(); this.addAnnot({ id: this.newId(), page: pg.id, t: 'replace', x: t.x - 1, y: t.y - 1, w: t.w + 6, h: t.h + 2, text: t.str, fs: Math.max(6, t.fs * 0.92), color: '#000000' }, { selAll: false }); this.setState({ tool: 'select' }); } })) : [];
+      const mkMD = a => e => { if (st.editing === a.id) { e.stopPropagation(); return; } e.stopPropagation(); e.preventDefault(); const a0 = document.activeElement; if (a0 && a0.isContentEditable) a0.blur(); const ov = e.currentTarget.closest('[data-page]'); const r = ov.getBoundingClientRect(); if (!a.quads) this.op = { kind: 'move', id: a.id, r, x0: (e.clientX - r.left) / sc, y0: (e.clientY - r.top) / sc }; this.setState({ sel: a.id, cur: pg.id, selPop: null }); ov.closest('[tabindex]') && ov.closest('[tabindex]').focus({ preventScroll: true }); };
+      const items = st.tool === 'edit' ? (st.items[pk(pg)] || []).map(t => ({ x: t.x * sc + 'px', y: t.y * sc + 'px', w: t.w * sc + 'px', h: t.h * sc + 'px', onMD: e => { e.stopPropagation(); e.preventDefault(); this.addAnnot({ id: this.newId(), page: pg.id, t: 'replace', x: t.x - 1, y: t.y - 1, w: t.w + 6, h: t.h + 2, text: t.str, fs: Math.max(6, t.fs * 0.92), color: '#000000' }, { selAll: false }); this.setState({ tool: 'select' }); } })) : [];
       const live = lv && lv.page === pg.id && lv.w != null ? lv : null;
       const inks = ann.filter(a => a.t === 'ink').concat(lv && lv.page === pg.id && lv.ink ? [{ id: '_live', t: 'ink', pts: lv.ink, color: st.color, sw: 2.5 }] : []);
       return {
         id: pg.id, n: i + 1, w: W + 'px', h: H + 'px', sw: W, sh: H, line: st.cur === pg.id && d.pages.length > 1 ? '2px solid color-mix(in srgb, var(--k59, #3F7D5C) 35%, transparent)' : 'none',
-        tw: '120px', th: Math.round(120 * inf.h / inf.w) + 'px', tline: st.cur === pg.id ? '2px solid var(--k7, #1D1D1F)' : 'none',
+        tw: '120px', th: Math.round(120 * inf.h / inf.w) + 'px', tline: st.cur === pg.id ? '2px solid #3478F6' : 'none',
         ref: el => { if (el) { this.cv[pg.id] = el; this.schedule(); } else delete this.cv[pg.id]; },
+        w0: inf.w0 + 'px', h0: inf.h0 + 'px', ltf: K ? K.layerTransform(inf.rot, sc) : 'none', lref: el => { if (el) { this.tl[pg.id] = el; this.schedule(); } else delete this.tl[pg.id]; },
         tref: el => { if (el) { this.tcv[pg.id] = el; const c = this.cv[pg.id]; if (c && c.width) { el.width = c.width / 4; el.height = c.height / 4; el.getContext('2d').drawImage(c, 0, 0, el.width, el.height); } } else delete this.tcv[pg.id]; },
         onThumb: () => this.scrollTo(pg.id), items,
+        onDragStart: e => { this.dragId = pg.id; try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', pg.id); } catch (x) { } },
+        onDragOver: e => { if (!this.dragId) return; e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (x) { } if (st.dragOver !== pg.id) this.setState({ dragOver: pg.id }); },
+        onDrop: e => { e.preventDefault(); const from = this.dragId; this.dragId = null; this.setState({ dragOver: null }); if (!from || from === pg.id) return; this.change(dd => { const i = dd.pages.findIndex(p => p.id === from), j = dd.pages.findIndex(p => p.id === pg.id); if (i < 0 || j < 0) return; const [m] = dd.pages.splice(i, 1); dd.pages.splice(j, 0, m); }); setTimeout(() => this.scrollTo(from), 50); },
+        onDragEnd: () => { this.dragId = null; if (this.state.dragOver) this.setState({ dragOver: null }); },
+        dropLine: st.dragOver === pg.id && this.dragId !== pg.id ? '2px solid var(--k7, #1D1D1F)' : '2px solid transparent',
         hasLive: !!live, lx: live ? live.x * sc + 'px' : 0, ly: live ? live.y * sc + 'px' : 0, lw: live ? live.w * sc + 'px' : 0, lh: live ? live.h * sc + 'px' : 0,
         inks: inks.map(a => ({ pts: a.pts.map(([x, y]) => (x * sc).toFixed(1) + ',' + (y * sc).toFixed(1)).join(' '), color: a.color, sw: (a.sw || 2.5) * sc + 'px', glow: st.sel === a.id ? 'drop-shadow(0 0 2px var(--k59, #3F7D5C))' : 'none', onMD: a.id === '_live' ? null : mkMD(a) })),
-        annots: ann.filter(a => a.t !== 'ink').map(a => {
-          const isT = a.t === 'text' || a.t === 'replace', editing = st.editing === a.id, sel = st.sel === a.id;
-          return {
-            id: a.id, x: a.x * sc + 'px', y: a.y * sc + 'px', w: a.w * sc + 'px', h: a.t === 'text' && !editing ? 'auto' : a.h * sc + 'px',
-            bg: a.t === 'hl' ? (a.color || '#FFE066') : a.t === 'white' || a.t === 'replace' ? 'var(--k0, #FFFFFF)' : 'transparent', op: a.t === 'hl' ? 0.42 : 1,
+        annots: ann.filter(a => a.t !== 'ink').flatMap(a => {
+          const isT = a.t === 'text' || a.t === 'replace', note = a.t === 'note', editing = st.editing === a.id, sel = st.sel === a.id;
+          const box = (x, y, w, h, extra) => Object.assign({
+            id: a.id, x: x * sc + 'px', y: y * sc + 'px', w: w * sc + 'px', h: a.t === 'text' && !editing ? 'auto' : h * sc + 'px',
+            bg: a.t === 'hl' ? (a.color || '#FFE066') : a.t === 'white' || a.t === 'replace' ? 'var(--k0, #FFFFFF)' : 'transparent', op: 1, blend: a.t === 'hl' ? 'multiply' : 'normal', radius: '0', sh: 'none',
             border: a.t === 'rect' ? `${(a.sw || 2) * sc}px solid ${a.color}` : a.t === 'text' && (editing || sel) ? '1px dashed var(--k59, #3F7D5C)' : 'none',
-            line: sel && !editing ? '1.5px solid var(--k59, #3F7D5C)' : 'none', cur: editing ? 'text' : 'move', tcur: editing ? 'text' : 'move',
-            hasText: isT, ce: editing, text: a.text || '', fs: (a.fs || 14) * sc + 'px', color: a.color || 'var(--k1, #1D1D1F)', fw: a.bold ? 700 : 400, pad: a.t === 'text' ? `${4 * sc}px` : '0', ai: a.t === 'replace' ? 'center' : 'flex-start', sel,
+            line: sel && !editing ? '1.5px solid var(--k59, #3F7D5C)' : 'none', cur: editing ? 'text' : a.quads ? 'default' : 'move', tcur: editing ? 'text' : 'move',
+            hasText: isT, ce: editing, text: a.text || '', fs: (a.fs || 14) * sc + 'px', color: a.color || 'var(--k1, #1D1D1F)', fw: a.bold ? 700 : 400, pad: a.t === 'text' ? `${4 * sc}px` : '0', ai: a.t === 'replace' ? 'center' : 'flex-start', sel: sel && !a.quads && !note,
+            isNote: note && sel, npx: (a.x + 250 > inf.w ? -230 : 26) * sc + 'px', notePh: $t('输入便签内容…'),
             onMD: mkMD(a), onDbl: e => { e.stopPropagation(); if (!isT) return; this.setState({ editing: a.id, sel: a.id }); this.focusA = a.id; },
             onBlur: e => { const t = e.currentTarget.innerText.replace(/\n$/, ''); const h = e.currentTarget.parentElement.offsetHeight / sc; this.setState({ editing: null }); if (a.t === 'text' && !t.trim()) { this.change(dd => { dd.annots = dd.annots.filter(z => z.id !== a.id); }); return; } if (t !== a.text || (a.t === 'text' && Math.abs(h - a.h) > 1)) this.change(dd => { const z = dd.annots.find(q => q.id === a.id); if (z) { z.text = t; if (z.t === 'text') z.h = Math.max(z.h, h); } }); },
             onResize: e => { e.stopPropagation(); e.preventDefault(); const r = e.currentTarget.closest('[data-page]').getBoundingClientRect(); this.op = { kind: 'resize', id: a.id, r, x0: (e.clientX - r.left) / sc, y0: (e.clientY - r.top) / sc, w0: a.w, h0: a.h }; }
-          };
+          }, extra);
+          if (a.quads) return a.quads.map(([x, y, w, h]) => box(x, y, w, h, { bg: a.t === 'hl' ? (a.color || '#FFE066') : a.t === 'ul' ? `linear-gradient(transparent calc(100% - ${1.5 * sc}px), ${a.color} 0)` : `linear-gradient(transparent 50%, ${a.color} 50%, ${a.color} calc(50% + ${1.5 * sc}px), transparent 0)` }));
+          if (note) return [box(a.x, a.y, 20, 20, { bg: noteBg(a.color || '#FFD54A', sc), radius: `${5 * sc}px ${5 * sc}px ${5 * sc}px ${sc}px`, sh: '0 1px 3px var(--k76, rgba(0,0,0,0.15))' })];
+          return [box(a.x, a.y, a.w, a.h)];
         }),
+        fields: (st.fields[pk(pg)] || []).map(f => {
+          const v = st.fvals[f.id], fs = Math.round((f.fs || Math.min(12, f.h * 0.62)) * sc * 10) / 10 + 'px', base = { x: f.x * sc + 'px', y: f.y * sc + 'px', w: f.w * sc + 'px', h: f.h * sc + 'px', name: f.name, ro: f.ro, fs, pad: 2 * sc + 'px' };
+          if (f.kind === 'text') return Object.assign(base, { [f.multi ? 'isArea' : 'isText']: true, value: v !== undefined ? v : f.value, maxLen: f.maxLen || 524288, onChange: e => this.setField(pg, f, e.target.value) });
+          if (f.kind === 'choice') return Object.assign(base, { isChoice: true, value: v !== undefined ? v : f.value, options: f.options, onChange: e => this.setField(pg, f, e.target.value) });
+          const group = f.kind === 'radio' ? (st.fields[pk(pg)] || []).filter(o => o.kind === 'radio' && o.name === f.name).map(o => o.id) : null;
+          return Object.assign(base, { isBox: true, type: f.kind === 'radio' ? 'radio' : 'checkbox', checked: v !== undefined ? !!v : f.checked, onToggle: e => this.setField(pg, f, f.kind === 'radio' ? true : e.target.checked, group) });
+        }),
+        fann: (st.fann[pk(pg)] || []).map(f => { const fsel = st.sel === 'f:' + f.id, rm = (d.removed || []).includes(f.id); return { x: f.x * sc + 'px', y: f.y * sc + 'px', w: Math.max(4, f.w * sc) + 'px', h: Math.max(4, f.h * sc) + 'px', title: (f.author ? f.author + ' · ' : '') + (f.text || $t(FSUB[f.subtype] || f.subtype)), line: fsel ? '1.5px solid var(--k59, #3F7D5C)' : rm ? '1.5px dashed var(--k59, #3F7D5C)' : 'none', bg: rm ? 'repeating-linear-gradient(45deg, rgba(255,255,255,0.7) 0 4px, transparent 4px 8px)' : 'transparent', onMD: e => { e.stopPropagation(); e.preventDefault(); this.setState({ sel: 'f:' + f.id, cur: pg.id, editing: null, selPop: null }); e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true }); } }; }),
         onMD: e => {
           if (e.button !== 0) return;
           const a0 = document.activeElement; if (a0 && a0.isContentEditable) a0.blur();
           const r = e.currentTarget.getBoundingClientRect(), x = (e.clientX - r.left) / sc, y = (e.clientY - r.top) / sc, t = st.tool;
           this.setState({ cur: pg.id });
           e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true });
-          if (t === 'select' || t === 'edit') { this.setState({ sel: null, editing: null }); return; }
+          if (t === 'select' || t === 'edit') { this.setState({ sel: null, editing: null, selPop: null }); return; }
           e.preventDefault();
+          if (t === 'note') { this.addAnnot({ id: this.newId(), page: pg.id, t: 'note', x: x - 10, y: y - 10, w: 20, h: 20, text: '', color: '#FFD54A' }, {}); this.setState({ tool: 'select' }); return; } // theme: keep
           if (t === 'text') { const fs = st.fs; this.addAnnot({ id: this.newId(), page: pg.id, t: 'text', x, y: y - fs * 0.7, w: Math.min(260, inf.w - x - 10), h: fs * 1.6, text: '', fs, color: st.color }, {}); return; }
           if (t === 'ink') { this.op = { kind: 'ink', page: pg.id, r, pts: [[x, y]] }; return; }
           this.op = { kind: 'draw', t, page: pg.id, r, x0: x, y0: y };
         }
       };
     });
-    const showThumbs = !pure && this.props.showThumbs !== false;
+    const showThumbs = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the pages panel only when its 缩略图 asks, over the page
     const ci = d.pages.findIndex(p => p.id === st.cur);
+    const hasOutline = !!(st.outline && st.outline.length), outlineOn = hasOutline && st.panel === 'outline', pw = outlineOn ? 240 : 164;
+    const outlineItems = outlineOn ? st.outline.map(o => { const pg = d.pages.find(p => p.src === o.index && K.keyOf(d.id, p) === this.okey); const on = pg && pg.id === st.cur; return { title: o.title, pad: (8 + o.level * 12) + 'px', color: pg ? 'var(--ink, #1D1D1F)' : 'var(--ink-3, rgba(29,29,31,0.36))', bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: () => pg && this.scrollTo(pg.id) }; }) : [];
+    const zoomOpts = [...new Set([50, 75, 100, 125, 150, 200, 300, 400, Math.round(sc * 100)])].sort((a, b) => a - b).map(String);
     return {
-      md, notPure: !pure, tools: shown, tabs, bubbleOpen: !!st.bubble && !pure, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, scPad: pure ? '28px 24px 80px' : '72px 24px 80px',
+      hasOutline, outlineOn, outlineItems, panelW: pw + 'px', showThumbList: () => this.setState({ panel: 'thumbs' }), showOutline: () => this.setState({ panel: 'outline' }),
+      thumbTabBg: outlineOn ? 'transparent' : 'var(--tab-bg, rgba(255,255,255,0.92))', outlineTabBg: outlineOn ? 'var(--tab-bg, rgba(255,255,255,0.92))' : 'transparent', thumbTabSh: outlineOn ? 'none' : 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))', outlineTabSh: outlineOn ? 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))' : 'none',
+      pagePre: $t('第'), pagePost: $t('/ {total} 页', { total: d.pages.length }), pageEdit: st.pageEdit != null ? st.pageEdit : String(Math.max(1, ci + 1)),
+      onPageText: e => this.setState({ pageEdit: e.target.value }), onPageFocus: e => { const el = e.target; this.setState({ pageEdit: String(Math.max(1, ci + 1)) }, () => el.select()); },
+      onPageBlur: () => { const v = parseInt(this.state.pageEdit, 10); this.setState({ pageEdit: null }); if (v >= 1 && v <= d.pages.length) this.scrollTo(d.pages[v - 1].id); },
+      onPageKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { const el = e.target; this.setState({ pageEdit: null }, () => el.blur()); } },
+      zoomOpts, zoomSel: String(Math.round(sc * 100)), onZoomSel: e => this.setZoom(+e.target.value / 100),
+      md, notPure: !pure, pure, showBar: !pure || !!this.props.pureTools, tools: shown, tabs, bubbleOpen: !!st.bubble && !pure, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, scPad: pure ? '28px 24px 80px' : '72px 24px 80px',
       single, mainPages: single ? pages.filter(p => p.id === (st.cur || (d.pages[0] && d.pages[0].id))) : pages, scJ: single ? 'center' : 'flex-start', scMinH: single ? '100%' : '0',
-      prevPage: () => this.go(-1), nextPage: () => this.go(1), barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), pages, showThumbs, cols: showThumbs ? '184px minmax(0,1fr)' : '0px minmax(0,1fr)', closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
-      scRef: this.scRef, cursor: { select: 'default', edit: 'default', text: 'text', ink: 'crosshair' }[st.tool] || 'crosshair',
+      prevPage: () => this.go(-1), nextPage: () => this.go(1), barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), pages, showThumbs, cols: showThumbs ? (pw + 20) + 'px minmax(0,1fr)' : '0px minmax(0,1fr)', closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      scRef: this.scRef, cursor: { select: 'default', edit: 'default', text: 'text', ink: 'crosshair' }[st.tool] || 'crosshair', tlPE: st.tool === 'select' ? 'auto' : 'none',
       loading: !K || !Object.keys(st.infos).length || !!st.err, loadText: st.err || $t('正在加载 PDF…'),
-      onScroll: e => { if (single) return; const sc2 = e.currentTarget; const els = Array.from(sc2.querySelectorAll('[data-page]')); const mid = sc2.scrollTop + sc2.clientHeight / 3; let cur = els[0]; els.forEach(el => { if (el.offsetTop <= mid) cur = el; }); if (cur && cur.getAttribute('data-page') !== st.cur) this.setState({ cur: cur.getAttribute('data-page') }); },
+      mergeRef: this.mergeRef, onMergePick: e => { const files = Array.from(e.target.files || []); e.target.value = ''; if (files.length) this.merge(files); },
+      selPopOn: !!st.selPop, spX: st.selPop ? st.selPop.x + 'px' : 0, spY: st.selPop ? st.selPop.y + 'px' : 0, stop,
+      markHl: () => this.markSel('hl'), markUl: () => this.markSel('ul'), markSo: () => this.markSel('so'),
+      swatches: SWATCHES.map(([c, n]) => ({ color: c, title: $t(n), ring: st.mk === c ? '0 0 0 2px var(--k7, #1D1D1F)' : 'inset 0 0 0 1px var(--k45, rgba(0,0,0,0.2))', onClick: () => this.setState({ mk: c }) })),
+      copySel: () => { const s = window.getSelection(); if (s && navigator.clipboard) navigator.clipboard.writeText(s.toString()).catch(() => { }); },
+      onScroll: e => { if (st.selPop) this.setState({ selPop: null }); if (single) return; const sc2 = e.currentTarget; const els = Array.from(sc2.querySelectorAll('[data-page]')); const mid = sc2.scrollTop + sc2.clientHeight / 3; let cur = els[0]; els.forEach(el => { if (el.offsetTop <= mid) cur = el; }); if (cur && cur.getAttribute('data-page') !== st.cur) this.setState({ cur: cur.getAttribute('data-page') }); },
+      findOpen: st.findOpen, findTop: pure ? '12px' : '58px', findRight: pure ? '110px' : '14px', findRef: this.findRef, findQ: st.findQ, onFindInput: e => this.runFind(e.target.value),
+      findCount: st.find && st.find.q ? (st.find.hits.length ? (st.find.cur + 1) + ' / ' + st.find.hits.length : $t('无结果')) : '',
+      findNext: () => this.gotoHit((st.find ? st.find.cur : 0) + 1), findPrev: () => this.gotoHit((st.find ? st.find.cur : 0) - 1), closeFind: () => this.closeFind(),
+      onFindKey: e => { const ctrl = e.ctrlKey || e.metaKey; if (e.key === 'Enter' || (ctrl && e.key.toLowerCase() === 'g')) { e.preventDefault(); this.gotoHit((st.find ? st.find.cur : 0) + (e.shiftKey ? -1 : 1)); } else if (e.key === 'Escape') { e.preventDefault(); this.closeFind(); } },
       pageText: $t('第 {cur} / {total} 页', { cur: Math.max(1, ci + 1), total: d.pages.length }), annotText: $t('{n} 个批注', { n: (d.annots || []).length }), hint: $t(HINTS[st.tool]),
       zoomPct: Math.round(sc * 100), zoomIn: () => this.setZoom((this.state.scale || 1) + 0.1), zoomOut: () => this.setZoom((this.state.scale || 1) - 0.1), onZoom: e => this.setZoom(+e.target.value / 100),
-      zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(sc * 100) + '%',
-      onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(Math.round((this.state.scale || 1) * 100)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
-      onZoomKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { const el = e.target; this.setState({ zoomEdit: null }, () => el.blur()); } },
       fitWidth: () => { const w = this.scRef.current.clientWidth; this.setZoom((w - 80) / this.fitBox().w); },
       fitPage: () => { const el = this.scRef.current, b = this.fitBox(); this.setZoom(Math.min((el.clientWidth - 80) / b.w, (el.clientHeight - (pure ? 28 : 72) - 80 - 8) / b.h)); },
       onRootKey: e => {
@@ -295,12 +488,15 @@ class Component extends DCLogic {
         if (ctrl && (e.key === '=' || e.key === '+' || e.key === 'Add')) { e.preventDefault(); this.setZoom((this.state.scale || 1) + 0.1); return; }
         if (ctrl && (e.key === '-' || e.key === 'Subtract')) { e.preventDefault(); this.setZoom((this.state.scale || 1) - 0.1); return; }
         if (ctrl && e.key === '0') { e.preventDefault(); this.setZoom(1); return; }
+        if (ctrl && k === 'a') { e.preventDefault(); this.selectPageText(); return; }
+        if (ctrl && k === 'f') { e.preventDefault(); this.openFind(); return; }
+        if (ctrl && k === 'g' && st.find) { e.preventDefault(); this.gotoHit(st.find.cur + (e.shiftKey ? -1 : 1)); return; }
         if (!ctrl && (e.key === 'PageDown' || e.key === 'PageUp' || (single && /^Arrow(Down|Up|Right|Left)$/.test(e.key)))) { e.preventDefault(); this.go(/Down|Right/.test(e.key) ? 1 : -1); return; }
         if (ctrl && k === 'z') { e.preventDefault(); e.shiftKey ? this.props.onRedo && this.props.onRedo() : this.props.onUndo && this.props.onUndo(); return; }
         if (ctrl && k === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); return; }
-        if (ctrl && k === 's') { e.preventDefault(); this.save(false); return; }
-        if ((e.key === 'Delete' || e.key === 'Backspace') && selA) { e.preventDefault(); this.change(dd => { dd.annots = dd.annots.filter(a => a.id !== selA.id); }); this.setState({ sel: null }); return; }
-        if (e.key === 'Escape') { this.setState({ sel: null, tool: 'select' }); return; }
+        if (ctrl && k === 'p') { e.preventDefault(); this.save(true); return; }
+        if ((e.key === 'Delete' || e.key === 'Backspace') && (selA || selF)) { e.preventDefault(); this.removeSel(); return; }
+        if (e.key === 'Escape') { this.setState({ sel: null, tool: 'select', findOpen: false, find: null, selPop: null }); return; }
         if (!ctrl) { const m = TOOLS.find(x => x[2].toLowerCase() === k); if (m) setTool(m[0]); }
       }
     };

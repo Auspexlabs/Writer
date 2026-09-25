@@ -14,3 +14,6 @@ dist/
 .signing/
 desktop/SIGNING.local.md
 website/.deploy.local
+
+# fidelity audit output (node tools/fidelity/roundtrip.mjs)
+tools/fidelity/out/

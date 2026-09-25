@@ -10,7 +10,11 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <link rel="stylesheet" href="./vendor/katex/katex.min.css">
+<link rel="stylesheet" href="./vendor/highlight/github-dark.min.css">
 <style>
+.pt-ed.code-wrap pre{white-space:pre-wrap;word-break:break-all}
+.pt-ed.md-focus>*{transition:opacity .35s ease-out}.pt-ed.md-focus>*:not(.md-cur){opacity:0.28}
+.md-lang{height:28px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;font-family:inherit;color:var(--ink, #1D1D1F);padding:0 6px;outline:none;cursor:pointer;max-width:130px}
 .pt-ed .md-math-block{margin:10px 0;padding:6px 4px;border-radius:8px;cursor:pointer;overflow-x:auto}
 .pt-ed .md-math-block:hover{background:var(--k17, rgba(0,0,0,0.07))}
 .pt-ed .md-math{cursor:pointer;border-radius:3px}
@@ -19,6 +23,9 @@
 .pt-ed .md-math-editing:hover{background:var(--k17, rgba(0,0,0,0.07))}
 .md-math-src{display:block;width:100%;box-sizing:border-box;border:1px solid var(--k36, rgba(0,0,0,0.12));border-radius:6px;background:var(--k0, #FFFFFF);padding:8px 10px;margin:0 0 6px;resize:none;overflow:hidden;outline:none;font-family:'IBM Plex Mono',monospace;font-size:13.5px;line-height:1.6;color:var(--k9, #3A3A3C)}
 .md-math-preview{min-height:1.4em;overflow-x:auto}
+.md-math-bar{display:flex;flex-wrap:wrap;gap:2px;margin:0 0 6px}
+.md-math-bar button{height:26px;min-width:26px;padding:0 7px;border:none;border-radius:8px;background:var(--k17, rgba(0,0,0,0.07));font-size:13px;line-height:1;cursor:pointer;color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif}
+.md-math-bar button:hover{background:var(--k36, rgba(0,0,0,0.12))}
 .katex-error{cursor:help}
 .pt-ed{outline:none;font-family:'Noto Serif SC',serif;font-size:17px;line-height:1.9;color:var(--k1, #1D1D1F);word-break:break-word;caret-color:var(--k1, #1D1D1F)}
 .pt-ed>*:first-child{margin-top:0}
@@ -42,34 +49,50 @@
 .pt-ed th,.pt-ed td{border:1px solid var(--k36, rgba(0,0,0,0.12));padding:8px 12px}
 .pt-ed th{background:var(--k42, rgba(255,255,255,0.55));font-weight:600}
 .pt-ed hr{border:none;border-top:1px solid var(--k60, rgba(0,0,0,0.14));margin:28px 0}
+.pt-ed h1,.pt-ed h2,.pt-ed h3,.pt-ed h4,.pt-ed h5,.pt-ed h6{position:relative}
+.pt-ed h1:hover::before,.pt-ed h2:hover::before,.pt-ed h3:hover::before,.pt-ed h4:hover::before,.pt-ed h5:hover::before,.pt-ed h6:hover::before{content:'#';position:absolute;left:-1em;top:0;color:var(--k63, #C7C7CC);font-weight:400;font-size:0.8em;pointer-events:none}
+.pt-ed blockquote.md-alert{border-left-color:var(--al, #0969DA);color:inherit;padding-top:6px;padding-bottom:2px}
+.pt-ed .md-alert-title{font-weight:600;font-size:15px;color:var(--al, #0969DA);margin:0 0 6px;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif}
+.pt-ed .md-alert-note{--al:#0969DA}.pt-ed .md-alert-tip{--al:#1A7F37}.pt-ed .md-alert-important{--al:#8250DF}.pt-ed .md-alert-warning{--al:#9A6700}.pt-ed .md-alert-caution{--al:#CF222E}
+.pt-ed sup.md-fn{font-size:0.7em;line-height:0;cursor:help}.pt-ed sup.md-fn a{text-decoration:none;padding:0 2px}
+.pt-ed .md-footnotes{margin:28px 0 0;padding-top:12px;border-top:1px solid var(--k60, rgba(0,0,0,0.14));font-size:14px;color:var(--k11, #6E6E73)}.pt-ed .md-footnotes ol{padding-left:1.6em}
+.pt-ed .md-front{margin:0 0 24px;padding:12px 16px;border-radius:12px;background:var(--k82, rgba(255,255,255,0.4));border:1px solid var(--k36, rgba(0,0,0,0.12));font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.6;color:var(--k11, #6E6E73);cursor:pointer}
+.pt-ed .md-front::before{content:'Front Matter';display:block;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--k8, #8E8E93);margin-bottom:6px}
+.pt-ed .md-front pre{background:none;color:inherit;padding:0;margin:0;font-size:13px;box-shadow:none;border-radius:0;white-space:pre-wrap}
+.pt-ed .md-front.md-src-editing{cursor:default}.pt-ed .md-front .md-math-src{color:var(--k9, #3A3A3C)}
+.pt-ed .md-mermaid{margin:0 0 18px;padding:12px;border-radius:12px;background:var(--k82, rgba(255,255,255,0.4));border:1px solid var(--k36, rgba(0,0,0,0.12));text-align:center;cursor:pointer;overflow-x:auto}
+.pt-ed .md-mermaid svg{max-width:100%;height:auto}.pt-ed .md-mermaid pre{text-align:left;margin:0}.pt-ed .md-mermaid.md-src-editing{cursor:default}
+.md-src-err{color:#CF222E;font-size:12.5px;font-family:'IBM Plex Mono',monospace;white-space:pre-wrap;text-align:left;margin-top:6px}
+.pt-ed nav.md-toc{margin:0 0 20px;padding:12px 18px;border-radius:12px;background:var(--k82, rgba(255,255,255,0.4));border:1px solid var(--k36, rgba(0,0,0,0.12));font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;font-size:14px}
+.pt-ed nav.md-toc ul{list-style:none;margin:0;padding:0}.pt-ed nav.md-toc li{margin:4px 0}.pt-ed nav.md-toc a{color:var(--k9, #3A3A3C);text-decoration:none;cursor:pointer}.pt-ed nav.md-toc a:hover{text-decoration:underline}
 .pt-ed img{max-width:100%;border-radius:10px}
 .pt-ed:empty:before{content:attr(data-empty-hint);color:var(--k63, #C7C7CC)}
 .pt-src::placeholder{color:var(--k63, #C7C7CC)}
 </style>
 </helmet>
-<div data-edroot="1" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
-  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
+<div data-edroot="1" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
+  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
     <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
-      <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--k36, rgba(0,0,0,0.12));margin-right:4px"></span></div>
+      <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
         <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
-          <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:transparent;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">文件</button>
+          <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));background:transparent;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
           <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
-            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:{{ t.bg }};box-shadow:{{ t.sh }};transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
+            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;color:{{ t.fg }};background:{{ t.bg }};transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
           </sc-for>
         </div>
         <div style="display:flex;align-items:center;flex:none">
-          <span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span>
-          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
-          <button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button>
+          <span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span>
+          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button>
+          <button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:28px;height:28px;padding:0;flex:none;border:none;border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"></circle><path d="M6.6 5.6v4.8L10.6 8z" fill="currentColor" stroke="none"></path></svg></button>
         </div>
       </div>
     </div>
     <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-      <div style="position:absolute;top:60px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k72, rgba(255,255,255,0.74)),var(--k32, rgba(255,255,255,0.5)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px">
+      <div style="position:absolute;top:60px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px">
         <sc-for list="{{ tools }}" as="it" hint-placeholder-count="0">
-          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:20px;background:var(--k36, rgba(0,0,0,0.12));margin:0 6px;flex:none"></span></sc-if>
+          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
           <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
-            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:32px;min-width:32px;padding:0 11px;border:none;border-radius:10px;background:transparent;font-size:13.5px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }};cursor:pointer;white-space:nowrap;flex:none;color:var(--k1, #1D1D1F);transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k27, rgba(255,255,255,0.75))" style-active="transform:scale(0.92)">{{ it.label }}</button>
+            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:13px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }};cursor:pointer;white-space:nowrap;flex:none;color:var(--ink, #1D1D1F);transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.92)">{{ it.label }}</button>
           </sc-if>
         </sc-for>
       </div></div>
@@ -78,33 +101,51 @@
 
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ cols }};padding-top:{{ gridPT }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ showOutline }}" hint-placeholder-val="{{ false }}">
-      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,var(--k32, rgba(255,255,255,0.5)),var(--k33, rgba(255,255,255,0.32)));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 14px 40px var(--k19, rgba(0,0,0,0.1))"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 10px 0 18px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k11, #6E6E73);cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k31, rgba(255,255,255,0.95))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:2px">
+      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:var(--panel-r, 16px);overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 10px 0 18px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));cursor:pointer;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink-2, rgba(29,29,31,0.62))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:2px">
         
         <sc-for list="{{ outline }}" as="h" hint-placeholder-count="4">
-          <div onClick="{{ h.onClick }}" style="flex:none;padding:7px 10px;padding-left:{{ h.indent }};border-radius:10px;font-size:13px;cursor:pointer;color:var(--k9, #3A3A3C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ h.fw }};transition:background .2s" style-hover="background:var(--k30, rgba(255,255,255,0.6))">{{ h.text }}</div>
+          <div onClick="{{ h.onClick }}" style="flex:none;padding:6px 10px;padding-left:{{ h.indent }};border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;color:var(--ink-2, rgba(29,29,31,0.62));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ h.fw }};transition:background .2s,color .2s" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)">{{ h.text }}</div>
         </sc-for>
-        <sc-if value="{{ noOutline }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:var(--k8, #8E8E93);padding:0 8px;line-height:1.6">标题会显示在这里。</div></sc-if>
+        <sc-if value="{{ noOutline }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 8px;line-height:1.6">标题会显示在这里。</div></sc-if>
       </div></div>
     </sc-if>
-    <div ref="{{ scRef }}" onMouseDown="{{ onScDown }}" style="grid-column:2;min-width:0;min-height:0;overflow:auto;position:relative">
-      <div ref="{{ edRef }}" class="pt-ed" data-empty-hint="{{ emptyHint }}" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
+    <div ref="{{ scRef }}" onMouseDown="{{ onScDown }}" onScroll="{{ onScroll }}" style="grid-column:2;min-width:0;min-height:0;overflow:auto;position:relative">
+      <div ref="{{ edRef }}" class="{{ edCls }}" data-empty-hint="{{ emptyHint }}" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" onDrop="{{ onDropImg }}" onMouseDown="{{ onColDown }}" onMouseMove="{{ onColMove }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
       <sc-if value="{{ isSrc }}" hint-placeholder-val="{{ false }}">
-        <textarea ref="{{ taRef }}" class="pt-src" data-pop="center" value="{{ text }}" onChange="{{ onText }}" onKeyDown="{{ onSrcKey }}" onSelect="{{ onSelect }}" spellCheck="false" placeholder="# 标题" style="display:block;width:100%;max-width:760px;margin:0 auto;min-height:100%;border:none;outline:none;resize:none;background:transparent;padding:{{ pad }};box-sizing:border-box;font-family:'IBM Plex Mono','Noto Sans SC',monospace;font-size:14.5px;line-height:1.85;color:var(--k9, #3A3A3C);tab-size:2;field-sizing:content"></textarea>
+        <textarea ref="{{ taRef }}" class="pt-src" data-pop="center" value="{{ text }}" onChange="{{ onText }}" onKeyDown="{{ onSrcKey }}" onPaste="{{ onSrcPaste }}" onDrop="{{ onDropImg }}" onSelect="{{ onSelect }}" spellCheck="false" placeholder="# 标题" style="display:block;width:100%;max-width:760px;margin:0 auto;min-height:100%;border:none;outline:none;resize:none;background:transparent;padding:{{ pad }};box-sizing:border-box;font-family:'IBM Plex Mono','Noto Sans SC',monospace;font-size:14.5px;line-height:1.85;color:var(--k9, #3A3A3C);tab-size:2;field-sizing:content"></textarea>
       </sc-if>
     </div>
   </div>
 
+  <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:52px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out"><span>{{ statWords }}</span><span> · </span><span>约 {{ statMin }} 分钟读完</span></div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:30;height:34px;display:flex;align-items:center;gap:14px;padding:0 16px;border-radius:999px;background:var(--k69, rgba(255,255,255,0.38));backdrop-filter:blur(14px) saturate(180%);-webkit-backdrop-filter:blur(14px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 6px 20px var(--k53, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k11, #6E6E73);opacity:0.32;transition:opacity .45s cubic-bezier(.2,1,.3,1);white-space:nowrap" style-hover="opacity:1">
-      <span>纯文本</span><span>{{ statWords }}</span><span>约 {{ statMin }} 分钟读完</span>
+    <div style="position:absolute;right:52px;bottom:12px;z-index:30;display:flex;align-items:center;gap:12px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap;pointer-events:none">
+      <span>纯文本</span><span>{{ statWords }}</span><span>{{ statChars }}</span><span>约 {{ statMin }} 分钟读完</span>
     </div>
   </sc-if>
-  <button onMouseDown="{{ md }}" onClick="{{ toggleMode }}" title="{{ modeTitle }}" style="position:absolute;right:18px;bottom:16px;z-index:31;width:44px;height:44px;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:{{ modeFs }};font-weight:600;font-family:{{ modeFont }};color:var(--k1, #1D1D1F);background:linear-gradient(180deg,var(--k20, rgba(255,255,255,0.7)),var(--k82, rgba(255,255,255,0.4)));backdrop-filter:blur(12px) saturate(190%);-webkit-backdrop-filter:blur(12px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k25, #fff),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 10px 26px var(--k22, rgba(0,0,0,0.12));transition:transform .45s cubic-bezier(.2,1.5,.4,1)" style-hover="transform:scale(1.08)" style-active="transform:scale(0.9)"><span data-pop="center" data-k="{{ modeIcon }}">{{ modeIcon }}</span></button>
+  <button onMouseDown="{{ md }}" onClick="{{ toggleMode }}" title="{{ modeTitle }}" style="position:absolute;right:12px;bottom:7px;z-index:31;min-width:28px;height:24px;padding:0 6px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:{{ modeFs }};font-weight:600;font-family:{{ modeFont }};color:var(--ink-3, rgba(29,29,31,0.36));transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><span data-pop="center" data-k="{{ modeIcon }}">{{ modeIcon }}</span></button>
 
   <sc-if value="{{ hasSelBar }}" hint-placeholder-val="{{ false }}">
-    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ sbx }};top:{{ sby }};z-index:80;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;margin-left:-160px;background:linear-gradient(180deg,var(--k83, rgba(255,255,255,0.8)),var(--k84, rgba(255,255,255,0.58)));backdrop-filter:blur(12px) saturate(190%);-webkit-backdrop-filter:blur(12px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k25, #fff),0 12px 30px var(--k26, rgba(0,0,0,0.16))">
+    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ sbx }};top:{{ sby }};z-index:80;display:flex;align-items:center;gap:1px;padding:4px;margin-left:{{ sbML }};border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
       <sc-for list="{{ selBtns }}" as="b" hint-placeholder-count="0">
-        <button onMouseDown="{{ md }}" onClick="{{ b.onClick }}" title="{{ b.title }}" style="height:30px;min-width:30px;padding:0 9px;border:none;border-radius:999px;background:transparent;font-size:13px;font-weight:{{ b.fw }};font-style:{{ b.fs }};text-decoration:{{ b.td }};font-family:{{ b.font }};cursor:pointer;color:var(--k1, #1D1D1F);white-space:nowrap;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k50, rgba(255,255,255,0.9))" style-active="transform:scale(0.9)">{{ b.label }}</button>
+        <sc-if value="{{ b.sep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:16px;margin:0 4px;flex:none;background:var(--line, rgba(0,0,0,0.1))"></span></sc-if>
+        <sc-if value="{{ b.btn }}" hint-placeholder-val="{{ true }}"><button onMouseDown="{{ md }}" onClick="{{ b.onClick }}" title="{{ b.title }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:13px;font-weight:{{ b.fw }};font-style:{{ b.fs }};text-decoration:{{ b.td }};font-family:{{ b.font }};cursor:pointer;color:var(--ink, #1D1D1F);white-space:nowrap;display:flex;align-items:center;gap:5px;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.9)"><sc-if value="{{ b.star }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;line-height:1">✦</span></sc-if>{{ b.label }}</button></sc-if>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasBlk }}" hint-placeholder-val="{{ false }}">
+    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ blx }};top:{{ bly }};translate:-50% 0;z-index:80;display:flex;align-items:center;gap:1px;padding:4px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
+      <sc-if value="{{ blkCode }}" hint-placeholder-val="{{ false }}">
+        <select class="md-lang" value="{{ codeLang }}" onMouseDown="{{ stop }}" onChange="{{ onLang }}" title="语言">
+          <sc-for list="{{ langs }}" as="l" hint-placeholder-count="0"><option value="{{ l.v }}">{{ l.label }}</option></sc-for>
+        </select>
+      </sc-if>
+      <sc-for list="{{ blkBtns }}" as="b" hint-placeholder-count="0">
+        <sc-if value="{{ b.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
+        <sc-if value="{{ b.isBtn }}" hint-placeholder-val="{{ true }}">
+          <button onMouseDown="{{ md }}" onClick="{{ b.onClick }}" title="{{ b.title }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ b.bg }};font-size:12.5px;cursor:pointer;color:var(--ink, #1D1D1F);white-space:nowrap;font-family:inherit;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.9)">{{ b.label }}</button>
+        </sc-if>
       </sc-for>
     </div>
   </sc-if>
@@ -115,6 +156,16 @@
 <script type="text/x-dc" data-dc-script data-props="{&quot;doc&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(doc, opts) =&gt; void&quot;},&quot;onConvert&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(kind, payload) =&gt; void&quot;},&quot;toast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(msg) =&gt; void&quot;},&quot;showThumbs&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;pure&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onToggleThumbs&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
 const md = e => e.preventDefault();
 const LIST = /^(\s*)([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$/;
+/** The math box's symbol strip: [label, LaTeX]; the caret lands in the first {} (a selection goes inside it). */
+const MATH_SYMS = [['a⁄b', '\\frac{}{}'], ['√', '\\sqrt{}'], ['xⁿ', '^{}'], ['xₙ', '_{}'], ['∑', '\\sum_{}^{}'], ['∏', '\\prod_{}^{}'], ['∫', '\\int_{}^{}'], ['lim', '\\lim_{}'], ['α', '\\alpha'], ['β', '\\beta'], ['γ', '\\gamma'], ['θ', '\\theta'], ['λ', '\\lambda'], ['μ', '\\mu'], ['π', '\\pi'], ['σ', '\\sigma'], ['φ', '\\phi'], ['ω', '\\omega'], ['Δ', '\\Delta'], ['Ω', '\\Omega'],
+  ['∞', '\\infty'], ['±', '\\pm'], ['×', '\\times'], ['·', '\\cdot'], ['÷', '\\div'], ['≤', '\\leq'], ['≥', '\\geq'], ['≠', '\\neq'], ['≈', '\\approx'], ['≡', '\\equiv'], ['→', '\\to'], ['⇒', '\\Rightarrow'], ['⇔', '\\Leftrightarrow'], ['∈', '\\in'], ['⊂', '\\subset'], ['∪', '\\cup'], ['∩', '\\cap'], ['∀', '\\forall'], ['∃', '\\exists'], ['∂', '\\partial'], ['∇', '\\nabla'],
+  ['v⃗', '\\vec{}'], ['x̂', '\\hat{}'], ['x̄', '\\bar{}'], ['( )', '\\left( \\right)'], ['[ ]', '\\left[ \\right]'], ['{ }', '\\{ \\}'], ['( a b )', '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}'], ['{ cases', '\\begin{cases} a & x > 0 \\\\ b & x \\le 0 \\end{cases}'], ['≝', '\\text{}']];
+/** The code block bar's language menu (highlight.js names; a fence's own alias such as py or sh is listed as itself when not here). */
+const LANGS = [['javascript', 'JavaScript'], ['typescript', 'TypeScript'], ['python', 'Python'], ['java', 'Java'], ['c', 'C'], ['cpp', 'C++'], ['csharp', 'C#'], ['go', 'Go'], ['rust', 'Rust'], ['swift', 'Swift'], ['kotlin', 'Kotlin'], ['php', 'PHP'], ['ruby', 'Ruby'], ['bash', 'Bash'], ['sql', 'SQL'], ['json', 'JSON'], ['yaml', 'YAML'], ['xml', 'HTML / XML'], ['css', 'CSS'], ['markdown', 'Markdown'], ['diff', 'Diff'], ['mermaid', 'Mermaid']];
+/** The editor's own switches (code wrap, later the view modes), kept per machine in localStorage. */
+const PREF_KEY = 'writer-md';
+const prefs = () => { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}') || {}; } catch (e) { return {}; } };
+const setPref = (k, v) => { try { localStorage.setItem(PREF_KEY, JSON.stringify(Object.assign(prefs(), { [k]: v }))); } catch (e) { } };
 const autoGrow = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
 /** The atomic math element (a rendered .md-math-block or .md-math) immediately in the direction of travel from a
  *  collapsed range, if the caret is exactly at that boundary — so an arrow key can open it instead of just hopping
@@ -123,27 +174,84 @@ function mathSiblingAt(r, fwd) {
   const c = r.startContainer, off = r.startOffset;
   let sib = c.nodeType === 3 ? (fwd ? (off === c.nodeValue.length ? c.nextSibling : undefined) : (off === 0 ? c.previousSibling : undefined)) : (fwd ? c.childNodes[off] : c.childNodes[off - 1]);
   while (sib && sib.nodeType === 3 && !sib.nodeValue.replace(/\u200B/g, '').trim()) sib = fwd ? sib.nextSibling : sib.previousSibling;
-  return sib && sib.nodeType === 1 && (sib.classList.contains('md-math-block') || sib.classList.contains('md-math')) ? sib : null;
+  return sib && sib.nodeType === 1 && ['md-math-block', 'md-math', 'md-mermaid', 'md-front'].some(k => sib.classList.contains(k)) ? sib : null;
 }
+/** Which source box a rendered block opens in: a formula, a mermaid diagram or the front matter card. */
+const kindOf = el => el.classList.contains('md-mermaid') ? 'mermaid' : el.classList.contains('md-front') ? 'front' : 'math';
 class Component extends DCLogic {
-  state = { mode: 'rich', tab: 'format', bubble: false, bx: 12, selBar: null };
+  state = { mode: 'rich', tab: 'format', bubble: false, bx: 12, selBar: null, wrap: !!prefs().wrap, smart: !!prefs().smart, typewriter: !!prefs().typewriter, focus: !!prefs().focus };
   edRef = React.createRef(); taRef = React.createRef(); scRef = React.createRef(); imgRef = React.createRef();
   componentDidMount() {
-    import('./md.js').then(m => { this.M = m; this.forceUpdate(); this.load(); });
+    import('./md.js').then(m => { this.M = m; this.forceUpdate(); this.load(); m.loadHljs().then(() => this.highlightAll()); });
     import('./office-io.js').then(K => { this.K = K; }); // fontFaces for the HTML export
+    import('./engine.js').then(E => { this.EN = E; this.resolveImages(); }); // the file route for pictures beside the document, and whether it is still a draft
+    import('./picture.js').then(m => { this.P = m; }); // dragging and resizing pictures
     import('./glass.js');
     document.addEventListener('selectionchange', this.onSel);
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) { }
     import('./follow.js').then(F => { this.F = F; this.attachFollow(); });
+    if (this.edRef.current) this.edRef.current.addEventListener('pointerdown', this.onPicDown);
+    if (this.scRef.current) this.scRef.current.addEventListener('scroll', this.onScScroll, { passive: true });
   }
+  onScScroll = () => { this.hb && this.hb.layout(); };
+  /** The selected picture, outlined with resize handles (picture.js); a resize is kept as the img's width (and height once the aspect
+   *  is freed with Shift), which the Markdown keeps as an <img> tag. Null deselects. */
+  selectImg(img) {
+    if (this.selImg && this.selImg !== img && this.selImg.isConnected) this.selImg.style.outline = '';
+    this.selImg = img; this.hb && this.hb.remove(); this.hb = null;
+    if (!img || !this.P) return;
+    img.style.outline = '2px solid var(--k59, #3F7D5C)';
+    this.hb = this.P.handleBox({
+      frame: () => { if (!img.isConnected) return null; const r = img.getBoundingClientRect(); return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width, h: r.height }; },
+      resize: (w, h) => { img.style.width = w + 'px'; img.style.height = h + 'px'; },
+      resized: (w, h) => {
+        img.style.width = ''; img.style.height = ''; img.setAttribute('width', String(w));
+        if (img.naturalWidth && Math.abs(w / h - img.naturalWidth / img.naturalHeight) > 0.02) img.setAttribute('height', String(h)); else img.removeAttribute('height');
+        this.sync();
+      }
+    });
+  }
+  /** Dragging a picture to another place in the text: an insertion mark follows the caret under the pointer; the drop puts the picture
+   *  there. Markdown has no free placement — a drop away from the text goes to the nearest place in it, and says so once. */
+  onPicDown = e => {
+    const img = e.target.closest && e.target.closest('img'), ed = this.edRef.current, P = this.P;
+    if (!img || !P || e.button !== 0 || !ed.contains(img) || this.state.mode !== 'rich') return;
+    e.preventDefault(); this.selectImg(img);
+    const mark = P.caretMark(); let hit = null, far = false;
+    P.dragPicture(e, img, {
+      move: (x, y, ev) => {
+        hit = null; mark.hide();
+        const r = P.caretAt(ev.clientX, ev.clientY); if (!r || !ed.contains(r.startContainer) || r.startContainer === img) return;
+        const rc = r.getBoundingClientRect(); far = Math.abs(rc.left - ev.clientX) > 40 || Math.abs(rc.top + rc.height / 2 - ev.clientY) > 40;
+        hit = r; mark.show(r);
+      },
+      drop: () => {
+        mark.hide(); if (!hit) return;
+        const c = hit.startContainer, el = c.nodeType === 1 ? c : c.parentElement, island = el.closest('pre,.md-math-block,.md-math');
+        if (island) island.after(img); else hit.insertNode(img);
+        if (far && !this.saidFree) { this.saidFree = true; this.props.toast && this.props.toast($t('Markdown 不能自由摆放图片，已放到最近的文字位置')); }
+        this.sync(); this.hb && this.hb.layout();
+      },
+      cancel: () => mark.hide()
+    });
+  };
   /** Caret follow (镜头跟随): rich mode reads the selection in edRef, source mode measures the textarea with a mirror; scrolls scRef unless the textarea scrolls on its own (no field-sizing:content). */
-  attachFollow() { const sc = this.scRef.current; if (this.gone || !this.F || !sc || (this.follow && this.follow.el === sc)) return; this.follow && this.follow.detach(); this.follow = this.F.attach(sc, () => this.state.mode === 'rich' ? this.F.caretRect(this.edRef.current) : this.F.textareaCaret(this.taRef.current), { scroller: () => { const t = this.taRef.current; return t && t.scrollHeight > t.clientHeight + 1 ? t : sc; } }); }
-  componentWillUnmount() { document.removeEventListener('selectionchange', this.onSel); if (this.syncT) { clearTimeout(this.syncT); this.flush(); } this.unOut && this.unOut(); this.gone = true; this.follow && this.follow.detach(); this.dropMathOutside(); }
+  attachFollow() { const sc = this.scRef.current; if (this.gone || !this.F || !sc || (this.follow && this.follow.el === sc)) return; this.follow && this.follow.detach(); this.follow = this.F.attach(sc, () => this.state.mode === 'rich' ? this.F.caretRect(this.edRef.current) : this.F.textareaCaret(this.taRef.current), { scroller: () => { const t = this.taRef.current; return t && t.scrollHeight > t.clientHeight + 1 ? t : sc; }, padY: this.state.typewriter ? 0.5 : undefined }); } // 打字机: a comfort box of no height at the middle, so every caret move recentres the line
+  toggleMode() { if (this.state.mode === 'rich') { this.flush(); this.dropMathOutside(); this.selectImg(null); this.setState({ mode: 'src', selBar: null, blk: null }); setTimeout(() => this.ta() && this.ta().focus(), 30); } else this.setState({ mode: 'rich' }); }
+  /** 专注: the top-level block holding the caret is the one at full strength; the rest fade (CSS on .md-focus). */
+  markCur() {
+    const ed = this.edRef.current, s = window.getSelection(); if (!ed || !s.rangeCount) return;
+    let n = s.getRangeAt(0).startContainer; if (!ed.contains(n) || n === ed) return; while (n.parentNode !== ed) n = n.parentNode;
+    if (n === this.curEl) return; if (this.curEl && this.curEl.isConnected) this.curEl.classList.remove('md-cur'); this.curEl = n; n.classList.add('md-cur');
+  }
+  componentWillUnmount() { document.removeEventListener('selectionchange', this.onSel); if (this.syncT) { clearTimeout(this.syncT); this.flush(); } this.unOut && this.unOut(); this.gone = true; this.follow && this.follow.detach(); this.dropMathOutside(); this.hb && this.hb.remove(); this.mmObs && this.mmObs.disconnect(); }
   /** load() below replaces the whole editor DOM (a doc switch, an external edit, or coming back to rich mode) — drop
    *  any math block's outside-click listener first, or it leaks and keeps watching for clicks near a detached node. */
   dropMathOutside() { if (this._mathOutside) { document.removeEventListener('mousedown', this._mathOutside, true); this._mathOutside = null; this._mathWrap = null; } this._openInlineText = null; }
   componentDidUpdate(pp) {
     const ps = this.prevState || this.state; this.prevState = this.state; // the runtime passes prevProps only
+    if (ps.typewriter !== this.state.typewriter && this.follow) { this.follow.detach(); this.follow = null; }
+    if (ps.focus && !this.state.focus && this.curEl) { this.curEl.classList.remove('md-cur'); this.curEl = null; }
     this.attachFollow();
     const d = this.props.doc;
     if (pp.doc.id !== d.id) { if (this.syncT) { clearTimeout(this.syncT); this.syncT = null; } this.load(); return; }
@@ -151,10 +259,71 @@ class Component extends DCLogic {
     else if (this.state.mode === 'rich' && d.text !== this.lastText) this.load();
   }
   get doc() { return this.props.doc; }
-  load() { const ed = this.edRef.current; if (!ed || !this.M) return; this.dropMathOutside(); ed.innerHTML = this.M.mdToHtml(this.doc.text || ''); ed.querySelectorAll('input[type=checkbox]').forEach(c => c.setAttribute('contenteditable', 'false')); ed.querySelectorAll('[data-line],[data-li]').forEach(n => { n.removeAttribute('data-line'); n.removeAttribute('data-li'); }); this.lastText = this.doc.text || ''; }
+  load() { const ed = this.edRef.current; if (!ed || !this.M) return; this.dropMathOutside(); if (this.selImg) this.selectImg(null); ed.innerHTML = this.M.mdToHtml(this.doc.text || ''); ed.querySelectorAll('input[type=checkbox]').forEach(c => c.setAttribute('contenteditable', 'false')); ed.querySelectorAll('[data-line],[data-li]').forEach(n => { n.removeAttribute('data-line'); n.removeAttribute('data-li'); }); this.lastText = this.doc.text || ''; this.highlightAll(); this.renderDiagrams(); this.resolveImages(); }
+  // ---- pictures beside the file ----
+  dirOf() { return (this.doc.path || '').replace(/[^/\\]*$/, ''); }
+  /** A relatively linked picture (assets/x.png) shows through the engine's file route; data-rel keeps the link as written, for saving. */
+  resolveImages() {
+    const ed = this.edRef.current; if (!ed || !this.EN || !this.doc.path) return; const dir = this.dirOf();
+    ed.querySelectorAll('img[src]:not([data-rel])').forEach(img => { const s = img.getAttribute('src') || ''; if (/^[a-z][a-z0-9+.-]*:|^[/#]/i.test(s)) return; let p = s; try { p = decodeURIComponent(s); } catch (e) { } img.setAttribute('data-rel', s); img.src = this.EN.fileUrl(dir + p); });
+  }
+  /** A picture pasted, dropped or picked: a document with a place on disk gets it written beside it as assets/<name> and linked
+   *  relatively; a draft, which has no place yet, keeps it inline as data: as before (so does a failed write, with a word). */
+  async addImage(f) {
+    const alt = (f.name || '').replace(/\.[^.]+$/, ''), rich = this.state.mode === 'rich', q = v => v.replace(/"/g, '&quot;');
+    if (this.doc.path && this.EN && !this.EN.isDraft(this.doc.path)) {
+      const ext = ((f.type.split('/')[1] || 'png').replace('jpeg', 'jpg')).replace(/[^a-z0-9]/gi, ''), stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+      const name = !f.name || /^image\.[a-z]+$/i.test(f.name) ? 'image-' + stamp + '.' + ext : f.name, rel = 'assets/' + name, abs = this.dirOf() + rel;
+      try {
+        const r = await fetch('/file?file=' + encodeURIComponent(abs), { method: 'PUT', body: f, credentials: 'same-origin' }); if (!r.ok) throw new Error(String(r.status));
+        const link = rel.replace(/ /g, '%20'); if (rich) this.exec('insertHTML', `<img alt="${q(alt)}" src="${q(this.EN.fileUrl(abs))}" data-rel="${q(link)}">`); else this.insText(`![${alt}](${link})`);
+        return;
+      } catch (e) { this.props.toast && this.props.toast($t('图片未能存到 assets/，已改为内嵌')); }
+    }
+    const rd = new FileReader(); rd.onload = () => { if (rich) this.exec('insertHTML', `<img alt="${q(alt)}" src="${rd.result}">`); else this.insText(`![${alt}](${rd.result})`); }; rd.readAsDataURL(f);
+  }
+  imageIn(dt) { return Array.from((dt && dt.files) || []).find(x => /^image\//.test(x.type)) || null; }
+  /** ```mermaid blocks are drawn lazily: the library (jsdelivr, first use only) and each diagram only once it scrolls within 400px of view. */
+  renderDiagrams() {
+    const ed = this.edRef.current, sc = this.scRef.current; if (!ed || !this.M || this.gone) return;
+    if (!this.mmObs) this.mmObs = new IntersectionObserver(es => es.forEach(x => { if (!x.isIntersecting) return; this.mmObs.unobserve(x.target); this.drawDiagram(x.target); }), { root: sc, rootMargin: '400px' });
+    ed.querySelectorAll('.md-mermaid:not([data-done]):not(.md-src-editing)').forEach(el => this.mmObs.observe(el));
+  }
+  drawDiagram(el) {
+    const src = el.getAttribute('data-src') || ''; el.dataset.done = '1';
+    this.M.renderMermaid(src).then(svg => { if (el.isConnected && el.getAttribute('data-src') === src) el.innerHTML = svg; }, e => { if (!el.isConnected) return; const d = document.createElement('div'); d.className = 'md-src-err'; d.textContent = String((e && e.message) || e); el.appendChild(d); }); // a bad diagram keeps its source on view, the message under it
+  }
+  // ---- code blocks: highlighted in place (highlight.js), the caret put back by its text offset, so typing in a block can re-colour it ----
+  highlightAll() { const ed = this.edRef.current; if (ed && !this.gone) ed.querySelectorAll('pre > code[data-lang]').forEach(c => this.highlightCode(c)); }
+  highlightCode(code, off) {
+    if (!this.M) return; const src = code.textContent, html = this.M.highlight(src, code.getAttribute('data-lang') || '');
+    if (html == null && !code.children.length) return; // plain, and already plain text
+    if (off == null) off = this.caretOffsetIn(code);
+    if (html == null) code.textContent = src; else code.innerHTML = html;
+    if (off != null) this.setCaretOffsetIn(code, off);
+  }
+  caretOffsetIn(el) { const s = window.getSelection(); if (!s.rangeCount) return null; const r = s.getRangeAt(0); if (!r.collapsed || !el.contains(r.startContainer)) return null; const p = r.cloneRange(); p.selectNodeContents(el); p.setEnd(r.startContainer, r.startOffset); return p.toString().length; }
+  setCaretOffsetIn(el, off) {
+    const s = window.getSelection(), r = document.createRange(), w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n, acc = 0;
+    while ((n = w.nextNode())) { if (acc + n.nodeValue.length >= off) { r.setStart(n, off - acc); r.collapse(true); s.removeAllRanges(); s.addRange(r); return; } acc += n.nodeValue.length; }
+    r.selectNodeContents(el); r.collapse(false); s.removeAllRanges(); s.addRange(r);
+  }
+  /** The bar's language menu: the fence's language changes, the block is re-coloured, the caret stays where it was. */
+  setLang(v) {
+    const pre = this.blkEl, code = pre && pre.querySelector('code'); if (!code) return;
+    if (v === 'mermaid') { const t = document.createElement('template'); t.innerHTML = this.M.mermaidBlockHtml(code.textContent.replace(/\n$/, '')); const el = t.content.firstChild; pre.replaceWith(el); this.edRef.current.focus(); this.leaveCode(el); this.setState({ blk: null }); return this.renderDiagrams(); } // the code becomes a diagram, drawn from here on
+    const off = this.caretOffsetIn(code); if (v) code.setAttribute('data-lang', v); else code.removeAttribute('data-lang'); this.edRef.current.focus(); this.highlightCode(code, off == null ? 0 : off); this.sync(); this.onSel();
+  }
+  copyCode() { const pre = this.blkEl; if (!pre) return; const text = (pre.querySelector('code') || pre).textContent; (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => this.props.toast && this.props.toast($t('已复制')), () => { }); }
+  /** Cmd/Ctrl+Enter inside a code block: out to the paragraph after it (made if the block is the last thing). */
+  leaveCode(pre) { let after = pre.nextElementSibling; if (!after) { after = document.createElement('p'); after.innerHTML = '<br>'; pre.after(after); } const r = document.createRange(); r.setStart(after, 0); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); this.sync(); }
   emit(text) { this.lastText = text; this.props.onChange && this.props.onChange(Object.assign({}, this.doc, { text }), { silent: true }); }
   sync() { clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 280); }
-  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed || !this.M || this.state.mode !== 'rich') return; const t = this.M.htmlToMd(ed); if (!t.trim() && (this.lastText || '').trim().length > 20 && !this.userCleared) return; if (t !== this.lastText) this.emit(t); }
+  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed || !this.M || this.state.mode !== 'rich') return; const t = this.M.htmlToMd(ed); if (!t.trim() && (this.lastText || '').trim().length > 20 && !this.userCleared) return; if (t !== this.lastText) { this.emit(t); this.refreshToc(); } }
+  /** A [TOC] block follows the headings as they change. */
+  refreshToc() { const ed = this.edRef.current, navs = ed && ed.querySelectorAll('nav.md-toc'); if (!navs || !navs.length) return; const html = this.M.tocHtml(this.M.headings(this.lastText)); navs.forEach(n => { if (n.innerHTML !== html) n.innerHTML = html; }); }
+  /** An in-document link (a [TOC] entry, a footnote mark, [text](#heading)): scrolls to the element with that id, or to the heading whose anchor it would be (one typed since the last render has no id yet). */
+  jumpTo(id) { const ed = this.edRef.current, sc = this.scRef.current; if (!ed || !sc) return; try { id = decodeURIComponent(id); } catch (e) { } let el = null; try { el = ed.querySelector('[id="' + id.replace(/["\\]/g, '\\$&') + '"]'); } catch (e) { } if (!el) el = Array.from(ed.querySelectorAll('h1,h2,h3,h4,h5,h6')).find(h => this.M.slug(h.textContent) === id); if (el) sc.scrollTo({ top: el.offsetTop - 70, behavior: 'smooth' }); }
   exec(cmd, val) { const ed = this.edRef.current; if (!ed) return; if (document.activeElement !== ed) ed.focus(); document.execCommand(cmd, false, val); this.sync(); }
   blockOf(n) { const ed = this.edRef.current; while (n && n !== ed) { if (n.nodeType === 1 && /^(P|H[1-6]|LI|BLOCKQUOTE|PRE|DIV)$/.test(n.tagName)) return n; n = n.parentNode; } return null; }
   wrapInline(tag) {
@@ -207,26 +376,45 @@ class Component extends DCLogic {
     const start = r.startOffset - it.len; const rr = document.createRange(); rr.setStart(node, start); rr.setEnd(node, r.startOffset);
     rr.deleteContents();
     let node2;
-    if (it.tag === 'math') { const t = document.createElement('template'); t.innerHTML = this.M.mathInlineHtml(it.text); node2 = t.content.firstChild; } // via md.js, so a chat reply, a saved file and live typing all agree on the markup
+    if (it.tag === 'math' || it.tag === 'emoji') { const t = document.createElement('template'); t.innerHTML = it.tag === 'math' ? this.M.mathInlineHtml(it.text) : this.M.emojiHtml(it.text); node2 = t.content.firstChild; } // via md.js, so a chat reply, a saved file and live typing all agree on the markup
     else { node2 = document.createElement(it.tag); node2.textContent = it.text; }
     rr.insertNode(node2);
     const sp = document.createTextNode('\u200B'); node2.after(sp); const nr = document.createRange(); nr.setStart(sp, 1); nr.collapse(true); s.removeAllRanges(); s.addRange(nr);
     return this.sync();
   }
+  /** 智能标点: the character just typed, with what came before it in its text node, through md.js's smartPunct; never inside code or a formula. */
+  smart() {
+    const s = window.getSelection(); if (!s.rangeCount || !this.M) return; const r = s.getRangeAt(0), node = r.startContainer; if (!r.collapsed || node.nodeType !== 3) return;
+    const b = this.blockOf(node), inCode = node.parentNode.closest && node.parentNode.closest('code,.md-math,.md-math-block'); if (!b || b.tagName === 'PRE' || inCode) return;
+    const sp = this.M.smartPunct(node.nodeValue.slice(0, r.startOffset)); if (!sp) return;
+    const at = r.startOffset - sp.del; node.nodeValue = node.nodeValue.slice(0, at) + sp.text + node.nodeValue.slice(r.startOffset);
+    const nr = document.createRange(); nr.setStart(node, at + sp.text.length); nr.collapse(true); s.removeAllRanges(); s.addRange(nr);
+  }
   /** Opens the Typora-style math block editor in place of `anchorEl` (a paragraph that just triggered "$$", or an
    *  existing rendered .md-math-block): a source textarea with a live KaTeX preview underneath, closed by Escape,
    *  Cmd/Ctrl+Enter, or a click outside — never by the outer rich-text key/click handlers, which the editing wrapper
    *  is insulated from (contenteditable="false" on the wrapper; the <textarea> is its own native control regardless). */
-  openMathBlock(anchorEl, initialSrc) {
+  openMathBlock(anchorEl, initialSrc, kind = 'math') { // kind: 'math'; 'mermaid' (the preview is the drawn diagram, or mermaid's error); 'front' (the YAML card, no preview)
     if (!this.M) return;
-    const wrap = document.createElement('div'); wrap.className = 'md-math-block md-math-editing'; wrap.setAttribute('contenteditable', 'false');
+    const wrap = document.createElement('div'); wrap.className = { front: 'md-front md-src-editing', mermaid: 'md-mermaid md-src-editing' }[kind] || 'md-math-block md-math-editing'; wrap.setAttribute('contenteditable', 'false');
     const ta = document.createElement('textarea'); ta.className = 'md-math-src'; ta.value = initialSrc; ta.spellcheck = false; ta.rows = 1;
-    const prev = document.createElement('div'); prev.className = 'md-math-preview';
-    wrap.append(ta, prev);
+    const prev = document.createElement('div'); prev.className = 'md-math-preview'; if (kind === 'front') prev.style.display = 'none';
+    const err = document.createElement('div'); err.className = 'md-src-err'; // the formula's parse error as it is typed; empty (hidden) while it renders
+    wrap.append(ta, prev, err);
+    if (kind === 'math') { // the symbol strip: each button drops its LaTeX at the caret, the caret landing in the first {} (a selection goes inside it)
+      const bar = document.createElement('div'); bar.className = 'md-math-bar';
+      MATH_SYMS.forEach(([label, tex]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.title = tex; b.addEventListener('mousedown', ev => ev.preventDefault()); b.addEventListener('click', () => { const s0 = ta.selectionStart, e0 = ta.selectionEnd, sel = ta.value.slice(s0, e0), snip = sel && tex.includes('{}') ? tex.replace('{}', '{' + sel + '}') : tex; ta.setRangeText(snip, s0, e0, 'end'); const at = tex.includes('{}') ? s0 + tex.indexOf('{}') + 1 + (sel ? sel.length : 0) : s0 + snip.length; ta.setSelectionRange(at, at); ta.focus(); renderPreview(); this.sync(); }); bar.appendChild(b); });
+      wrap.prepend(bar);
+    }
     anchorEl.replaceWith(wrap);
-    const renderPreview = () => { prev.innerHTML = this.M.renderMath(ta.value, true); autoGrow(ta); };
+    const showErr = (box, e) => { box.innerHTML = ''; const d = document.createElement('div'); d.className = 'md-src-err'; d.textContent = String((e && e.message) || e); box.appendChild(d); };
+    const renderPreview = () => {
+      autoGrow(ta);
+      if (kind === 'math') { prev.innerHTML = this.M.renderMath(ta.value, true); err.textContent = this.M.mathError(ta.value); err.style.display = err.textContent ? '' : 'none'; }
+      else if (kind === 'mermaid') { clearTimeout(this.mmT); const v = ta.value; this.mmT = setTimeout(() => this.M.renderMermaid(v).then(svg => { if (ta.value === v && wrap.isConnected) prev.innerHTML = svg; }, e => { if (ta.value === v && wrap.isConnected) showErr(prev, e); }), 400); } // drawn once the typing pauses
+    };
     renderPreview();
-    const closeIt = () => this.closeMathBlock(wrap, ta.value);
+    const closeIt = () => this.closeMathBlock(wrap, ta.value, kind);
     ta.addEventListener('input', ev => { ev.stopPropagation(); renderPreview(); this.sync(); });
     ta.addEventListener('keydown', ev => {
       ev.stopPropagation(); // this box's keystrokes are its own, never the rich editor's Enter/Tab/arrow rules
@@ -239,14 +427,14 @@ class Component extends DCLogic {
     this._mathOutside = onOutside; this._mathWrap = wrap;
     setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0);
   }
-  closeMathBlock(wrap, src) {
+  closeMathBlock(wrap, src, kind = 'math') {
     this.dropMathOutside();
     if (!wrap.isConnected) return;
     this.edRef.current.focus(); // like onScDown below: focus the editor before placing the range, not after
     const s = window.getSelection();
     if (!src.trim()) { const p = document.createElement('p'); p.innerHTML = '<br>'; wrap.replaceWith(p); const r = document.createRange(); r.setStart(p, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); return this.sync(); }
-    const t = document.createElement('template'); t.innerHTML = this.M.mathBlockHtml(src); const el = t.content.firstChild;
-    wrap.replaceWith(el);
+    const t = document.createElement('template'); t.innerHTML = kind === 'front' ? this.M.frontHtml(src) : kind === 'mermaid' ? this.M.mermaidBlockHtml(src) : this.M.mathBlockHtml(src); const el = t.content.firstChild;
+    wrap.replaceWith(el); if (kind === 'mermaid') this.renderDiagrams();
     let after = el.nextElementSibling;
     if (!after) { after = document.createElement('p'); after.innerHTML = '<br>'; el.after(after); }
     const r = document.createRange(); r.setStart(after, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r);
@@ -276,13 +464,58 @@ class Component extends DCLogic {
       const s0 = window.getSelection(); const r0 = s0.rangeCount && s0.getRangeAt(0);
       if (!r0 || r0.startContainer !== this._openInlineText) this.commitInlineMath();
     }
-    if (this.state.mode !== 'rich') { if (this.state.selBar) this.setState({ selBar: null }); return; }
+    if (this.state.mode !== 'rich') { if (this.state.selBar || this.state.blk) this.setState({ selBar: null, blk: null }); return; }
     const ed = this.edRef.current, s = window.getSelection(); if (!ed || !s.rangeCount) return;
-    const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer) || r.collapsed) { if (this.state.selBar) this.setState({ selBar: null }); return; }
+    if (document.activeElement && document.activeElement.closest && document.activeElement.closest('[data-menu]')) return; // a control on a bar (the language menu) has the focus: the bar stays
+    const r = s.getRangeAt(0), inside = ed.contains(r.commonAncestorContainer);
+    if (inside && this.state.focus) this.markCur();
+    const blk = inside ? this.blockBarAt(r) : null; // the block bar (a table's or a code block's tools) while the caret sits in such a block; a real selection shows the format bar instead
+    if (JSON.stringify(blk) !== JSON.stringify(this.state.blk || null)) this.setState({ blk });
+    if (!inside || r.collapsed) { if (this.state.selBar) this.setState({ selBar: null }); return; }
     const rc = r.getBoundingClientRect(); if (!rc.width) return;
     const sb = { x: Math.round(rc.left + rc.width / 2), y: Math.max(64, Math.round(rc.top - 46)) };
     if (!this.state.selBar || this.state.selBar.x !== sb.x || this.state.selBar.y !== sb.y) this.setState({ selBar: sb });
   };
+  blockBarAt(r) {
+    if (!r.collapsed) return null;
+    let n = r.startContainer; n = n.nodeType === 3 ? n.parentNode : n; if (!n || !n.closest) return null;
+    const el = n.closest('table, pre'); if (!el || !this.edRef.current.contains(el)) return null;
+    const rc = el.getBoundingClientRect(), blk = { kind: el.tagName === 'PRE' ? 'code' : 'table', x: Math.round(rc.left + rc.width / 2), y: Math.max(64, Math.round(rc.top - 44)) };
+    this.blkEl = el;
+    if (blk.kind === 'table') { const p = this.cellAt(); blk.al = (p && p.trs[0].children[p.c] && p.trs[0].children[p.c].style.textAlign) || ''; }
+    else { const code = el.querySelector('code'); blk.lang = (code && code.getAttribute('data-lang')) || ''; }
+    return blk;
+  }
+  // ---- tables: the cell at the caret; the bar's row / column / alignment operations; Tab and Enter walk the cells ----
+  cellAt() { const s = window.getSelection(); if (!s.rangeCount) return null; let n = s.getRangeAt(0).startContainer; n = n.nodeType === 3 ? n.parentNode : n; const cell = n && n.closest && n.closest('td,th'); if (!cell || !this.edRef.current.contains(cell)) return null; const tr = cell.parentNode, table = cell.closest('table'), trs = Array.from(table.querySelectorAll('tr')); return { cell, tr, table, trs, c: Array.from(tr.children).indexOf(cell), r: trs.indexOf(tr) }; }
+  focusCell(cell, select) { if (!cell) return; const r = document.createRange(); r.selectNodeContents(cell); if (!select) r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+  tableOp(op, v) {
+    const p = this.cellAt(); if (!p) return; const { cell, tr, table, trs, c, r } = p;
+    const blank = tag => { const e = document.createElement(tag); e.innerHTML = '<br>'; return e; };
+    if (op === 'rowAbove' || op === 'rowBelow') { const nr = document.createElement('tr'); tr.querySelectorAll('td,th').forEach(() => nr.appendChild(blank('td'))); if (r === 0) (table.tBodies[0] || table.appendChild(document.createElement('tbody'))).prepend(nr); else tr[op === 'rowAbove' ? 'before' : 'after'](nr); this.focusCell(nr.children[c]); } // GFM's header row is always the first: a row "above" it lands right below it
+    else if (op === 'colLeft' || op === 'colRight') { trs.forEach(t => { const ref = t.children[c], nc = blank(t.parentNode.tagName === 'THEAD' ? 'th' : 'td'); if (ref) ref[op === 'colLeft' ? 'before' : 'after'](nc); else t.appendChild(nc); }); this.focusCell(tr.children[c + (op === 'colLeft' ? 0 : 1)]); }
+    else if (op === 'delRow') { if (trs.length === 1) return this.tableOp('delTable'); if (r === 0) { const first = trs[1]; first.querySelectorAll('td').forEach(td => { const th = document.createElement('th'); th.innerHTML = td.innerHTML; th.style.cssText = td.style.cssText; td.replaceWith(th); }); tr.parentNode.appendChild(first); } tr.remove(); this.focusCell((trs[r + 1] || trs[r - 1]).children[c]); } // the header row cannot go: the next row becomes the header
+    else if (op === 'delCol') { if (tr.children.length === 1) return this.tableOp('delTable'); trs.forEach(t => t.children[c] && t.children[c].remove()); this.focusCell(tr.children[Math.min(c, tr.children.length - 1)]); }
+    else if (op === 'delTable') { const np = document.createElement('p'); np.innerHTML = '<br>'; table.replaceWith(np); this.focusCell(np); }
+    else if (op === 'align') { const cur = trs[0].children[c] ? trs[0].children[c].style.textAlign : ''; trs.forEach(t => { if (t.children[c]) t.children[c].style.textAlign = cur === v ? '' : v; }); this.onSel(); } // the whole column, header included: htmlToMd reads the header's alignment
+    this.sync();
+  }
+  /** Tab / Shift+Tab on a list item: into a sublist of the item above, or back out beside its parent item, the items after it
+   *  going with it as its children (Typora's nesting). A top-level item stays where it is. The caret keeps its text position. */
+  nestLi(li, out) {
+    const s = window.getSelection(), r = s.getRangeAt(0), sc = r.startContainer, so = r.startOffset, list = li.parentNode, sublist = (host, tag) => { let sub = host.lastElementChild; if (!sub || !/^(UL|OL)$/.test(sub.tagName)) { sub = document.createElement(tag); host.appendChild(sub); } return sub; };
+    if (!out) { const prev = li.previousElementSibling; if (!prev || prev.tagName !== 'LI') return; sublist(prev, list.tagName).appendChild(li); }
+    else {
+      const parentLi = list.parentNode; if (!parentLi || parentLi.tagName !== 'LI') return;
+      const rest = []; for (let n = li.nextElementSibling; n; n = n.nextElementSibling) rest.push(n);
+      parentLi.after(li); if (rest.length) { const sub = sublist(li, list.tagName); rest.forEach(x => sub.appendChild(x)); } if (!list.children.length) list.remove();
+    }
+    const nr = document.createRange(); nr.setStart(sc, so); nr.collapse(true); s.removeAllRanges(); s.addRange(nr); this.sync();
+  }
+  /** Dragging a cell's right edge sets that column's width — visual only, GFM has no column widths, so nothing is saved. */
+  edgeAt(e) { const cell = e.target.closest && e.target.closest('td,th'); if (!cell) return null; const rc = cell.getBoundingClientRect(); return rc.right - e.clientX < 6 && e.clientX - rc.left > 12 ? cell : null; }
+  onColDown = e => { const cell = this.edgeAt(e); if (!cell) return; e.preventDefault(); const c = Array.from(cell.parentNode.children).indexOf(cell), head = cell.closest('table').querySelector('tr').children[c] || cell, w0 = head.getBoundingClientRect().width, x0 = e.clientX; const move = ev => { head.style.width = Math.max(40, Math.round(w0 + ev.clientX - x0)) + 'px'; }; const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); }; window.addEventListener('mousemove', move); window.addEventListener('mouseup', up); };
+  onColMove = e => { const ed = this.edRef.current; if (ed) ed.style.cursor = this.edgeAt(e) ? 'col-resize' : ''; };
   // source-mode helpers
   ta() { return this.taRef.current; }
   insText(txt) { const t = this.ta(); if (!t) return; t.focus(); let ok = false; try { ok = document.execCommand('insertText', false, txt); } catch (e) { } if (!ok) { t.setRangeText(txt, t.selectionStart, t.selectionEnd, 'end'); this.emit(t.value); } }
@@ -295,8 +528,22 @@ class Component extends DCLogic {
     (rich ? R : S)[kind]();
   }
   download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
-  fullHtml() { const css = Array.from(document.querySelectorAll('style')).map(s => s.textContent).filter(t => t.includes('.pt-ed')).join('\n'); return `<!doctype html><html><head><meta charset="utf-8"><title>${this.doc.title}</title><style>${this.K ? this.K.fontFaces() : ''}body{margin:0;background:#FFFFFF}.pt-ed{max-width:720px;margin:0 auto;padding:56px 32px}${css}</style></head><body><div class="pt-ed">${this.M.mdToHtml(this.doc.text)}</div></body></html>`; }
-  printPdf() { const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0'; document.body.appendChild(f); f.contentDocument.open(); f.contentDocument.write(this.fullHtml().replace('</style>', '@page{margin:18mm}body{background:#fff}.pt-ed{padding:0}</style>')); f.contentDocument.close(); setTimeout(() => { f.contentWindow.print(); setTimeout(() => f.remove(), 2000); }, 700); }
+  /** One standalone page: the document as rendered — code coloured, formulas as MathML (no KaTeX CSS or fonts needed), diagrams as
+   *  the SVG already drawn in the editor, pictures inlined as data: — with the editor's styles and the fonts' local() faces. */
+  async fullHtml() {
+    const M = this.M, ed = this.edRef.current, box = document.createElement('div'); box.innerHTML = M.mdToHtml(this.doc.text || '', { mathml: true });
+    await M.loadHljs(); box.querySelectorAll('pre > code[data-lang]').forEach(c => { const h = M.highlight(c.textContent, c.getAttribute('data-lang')); if (h != null) c.innerHTML = h; });
+    box.querySelectorAll('.md-mermaid').forEach(el => { const drawn = ed && Array.from(ed.querySelectorAll('.md-mermaid')).find(x => x.getAttribute('data-src') === el.getAttribute('data-src') && x.querySelector('svg')); if (drawn) el.innerHTML = drawn.querySelector('svg').outerHTML; });
+    const dir = this.dirOf();
+    await Promise.all(Array.from(box.querySelectorAll('img')).map(async img => {
+      const s = img.getAttribute('src') || ''; if (/^data:/.test(s)) return;
+      try { let p = s; try { p = decodeURIComponent(s); } catch (e) { } const url = /^[a-z][a-z0-9+.-]*:|^\//i.test(s) ? s : this.EN ? this.EN.fileUrl(dir + p) : s; const b = await (await fetch(url)).blob(); img.src = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); }); } catch (e) { } // unreachable (a remote picture without CORS): its URL stays
+    }));
+    box.querySelectorAll('[contenteditable],[data-line]').forEach(n => { n.removeAttribute('contenteditable'); n.removeAttribute('data-line'); });
+    const css = Array.from(document.querySelectorAll('style')).map(s => s.textContent).filter(t => t.includes('.pt-ed')).join('\n'), hl = await fetch('./vendor/highlight/github-dark.min.css').then(r => r.text()).catch(() => '');
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${String(this.doc.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</title><style>${this.K ? this.K.fontFaces() : ''}body{margin:0;background:#FFFFFF}.pt-ed{max-width:720px;margin:0 auto;padding:56px 32px}${css}${hl}</style></head><body><div class="pt-ed">${box.innerHTML}</div></body></html>`;
+  }
+  async printPdf() { const html = await this.fullHtml(); const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0'; document.body.appendChild(f); f.contentDocument.open(); f.contentDocument.write(html.replace('</style>', '@page{margin:18mm}body{background:#fff}.pt-ed{padding:0}</style>')); f.contentDocument.close(); setTimeout(() => { f.contentWindow.print(); setTimeout(() => f.remove(), 2000); }, 700); }
   jump(h) {
     const sc = this.scRef.current; if (!sc) return;
     if (this.state.mode === 'rich') { const el = this.edRef.current && this.edRef.current.querySelectorAll('h1,h2,h3,h4,h5,h6')[h.idx]; if (el) sc.scrollTop = el.offsetTop - 70; }
@@ -306,29 +553,48 @@ class Component extends DCLogic {
     const M = this.M, st = this.state, d = this.doc, text = d.text || '', pure = !!this.props.pure, rich = st.mode === 'rich';
     const B = (label, kind, o = {}) => ({ isBtn: true, label, onClick: () => this.cmd(kind), title: o.title || label, fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit' });
     const SEP = { isSep: true };
+    const TG = (label, key, title) => ({ isBtn: true, label: (st[key] ? '✓ ' : '') + label, title: title || label, onClick: () => { setPref(key, !st[key]); this.setState({ [key]: !st[key] }); }, fw: 400, fs: 'normal', td: 'none', font: 'inherit' }); // a switch, kept per machine
     const SETS = {
       format: [B($t('标题 1'), 'h1', { fw: 600 }), B($t('标题 2'), 'h2', { fw: 600 }), B($t('标题 3'), 'h3', { fw: 600 }), B($t('正文'), 'p'), SEP, B('B', 'bold', { fw: 700, title: $t('粗体 Ctrl+B') }), B('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif", title: $t('斜体 Ctrl+I') }), B('S', 'strike', { td: 'line-through' }), B($t('高亮'), 'mark'), B($t('代码'), 'code', { font: "'IBM Plex Mono',monospace" }), SEP, B($t('引用'), 'quote'), B($t('• 列表'), 'ul'), B($t('1. 列表'), 'ol'), B($t('☐ 待办'), 'task')],
       insert: [B($t('链接'), 'link', { title: 'Ctrl+K' }), B($t('图片'), 'image'), B($t('表格'), 'table'), B($t('代码块'), 'codeblock'), B($t('分割线'), 'hr')],
-      export: [{ isBtn: true, label: $t('下载 .md'), onClick: () => this.download(d.title + '.md', text, 'text/markdown'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('下载 HTML'), onClick: () => this.download(d.title + '.html', this.fullHtml(), 'text/html'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('导出 PDF'), onClick: () => this.printPdf(), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, SEP, { isBtn: true, label: $t('转为 Word 文档'), onClick: () => this.props.onConvert && this.props.onConvert('docx', { title: d.title, html: M.wordHtml(M.mdToHtml(text)) }), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }]
+      view: [{ isBtn: true, label: (rich ? '' : '✓ ') + $t('源代码'), title: $t('查看源代码') + ' Ctrl+/', onClick: () => this.toggleMode(), fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, TG($t('打字机'), 'typewriter', $t('打字机模式：当前行始终居中')), TG($t('专注'), 'focus', $t('专注模式：淡化当前段落以外的内容')), SEP, TG($t('代码换行'), 'wrap', $t('长行折行显示')), TG($t('智能标点'), 'smart', $t('输入时 "" 变为 “”，-- 变为 –，... 变为 …'))],
+      export: [{ isBtn: true, label: $t('下载 .md'), onClick: () => this.download(d.title + '.md', text, 'text/markdown'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('下载 HTML'), onClick: async () => this.download(d.title + '.html', await this.fullHtml(), 'text/html'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('导出 PDF'), onClick: () => this.printPdf(), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, SEP, { isBtn: true, label: $t('转为 Word 文档'), onClick: () => this.props.onConvert && this.props.onConvert('docx', { title: d.title, html: M.wordHtml(M.mdToHtml(text)) }), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }]
     };
     const tab = st.tab;
-    const tabs = [['format', $t('格式')], ['insert', $t('插入')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
-    const showOutline = !pure && this.props.showThumbs !== false;
+    const tabs = [['format', $t('格式')], ['insert', $t('插入')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
+    const showOutline = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the outline only when its 缩略图 asks, over the text
     const heads = M ? M.headings(text).map((h, i) => Object.assign(h, { idx: i })) : [];
     const stats = M ? M.wordStats(text) : { words: 0, minutes: 1 };
     const sb = st.selBar;
-    const SB = (label, kind, o = {}) => ({ label, title: o.title || label, onClick: () => this.cmd(kind), fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit' });
+    const SB = (label, kind, o = {}) => ({ btn: true, label, title: o.title || label, onClick: () => this.cmd(kind), fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit' });
+    // 纯净模式 selection bar: B I S | 标题 | 链接 | ✦ 改写 (the shell's onRewrite hands the selection to the assistant)
+    const pureSel = [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), { sep: true }, SB($t('标题@@sel'), 'h1', { fw: 600 }), { sep: true }, SB($t('链接'), 'link')]
+      .concat(this.props.onRewrite ? [{ sep: true }, Object.assign(SB($t('改写'), 'link'), { star: true, onClick: () => this.props.onRewrite(String(getSelection())) })] : []);
+    const blk = st.blk, BB = (label, title, fn, on) => ({ isBtn: true, label, title, onClick: fn, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent' }), T = (op, v) => () => this.tableOp(op, v);
+    const blkBtns = !blk ? [] : blk.kind === 'code' ? [BB($t('复制'), $t('复制代码'), () => this.copyCode()), BB($t('换行'), $t('长行折行显示'), () => { setPref('wrap', !st.wrap); this.setState({ wrap: !st.wrap }); }, st.wrap)]
+      : [BB($t('↑行'), $t('上方插入行'), T('rowAbove')), BB($t('↓行'), $t('下方插入行'), T('rowBelow')), BB($t('←列'), $t('左侧插入列'), T('colLeft')), BB($t('→列'), $t('右侧插入列'), T('colRight')), SEP,
+      BB($t('左'), $t('左对齐'), T('align', 'left'), blk.al === 'left'), BB($t('中'), $t('居中'), T('align', 'center'), blk.al === 'center'), BB($t('右'), $t('右对齐'), T('align', 'right'), blk.al === 'right'), SEP,
+      BB($t('－行'), $t('删除行'), T('delRow')), BB($t('－列'), $t('删除列'), T('delCol')), BB('✕', $t('删除表格'), T('delTable'))];
+    const langs = [{ v: '', label: $t('纯文本') }].concat(LANGS.map(([v, label]) => ({ v, label })));
+    if (blk && blk.lang && !LANGS.some(x => x[0] === blk.lang)) langs.push({ v: blk.lang, label: blk.lang });
     return {
-      md, notPure: !pure, tabs, tools: SETS[tab] || [], bubbleOpen: st.bubble && !pure, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab,
+      md, notPure: !pure, pure, showBar: !pure || !!this.props.pureTools, tabs, tools: SETS[tab] || [], bubbleOpen: st.bubble && !pure, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab,
       barL: pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !pure ? '48px' : '0px', spD: this.props.merged && !pure ? 'flex' : 'none', barR: this.props.barRight || '12px',
       fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
-      aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(),
-      cols: showOutline ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)', showOutline, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(),
+      cols: showOutline && !pure ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)', showOutline, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       outline: heads.map(h => ({ text: h.text, indent: (10 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.jump(h) })), noOutline: !heads.length,
       scRef: this.scRef, edRef: this.edRef, taRef: this.taRef, imgRef: this.imgRef, emptyHint: $t('开始书写…'),
-      isRich: rich, isSrc: !rich, gridPT: showOutline ? '0px' : '0px', richDisp: rich ? 'block' : 'none', richDisp: rich ? 'block' : 'none', text, pad: pure ? '16vh 40px 34vh' : '96px 40px 40vh',
+      isRich: rich, isSrc: !rich, gridPT: showOutline ? '0px' : '0px', richDisp: rich ? 'block' : 'none', text, pad: pure ? '16vh 40px 34vh' : st.typewriter ? '96px 40px 50vh' : '96px 40px 40vh',
       onScDown: e => { if (e.target === e.currentTarget && rich && this.edRef.current) { e.preventDefault(); const ed = this.edRef.current; ed.focus(); const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } },
-      onRichInput: e => { this.userCleared = !!(e.nativeEvent && /^delete/.test(e.nativeEvent.inputType || '')); if (e.nativeEvent && e.nativeEvent.inputType === 'insertText' && e.nativeEvent.data === ' ' || (e.nativeEvent && /[*~=`$]/.test(e.nativeEvent.data || ''))) this.rules(e); this.sync(); },
+      onRichInput: e => {
+        if (this.selImg) this.selectImg(null); this.userCleared = !!(e.nativeEvent && /^delete/.test(e.nativeEvent.inputType || ''));
+        const s0 = window.getSelection(), b0 = s0.rangeCount && this.blockOf(s0.getRangeAt(0).startContainer);
+        if (b0 && b0.tagName === 'PRE') { clearTimeout(this.hlT); if (!(e.nativeEvent && e.nativeEvent.isComposing)) this.hlT = setTimeout(() => { const code = b0.querySelector('code'); if (code && code.getAttribute('data-lang')) this.highlightCode(code); }, 400); } // re-coloured once the typing pauses
+        else if (e.nativeEvent && e.nativeEvent.inputType === 'insertText' && e.nativeEvent.data === ' ' || (e.nativeEvent && /[*~=`$:]/.test(e.nativeEvent.data || ''))) this.rules(e);
+        else if (this.state.smart && e.nativeEvent && e.nativeEvent.inputType === 'insertText' && /^["'\-.>]$/.test(e.nativeEvent.data || '')) this.smart();
+        this.sync();
+      },
       onRichKey: e => {
         const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
         if (ctrl && k === 'k') { e.preventDefault(); this.link(); }
@@ -336,13 +602,17 @@ class Component extends DCLogic {
         else if (ctrl && ['1', '2', '3'].includes(k)) { e.preventDefault(); this.block('h' + k); }
         else if (ctrl && k === '0') { e.preventDefault(); this.exec('formatBlock', '<p>'); }
         else if (ctrl && k === 's') { e.preventDefault(); this.flush(); this.props.toast && this.props.toast($t('已保存')); }
+        else if (ctrl && e.key === '/') { e.preventDefault(); this.toggleMode(); }
+        else if (ctrl && e.key === 'Enter') { const s = window.getSelection(); const b = s.rangeCount && this.blockOf(s.getRangeAt(0).startContainer); if (b && b.tagName === 'PRE') { e.preventDefault(); this.leaveCode(b); } }
         else if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) {
+          const tp = this.cellAt(); if (tp) { e.preventDefault(); const nx = tp.trs[tp.r + 1]; if (nx) this.focusCell(nx.children[tp.c] || nx.lastElementChild, true); else this.tableOp('rowBelow'); return; } // down a row (Shift+Enter breaks the line inside the cell)
           const s = window.getSelection(); const b = s.rangeCount && this.blockOf(s.getRangeAt(0).startContainer);
           if (b && b.tagName === 'P') {
             const t = b.textContent.trim();
-            if (t === '```' || /^```\w*$/.test(t)) { e.preventDefault(); const pre = document.createElement('pre'); const code = document.createElement('code'); code.textContent = '\n'; pre.appendChild(code); b.replaceWith(pre); const r = document.createRange(); r.setStart(code.firstChild, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.sync(); }
+            if (/^```[\w+-]*$/.test(t)) { e.preventDefault(); const pre = document.createElement('pre'); const code = document.createElement('code'); code.textContent = '\n'; if (t.length > 3) code.setAttribute('data-lang', t.slice(3)); pre.appendChild(code); b.replaceWith(pre); if (!pre.nextElementSibling) { const np = document.createElement('p'); np.innerHTML = '<br>'; pre.after(np); } const r = document.createRange(); r.setStart(code.firstChild, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.sync(); } // ```lang + Enter opens a block in that language, with a paragraph after it to come back to
             else if (t === '---' || t === '***') { e.preventDefault(); const hr = document.createElement('hr'); const p = document.createElement('p'); p.innerHTML = '<br>'; b.replaceWith(hr); hr.after(p); const r = document.createRange(); r.setStart(p, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.sync(); }
             else if (t === '$$' && this.M) { e.preventDefault(); this.openMathBlock(b, ''); }
+            else if (/^\[\[?toc\]\]?$/i.test(t) && this.M) { e.preventDefault(); const tpl = document.createElement('template'); tpl.innerHTML = `<nav class="md-toc" contenteditable="false">${this.M.tocHtml(this.M.headings(this.lastText))}</nav><p><br></p>`; const np = tpl.content.lastChild; b.replaceWith(tpl.content); const r = document.createRange(); r.setStart(np, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.sync(); } // [TOC] + Enter: the contents block, kept current as the headings change
           }
           if (b && b.tagName === 'PRE') { e.preventDefault(); document.execCommand('insertText', false, '\n'); }
           if (b && b.tagName === 'LI' && b.classList.contains('task')) { setTimeout(() => { const s2 = window.getSelection(); const nb = s2.rangeCount && this.blockOf(s2.getRangeAt(0).startContainer); if (nb && nb.tagName === 'LI' && nb !== b && !nb.querySelector('input')) { nb.classList.add('task'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.setAttribute('contenteditable', 'false'); nb.prepend(cb, document.createTextNode(' ')); } this.sync(); }, 0); }
@@ -351,27 +621,41 @@ class Component extends DCLogic {
           const s = window.getSelection(); if (!s.rangeCount || !s.getRangeAt(0).collapsed) return; const r = s.getRangeAt(0); const b = this.blockOf(r.startContainer);
           if (b && /^H[1-6]|BLOCKQUOTE$/.test(b.tagName)) { const pre = document.createRange(); pre.setStart(b, 0); pre.setEnd(r.startContainer, r.startOffset); if (!pre.toString().length) { e.preventDefault(); document.execCommand('formatBlock', false, '<p>'); this.sync(); } }
         }
-        else if (e.key === 'Tab') { e.preventDefault(); document.execCommand(e.shiftKey ? 'outdent' : 'indent'); this.sync(); }
+        else if (e.key === 'Tab') {
+          e.preventDefault(); const tp = this.cellAt();
+          if (tp) { const cells = Array.from(tp.table.querySelectorAll('th,td')), i = cells.indexOf(tp.cell); if (!e.shiftKey && i === cells.length - 1) { this.tableOp('rowBelow'); const q = this.cellAt(); q && this.focusCell(q.tr.children[0]); } else this.focusCell(cells[i + (e.shiftKey ? -1 : 1)], true); }
+          else { const s = window.getSelection(), b = s.rangeCount && this.blockOf(s.getRangeAt(0).startContainer); if (b && b.tagName === 'LI') this.nestLi(b, e.shiftKey); else { document.execCommand(e.shiftKey ? 'outdent' : 'indent'); this.sync(); } }
+        }
         else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && !e.shiftKey && !ctrl) {
           const s = window.getSelection(); if (!s.rangeCount || !s.getRangeAt(0).collapsed) return;
           const fwd = e.key === 'ArrowRight' || e.key === 'ArrowDown';
           const hit = mathSiblingAt(s.getRangeAt(0), fwd); // a rendered formula sits right at the caret, in the direction of travel
-          if (hit) { e.preventDefault(); if (hit.classList.contains('md-math-block')) this.openMathBlock(hit, hit.getAttribute('data-src') || ''); else this.openInlineMath(hit); }
+          if (hit) { e.preventDefault(); if (hit.classList.contains('md-math')) this.openInlineMath(hit); else this.openMathBlock(hit, hit.getAttribute('data-src') || '', kindOf(hit)); }
         }
       },
       onRichClick: e => {
+        if (this.selImg && !(e.target.closest && e.target.closest('img'))) this.selectImg(null);
         const cb = e.target.closest && e.target.closest('input[type=checkbox]'); if (cb) { setTimeout(() => { if (cb.checked) cb.setAttribute('checked', ''); else cb.removeAttribute('checked'); this.sync(); }, 0); }
-        const a = e.target.closest && e.target.closest('a[href]'); if (a && (e.metaKey || e.ctrlKey)) window.open(a.href, '_blank');
+        const a = e.target.closest && e.target.closest('a[href]'); if (a) { const href = a.getAttribute('href') || ''; if (href.startsWith('#')) { e.preventDefault(); return this.jumpTo(href.slice(1)); } if (e.metaKey || e.ctrlKey) window.open(a.href, '_blank'); }
+        const fm = this.M && e.target.closest && e.target.closest('.md-front:not(.md-src-editing), .md-mermaid:not(.md-src-editing)'); if (fm) return this.openMathBlock(fm, fm.getAttribute('data-src') || '', kindOf(fm));
         const mb = this.M && e.target.closest && e.target.closest('.md-math-block:not(.md-math-editing)'); if (mb) return this.openMathBlock(mb, mb.getAttribute('data-src') || '');
         const mi = this.M && e.target.closest && e.target.closest('span.md-math'); if (mi) return this.openInlineMath(mi);
       },
-      onRichPaste: e => { const t = e.clipboardData.getData('text/plain'); const h = e.clipboardData.getData('text/html'); if (t && (!h || /^(#|[-*] |\d+\. |>|```)/m.test(t))) { e.preventDefault(); document.execCommand('insertHTML', false, M.mdToHtml(t)); this.sync(); } },
+      onRichPaste: e => {
+        const f = this.imageIn(e.clipboardData); if (f) { e.preventDefault(); return this.addImage(f); }
+        const t = e.clipboardData.getData('text/plain'), h = e.clipboardData.getData('text/html');
+        // structured HTML (lists, headings, tables… from Word, a browser, Notion) is read back through htmlToMd and rendered again:
+        // the same clean blocks a file gives, no foreign styles; plain text that reads like Markdown renders as such
+        if (h && /<(ul|ol|h[1-6]|table|pre|blockquote)\b|MsoList/i.test(h)) { e.preventDefault(); const d = document.createElement('div'); d.innerHTML = M.wordLists(h); d.querySelectorAll('style,script,meta,link,title,xml').forEach(x => x.remove()); document.execCommand('insertHTML', false, M.mdToHtml(M.htmlToMd(d))); this.sync(); return; }
+        const md0 = t && (!h ? t : M.pasteText(t)); if (md0) { e.preventDefault(); document.execCommand('insertHTML', false, M.mdToHtml(md0)); this.sync(); }
+      },
       onText: e => this.emit(e.target.value),
       onSrcKey: e => {
         const t = e.currentTarget, ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
         if (ctrl && k === 'b') { e.preventDefault(); return this.wrapSrc('**', '**', $t('粗体')); }
         if (ctrl && k === 'i') { e.preventDefault(); return this.wrapSrc('*', '*', $t('斜体')); }
         if (ctrl && k === 'k') { e.preventDefault(); return this.wrapSrc('[', '](https://)', $t('链接文字')); }
+        if (ctrl && e.key === '/') { e.preventDefault(); return this.toggleMode(); }
         if (e.key === 'Tab') { e.preventDefault(); this.insText('  '); return; }
         if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) && t.selectionStart === t.selectionEnd) {
           const v = t.value, s = t.selectionStart, ls = v.lastIndexOf('\n', s - 1) + 1, m = LIST.exec(v.slice(ls, s));
@@ -379,12 +663,17 @@ class Component extends DCLogic {
         }
       },
       onSelect: () => { },
-      toggleMode: () => { if (rich) { this.flush(); this.dropMathOutside(); this.setState({ mode: 'src', selBar: null }); setTimeout(() => this.ta() && this.ta().focus(), 30); } else this.setState({ mode: 'rich' }); },
-      modeIcon: rich ? '</>' : 'A', modeTitle: rich ? $t('查看源代码') : $t('返回排版视图'), modeFs: rich ? '13px' : '18px', modeFont: rich ? "'IBM Plex Mono',monospace" : "'Noto Serif SC',serif",
-      hasSelBar: !!sb && rich, sbx: sb ? sb.x + 'px' : 0, sby: sb ? sb.y + 'px' : 0,
-      selBtns: [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), SB('</>', 'code', { font: "'IBM Plex Mono',monospace", title: $t('行内代码') }), SB($t('高亮'), 'mark'), SB($t('链接'), 'link'), SB('H1', 'h1', { fw: 600 }), SB('H2', 'h2', { fw: 600 }), SB($t('引用'), 'quote')],
-      onImg: e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const rd = new FileReader(); rd.onload = () => { if (rich) this.exec('insertHTML', `<img alt="${f.name.replace(/\.[^.]+$/, '')}" src="${rd.result}">`); else this.insText(`![${f.name.replace(/\.[^.]+$/, '')}](${rd.result})`); }; rd.readAsDataURL(f); },
-      statWords: $t('{n} 字', { n: stats.words }), statMin: stats.minutes
+      toggleMode: () => this.toggleMode(),
+      modeIcon: rich ? '</>' : 'A', modeTitle: rich ? $t('查看源代码') : $t('返回排版视图'), modeFs: rich ? '11px' : '13px', modeFont: rich ? "'IBM Plex Mono',monospace" : "'Noto Serif SC',serif",
+      hasSelBar: !!sb && rich, sbx: sb ? sb.x + 'px' : 0, sby: sb ? sb.y + 'px' : 0, sbML: pure ? '-130px' : '-160px',
+      hasBlk: !!blk && rich, blx: blk ? blk.x + 'px' : 0, bly: blk ? blk.y + 'px' : 0, blkBtns, onScroll: () => { if (!this.scrollT) this.scrollT = requestAnimationFrame(() => { this.scrollT = 0; this.onSel(); }); },
+      blkCode: !!blk && blk.kind === 'code', codeLang: blk ? blk.lang || '' : '', langs, onLang: e => this.setLang(e.target.value), stop: e => e.stopPropagation(), edCls: 'pt-ed' + (st.wrap ? ' code-wrap' : '') + (st.focus ? ' md-focus' : ''),
+      onColDown: this.onColDown, onColMove: this.onColMove,
+      selBtns: pure ? pureSel : [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), SB('</>', 'code', { font: "'IBM Plex Mono',monospace", title: $t('行内代码') }), SB($t('高亮'), 'mark'), SB($t('链接'), 'link'), SB('H1', 'h1', { fw: 600 }), SB('H2', 'h2', { fw: 600 }), SB($t('引用'), 'quote')],
+      onImg: e => { const f = e.target.files[0]; e.target.value = ''; if (f) this.addImage(f); },
+      onSrcPaste: e => { const f = this.imageIn(e.clipboardData); if (f) { e.preventDefault(); this.addImage(f); } },
+      onDropImg: e => { const f = this.imageIn(e.dataTransfer); if (f) { e.preventDefault(); e.stopPropagation(); this.addImage(f); } }, // a picture dropped on the text goes into the document, not to the shell as a file to open
+      statWords: $t('{n} 字', { n: stats.words }), statChars: $t('{n} 字符', { n: stats.chars || 0 }), statMin: stats.minutes
     };
   }
 }

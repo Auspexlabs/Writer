@@ -19,79 +19,80 @@
 <link rel="icon" href="./assets/writer-logo-light.svg">
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg, #F6F6F7);color:var(--ink, #1D1D1F);font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
 button,input,select,textarea{font-family:inherit;color:inherit}
-/* The Mac window (design: WriterMac): the 38px title strip replaces the shell's floating pills,
-   and the editors' AI / immersive buttons move into it. */
+/* The Mac window (the design's Doc boards): the 48px title strip — lights, sidebar / undo / redo, the document tabs as pills
+   with their type squares, 格式 (the toolbar), ✦ AI, ⋯ — replaces the shell's floating pills, and the editors' AI / immersive
+   buttons move into it. */
 [data-mactest] [data-shell-bar]{display:none!important}
 [data-mactest] [data-glass-bar]{transition:opacity .28s ease,transform .45s cubic-bezier(.2,1.25,.35,1)!important;transform-origin:top right}
 [data-mactest][data-collapsed="1"] [data-glass-bar]{opacity:0!important;transform:translateY(-8px) scale(.6)!important;transform-origin:top center!important;pointer-events:none!important}
 [data-mactest][data-collapsed="1"] div:has(> [data-bubble]){top:2px!important}
 [data-mactest] [data-glass-bar] > div:has(> button[data-ai-btn]){display:none!important} /* the editors' own ✦ button gives way to the title strip's */
+/* the lights are drawn at 12px but, like the native ones, answer to a pointer a few pixels off the circle */
+[data-mactest] [data-light]{position:relative}
+[data-mactest] [data-light]::before{content:'';position:absolute;inset:-4px}
+/* 纯净模式 (the shell reports sh.pure): the strip gives way to the document — only the lights stay, at 40% until hovered — and the
+   shell fills the window; its 格式 opens the editor's toolbar even while the toolbar is collapsed, with the ribbon under it. */
+[data-mactest][data-pure="1"]>div:first-child{top:0!important}
+[data-mactest][data-pure="1"]>div[data-tauri-drag-region]{background:transparent!important;pointer-events:none}
+[data-mactest][data-pure="1"]>div[data-tauri-drag-region]>:not(:first-child){visibility:hidden}
+[data-mactest][data-pure="1"]>div[data-tauri-drag-region]>:first-child{pointer-events:auto;opacity:.4;transition:opacity .18s ease-out}
+[data-mactest][data-pure="1"]>div[data-tauri-drag-region]>:first-child:hover{opacity:1}
+[data-mactest][data-pure="1"] [data-glass-bar]{opacity:1!important;transform:none!important;pointer-events:auto!important}
+[data-mactest][data-pure="1"] div:has(> [data-bubble]){top:94px!important}
 </style>
 </helmet>
-<div data-mactest="1" data-collapsed="{{ collapsedAttr }}" style="position:fixed;inset:0;overflow:hidden;background:var(--k0, #FFFFFF)">
-  <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:38px">
+<div data-mactest="1" data-collapsed="{{ collapsedAttr }}" data-pure="{{ pureAttr }}" style="position:fixed;inset:0;overflow:hidden;background:var(--bg, #F6F6F7)">
+  <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:48px">
     <dc-import name="index" mac="{{ true }}" mac-full="{{ isFull }}" on-shell="{{ onShell }}" on-prefs="{{ openPrefs }}" on-save-dialog="{{ saveDialogProp }}" recent-files="{{ recentProp }}" on-open-recent="{{ openRecentProp }}" on-open-dialog="{{ openDialogProp }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
   </div>
-          <div data-tauri-drag-region onDoubleClick="{{ zoomWin }}" style="position:absolute;left:0;right:0;top:0;height:38px;z-index:59;background:var(--k0, #FFFFFF);display:flex;align-items:center">
-            <div onMouseEnter="{{ lightsOn }}" onMouseLeave="{{ lightsOff }}" style="display:flex;align-items:center;gap:8px;padding:0 10px 0 13px;height:100%">
-              <button onClick="{{ doClose }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c1 }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,0.55)">{{ g1 }}</button>
-              <button onClick="{{ doMin }}" title="最小化" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c2 }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,0.55)">{{ g2 }}</button>
-              <button onClick="{{ doZoom }}" title="{{ zoomTitle }}" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c3 }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1;color:rgba(0,0,0,0.55)">{{ g3 }}</button>
+          <div data-tauri-drag-region onDoubleClick="{{ zoomWin }}" style="position:absolute;left:0;right:0;top:0;height:48px;z-index:59;background:var(--bg, #F6F6F7);display:flex;align-items:center;gap:6px;padding:0 12px 0 18px">
+            <div onMouseEnter="{{ lightsOn }}" onMouseLeave="{{ lightsOff }}" style="display:flex;align-items:center;gap:8px;margin-right:8px;height:100%">
+              <button data-light="1" onClick="{{ doClose }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c1 }};cursor:default;display:flex;align-items:center;justify-content:center" style-active="filter:brightness(0.8)"><svg width="12" height="12" viewBox="0 0 12 12" style="display:block;flex:none;opacity:{{ gOp }}"><path d="M3.5 3.5L8.5 8.5M8.5 3.5L3.5 8.5" stroke="#4D0000" stroke-width="1.2" stroke-linecap="round"></path></svg></button>
+              <button data-light="1" onClick="{{ doMin }}" title="最小化" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c2 }};cursor:default;display:flex;align-items:center;justify-content:center" style-active="filter:brightness(0.8)"><svg width="12" height="12" viewBox="0 0 12 12" style="display:block;flex:none;opacity:{{ gOp }}"><path d="M3 6H9" stroke="#995700" stroke-width="1.2" stroke-linecap="round"></path></svg></button>
+              <button data-light="1" onClick="{{ doZoom }}" title="{{ zoomTitle }}" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c3 }};cursor:default;display:flex;align-items:center;justify-content:center" style-active="filter:brightness(0.8)"><svg width="12" height="12" viewBox="0 0 12 12" style="display:block;flex:none;opacity:{{ gOp }}"><path d="M3.3 3.3H7L3.3 7ZM8.7 8.7H5L8.7 5Z" fill="#006500" style="display:{{ fsOut }}"></path><path d="M6.6 5.4V2.3L3.5 5.4ZM5.4 6.6V9.7L8.5 6.6Z" fill="#006500" style="display:{{ fsIn }}"></path></svg></button>
             </div>
-            <button onClick="{{ sideToggle }}" title="显示/隐藏侧边栏" style="width:34px;height:26px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08));background:{{ sideBg }};cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.9)">
-              <span style="position:relative;width:16px;height:12px;border:1.5px solid var(--k7, #1D1D1F);border-radius:3.5px;box-sizing:border-box;display:block"><span style="position:absolute;left:4px;top:0;bottom:0;border-left:1.5px solid var(--k7, #1D1D1F)"></span></span>
-            </button>
-            <div style="height:28px;margin-left:6px;display:flex;align-items:center;padding:0 1px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08))">
-              <button onClick="{{ goBack }}" title="撤销 ⌘Z" style="width:30px;height:24px;flex:none;border:none;border-radius:999px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.88)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="display:block;"><path d="M5.5 3.5L2.5 6.5L5.5 9.5" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M2.5 6.5H9.5C11.7 6.5 13.5 8.3 13.5 10.5C13.5 12.7 11.7 14.5 9.5 14.5H7" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round"></path></svg></button>
-              <button onClick="{{ goFwd }}" title="重做 ⇧⌘Z" style="width:30px;height:24px;flex:none;border:none;border-radius:999px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.88)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="display:block;transform:scaleX(-1)"><path d="M5.5 3.5L2.5 6.5L5.5 9.5" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M2.5 6.5H9.5C11.7 6.5 13.5 8.3 13.5 10.5C13.5 12.7 11.7 14.5 9.5 14.5H7" stroke="var(--k7, #1D1D1F)" stroke-width="1.5" stroke-linecap="round"></path></svg></button>
-            </div>
+            <button data-ctl="1" data-on="{{ sideOn }}" onClick="{{ sideToggle }}" title="显示/隐藏侧边栏"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3" width="11" height="10" rx="2"></rect><path d="M6.5 3v10"></path></svg></button>
+            <button data-ctl="1" onClick="{{ goBack }}" title="撤销 ⌘Z"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 4.5 2.5 7.5l3 3"></path><path d="M2.8 7.5H10a3.5 3.5 0 0 1 0 7H7.5"></path></svg></button>
+            <button data-ctl="1" onClick="{{ goFwd }}" title="重做 ⇧⌘Z"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 4.5l3 3-3 3"></path><path d="M13.2 7.5H6a3.5 3.5 0 0 0 0 7h2.5"></path></svg></button>
             <sc-if value="{{ single }}" hint-placeholder-val="{{ true }}">
-            <div style="position:absolute;left:50%;top:0;height:38px;transform:translateX(-50%);max-width:42%;display:flex;align-items:center;gap:6px;pointer-events:none;color:var(--k11, #6E6E73)">
-              <span style="width:16px;height:16px;flex:none;display:block;background-image:url({{ fileIcon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>
-              <span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fileName }}</span>
+            <div style="position:absolute;left:50%;top:0;height:48px;transform:translateX(-50%);max-width:42%;display:flex;align-items:center;gap:7px;pointer-events:none;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62))">
+              <span data-sq="1" style="background:{{ sqBg }};display:{{ sqDisp }}">{{ sq }}</span>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fileName }}</span>
             </div>
             <div data-tauri-drag-region style="flex:1;align-self:stretch"></div>
             </sc-if>
             <sc-if value="{{ multi }}" hint-placeholder-val="{{ false }}">
-              <div data-tauri-drag-region style="flex:1;min-width:0;height:38px;margin:0 8px;display:flex;align-items:center;justify-content:center">
-                <div style="display:flex;align-items:center;min-width:0;max-width:100%">
+              <div data-tauri-drag-region style="flex:1;min-width:0;height:48px;margin:0 8px;display:flex;align-items:center;justify-content:center">
+                <div style="display:flex;align-items:center;gap:4px;min-width:0;max-width:100%">
                   <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
-                    <span style="width:1px;height:14px;flex:none;background:var(--k36, rgba(0,0,0,0.12));opacity:{{ t.sepOp }};transition:opacity .2s"></span>
-                    <div onClick="{{ t.onClick }}" onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" title="{{ t.title }}" style="flex:0 1 auto;max-width:180px;min-width:64px;height:28px;margin:0 2px;padding:0 8px;display:flex;align-items:center;gap:6px;border-radius:7px;background:{{ t.bg }};cursor:default;transition:background .2s">
-                      <span style="width:15px;height:15px;flex:none;display:block;opacity:{{ t.dotOp }};transition:opacity .2s;background-image:url({{ t.icon }});background-size:contain;background-repeat:no-repeat;background-position:center"></span>
-                      <span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font-size:12.5px;font-weight:{{ t.fw }};color:{{ t.color }}">{{ t.title }}</span>
-                      <button onClick="{{ t.onClose }}" title="关闭标签页 ⌘W" style="width:16px;height:16px;flex:none;padding:0;border:none;border-radius:4px;background:transparent;color:var(--k8, #8E8E93);font-size:12px;line-height:1;cursor:default;opacity:{{ t.xOp }};transition:opacity .15s" style-hover="background:var(--k36, rgba(0,0,0,0.08));color:var(--k1, #1D1D1F)">×</button>
+                    <div onClick="{{ t.onClick }}" onPointerDown="{{ t.onDown }}" onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" title="{{ t.title }}" style="flex:0 1 auto;max-width:200px;min-width:64px;height:30px;padding:0 8px 0 9px;display:flex;align-items:center;gap:7px;border-radius:var(--tab-r, 9px);background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.color }};font-size:12.5px;font-weight:{{ t.fw }};transform:{{ t.tf }};opacity:{{ t.op }};user-select:none;-webkit-user-select:none;cursor:default;transition:background .2s,color .2s">
+                      <span data-sq="1" style="background:{{ t.sqBg }}">{{ t.sq }}</span>
+                      <span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ t.title }}</span>
+                      <button onClick="{{ t.onClose }}" title="关闭标签页 ⌘W" style="width:16px;height:16px;flex:none;padding:0;border:none;border-radius:4px;background:transparent;color:var(--ink-3, rgba(29,29,31,0.36));font-size:12px;line-height:1;cursor:default;opacity:{{ t.xOp }};transition:opacity .15s" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)">×</button>
                     </div>
                   </sc-for>
-                  <button onClick="{{ newTab }}" title="新建标签页 ⌘T" style="width:24px;height:24px;flex:none;margin-left:4px;border:none;border-radius:6px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:300;line-height:1;color:var(--k8, #8E8E93)" style-hover="background:var(--k36, rgba(0,0,0,0.05));color:var(--k1, #1D1D1F)">+</button>
+                  <button data-ctl="1" onClick="{{ newTab }}" title="新建标签页 ⌘T" style="width:26px;height:26px"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9"></path></svg></button>
                 </div>
               </div>
             </sc-if>
-            <div style="display:flex;align-items:center;gap:6px;padding-right:8px">
-              <div style="height:28px;display:flex;align-items:center;padding:0 2px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08))">
-                <div style="display:flex;align-items:center;overflow:hidden;max-width:{{ quickW }};opacity:{{ quickOp }};transition:max-width .42s cubic-bezier(.32,.72,0,1),opacity .25s">
-                  <button onClick="{{ quick }}" title="{{ quickTitle }}" style="width:34px;height:24px;flex:none;border:none;border-radius:999px;background:{{ quickBg }};cursor:default;display:flex;align-items:center;justify-content:center" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
-                    <span style="display:flex;align-items:center;gap:2px">
-                      <span style="width:0;height:0;border-top:2.5px solid transparent;border-bottom:2.5px solid transparent;border-left:3.5px solid var(--k7, #1D1D1F)"></span>
-                      <span style="display:flex;flex-direction:column;gap:2px"><span style="width:12px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span><span style="width:12px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span><span style="width:12px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span><span style="width:8px;height:1.5px;border-radius:1px;background:var(--k7, #1D1D1F)"></span></span>
-                      <span style="width:0;height:0;border-top:2.5px solid transparent;border-bottom:2.5px solid transparent;border-right:3.5px solid var(--k7, #1D1D1F)"></span>
-                    </span>
-                  </button>
-                  <span style="width:1px;height:14px;flex:none;background:var(--k36, rgba(0,0,0,0.14))"></span>
-                </div>
-                <button onClick="{{ toggleBar }}" title="{{ barTitle }}" style="width:26px;height:24px;flex:none;border:none;border-radius:999px;background:transparent;cursor:default;display:flex;align-items:center;justify-content:center" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
-                  <span style="width:6px;height:6px;border-right:1.5px solid var(--k7, #1D1D1F);border-bottom:1.5px solid var(--k7, #1D1D1F);transform:{{ chevTf }};transition:transform .4s cubic-bezier(.2,1.4,.4,1)"></span>
-                </button>
-              </div>
-              <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}"><button onClick="{{ ai }}" title="AI 助手 ⌘J" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08));background:{{ aiBg }};cursor:default;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--k1, #1D1D1F);transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.88)">✦</button></sc-if>
-              <button onClick="{{ play }}" title="沉浸书写 ⌘." style="width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 1px 2px var(--k19, rgba(0,0,0,0.08));cursor:default;display:flex;align-items:center;justify-content:center;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.88)">
-                <span style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--k7, #1D1D1F);margin-left:2px"></span>
-              </button>
-            </div>
+            <button data-ctl="1" data-on="{{ barOn }}" onClick="{{ toggleBar }}" title="{{ barTitle }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3.5h10"></path><path d="M8 3.5v8.5"></path><path d="M4.5 14h7"></path></svg></button>
+            <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}"><button data-ctl="1" data-on="{{ aiNow }}" onClick="{{ ai }}" title="AI 助手 ⌘J" style="width:auto;padding:0 11px 0 9px;border-radius:999px"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button></sc-if>
+            <button data-ctl="1" data-on="{{ moreOn }}" onClick="{{ moreToggle }}" title="更多"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="3.5" cy="8" r="1" fill="currentColor"></circle><circle cx="8" cy="8" r="1" fill="currentColor"></circle><circle cx="12.5" cy="8" r="1" fill="currentColor"></circle></svg></button>
           </div>
+  <sc-if value="{{ moreOpen }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeMore }}" style="position:absolute;inset:0;z-index:64"></div>
+    <div data-pop="menu" style="position:absolute;top:50px;right:12px;z-index:65;min-width:220px;padding:6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, rgba(255,255,255,0.9));border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);display:flex;flex-direction:column;font-size:13px">
+      <sc-for list="{{ moreItems }}" as="it" hint-placeholder-count="2">
+        <button onClick="{{ it.onClick }}" style="height:30px;display:flex;align-items:center;gap:10px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:13px;color:var(--ink, #1D1D1F);cursor:default;text-align:left;transition:background .12s" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
+          <span style="flex:1;white-space:nowrap">{{ it.label }}</span>
+          <span style="font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap;padding-left:20px">{{ it.key }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
   <sc-if value="{{ hasOverlay }}" hint-placeholder-val="{{ false }}">
     <div onMouseDown="{{ closeOvBg }}" style="position:absolute;inset:0;z-index:60;background:rgba(0,0,0,0.12);display:flex;align-items:flex-start;justify-content:center;padding-top:{{ ovTop }}">
       <div data-pop="center" onMouseDown="{{ stop }}">
@@ -101,8 +102,21 @@ button,input,select,textarea{font-family:inherit;color:inherit}
       </div>
     </div>
   </sc-if>
+  <sc-if value="{{ hasAskDefault }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:48px;z-index:94;display:flex;justify-content:center;pointer-events:none">
+      <div data-pop="menu" style="pointer-events:auto;width:380px;padding:16px 18px 14px;border-radius:0 0 16px 16px;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.86),rgba(246,246,248,0.78)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 24px 60px rgba(0,0,0,0.24);display:flex;flex-direction:column;gap:6px;color:var(--k1, #1D1D1F)">
+        <div style="font-size:14px;font-weight:600">把 Writer 设为默认打开方式？</div>
+        <div style="font-size:12px;color:var(--k11, #6E6E73);font-family:'IBM Plex Mono',monospace">{{ askDefaultTypes }}</div>
+        <div style="font-size:12.5px;color:var(--k11, #6E6E73);line-height:1.5">以后双击这些文件时，直接在 Writer 里打开。</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button onClick="{{ askDefaultLater }}" style="height:28px;padding:0 14px;border:1px solid var(--k10, #D1D1D6);border-radius:8px;background:transparent;font-size:12.5px;cursor:default">以后再说</button>
+          <button onClick="{{ askDefaultSet }}" style="height:28px;padding:0 16px;border:none;border-radius:8px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;font-weight:500;cursor:default">设为默认</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
   <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
-    <div style="position:absolute;left:0;right:0;top:46px;z-index:95;display:flex;justify-content:center;pointer-events:none">
+    <div style="position:absolute;left:0;right:0;top:56px;z-index:95;display:flex;justify-content:center;pointer-events:none">
       <div data-pop="hud" style="padding:9px 16px;border-radius:999px;background:rgba(29,29,31,0.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;font-size:12.5px">{{ toast }}</div>
     </div>
   </sc-if>
@@ -114,7 +128,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 // The native menu calls window.__writerMenu(id) and window.__writerOpen(path); this page reports its state with invoke('shell_state').
 const NATIVE = /[?&]native=1(&|$)/.test(location.search) || !!window.__TAURI_INTERNALS__;
 const EXT = { docx: '.docx', xlsx: '.xlsx', pptx: '.pptx', md: '.md', pdf: '.pdf', mm: '.mm' };
-const ICON = { docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' };
+const SQ = { docx: ['W', 'var(--type-w, #2F6BD1)'], xlsx: ['X', 'var(--type-x, #1E8A52)'], pptx: ['P', 'var(--type-p, #D0592E)'], md: ['M', 'var(--type-m, #3A3A3C)'], mm: ['T', 'var(--type-t, #7A5CC4)'], pdf: ['P', 'var(--type-f, #B5563A)'] }; // the type squares: letter and colour
 /** The window title: the file name, marked 未存储 while it is a draft. */
 const docTitle = sh => { const name = sh.title + (EXT[sh.type] || ''); return sh.draft ? $t('{name} — 未存储', { name }) : name; };
 const settings = () => { try { return JSON.parse(localStorage.getItem('writer-settings') || '{}'); } catch (e) { return {}; } };
@@ -124,13 +138,13 @@ const LABEL = (() => { try { return window.__TAURI_INTERNALS__.metadata.currentW
 const win = (cmd, args) => invoke('plugin:window|' + cmd, Object.assign({ label: LABEL }, args));
 
 class Component extends DCLogic {
-  state = { sh: null, collapsed: !!store.get().collapsed, lh: false, ov: null, prefsTab: null, toast: null, hovTab: null, active: document.hasFocus(), full: false };
+  state = { sh: null, collapsed: store.get().collapsed !== false, lh: false, ov: null, prefsTab: null, toast: null, hovTab: null, active: document.hasFocus(), full: false, askDefault: null, more: false };
   winRef = React.createRef(); api = null; workspace = null;
 
   onShell = (info, api) => { this.api = api; this.setState({ sh: info }, () => this.report()); };
   call(k, ...a) { if (this.api && this.api[k]) return this.api[k](...a); }
   // storage (desktop only): the Save dialog grants the chosen file to this window's engine; recent files open in their folder's window
-  saveDialog = (name, ext) => invoke('save_dialog', { name, ext });
+  saveDialog = (name, ext, dir) => invoke('save_dialog', { name, ext, dir });
   recentFiles = () => invoke('recent_files').then(r => r || []);
   openRecent = path => invoke('open_recent', { path });
   openDialog = () => invoke('open_files');
@@ -148,12 +162,21 @@ class Component extends DCLogic {
     this.onResize = () => { if (NATIVE) win('is_fullscreen').then(full => { if (typeof full === 'boolean' && full !== this.state.full) this.setState({ full }); }); };
     window.addEventListener('resize', this.onResize);
     this.gestures();
+    import('./tabs.js').then(T => { this.T = T; });
+    // a version's first launch: the app says whether to ask for 默认打开方式 (desktop/src-tauri/src/default_app.rs)
+    if (NATIVE) invoke('default_app', { action: 'ask' }).then(r => { if (r && r.ask) this.setState({ askDefault: r.types.join(' · ') }); });
   }
   componentWillUnmount() {
     window.removeEventListener('writer-settings', this.onSet); window.removeEventListener('storage', this.onSet);
     window.removeEventListener('keydown', this.onKey, true); clearTimeout(this.tt); clearTimeout(this.rt);
     window.removeEventListener('focus', this.onFocus); window.removeEventListener('blur', this.onBlur); window.removeEventListener('resize', this.onResize);
     (this.unG || []).forEach(f => f());
+  }
+  /** The sheet's answer: 设为默认 sets every type through LaunchServices and says how it went; 以后再说 waits for the next version. */
+  answerDefault(set) {
+    this.setState({ askDefault: null });
+    if (!set) return invoke('default_app', { action: 'later' });
+    return window.__TAURI_INTERNALS__.invoke('default_app', { action: 'set' }).then(() => this.flash($t('已设为默认打开方式')), e => this.flash($t('无法设为默认打开方式：{error}', { error: String(e) })));
   }
 
   // ---- state for the native side: window title and menu check marks ----
@@ -226,6 +249,14 @@ class Component extends DCLogic {
   }
   openPrefs = tab => this.showWindow('settings', tab); // tab: the shell's 打开设置 in the AI panel asks for 'ai'
 
+  /** A tab let go off the title strip (tabs.js): its document moves to a new window where it was let go (main.rs tear_off).
+   *  The shell saves it first and closes the tab once that window is open; until then the tab waits hidden, and comes back if
+   *  that fails. */
+  async tearOff(id) {
+    this.setState({ tearing: id });
+    if (!(await this.call('detach', id, path => invoke('tear_off', { path })))) this.setState({ tearing: null });
+  }
+
   /** Opens a document of this window's folder by absolute path. Resolves true when it is open. */
   async openPath(path) {
     try {
@@ -246,6 +277,8 @@ class Component extends DCLogic {
 
   key(e) {
     if (e.key === 'Escape' && this.state.ov) { e.preventDefault(); this.setState({ ov: null, prefsTab: null }); return; }
+    if (e.key === 'Escape' && this.state.more) { e.preventDefault(); this.setState({ more: false }); return; }
+    if (e.key === 'Escape' && this.state.askDefault) { e.preventDefault(); this.answerDefault(false); return; }
     if (NATIVE) return; // in the app the native menu owns the shortcuts
     const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
     if (m && e.altKey && (k === 't' || e.code === 'KeyT')) { e.preventDefault(); this.toggleBar(); }
@@ -286,51 +319,54 @@ class Component extends DCLogic {
   renderVals() {
     const st = this.state, sh = st.sh, set = settings(), dark = document.documentElement.dataset.theme === 'dark';
     const lit = st.active || st.lh, off = dark ? '#4A4A4C' : '#D6D6D6';
-    const iconSet = set.iconStyle === 'c' ? 'c' : 'b';
-    const ic = t => `./assets/icons/${iconSet}/${ICON[t] || 'word'}.svg`;
     // tabs are the documents opened in this window, not every file of the folder
     const openDocs = sh ? sh.docs.filter(d => d.open || d.on) : [];
     const multi = openDocs.length > 1 && !(sh && sh.pure);
     const quickTab = set.quickTab || '开始';
-    const glass = 'linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))';
+    const S = t => SQ[t] || SQ.docx, on = 'var(--tab-bg, rgba(255,255,255,0.92))', onSh = 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))';
+    // ⋯ holds what has no button of its own in the strip: 快捷打开 while the toolbar is collapsed, and 沉浸书写
+    const more = [...(st.collapsed ? [{ label: $t('快捷打开：{tab}', { tab: $t(quickTab) }), key: '', fn: () => this.quickPress() }] : []), { label: $t('沉浸书写'), key: '⌘.', fn: () => this.call('play') }];
     return {
       winRef: this.winRef, onShell: this.onShell, openPrefs: this.openPrefs, isFull: st.full,
       saveDialogProp: NATIVE ? this.saveDialog : null, recentProp: NATIVE ? this.recentFiles : null, openRecentProp: NATIVE ? this.openRecent : null, openDialogProp: NATIVE ? this.openDialog : null,
-      collapsedAttr: st.collapsed ? '1' : '0',
+      collapsedAttr: st.collapsed ? '1' : '0', pureAttr: sh && sh.pure ? '1' : '0',
       // lit while the window is key or the pointer is over them; grey otherwise, like macOS
       c1: lit ? '#FF5F57' : off, c2: lit ? '#FEBC2E' : off, c3: lit ? '#28C840' : off, lb: lit ? 'rgba(0,0,0,0.18)' : dark ? 'var(--k80, rgba(255,255,255,0.08))' : 'var(--k66, rgba(0,0,0,0.06))',
       lightsOn: () => this.setState({ lh: true }), lightsOff: () => this.setState({ lh: false }),
-      g1: st.lh ? '×' : '', g2: st.lh ? '−' : '', g3: st.lh ? (st.full ? '⤡' : '⤢') : '', zoomTitle: $t(st.full ? '退出全屏' : '全屏'),
+      // the symbols show on all three while the pointer is over any of them, as in macOS; in full screen the green one's arrows point in
+      gOp: st.lh ? 1 : 0, fsOut: st.full ? 'none' : 'block', fsIn: st.full ? 'block' : 'none', zoomTitle: $t(st.full ? '退出全屏' : '全屏'),
       doClose: () => this.closeWindow(),
       doMin: () => { if (NATIVE) win('minimize'); },
       // green: full screen; with ⌥ it zooms the window instead, as in macOS
       doZoom: e => { if (!NATIVE) return; if (e && e.altKey) { win('toggle_maximize'); return; } win('is_fullscreen').then(full => win('set_fullscreen', { value: full !== true }).then(() => this.setState({ full: full !== true }))); },
       zoomWin: () => { if (NATIVE) invoke('toggle_zoom', {}); },
-      sideToggle: () => this.call('toggleThumbs'),
-      sideBg: sh && sh.showThumbs && sh.isDoc ? 'var(--k41, rgba(255,255,255,0.85))' : glass,
+      sideToggle: () => this.call('toggleThumbs'), sideOn: sh && sh.showThumbs && sh.isDoc ? '1' : '0',
       goBack: () => this.undo(false), goFwd: () => this.undo(true),
       single: !multi, multi,
-      fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', fileIcon: sh && sh.isDoc ? ic(sh.type) : dark ? './assets/writer-logo-dark.svg' : './assets/writer-logo-light.svg',
+      // one document: its type square and name; the start page: just 新建
+      fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', sq: sh && sh.isDoc ? S(sh.type)[0] : '', sqBg: sh && sh.isDoc ? S(sh.type)[1] : 'transparent', sqDisp: sh && sh.isDoc ? 'inline-flex' : 'none',
       tabs: openDocs.map((x, i, arr) => {
-        const hv = st.hovTab === x.id, prevOn = i > 0 && (arr[i - 1].on || st.hovTab === arr[i - 1].id);
+        const hv = st.hovTab === x.id, dr = st.drag && st.drag.id === x.id ? st.drag : null;
         return {
-          title: x.title, icon: ic(x.type), dotOp: x.on || hv ? 1 : 0.7,
-          bg: x.on ? 'var(--k36, rgba(0,0,0,0.06))' : hv ? 'var(--k36, rgba(0,0,0,0.03))' : 'transparent',
-          fw: x.on ? 600 : 400, color: x.on ? 'var(--k1, #1D1D1F)' : 'var(--k8, #8E8E93)',
-          sepOp: i === 0 || x.on || hv || prevOn ? 0 : 1,
+          title: x.title, sq: S(x.type)[0], sqBg: S(x.type)[1],
+          bg: dr || x.on ? on : hv ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent',
+          // dragged, the tab lifts off the strip and follows the pointer (tabs.js); torn off, it waits hidden (tearOff)
+          sh: dr ? '0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 0 0 1px var(--k17, rgba(0,0,0,0.07))' : x.on ? onSh : 'none', tf: dr ? `translate(${dr.dx}px,${dr.dy}px)` : 'none', op: st.tearing === x.id ? 0 : 1,
+          onDown: e => { if (NATIVE && this.T) this.T.dragTab(e, arr.length, (dx, dy) => this.setState({ drag: dx || dy ? { id: x.id, dx, dy } : null }), () => this.tearOff(x.id)); },
+          fw: x.on ? 500 : 400, color: x.on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', xOp: x.on || hv ? 1 : 0,
           onClick: () => this.call('open', x.id), onEnter: () => this.setState({ hovTab: x.id }), onLeave: () => this.setState({ hovTab: null }),
           onClose: e => { e.stopPropagation(); this.call('close', x.id); }
         };
       }),
       newTab: () => this.call('create'),
-      quickW: st.collapsed ? '40px' : '0px', quickOp: st.collapsed ? 1 : 0, quickBg: 'transparent', quickTitle: $t('快捷打开：{tab}（可在设置中更改）', { tab: $t(quickTab) }), quick: () => this.quickPress(),
-      toggleBar: () => this.toggleBar(), barTitle: $t(st.collapsed ? '展开工具栏 ⌥⌘T' : '收起工具栏 ⌥⌘T'), chevTf: st.collapsed ? 'translateY(-2px) rotate(45deg)' : 'translateY(2px) rotate(-135deg)',
-      aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiBg: sh && sh.showAI ? 'var(--k41, rgba(255,255,255,0.9))' : glass,
-      play: () => this.call('play'),
-      darkTitle: $t(dark ? '浅色模式 ⇧⌘L' : '深色模式 ⇧⌘L'),
+      toggleBar: () => this.toggleBar(), barOn: st.collapsed ? '0' : '1', barTitle: $t(st.collapsed ? '展开工具栏 ⌥⌘T' : '收起工具栏 ⌥⌘T'),
+      aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiNow: sh && sh.showAI ? '1' : '0',
+      moreOpen: !!st.more, moreOn: st.more ? '1' : '0', moreToggle: () => this.setState({ more: !st.more }), closeMore: () => this.setState({ more: false }),
+      moreItems: more.map(m => ({ label: m.label, key: m.key, onClick: () => { this.setState({ more: false }); m.fn(); } })),
       hasOverlay: !!st.ov, ovPrefs: st.ov === 'prefs', ovAbout: st.ov === 'about', ovGestures: st.ov === 'gestures',
       ovTop: st.ov === 'about' ? '120px' : '56px', prefsTab: st.prefsTab || 'general',
       closeOv: () => this.setState({ ov: null, prefsTab: null }), closeOvBg: () => this.setState({ ov: null, prefsTab: null }), stop: e => e.stopPropagation(),
+      hasAskDefault: !!st.askDefault, askDefaultTypes: st.askDefault || '', askDefaultSet: () => this.answerDefault(true), askDefaultLater: () => this.answerDefault(false),
       hasToast: !!st.toast, toast: st.toast || ''
     };
   }

@@ -11,39 +11,43 @@
 <link rel="stylesheet" href="./theme-dark.css">
 <style>
 .mm-canvas svg text{font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;pointer-events:none;user-select:none}
-.mm-edit{position:absolute;box-sizing:border-box;border:2px solid var(--k7, #1D1D1F);background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);outline:none;resize:none;overflow:hidden;white-space:pre-wrap;word-break:break-word;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;field-sizing:content;box-shadow:0 8px 24px var(--k77, rgba(0,0,0,0.14))}
+.mm-canvas [data-act]{cursor:pointer}
+.mm-canvas [data-act]:hover .mm-btn{fill:var(--k7, #1D1D1F)}
+.mm-canvas [data-act]:hover .mm-plus{stroke:var(--kinv, #FFFFFF)}
+.mm-edit{position:absolute;box-sizing:border-box;border:2px solid var(--k7, #1D1D1F);background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);outline:none;resize:none;overflow:hidden;white-space:pre-wrap;word-break:break-word;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;box-shadow:0 8px 24px var(--k77, rgba(0,0,0,0.14));z-index:5}
 .mm-note::placeholder{color:var(--k63, #C7C7CC)}
-.mm-range{-webkit-appearance:none;appearance:none;width:110px;height:3px;border-radius:2px;background:var(--k60, rgba(0,0,0,0.18));outline:none;cursor:pointer}
-.mm-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:var(--k7, #1D1D1F);border:2px solid var(--k51, #fff);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.mm-outline{font-family:'IBM Plex Sans','Noto Sans SC',sans-serif}
+.mm-range{-webkit-appearance:none;appearance:none;width:60px;height:3px;border-radius:2px;background:var(--line, rgba(0,0,0,0.1));outline:none;cursor:pointer}
+.mm-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:9px;height:9px;border-radius:50%;background:var(--ink-2, rgba(29,29,31,0.62));border:none}
 </style>
 </helmet>
-<div ref="{{ rootRef }}" data-edroot="1" tabIndex="-1" onKeyDown="{{ onKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
-  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
+<div ref="{{ rootRef }}" data-edroot="1" tabIndex="-1" onKeyDown="{{ onKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
+  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
     <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
-      <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--k36, rgba(0,0,0,0.12));margin-right:4px"></span></div>
+      <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
         <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
-          <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:transparent;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">文件</button>
+          <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));background:transparent;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
           <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
-            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:{{ t.bg }};box-shadow:{{ t.sh }};transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
+            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;color:{{ t.fg }};background:{{ t.bg }};transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
           </sc-for>
         </div>
         <div style="display:flex;align-items:center;flex:none">
-          <span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span>
-          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
-          <button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="纯净模式 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button>
+          <span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span>
+          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button>
+          <button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="纯净模式 Ctrl+." style="width:28px;height:28px;padding:0;flex:none;border:none;border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"></circle><path d="M6.6 5.6v4.8L10.6 8z" fill="currentColor" stroke="none"></path></svg></button>
         </div>
       </div>
     </div>
     <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-      <div style="position:absolute;top:60px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k72, rgba(255,255,255,0.74)),var(--k32, rgba(255,255,255,0.5)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px">
+      <div style="position:absolute;top:60px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px">
         <sc-for list="{{ tools }}" as="it" hint-placeholder-count="0">
-          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:20px;background:var(--k36, rgba(0,0,0,0.12));margin:0 6px;flex:none"></span></sc-if>
-          <sc-if value="{{ it.isLbl }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--k8, #8E8E93);padding:0 6px 0 4px;flex:none">{{ it.label }}</span></sc-if>
+          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
+          <sc-if value="{{ it.isLbl }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 5px 0 4px;flex:none">{{ it.label }}</span></sc-if>
           <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
-            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:32px;min-width:32px;padding:0 11px;border:none;border-radius:10px;background:{{ it.bg }};font-size:{{ it.fs }};font-weight:{{ it.fw }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k27, rgba(255,255,255,0.75))" style-active="transform:scale(0.92)">{{ it.label }}</button>
+            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:{{ it.fs }};font-weight:{{ it.fw }};font-style:{{ it.fst }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.92)">{{ it.label }}</button>
           </sc-if>
           <sc-if value="{{ it.isSw }}" hint-placeholder-val="{{ false }}">
-            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="width:28px;height:28px;border:none;border-radius:9px;background:{{ it.bg }};cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k27, rgba(255,255,255,0.75))" style-active="transform:scale(0.9)"><span style="width:16px;height:16px;border-radius:5px;background:{{ it.sw }};box-shadow:inset 0 0 0 1px var(--k60, rgba(0,0,0,0.14))"></span></button>
+            <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="width:28px;height:28px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.9)"><span style="width:16px;height:16px;border-radius:5px;background:{{ it.sw }};box-shadow:inset 0 0 0 1px var(--k60, rgba(0,0,0,0.14))"></span></button>
           </sc-if>
         </sc-for>
       </div></div>
@@ -52,82 +56,114 @@
 
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ cols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ showOutline }}" hint-placeholder-val="{{ false }}">
-      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,var(--k32, rgba(255,255,255,0.5)),var(--k33, rgba(255,255,255,0.32)));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 14px 40px var(--k19, rgba(0,0,0,0.1))"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 10px 0 18px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k11, #6E6E73);cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k31, rgba(255,255,255,0.95))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:1px">
+      <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:var(--panel-r, 16px);overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 10px 0 18px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));cursor:pointer;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink-2, rgba(29,29,31,0.62))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:1px">
         <sc-for list="{{ outline }}" as="h" hint-placeholder-count="6">
-          <div onClick="{{ h.onClick }}" title="{{ h.text }}" style="flex:none;padding:6px 10px;padding-left:{{ h.indent }};border-radius:10px;font-size:12.5px;cursor:pointer;color:var(--k9, #3A3A3C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ h.fw }};background:{{ h.bg }};transition:background .2s" style-hover="background:var(--k30, rgba(255,255,255,0.6))"><span style="color:var(--k8, #8E8E93);font-size:10px;margin-right:4px">{{ h.mark }}</span>{{ h.text }}</div>
+          <div onClick="{{ h.onClick }}" title="{{ h.text }}" style="flex:none;padding:6px 10px;padding-left:{{ h.indent }};border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;color:var(--ink-2, rgba(29,29,31,0.62));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ h.fw }};background:{{ h.bg }};transition:background .2s,color .2s" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)"><span style="color:var(--ink-3, rgba(29,29,31,0.36));font-size:10px;margin-right:4px">{{ h.mark }}</span>{{ h.text }}</div>
         </sc-for>
       </div></div>
     </sc-if>
-    <div ref="{{ canvasRef }}" class="mm-canvas" onMouseDown="{{ onCanvasDown }}" style="grid-column:2;min-width:0;min-height:0;overflow:hidden;position:relative;cursor:{{ cursor }};user-select:none;-webkit-user-select:none">
-      <svg style="position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible">
+    <div ref="{{ canvasRef }}" class="mm-canvas" onMouseDown="{{ onCanvasDown }}" onMouseMove="{{ onCanvasMove }}" onMouseLeave="{{ onCanvasLeave }}" onDoubleClick="{{ onCanvasDbl }}" onContextMenu="{{ onCanvasCtx }}" style="grid-column:2;min-width:0;min-height:0;overflow:hidden;position:relative;cursor:{{ cursor }};user-select:none;-webkit-user-select:none">
+      <svg style="position:absolute;inset:0;width:100%;height:100%;display:{{ svgDisp }};overflow:visible">
         <g style="transform:{{ tf }};transition:{{ tfTr }}">
-          <sc-for list="{{ edges }}" as="e" hint-placeholder-count="0">
-            <path style="d:path('{{ e.d }}');fill:none;stroke:{{ e.color }};stroke-width:{{ e.sw }};stroke-linecap:round"></path>
-          </sc-for>
-          <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="0">
-            <g data-nid="{{ n.id }}" onMouseDown="{{ n.onMD }}" onDoubleClick="{{ n.onDbl }}" style="transform:{{ n.tf }};cursor:{{ n.cursor }};opacity:{{ n.op }}">
-              <sc-if value="{{ n.ring }}" hint-placeholder-val="{{ false }}"><rect style="x:-4px;y:-4px;width:{{ n.rw }};height:{{ n.rh }};rx:{{ n.rrx }};fill:{{ n.ringFill }};stroke:{{ n.ringColor }};stroke-width:{{ n.ringW }};stroke-dasharray:{{ n.ringDash }}"></rect></sc-if>
-              <rect style="width:{{ n.w }};height:{{ n.h }};rx:{{ n.rx }};fill:{{ n.bg }};stroke:{{ n.stroke }};stroke-width:{{ n.sw }}"></rect>
-              <text dangerouslySetInnerHTML="{{ n.inner }}" style="font-size:{{ n.fs }};font-weight:{{ n.fw }};fill:{{ n.fg }}"></text>
-              <sc-if value="{{ n.hasIcon }}" hint-placeholder-val="{{ false }}"><g style="transform:{{ n.itf }}"><text dangerouslySetInnerHTML="{{ n.iconHtml }}" style="font-size:{{ n.ifs }}"></text></g></sc-if>
-              <sc-if value="{{ n.hasNote }}" hint-placeholder-val="{{ false }}"><g style="transform:{{ n.ntf }}"><text dangerouslySetInnerHTML="{{ noteGlyph }}" style="font-size:10px;fill:var(--k8, #8E8E93)"></text></g></sc-if>
-              <sc-if value="{{ n.hasBadge }}" hint-placeholder-val="{{ false }}"><g style="transform:{{ n.btf }}"><circle r="9" style="fill:{{ n.color }}"></circle><text dangerouslySetInnerHTML="{{ n.badgeHtml }}" y="3.5" style="font-size:10px;font-weight:600;fill:#fff;text-anchor:middle"></text></g></sc-if>
-            </g>
-          </sc-for>
+          <g dangerouslySetInnerHTML="{{ svgUnder }}"></g>
+          <g dangerouslySetInnerHTML="{{ svgMap }}"></g>
+          <g dangerouslySetInnerHTML="{{ svgOver }}"></g>
         </g>
       </svg>
-      <sc-if value="{{ isEditing }}" hint-placeholder-val="{{ false }}">
-        <textarea ref="{{ taRef }}" class="mm-edit" value="{{ editText }}" onChange="{{ onEditText }}" onKeyDown="{{ onEditKey }}" onBlur="{{ onEditBlur }}" onMouseDown="{{ stop }}" spellCheck="false" style="left:{{ edL }};top:{{ edT }};width:{{ edW }};min-height:{{ edH }};padding:{{ edPad }};border-radius:{{ edRx }};font-size:{{ edFs }};line-height:{{ edLh }};font-weight:{{ edFw }}"></textarea>
+      <textarea ref="{{ taRef }}" class="mm-edit" value="{{ taVal }}" onChange="{{ onEditText }}" onKeyDown="{{ onKey }}" onBlur="{{ onEditBlur }}" onCompositionStart="{{ onCompStart }}" onCompositionEnd="{{ onCompEnd }}" onCopy="{{ onCopy }}" onCut="{{ onCut }}" onPaste="{{ onPaste }}" onMouseDown="{{ stop }}" spellCheck="false" autoComplete="off" style="left:{{ edL }};top:{{ edT }};width:{{ edW }};height:{{ edH }};padding:{{ edPad }};border-radius:{{ edRx }};font-size:{{ edFs }};line-height:{{ edLh }};font-weight:{{ edFw }};font-style:{{ edFi }};font-family:{{ edFam }};text-decoration:{{ edTd }};opacity:{{ edOp }};pointer-events:{{ edPe }};caret-color:{{ edCaret }}"></textarea>
+      <sc-if value="{{ hasMarquee }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:{{ mqL }};top:{{ mqT }};width:{{ mqW }};height:{{ mqH }};pointer-events:none;z-index:6;border-radius:6px;border:1px solid var(--k13, rgba(0,0,0,0.28));background:var(--k55, rgba(0,0,0,0.06))"></div>
+      </sc-if>
+      <sc-if value="{{ hasSearch }}" hint-placeholder-val="{{ false }}">
+        <div onMouseDown="{{ stop }}" style="position:absolute;top:12px;right:16px;z-index:27;display:flex;align-items:center;gap:6px;height:34px;padding:0 5px 0 12px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
+          <input ref="{{ searchRef }}" class="mm-note" value="{{ searchQ }}" onChange="{{ onSearch }}" onKeyDown="{{ onSearchKey }}" placeholder="搜索主题" spellCheck="false" autoComplete="off" style="width:180px;border:none;background:transparent;font-size:13px;outline:none;color:var(--ink, #1D1D1F)">
+          <span style="font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36));min-width:36px;text-align:right;font-variant-numeric:tabular-nums">{{ searchStat }}</span>
+          <button onClick="{{ closeSearch }}" title="关闭" style="width:24px;height:24px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink-2, rgba(29,29,31,0.62))">✕</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isOutline }}" hint-placeholder-val="{{ false }}">
+        <textarea ref="{{ outRef }}" class="mm-outline" value="{{ outlineText }}" onChange="{{ onOutlineText }}" onKeyDown="{{ onOutlineKey }}" onBlur="{{ onOutlineBlur }}" onMouseDown="{{ stop }}" spellCheck="false" style="position:absolute;inset:0;z-index:24;border:none;resize:none;outline:none;background:transparent;padding:72px 48px 48px;font-size:14.5px;line-height:1.9;tab-size:4;color:var(--k1, #1D1D1F);white-space:pre;overflow:auto"></textarea>
       </sc-if>
       <sc-if value="{{ hasGhost }}" hint-placeholder-val="{{ false }}">
-        <div style="position:absolute;left:{{ gx }};top:{{ gy }};pointer-events:none;z-index:20;max-width:240px;padding:7px 12px;border-radius:12px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--k1, #1D1D1F);background:linear-gradient(180deg,var(--k50, rgba(255,255,255,0.9)),var(--k20, rgba(255,255,255,0.7)));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--k28, rgba(0,0,0,0.08));box-shadow:0 10px 26px var(--k26, rgba(0,0,0,0.16))">{{ ghostText }}</div>
+        <div style="position:absolute;left:{{ gx }};top:{{ gy }};pointer-events:none;z-index:20;max-width:240px;padding:7px 12px;border-radius:12px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink, #1D1D1F);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">{{ ghostText }}</div>
       </sc-if>
     </div>
   </div>
 
+  <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out">{{ statCount }}</div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:30;height:34px;display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;border-radius:999px;background:var(--k69, rgba(255,255,255,0.38));backdrop-filter:blur(14px) saturate(180%);-webkit-backdrop-filter:blur(14px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 6px 20px var(--k53, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k11, #6E6E73);opacity:0.32;transition:opacity .45s cubic-bezier(.2,1,.3,1),background .45s;white-space:nowrap" style-hover="opacity:1;background:var(--k15, rgba(255,255,255,0.62))">
+    <div style="position:absolute;right:18px;bottom:12px;z-index:30;display:flex;align-items:center;gap:8px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap">
       <span>{{ statCount }}</span>
-      <span style="width:1px;height:16px;background:var(--k36, rgba(0,0,0,0.12))"></span>
-      <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="width:22px;height:22px;border:none;border-radius:999px;background:transparent;font-size:14px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k55, rgba(0,0,0,0.06))">−</button>
+      <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="width:18px;height:18px;padding:0;border:none;border-radius:5px;background:transparent;font-size:13px;line-height:1;cursor:pointer;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">−</button>
       <input class="mm-range" type="range" min="20" max="400" step="1" value="{{ zPct }}" onChange="{{ onZoomSlide }}" title="缩放">
-      <button onClick="{{ zoomIn }}" title="放大 Ctrl+=" style="width:22px;height:22px;border:none;border-radius:999px;background:transparent;font-size:14px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k55, rgba(0,0,0,0.06))">+</button>
-      <span style="min-width:38px;text-align:right;font-variant-numeric:tabular-nums">{{ zPctText }}</span>
-      <button onClick="{{ fitClick }}" title="适应画布" style="height:24px;padding:0 10px;border:none;border-radius:999px;background:transparent;font-size:12px;cursor:pointer;color:var(--k11, #6E6E73)" style-hover="background:var(--k55, rgba(0,0,0,0.06))">适应画布</button>
+      <button onClick="{{ zoomIn }}" title="放大 Ctrl+=" style="width:18px;height:18px;padding:0;border:none;border-radius:5px;background:transparent;font-size:13px;line-height:1;cursor:pointer;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">+</button>
+      <span style="min-width:30px;text-align:right;font-variant-numeric:tabular-nums">{{ zPctText }}</span>
+      <button onClick="{{ fitClick }}" title="适应画布" style="height:18px;padding:0 4px;border:none;border-radius:5px;background:transparent;font-size:11px;cursor:pointer;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">适应画布</button>
     </div>
-    <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
-      <div data-pop="right" style="position:absolute;right:18px;bottom:62px;z-index:31;width:250px;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k69, rgba(255,255,255,0.38)));backdrop-filter:blur(14px) saturate(190%);-webkit-backdrop-filter:blur(14px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
-        <div style="height:34px;flex:none;display:flex;align-items:center;gap:6px;padding:0 14px;font-size:12px;color:var(--k11, #6E6E73);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="flex:none">备注 ·</span><span style="overflow:hidden;text-overflow:ellipsis;color:var(--k1, #1D1D1F);font-weight:500">{{ selText }}</span></div>
-        <textarea class="mm-note" value="{{ note }}" onChange="{{ onNote }}" onFocus="{{ onNoteFocus }}" placeholder="给这个主题写点备注…" spellCheck="false" style="height:84px;border:none;background:transparent;resize:none;padding:2px 14px 12px;font-size:12.5px;line-height:1.6;outline:none;color:var(--k1, #1D1D1F)"></textarea>
-      </div>
-    </sc-if>
+  </sc-if>
+  <sc-if value="{{ hasPop }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="topic" onMouseDown="{{ stop }}" style="position:absolute;left:{{ popL }};top:{{ popT }};z-index:31;width:264px;display:flex;flex-direction:column;overflow:hidden;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
+      <div style="height:32px;flex:none;display:flex;align-items:center;gap:6px;padding:0 6px 0 13px;font-size:12px;color:var(--ink-2, rgba(29,29,31,0.62));white-space:nowrap"><span style="flex:none">{{ popTitle }}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink, #1D1D1F);font-weight:500">{{ popTopic }}</span><button onClick="{{ closePop }}" title="关闭" style="width:24px;height:24px;flex:none;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink-2, rgba(29,29,31,0.62))">✕</button></div>
+      <sc-if value="{{ popIsNote }}" hint-placeholder-val="{{ true }}">
+        <textarea ref="{{ popRef }}" class="mm-note" value="{{ popVal }}" onChange="{{ onPopText }}" onFocus="{{ onNoteFocus }}" onKeyDown="{{ onPopKey }}" placeholder="给这个主题写点备注…" spellCheck="false" style="height:104px;border:none;background:transparent;resize:none;padding:2px 13px 12px;font-size:12.5px;line-height:1.6;outline:none;color:var(--ink, #1D1D1F)"></textarea>
+      </sc-if>
+      <sc-if value="{{ popIsLine }}" hint-placeholder-val="{{ false }}">
+        <input ref="{{ popRef }}" class="mm-note" value="{{ popVal }}" onChange="{{ onPopText }}" onKeyDown="{{ onPopKey }}" onBlur="{{ onPopBlur }}" placeholder="{{ popHint }}" spellCheck="false" autoComplete="off" style="height:34px;border:none;background:transparent;padding:0 13px 8px;font-size:13px;outline:none;color:var(--ink, #1D1D1F)">
+      </sc-if>
+    </div>
+  </sc-if>
+  <input ref="{{ imgRef }}" type="file" accept="image/*" onChange="{{ onImgFile }}" style="display:none">
+  <sc-if value="{{ hasMenu }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ closeMenu }}" onContextMenu="{{ closeMenuCtx }}" style="position:fixed;inset:0;z-index:90"></div>
+    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ menuX }};top:{{ menuY }};z-index:91;min-width:200px;max-height:460px;overflow:auto;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));padding:6px;display:flex;flex-direction:column">
+      <sc-for list="{{ menuItems }}" as="mi" hint-placeholder-count="0">
+        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--line, rgba(0,0,0,0.1));margin:4px 8px"></div></sc-if>
+        <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ mi.onClick }}" style="text-align:left;height:30px;flex:none;padding:0 10px;border:none;background:transparent;border-radius:var(--ctl-r, 8px);font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:18px;align-items:center;color:{{ mi.color }};transition:background .12s" style-hover="background:var(--fill, rgba(0,0,0,0.07))"><span style="flex:1">{{ mi.label }}</span><span style="color:var(--ink-3, rgba(29,29,31,0.36));font-size:11.5px">{{ mi.hint }}</span></button>
+        </sc-if>
+      </sc-for>
+    </div>
   </sc-if>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"doc":{"editor":null,"tsType":"object","default":{"id":"demo","type":"mm","title":"产品发布计划","path":"产品发布计划.mm","loaded":true,"map":{"id":"ID_1","text":"产品发布计划","children":[{"id":"ID_2","text":"目标与定位","children":[{"id":"ID_3","text":"核心用户：中小团队的运营负责人","children":[]},{"id":"ID_4","text":"差异化卖点","collapsed":true,"children":[{"id":"ID_5","text":"一键生成周报","children":[]},{"id":"ID_6","text":"离线可用","children":[]}]},{"id":"ID_7","text":"成功指标","icon":"flag","children":[{"id":"ID_8","text":"首周激活 5000","children":[]},{"id":"ID_9","text":"NPS ≥ 40","children":[]}]}]},{"id":"ID_10","text":"时间线","icon":"calendar","children":[{"id":"ID_11","text":"T-4 周：功能冻结","children":[]},{"id":"ID_12","text":"T-2 周：内测邀请","children":[]},{"id":"ID_13","text":"发布日","fill":"FFE8A3","children":[]},{"id":"ID_14","text":"发布后一周：复盘","children":[]}]},{"id":"ID_15","text":"团队分工","children":[{"id":"ID_16","text":"产品","children":[]},{"id":"ID_17","text":"研发","children":[]},{"id":"ID_18","text":"市场","children":[]},{"id":"ID_19","text":"客服","children":[]}]},{"id":"ID_20","text":"风险与应对","icon":"messagebox_warning","color":"B5563A","children":[{"id":"ID_21","text":"服务器容量不足 → 提前压测","children":[]},{"id":"ID_22","text":"竞品同期发布 → 准备对比材料","children":[]}]},{"id":"ID_23","text":"渠道","side":"left","note":"优先级：官网 > 社群 > 媒体","children":[{"id":"ID_24","text":"官网 Banner","children":[]},{"id":"ID_25","text":"用户社群","children":[]},{"id":"ID_26","text":"媒体稿件","children":[]}]}]}}},"onChange":{"editor":null,"tsType":"(doc, opts) => void"},"onUndo":{"editor":null,"tsType":"() => void"},"onRedo":{"editor":null,"tsType":"() => void"},"onConvert":{"editor":null,"tsType":"(kind, payload) => void"},"toast":{"editor":null,"tsType":"(msg) => void"},"showThumbs":{"editor":"boolean","default":true,"tsType":"boolean"},"pure":{"editor":"boolean","default":false,"tsType":"boolean"},"onToggleThumbs":{"editor":null,"tsType":"() => void"}}'>
 const md = e => e.preventDefault();
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escA = s => esc(s).replace(/"/g, '&quot;');
 const FILLS = ['FFE8A3', 'FFD6CC', 'D9EAD3', 'CFE2F3', 'E4D7F5', 'FCE5CD', 'D0E0E3', 'F4CCCC'];
 const TEXTS = ['1D1D1F', 'B5563A', '3F7D5C', '2F5D8A', '8E5AB8', 'C28A1A'];
 const ZMIN = 0.2, ZMAX = 4;
 const lit = c => String(c).replace(/var\(--[\w-]+,\s*((?:[^()]|\([^()]*\))*)\)/g, '$1');
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const K = isMac ? '⌘' : 'Ctrl+';
+/** A ＋ button of the canvas: a small disc with a cross, data-act says what a click does to topic id. */
+const plus = (x, y, r, act, id, title) => `<g data-act="${act}" data-id="${escA(id)}" transform="translate(${x} ${y})"><title>${esc(title)}</title><circle class="mm-btn" r="${r}" style="fill:var(--k51, #FFFFFF);stroke:var(--k36, rgba(0,0,0,0.16));stroke-width:1"/><path class="mm-plus" d="M${-r * 0.45} 0H${r * 0.45}M0 ${-r * 0.45}V${r * 0.45}" style="stroke:var(--k1, #1D1D1F);stroke-width:1.6;stroke-linecap:round"/></g>`;
 class Component extends DCLogic {
-  state = { tab: 'home', bubble: false, bx: 12, sel: null, editing: null, editText: '', z: 1, tx: 0, ty: 0, anim: false, drag: null, local: null, box: { w: 0, h: 0 } };
-  rootRef = React.createRef(); canvasRef = React.createRef(); taRef = React.createRef(); mcache = new Map();
+  state = { tab: 'home', bubble: false, bx: 12, sel: null, sels: [], selRel: null, relFrom: null, relPt: null, editing: null, editText: '', z: 1, tx: 0, ty: 0, anim: false, drag: null, marquee: null, hover: null, menu: null, pop: null, search: null, view: 'map', outline: null, local: null, box: { w: 0, h: 0 } };
+  rootRef = React.createRef(); canvasRef = React.createRef(); taRef = React.createRef(); popRef = React.createRef(); imgRef = React.createRef(); searchRef = React.createRef(); outRef = React.createRef(); mcache = new Map();
   componentDidMount() {
     import('./glass.js');
     import('./mindmap.js').then(m => { this.M = m; this.needFit = true; this.forceUpdate(); });
     window.addEventListener('mousemove', this.onWM); window.addEventListener('mouseup', this.onWU);
     const c = this.canvasRef.current;
     if (c) { c.addEventListener('wheel', this.onWheel, { passive: false }); const r0 = c.getBoundingClientRect(); if (r0.width) this.setState({ box: { w: r0.width, h: r0.height } }); this.ro = new ResizeObserver(en => { const r = en[0].contentRect; this.setState({ box: { w: r.width, h: r.height } }); }); this.ro.observe(c); }
+    // WebKit enables Copy / Cut on an empty field only when the page cancels beforecopy / beforecut: topics are the selection here
+    const ta = this.taRef.current; if (ta) { ta.addEventListener('beforecopy', this.onBeforeCopy); ta.addEventListener('beforecut', this.onBeforeCopy); }
     // widths measured before the web font arrives are wrong: lay out again once it is here
     if (document.fonts) { document.fonts.ready.then(this.refont); document.fonts.addEventListener('loadingdone', this.refont); }
   }
-  componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); const c = this.canvasRef.current; c && c.removeEventListener('wheel', this.onWheel); this.ro && this.ro.disconnect(); document.fonts && document.fonts.removeEventListener('loadingdone', this.refont); this.stopPan(); clearTimeout(this.followT); }
+  componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); const c = this.canvasRef.current; c && c.removeEventListener('wheel', this.onWheel); const ta = this.taRef.current; if (ta) { ta.removeEventListener('beforecopy', this.onBeforeCopy); ta.removeEventListener('beforecut', this.onBeforeCopy); } this.ro && this.ro.disconnect(); document.fonts && document.fonts.removeEventListener('loadingdone', this.refont); this.stopPan(); this.stopAuto(); clearTimeout(this.followT); }
   componentDidUpdate(pp) {
-    if (pp.doc && this.props.doc && pp.doc.id !== this.props.doc.id) { this.needFit = true; this.setState({ sel: null, editing: null, local: null }); return; }
+    if (pp.doc && this.props.doc && pp.doc.id !== this.props.doc.id) { this.needFit = true; this.setState({ sel: null, sels: [], editing: null, editText: '', local: null, menu: null, pop: null }); return; }
     if (this.needFit && this.state.box.w && this.M && this.doc && this.doc.map) { this.needFit = false; this.fit(1, false); }
-    if (this.focusEdit && this.taRef.current) { const el = this.taRef.current, all = this.focusEdit.all; this.focusEdit = null; el.focus(); if (all) el.select(); else el.setSelectionRange(el.value.length, el.value.length); }
+    if (this.focusPop && this.popRef.current) { this.focusPop = false; const el = this.popRef.current; el.focus({ preventScroll: true }); if (el.tagName === 'INPUT') el.select(); }
+    if (this.focusSearch && this.searchRef.current) { this.focusSearch = false; this.searchRef.current.focus(); this.searchRef.current.select(); }
+    if (this.focusOut && this.outRef.current) { this.focusOut = false; this.outRef.current.focus(); this.outRef.current.setSelectionRange(0, 0); }
+    if (this.focusEdit && this.taRef.current) {
+      const el = this.taRef.current, all = this.focusEdit.all; this.focusEdit = null;
+      if (document.activeElement !== el) el.focus({ preventScroll: true });
+      if (!this.composing) { if (all) el.select(); else el.setSelectionRange(el.value.length, el.value.length); }
+    }
     this.follow();
   }
   refont = () => { this.mcache.clear(); this._layoutFor = null; this.forceUpdate(); };
@@ -135,40 +171,226 @@ class Component extends DCLogic {
   get doc() { return this.props.onChange ? this.props.doc : (this.state.local || this.props.doc); }
   get map() { return this.doc && this.doc.map; }
   resolveId(id) { const m = this.doc && this.doc._tmpToId; for (let i = 0; m && id && m[id] && i < 20; i++) id = m[id]; return id; }
-  get selId() { return this.state.sel ? this.resolveId(this.state.sel) : null; }
-  get selNode() { const id = this.selId; return id && this.M ? this.M.find(this.map, id) : null; }
+  get selId() { const id = this.state.sel ? this.resolveId(this.state.sel) : null; return id && this.M && this.map && this.M.find(this.map, id) ? id : null; }
+  get selNode() { const id = this.selId; return id ? this.M.find(this.map, id) : null; }
+  /** Every selected topic that still exists, the primary one last. */
+  get selIds() {
+    if (!this.M || !this.map) return [];
+    const out = []; for (const x of this.state.sels.concat(this.state.sel ? [this.state.sel] : [])) { const id = this.resolveId(x); if (id && !out.includes(id) && this.M.find(this.map, id)) out.push(id); }
+    const p = this.selId; if (p) { out.splice(out.indexOf(p), 1); out.push(p); }
+    return out;
+  }
+  /** The selected topics without those inside another selected one: what copy, cut and delete act on. */
+  tops(noRoot) { const ids = this.selIds; return ids.filter(id => !(noRoot && id === this.map.id) && !ids.some(o => o !== id && this.M.within(this.map, o, id))); }
+  isSel(id) { return this.selIds.includes(this.resolveId(id)); }
+  select(id, mode) {
+    id = this.resolveId(id);
+    if (!id) return this.setState({ sel: null, sels: [] });
+    const cur = this.selIds;
+    if (mode === 'toggle' && cur.includes(id)) { const rest = cur.filter(x => x !== id); return this.setState({ sels: rest, sel: rest.length ? rest[rest.length - 1] : null }); }
+    this.setState({ sel: id, sels: mode === 'toggle' || mode === 'add' ? cur.filter(x => x !== id).concat(id) : [id] });
+  }
   F(m, id) { return this.M.find(m, this.resolveId(id)); }
   PO(m, id) { return this.M.parentOf(m, this.resolveId(id)); }
   same(a, b) { return this.resolveId(a) === this.resolveId(b); }
   toast(m) { this.props.toast && this.props.toast(m); }
   emit(d, opts) { if (this.props.onChange) this.props.onChange(d, opts); else this.setState({ local: d }); }
   commit(fn, opts) { const d = structuredClone(this.doc); fn(d.map, d); this.emit(d, opts); }
-  measure = (text, fs, fw) => {
-    const key = fw + '|' + fs + '|' + text; let v = this.mcache.get(key);
-    if (v == null) { const g = this.mctx || (this.mctx = document.createElement('canvas').getContext('2d')); g.font = `${fw || 400} ${fs}px ${this.M.FONT}`; v = g.measureText(text).width; if (this.mcache.size > 4000) this.mcache.clear(); this.mcache.set(key, v); }
+  measure = (text, s) => {
+    const font = this.M.cssFont(s), key = font + '|' + text; let v = this.mcache.get(key);
+    if (v == null) { const g = this.mctx || (this.mctx = document.createElement('canvas').getContext('2d')); g.font = font; v = g.measureText(text).width; if (this.mcache.size > 4000) this.mcache.clear(); this.mcache.set(key, v); }
     return v;
   };
-  L() { const m = this.map, k = this.doc._tmpToId; if (this._layoutFor !== m || this._layoutIds !== k) { this._layout = this.M.layout(m, this.measure); this._layoutFor = m; this._layoutIds = k; } return this._layout; }
+  L() {
+    const m = this.map, k = this.doc._tmpToId, st = this.state, ed = st.editing ? this.resolveId(st.editing) : null, et = ed ? st.editText : null;
+    if (this._layoutFor !== m || this._layoutIds !== k || this._layoutEd !== ed || this._layoutEt !== et) { this._layout = this.M.layout(m, this.measure, ed ? { edit: { id: ed, text: et } } : {}); this._layoutFor = m; this._layoutIds = k; this._layoutEd = ed; this._layoutEt = et; }
+    return this._layout;
+  }
+  box(id) { id = this.resolveId(id); return id ? this.L().nodes.find(b => b.id === id) : null; }
   // ----- edits: every change is a fresh copy handed to the shell (history + autosave live there) -----
-  addChild(pid, text) { const id = this.M.newId(); const t2 = text || $t('新主题'); this.commit(m => { const p = this.F(m, pid); if (!p) return; (p.children = p.children || []).push({ id, text: t2, children: [] }); delete p.collapsed; }); this.startEdit(id, true, t2); }
-  addSibling(id) { const p = this.PO(this.map, id); if (!p) return this.addChild(id); const nid = this.M.newId(); const t2 = $t('新主题'); this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i + 1, 0, { id: nid, text: t2, children: [] }); }); this.startEdit(nid, true, t2); }
-  remove(id) { const p = this.PO(this.map, id); if (!p) return this.toast($t('中心主题不能删除')); let next = p.id; this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i, 1); next = (pp.children[i] || pp.children[i - 1] || pp).id; }); this.followOn = true; this.setState({ sel: next, editing: null }); }
+  addChild(pid, text) { const id = this.M.newId(), t2 = text || $t('新主题'); this.commit(m => { const p = this.F(m, pid); if (!p) return; (p.children = p.children || []).push({ id, text: t2, children: [] }); delete p.collapsed; }); this.startEdit(id, true, t2); }
+  addSibling(id, before) {
+    const p = this.PO(this.map, id); if (!p) return this.addChild(id);
+    const nid = this.M.newId(), t2 = $t('新主题'), n = this.F(this.map, id), side = n.side, b = this.box(id);
+    const free = n.free && b ? this.M.freeOf(b.x, before ? b.y - 44 : b.y + b.h + 16) : null; // a floating topic's sibling floats next to it
+    this.commit(m => { const pp = this.F(m, p.id), i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(before ? i : i + 1, 0, Object.assign({ id: nid, text: t2, children: [] }, side ? { side } : {}, free ? { free } : {})); });
+    this.startEdit(nid, true, t2);
+  }
+  /** A new topic takes this one's place, and this one moves under it. */
+  addParent(id) {
+    const p = this.PO(this.map, id); if (!p) return this.toast($t('中心主题不能插入父主题'));
+    const nid = this.M.newId(), t2 = $t('新主题');
+    this.commit(m => { const pp = this.F(m, p.id), i = pp.children.findIndex(c => this.same(c.id, id)), n = pp.children[i], np = { id: nid, text: t2, children: [n] }; if (n.side) np.side = n.side; delete n.side; pp.children.splice(i, 1, np); });
+    this.startEdit(nid, true, t2);
+  }
+  removeMany(ids) {
+    ids = ids.filter(id => id !== this.map.id); if (!ids.length) return this.toast($t('中心主题不能删除'));
+    const first = this.PO(this.map, ids[0]); let next = first ? first.id : this.map.id;
+    this.commit(m => {
+      for (const id of ids) { const pp = this.PO(m, id); if (!pp) continue; const i = pp.children.findIndex(c => this.same(c.id, id)); if (i < 0) continue; pp.children.splice(i, 1); if (id === ids[0]) next = (pp.children[i] || pp.children[i - 1] || pp).id; }
+      const alive = new Set(); this.M.walk(m, x => alive.add(this.resolveId(x.id))); // relationship lines to what is gone go too
+      this.M.walk(m, x => { if (x.rels) { x.rels = x.rels.filter(r => alive.has(this.resolveId(r.to))); if (!x.rels.length) delete x.rels; } });
+    });
+    this.followOn = true; this.setState({ sel: next, sels: [next], selRel: null, editing: null, editText: '' });
+  }
+  // ----- search (⌘F): topics whose text or labels contain the words light up; Enter walks them -----
+  matches() { const s = this.state.search, q = s && s.q.trim().toLowerCase(); if (!q) return []; const out = []; this.M.walk(this.map, n => { if ((n.text || '').toLowerCase().includes(q) || this.M.labelList(n).some(l => l.toLowerCase().includes(q))) out.push(n.id); }); return out; }
+  openSearch() { this.commitEdit(); this.focusSearch = true; this.setState({ search: this.state.search || { q: '', i: -1 }, view: 'map', outline: null }); }
+  closeSearch() { this.setState({ search: null }); this.focusTa(); }
+  onSearch = e => this.setState({ search: { q: e.target.value, i: -1 } });
+  onSearchKey = e => { if (e.key === 'Escape') { e.preventDefault(); this.closeSearch(); } else if (e.key === 'Enter') { e.preventDefault(); this.goMatch(e.shiftKey ? -1 : 1); } };
+  goMatch(step) {
+    const ms = this.matches(); if (!ms.length) return;
+    const s = this.state.search, i = ((s.i + step) % ms.length + ms.length) % ms.length, id = ms[i];
+    this.reveal(id); this.followOn = true; this.setState({ search: Object.assign({}, s, { i }) }); this.select(id); if (this.box(id)) this.centreOn(id);
+  }
+  /** Unfolds whatever hides the topic. */
+  reveal(id) { const path = []; for (let p = this.PO(this.map, id); p; p = this.PO(this.map, p.id)) if (p.collapsed) path.push(p.id); if (path.length) this.commit(m => path.forEach(p => { const n = this.F(m, p); if (n) delete n.collapsed; })); }
+  // ----- outliner: the whole map as tab-indented text; leaving it (Esc, ⌘Enter, a click elsewhere) rebuilds the map -----
+  toggleOutline() {
+    if (this.state.view === 'outline') return this.applyOutline(true);
+    this.commitEdit(); this.focusOut = true; this.setState({ view: 'outline', outline: this.M.toOutline([this.map]), search: null, pop: null, menu: null, editing: null, editText: '' });
+  }
+  onOutlineText = e => this.setState({ outline: e.target.value });
+  onOutlineKey = e => {
+    if (e.key === 'Escape') { e.preventDefault(); this.applyOutline(true); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.applyOutline(false); return; }
+    if (e.key === 'Tab') { // Tab / ⇧Tab indent and outdent the selected lines
+      e.preventDefault(); const el = e.target, v = el.value, s0 = v.lastIndexOf('\n', el.selectionStart - 1) + 1, e1 = el.selectionEnd, block = v.slice(s0, e1);
+      el.setRangeText(e.shiftKey ? block.replace(/^\t/gm, '') : block.replace(/^/gm, '\t'), s0, e1, 'select'); this.setState({ outline: el.value });
+    }
+  };
+  onOutlineBlur = () => { if (this.state.view === 'outline') this.applyOutline(false); };
+  /** Rebuilds the map from the outline text; back = true also returns to the map view. */
+  applyOutline(back) {
+    const st = this.state, next = st.outline != null ? this.M.fromOutline(this.map, st.outline) : null;
+    if (next && JSON.stringify(next) !== JSON.stringify(this.map)) this.commit((m, d) => { d.map = next; });
+    if (back) { this.setState({ view: 'map', outline: null }); this.focusTa(); } else if (next) this.setState({ outline: this.M.toOutline([next]) });
+  }
+  // ----- relationship lines, boundaries and summaries -----
+  /** A line from topic a to topic b (one per pair), selected once drawn. */
+  addRel(a, b) {
+    a = this.resolveId(a); b = this.resolveId(b); if (!a || !b || a === b) return;
+    let i = -1;
+    this.commit(m => { const n = this.F(m, a); if (!n || !this.F(m, b)) return; n.rels = this.M.relList(n); i = n.rels.findIndex(r => this.same(r.to, b)); if (i < 0) { n.rels.push({ to: b, label: '', color: '', arrows: 'end' }); i = n.rels.length - 1; } });
+    if (i >= 0) this.setState({ selRel: { from: a, i }, relFrom: null, relPt: null, sel: null, sels: [] });
+  }
+  /** The 关联 button: two selected topics get a line; one selected topic waits for a click on the other. */
+  relate() {
+    const ids = this.selIds; if (!ids.length) return this.toast($t('先选中一个主题'));
+    if (ids.length >= 2) return this.addRel(ids[0], ids[ids.length - 1]);
+    this.setState({ relFrom: ids[0], relPt: null }); this.toast($t('点击另一个主题，画出关联线'));
+  }
+  rel(sr) { sr = sr || this.state.selRel; const n = sr && this.F(this.map, sr.from); return n ? this.M.relList(n)[sr.i] : null; }
+  patchRel(sr, props) { this.commit(m => { const n = this.F(m, sr.from); if (!n) return; const list = this.M.relList(n); if (!list[sr.i]) return; Object.assign(list[sr.i], props); n.rels = list; }); }
+  removeRel(sr) { this.commit(m => { const n = this.F(m, sr.from); if (!n) return; const list = this.M.relList(n); list.splice(sr.i, 1); if (list.length) n.rels = list; else delete n.rels; }); this.setState({ selRel: null, pop: null }); }
+  selectRel(sr) { this.setState({ selRel: sr, sel: null, sels: [], relFrom: null }); }
+  openRelPop(sr) { const r = this.rel(sr); if (!r) return; this.commitEdit(); this.focusPop = true; this.setState({ selRel: sr, pop: { kind: 'rel', id: sr.from, i: sr.i, val: r.label }, menu: null }); }
+  /** 外框 on every selected branch (the centre has none): off when the primary topic already has one. */
+  cloudToggle(color) { const ids = this.selIds.filter(id => id !== this.map.id); if (!ids.length) return this.toast($t('先选中一个主题')); const n = this.selNode; this.patchMany(ids, { cloud: color || (n && n.cloud ? '' : FILLS[3]) }); }
+  /** A summary topic beside a brace over the selected siblings (or the one selected topic), ready for its text. */
+  summarize() {
+    const ids = this.selIds.filter(id => id !== this.map.id); if (!ids.length) return this.toast($t('先选中一个主题'));
+    const p = this.PO(this.map, ids[0]); if (!p || ids.some(id => this.PO(this.map, id) !== p || this.F(this.map, id).summary)) return this.toast($t('概要只能加在同一层的相邻主题上'));
+    const kids = p.children.filter(c => !c.summary), at = ids.map(id => kids.findIndex(c => this.same(c.id, id))).filter(i => i >= 0), lo = Math.min(...at), hi = Math.max(...at);
+    if (!at.length) return;
+    const nid = this.M.newId(), t2 = $t('概要'), range = kids[lo].id + ':' + kids[hi].id;
+    this.commit(m => { const pp = this.F(m, p.id); pp.children.push({ id: nid, text: t2, children: [], summary: range }); delete pp.collapsed; });
+    this.startEdit(nid, true, t2);
+  }
   toggle(id) { this.commit(m => { const n = this.F(m, id); if (n && n !== m && (n.children || []).length) { if (n.collapsed) delete n.collapsed; else n.collapsed = true; } }); }
-  patch(id, props) { this.commit(m => { const n = this.F(m, id); if (!n) return; for (const k in props) { if (props[k] == null || props[k] === '' || props[k] === false) delete n[k]; else n[k] = props[k]; } }); }
+  patch(id, props) { this.patchMany([id], props); }
+  patchMany(ids, props) { this.commit(m => { for (const id of ids) { const n = this.F(m, id); if (!n) continue; for (const k in props) { if (props[k] == null || props[k] === '' || props[k] === false) delete n[k]; else n[k] = props[k]; } } }); }
+  /** Bold / italic / strike on every selected topic: on for all unless the primary one already has it. */
+  flip(key) { const ids = this.selIds, n = this.selNode; if (!ids.length) return this.toast($t('先选中一个主题')); this.patchMany(ids, { [key]: !(n && n[key]) }); }
+  /** Font size one step up or down from what the primary topic shows now. */
+  bump(dir) {
+    const ids = this.selIds; if (!ids.length) return this.toast($t('先选中一个主题'));
+    this.commit(m => { for (const id of ids) { const n = this.F(m, id); if (!n) continue; const b = this.box(id), cur = +n.size || (b ? b.s.fs : 14), v = Math.max(8, Math.min(72, Math.round(cur + dir * (cur >= 24 ? 4 : 2)))); n.size = v; } });
+  }
   moveSib(id, dir) { this.commit(m => { const p = this.PO(m, id); if (!p) return; const i = p.children.findIndex(c => this.same(c.id, id)), j = i + dir; if (j < 0 || j >= p.children.length) return; [p.children[i], p.children[j]] = [p.children[j], p.children[i]]; }); }
-  moveTo(id, pid, side) {
-    if (this.same(id, pid)) return;
-    this.commit(m => { const n = this.F(m, id), t = this.F(m, pid), p = this.PO(m, id); if (!n || !t || !p || this.F(n, pid)) return; p.children.splice(p.children.indexOf(n), 1); (t.children = t.children || []).push(n); delete t.collapsed; if (t === m) { if (side) n.side = side; } else delete n.side; });
+  /** Moves the topics `ids` under pid at index (null appends), or with o.copy puts copies there; o.side places a first-level
+   *  branch, o.free = [x, y] floats them at that spot (one below the other). The moved topics end up selected. */
+  moveNodes(ids, pid, index, o = {}) {
+    const M = this.M; let sel = [];
+    this.commit(m => {
+      const t = this.F(m, pid); if (!t) return;
+      const moved = [];
+      for (const id of ids) {
+        const n = this.F(m, id), p = this.PO(m, id); if (!n || !p || n === m || (!o.copy && M.within(m, n.id, t.id))) continue;
+        const stay = !!o.free && p === t && !o.copy; // a floating topic dragged around only changes its place
+        if (o.copy) moved.push(M.cloneBranch(n));
+        else { const i = p.children.indexOf(n); if (!stay) { p.children.splice(i, 1); if (p === t && index != null && i < index) index--; } moved.push(n); if (stay) n.stay = true; }
+      }
+      const fresh = moved.filter(n => !n.stay); moved.forEach(n => delete n.stay);
+      if (!moved.length) return;
+      t.children = t.children || []; if (index == null) t.children.push(...fresh); else t.children.splice(index, 0, ...fresh);
+      delete t.collapsed;
+      let y = o.free ? o.free[1] : 0;
+      for (const n of moved) { delete n.side; delete n.free; if (t === m && o.side) n.side = o.side; if (o.free) { n.free = M.freeOf(o.free[0], y); y += 44; } }
+      sel = moved.map(n => n.id);
+    });
+    if (sel.length) { this.followOn = false; this.setState({ sel: sel[sel.length - 1], sels: sel }); }
   }
   setAll(collapsed) { this.commit(m => this.M.walk(m, (n, p) => { if (p && (n.children || []).length) { if (collapsed) n.collapsed = true; else delete n.collapsed; } })); }
-  startEdit(id, all, text) { this.edDone = false; this.followOn = true; this.focusEdit = { all: !!all }; this.setState({ sel: id, editing: id, editText: text || '' }); }
-  commitEdit() { const st = this.state; if (!st.editing || this.edDone) return; this.edDone = true; const id = st.editing, t = st.editText; this.setState({ editing: null }); const n = this.F(this.map, id); if (n && (n.text || '') !== t) this.patch(id, { text: t }); }
-  focusRoot() { const r = this.rootRef.current; r && r.focus({ preventScroll: true }); }
+  startEdit(id, all, text) { this.edDone = false; this.followOn = true; this.focusEdit = { all: !!all }; this.setState({ sel: id, sels: [id], editing: id, editText: text || '', menu: null }); }
+  commitEdit() { const st = this.state; if (!st.editing || this.edDone) return; this.edDone = true; const id = st.editing, t = st.editText; this.setState({ editing: null, editText: '' }); const n = this.F(this.map, id); if (n && (n.text || '') !== t) this.patch(id, { text: t }); }
+  focusTa() { const t = this.taRef.current; t && document.activeElement !== t && t.focus({ preventScroll: true }); }
+  // ----- clipboard: topics travel as an indented outline; a paste of what was just copied brings the branches back whole -----
+  onBeforeCopy = e => { if (!this.state.editing && this.selIds.length) e.preventDefault(); };
+  copySel() { const ids = this.tops(); if (!ids.length) return null; const branches = ids.map(id => structuredClone(this.F(this.map, id))); const text = this.M.toOutline(branches); this.clip = { text, branches }; return this.clip; }
+  onCopy = e => { if (this.state.editing) return; const c = this.copySel(); if (!c) return; e.preventDefault(); e.clipboardData.setData('text/plain', c.text); };
+  onCut = e => { if (this.state.editing) return; const c = this.copySel(); if (!c) return; e.preventDefault(); e.clipboardData.setData('text/plain', c.text); this.removeMany(this.tops(true)); };
+  onPaste = e => { if (this.state.editing) return; e.preventDefault(); this.paste(e.clipboardData.getData('text/plain')); };
+  paste(text) {
+    const M = this.M; if (!text || !text.trim()) return;
+    const ours = this.clip && this.clip.text === text, pid = this.selId || this.map.id;
+    const mk = t => ({ id: M.newId(), text: t.text, children: t.children.map(mk) });
+    const branches = ours ? this.clip.branches.map(b => M.cloneBranch(b)) : M.parseOutline(text).map(mk);
+    if (!branches.length) return;
+    this.commit(m => { const p = this.F(m, pid); if (!p) return; (p.children = p.children || []).push(...branches); delete p.collapsed; });
+    this.followOn = true; this.setState({ sel: branches[branches.length - 1].id, sels: branches.map(b => b.id) });
+  }
+  // context-menu copy / paste go through the async clipboard, with the last copy as the fallback
+  menuCopy(cut) { const c = this.copySel(); if (!c) return; navigator.clipboard && navigator.clipboard.writeText(c.text).catch(() => { }); if (cut) this.removeMany(this.tops(true)); }
+  async menuPaste() { let t = ''; try { t = navigator.clipboard ? await navigator.clipboard.readText() : ''; } catch (e) { } this.paste(t || (this.clip && this.clip.text) || ''); }
+  // ----- the topic popup: the note (saved as you type), the link or the labels of one topic, under it on the canvas -----
+  openPop(kind, id) { id = this.resolveId(id); const n = this.F(this.map, id); if (!n) return; this.commitEdit(); this.focusPop = true; this.select(id); this.setState({ pop: { kind, id, val: n[kind === 'labels' ? 'labels' : kind] || '' }, menu: null }); }
+  closePop() { if (this.state.pop) this.setState({ pop: null }); this.focusTa(); }
+  onPopText = e => { const pop = this.state.pop, v = e.target.value; if (!pop) return; this.setState({ pop: Object.assign({}, pop, { val: v }) }); if (pop.kind === 'note') this.commit(m => { const n = this.F(m, pop.id); if (n) { if (v) n.note = v; else delete n.note; } }, { silent: true }); };
+  onPopKey = e => { const pop = this.state.pop; if (!pop) return; if (e.key === 'Escape') { e.preventDefault(); this.setState({ pop: null }); this.focusTa(); } else if (e.key === 'Enter' && pop.kind !== 'note') { e.preventDefault(); this.commitPop(); } };
+  onPopBlur = () => this.commitPop();
+  commitPop() {
+    const pop = this.state.pop; if (!pop || pop.kind === 'note') return;
+    const v = pop.kind === 'labels' ? this.M.labelList({ labels: pop.val }).join(',') : pop.val.trim();
+    this.setState({ pop: null });
+    if (pop.kind === 'rel') { const sr = { from: pop.id, i: pop.i }, r = this.rel(sr); if (r && r.label !== v) this.patchRel(sr, { label: v }); return; }
+    const n = this.F(this.map, pop.id); if (n && (n[pop.kind] || '') !== v) this.patch(pop.id, { [pop.kind]: v });
+  }
+  openLink(id) { const n = this.F(this.map, id), u = n && n.link; if (u) window.open(/^[a-z][a-z0-9+.-]*:/i.test(u) ? u : 'https://' + u, '_blank', 'noopener'); }
+  /** The picked file, shrunk to at most 480 px a side, becomes the topic's picture as a data URI (the file stays self-contained). */
+  onImgFile = e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+    const id = this.selId || this.map.id, url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(url); const k = Math.min(1, 480 / Math.max(1, im.naturalWidth, im.naturalHeight)), w = Math.max(1, Math.round(im.naturalWidth * k)), h = Math.max(1, Math.round(im.naturalHeight * k));
+      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h);
+      this.patch(id, { image: c.toDataURL(/png|gif|webp|svg/.test(f.type) ? 'image/png' : 'image/jpeg', 0.85), imageSize: w + ',' + h });
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); this.toast($t('无法读取这张图片')); };
+    im.src = url;
+  };
+  /** Adds or removes one icon / marker on every selected topic; a priority or progress marker replaces the one of its kind. */
+  toggleIcon(name) {
+    const M = this.M, ids = this.selIds; if (!ids.length) return this.toast($t('先选中一个主题'));
+    const group = M.MARKERS.priority.includes(name) ? M.MARKERS.priority : M.MARKERS.progress.includes(name) ? M.MARKERS.progress : null, on = M.iconList(this.selNode).includes(name);
+    this.commit(m => { for (const id of ids) { const n = this.F(m, id); if (!n) continue; let list = M.iconList(n).filter(x => x !== name && !(group && group.includes(x))); if (!on) list.push(name); if (list.length) n.icon = list.join(','); else delete n.icon; } });
+  }
   // ----- view -----
   manual() { this.manualAt = performance.now(); this.stopPan(); }
   zoomTo(z2, mx, my) { this.manual(); const st = this.state; z2 = Math.max(ZMIN, Math.min(ZMAX, z2)); if (mx == null) { mx = st.box.w / 2; my = st.box.h / 2; } const k = z2 / st.z; this.setState({ z: z2, tx: mx - (mx - st.tx) * k, ty: my - (my - st.ty) * k, anim: mx === st.box.w / 2 }); }
   fit(cap, anim) { this.manual(); const b = this.L().bounds, box = this.state.box; if (!box.w || !isFinite(b.minX)) return; const z = Math.max(ZMIN, Math.min(cap || 1.25, (box.w - 80) / (b.maxX - b.minX), (box.h - 140) / (b.maxY - b.minY))); this.setState({ z, tx: box.w / 2 - (b.minX + b.maxX) / 2 * z, ty: box.h / 2 - (b.minY + b.maxY) / 2 * z + 20, anim: anim !== false }); }
-  centreOn(id) { this.manual(); const n = this.L().nodes.find(x => this.same(x.id, id)); if (!n) return; const { z, box } = this.state; this.setState({ tx: box.w / 2 - (n.x + n.w / 2) * z, ty: box.h / 2 - (n.y + n.h / 2) * z, anim: true }); }
+  centreOn(id) { this.manual(); const n = this.box(id); if (!n) return; const { z, box } = this.state; this.setState({ tx: box.w / 2 - (n.x + n.w / 2) * z, ty: box.h / 2 - (n.y + n.h / 2) * z, anim: true }); }
   // ----- camera follows editing: the edited textarea / keyboard-selected node stays inside a comfort box -----
   /** Eased pan over ~140 ms driven by rAF; a call mid-flight retargets from wherever the view is right now. */
   panBy(dx, dy) {
@@ -183,9 +405,8 @@ class Component extends DCLogic {
     const k = [this.L(), st.sel, st.editing, st.editText, box.w, box.h, st.z]; if (this._fk && k.every((v, i) => v === this._fk[i])) return; this._fk = k;
     if (performance.now() - (this.manualAt || 0) < 800) return;
     if (st.anim) { clearTimeout(this.followT); this.followT = setTimeout(() => { this._fk = null; this.follow(); }, 420); return; } // let a CSS view transition finish first
-    let r;
-    if (st.editing && this.taRef.current) { const cr = this.canvasRef.current.getBoundingClientRect(), tr = this.taRef.current.getBoundingClientRect(); r = { left: tr.left - cr.left, top: tr.top - cr.top, right: tr.right - cr.left, bottom: tr.bottom - cr.top }; }
-    else { const id = this.selId, n = id && this.L().nodes.find(x => this.same(x.id, id)); if (!n) return; r = { left: st.tx + n.x * st.z, top: st.ty + n.y * st.z, right: st.tx + (n.x + n.w) * st.z, bottom: st.ty + (n.y + n.h) * st.z }; }
+    const n = this.box(st.editing || this.selId); if (!n) return;
+    const r = { left: st.tx + n.x * st.z, top: st.ty + n.y * st.z, right: st.tx + (n.x + n.w) * st.z, bottom: st.ty + (n.y + n.h) * st.z };
     const L = box.w * 0.12, R = box.w * 0.88, T = box.h * 0.2, B = box.h * 0.8; let dx = 0, dy = 0;
     if (r.left < L) dx = L - r.left; else if (r.right > R) dx = Math.max(R - r.right, L - r.left); // too wide for the box: keep its start visible
     if (r.top < T) dy = T - r.top; else if (r.bottom > B) dy = Math.max(B - r.bottom, T - r.top);
@@ -196,44 +417,145 @@ class Component extends DCLogic {
     if (e.ctrlKey || e.metaKey) this.zoomTo(this.state.z * Math.exp(-e.deltaY * k * 0.01), e.clientX - r.left, e.clientY - r.top);
     else this.setState(s => ({ tx: s.tx - e.deltaX * k, ty: s.ty - e.deltaY * k, anim: false }));
   };
-  // ----- mouse: drag empty canvas to pan, drag a node onto another to reparent -----
+  /** Canvas px (from the canvas' top-left) → map coordinates. */
+  toMap(cx, cy) { const st = this.state; return { x: (cx - st.tx) / st.z, y: (cy - st.ty) / st.z }; }
+  // ----- mouse: buttons act, topics select and drag, empty canvas pans (or, with ⇧ / ⌘, draws a selection box) -----
+  onCanvasDown = e => {
+    if (e.button !== 0) return;
+    const t = e.target, act = t.closest && t.closest('[data-act]');
+    if (act) { e.preventDefault(); this.commitEdit(); this.focusTa(); this.doAct(act.getAttribute('data-act'), act.getAttribute('data-id')); return; }
+    const g = t.closest && t.closest('[data-nid]'), rl = t.closest && t.closest('[data-rel]'), r = this.canvasRef.current.getBoundingClientRect();
+    this.commitEdit(); e.preventDefault(); this.focusTa(); this.followOn = false; if (this.state.pop) this.setState({ pop: null });
+    if (rl) { const [from, i] = rl.getAttribute('data-rel').split('|'); return this.selectRel({ from, i: +i }); }
+    if (this.state.relFrom) { if (g) this.addRel(this.state.relFrom, g.getAttribute('data-nid')); else this.setState({ relFrom: null, relPt: null }); return; }
+    if (this.state.selRel) this.setState({ selRel: null });
+    if (g) {
+      const id = g.getAttribute('data-nid');
+      if (e.metaKey || e.ctrlKey) return this.select(id, 'toggle');
+      if (e.shiftKey) return this.select(id, 'add');
+      const was = this.isSel(id); if (!was) this.select(id);
+      if (this.same(id, this.map.id)) { this.op = { kind: 'pan', sx: e.clientX, sy: e.clientY, tx: this.state.tx, ty: this.state.ty, moved: false, keep: true }; return; } // the centre stays put: dragging it moves the view
+      const b = this.box(id), p = this.toMap(e.clientX - r.left, e.clientY - r.top), ids = was ? this.tops(true) : [this.resolveId(id)];
+      this.op = { kind: 'node', id, ids, grab: { dx: p.x - b.x, dy: p.y - b.y }, sx: e.clientX, sy: e.clientY, moved: false, collapseSel: was && this.selIds.length > 1 };
+      return;
+    }
+    if (e.shiftKey || e.metaKey || e.ctrlKey) { this.op = { kind: 'marquee', sx: e.clientX, sy: e.clientY, x0: e.clientX - r.left, y0: e.clientY - r.top, base: this.selIds, moved: false }; return; }
+    this.op = { kind: 'pan', sx: e.clientX, sy: e.clientY, tx: this.state.tx, ty: this.state.ty, moved: false };
+  };
+  doAct(act, id) {
+    if (act === 'add-child') { this.select(id); this.addChild(id); }
+    else if (act === 'add-sib') { this.select(id); this.addSibling(id); }
+    else if (act === 'toggle') this.toggle(id);
+    else if (act === 'note') this.openPop('note', id);
+    else if (act === 'link') { this.select(id); this.openLink(id); }
+  }
+  onCanvasMove = e => {
+    if (this.op) return;
+    if (this.state.relFrom) { const r = this.canvasRef.current.getBoundingClientRect(); this.setState({ relPt: this.toMap(e.clientX - r.left, e.clientY - r.top) }); }
+    const g = e.target.closest && e.target.closest('[data-nid],[data-hid],[data-act]'), id = g ? g.getAttribute('data-nid') || g.getAttribute('data-hid') || g.getAttribute('data-id') : null;
+    if (id !== this.state.hover) this.setState({ hover: id });
+  };
+  onCanvasLeave = () => { if (this.state.hover && !this.op) this.setState({ hover: null }); };
+  onCanvasDbl = e => {
+    const rl = e.target.closest && e.target.closest('[data-rel]'); if (rl) { const [from, i] = rl.getAttribute('data-rel').split('|'); return this.openRelPop({ from, i: +i }); }
+    const g = e.target.closest && e.target.closest('[data-nid]'); if (!g || e.target.closest('[data-act]')) return; const id = g.getAttribute('data-nid'), n = this.F(this.map, id); if (n) this.startEdit(id, true, n.text);
+  };
+  onCanvasCtx = e => {
+    e.preventDefault(); this.commitEdit(); this.focusTa();
+    const g = e.target.closest && e.target.closest('[data-nid]'), id = g && g.getAttribute('data-nid'), rl = e.target.closest && e.target.closest('[data-rel]');
+    if (id && !this.isSel(id)) this.select(id);
+    const I = (label, fn, hint, dis) => ({ isItem: true, label: $t(label), hint: hint || '', color: dis ? 'var(--ink-3, rgba(29,29,31,0.36))' : 'var(--ink, #1D1D1F)', onClick: () => { this.setState({ menu: null }); if (!dis) fn(); } }), S = { isSepI: true };
+    const root = this.map.id, nid = id && this.resolveId(id), n = nid && this.F(this.map, nid), notRoot = nid && nid !== root;
+    let sr = null; if (rl) { const [from, i] = rl.getAttribute('data-rel').split('|'); sr = { from, i: +i }; this.selectRel(sr); }
+    const items = sr ? [I('编辑文字', () => this.openRelPop(sr)), S, I('单向箭头', () => this.patchRel(sr, { arrows: 'end' })), I('双向箭头', () => this.patchRel(sr, { arrows: 'both' })), I('反向箭头', () => this.patchRel(sr, { arrows: 'start' })), I('无箭头', () => this.patchRel(sr, { arrows: 'none' })), S, I('删除', () => this.removeRel(sr), '⌫')]
+      : n ? [I('新增子主题', () => this.addChild(nid), 'Tab'), I('新增同级', () => this.addSibling(nid), 'Enter', !notRoot), I('在上方插入同级', () => this.addSibling(nid, true), '⇧Enter', !notRoot), I('插入父主题', () => this.addParent(nid), K + 'Enter', !notRoot), S,
+      I('剪切', () => this.menuCopy(true), K + 'X', !notRoot), I('复制', () => this.menuCopy(false), K + 'C'), I('粘贴', () => this.menuPaste(), K + 'V'), S,
+      I('备注', () => this.openPop('note', nid)), I('链接', () => this.openPop('link', nid), K + 'K'), I('标签', () => this.openPop('labels', nid)), I(n.image ? '移除图片' : '图片', () => n.image ? this.patch(nid, { image: '', imageSize: '' }) : this.imgRef.current.click()), S,
+      I('关联', () => this.relate()), I(n.cloud ? '去掉外框' : '外框', () => this.cloudToggle(), '', !notRoot), I('概要', () => this.summarize(), '', !notRoot), S,
+      I(n.collapsed ? '展开' : '折叠', () => this.toggle(nid), K + '/', !notRoot || !(n.children || []).length), I('删除', () => this.removeMany(this.tops(true)), '⌫', !notRoot)]
+      : [I('粘贴', () => this.menuPaste(), K + 'V'), I('全选', () => this.selectAll(), K + 'A'), S, I('全部展开', () => this.setAll(false)), I('全部折叠', () => this.setAll(true)), I('适应画布', () => this.fit(1.25))];
+    this.setState({ menu: { x: Math.min(e.clientX, window.innerWidth - 220), y: Math.min(e.clientY, window.innerHeight - 30 * items.length - 20), items } });
+  };
+  selectAll() { const ids = []; this.M.walk(this.map, n => { ids.push(n.id); }); this.setState({ sels: ids, sel: this.selId || this.map.id }); }
   onWM = e => {
     const op = this.op; if (!op) return; const dx = e.clientX - op.sx, dy = e.clientY - op.sy;
     if (!op.moved && Math.abs(dx) + Math.abs(dy) < 4) return; op.moved = true;
     if (op.kind === 'pan') { this.manual(); this.setState({ tx: op.tx + dx, ty: op.ty + dy, anim: false }); return; }
-    const r = this.canvasRef.current.getBoundingClientRect(), el = document.elementFromPoint(e.clientX, e.clientY), g = el && el.closest && el.closest('[data-nid]');
-    let over = g ? g.getAttribute('data-nid') : null;
-    if (this.same(over, op.id) || (over && this.F(this.F(this.map, op.id) || { children: [] }, over))) over = null;
-    this.setState({ drag: { id: op.id, x: e.clientX - r.left, y: e.clientY - r.top, over } });
+    const r = this.canvasRef.current.getBoundingClientRect();
+    if (op.kind === 'marquee') {
+      const x1 = e.clientX - r.left, y1 = e.clientY - r.top, a = this.toMap(Math.min(op.x0, x1), Math.min(op.y0, y1)), b = this.toMap(Math.max(op.x0, x1), Math.max(op.y0, y1));
+      const hits = this.L().nodes.filter(n => n.x < b.x && n.x + n.w > a.x && n.y < b.y && n.y + n.h > a.y).map(n => n.id), ids = op.base.concat(hits.filter(h => !op.base.includes(h)));
+      this.setState({ marquee: { x0: op.x0, y0: op.y0, x1, y1 }, sels: ids, sel: ids.length ? ids[ids.length - 1] : null });
+      return;
+    }
+    this.dragPt = { cx: e.clientX - r.left, cy: e.clientY - r.top };
+    this.updateDrag(); this.autoScroll();
   };
-  onWU = () => {
-    const op = this.op; this.op = null; if (!op) return;
-    if (op.kind === 'pan') { if (!op.moved) this.setState({ sel: null }); return; }
+  /** Re-reads where the pointer is (dragPt) and finds what a drop there would do. */
+  updateDrag() { const op = this.op, { cx, cy } = this.dragPt; this.setState({ drag: { ids: op.ids, x: cx, y: cy, target: this.M.dropAt(this.L(), this.map, this.toMap(cx, cy), op.ids, op.grab) } }); }
+  /** While a topic is dragged near an edge of the canvas the view keeps sliding that way. */
+  autoScroll() {
+    const { cx, cy } = this.dragPt, box = this.state.box, Z = 28, sp = d => d < Z ? (Z - d) / Z * 12 : 0;
+    this.autoV = { vx: sp(cx) - sp(box.w - cx), vy: sp(cy) - sp(box.h - cy) };
+    if (!(this.autoV.vx || this.autoV.vy) || this.autoT) return;
+    const tick = () => { this.autoT = null; const v = this.autoV; if (!this.op || this.op.kind !== 'node' || !v || !(v.vx || v.vy)) return; this.manual(); this.setState(s => ({ tx: s.tx + v.vx, ty: s.ty + v.vy, anim: false })); this.updateDrag(); this.autoT = requestAnimationFrame(tick); };
+    this.autoT = requestAnimationFrame(tick);
+  }
+  stopAuto() { if (this.autoT) cancelAnimationFrame(this.autoT); this.autoT = null; this.autoV = null; }
+  onWU = e => {
+    const op = this.op; this.op = null; this.stopAuto(); if (!op) return;
+    if (op.kind === 'pan') { if (!op.moved && !op.keep) this.setState({ sel: null, sels: [] }); return; }
+    if (op.kind === 'marquee') { this.setState({ marquee: null }); return; }
+    if (!op.moved) { if (op.collapseSel) this.select(op.id); return; }
     const dg = this.state.drag; if (!dg) return; this.setState({ drag: null });
-    if (dg.over) this.moveTo(op.id, dg.over, this.same(dg.over, this.map.id) ? (dg.x < this.state.tx ? 'left' : 'right') : null);
+    const t = dg.target, copy = !!(e && e.altKey); if (!t) return; // ⌥ at the drop leaves the originals where they were
+    if (t.kind === 'into') this.moveNodes(dg.ids, t.id, null, { side: t.side, copy });
+    else if (t.kind === 'between') { const p = this.F(this.map, t.parent), at = id => p.children.findIndex(c => this.same(c.id, id)); this.moveNodes(dg.ids, t.parent, t.before ? at(t.before) : t.after ? at(t.after) + 1 : p.children.length, { side: t.side, copy }); }
+    else this.moveNodes(dg.ids, this.map.id, null, { free: [t.x, t.y], copy });
   };
+  // ----- keyboard: the hidden field under the selection holds the focus, so typing, IME, copy and paste all reach it -----
+  onCompStart = () => { this.composing = true; if (!this.state.editing && this.selId) this.startEdit(this.selId, false, ''); };
+  onCompEnd = () => { this.composing = false; };
+  onEditText = e => { const v = e.target.value; if (!this.state.editing) { if (v && this.selId) this.startEdit(this.selId, false, v); return; } this.setState({ editText: v }); };
+  onEditBlur = () => this.commitEdit();
+  onEditKey(e) {
+    const composing = e.nativeEvent.isComposing || e.keyCode === 229;
+    if (composing) return;
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.commitEdit(); }
+    else if (e.key === 'Escape') { e.preventDefault(); this.commitEdit(); }
+    else if (e.key === 'Tab') { e.preventDefault(); const id = this.state.editing; this.commitEdit(); this.addChild(id); }
+  }
   onKey = e => {
-    const t = e.target; if (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
-    const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase(), sel = this.selId, M = this.M; if (!M) return;
+    if (this.state.editing) return this.onEditKey(e);
+    const M = this.M; if (!M || !this.map || e.nativeEvent.isComposing || e.keyCode === 229) return;
+    const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase(), sel = this.selId, root = this.map.id;
     if (ctrl && k === 'z') { e.preventDefault(); const fn = e.shiftKey ? this.props.onRedo : this.props.onUndo; fn && fn(); return; }
     if (ctrl && k === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); return; }
     if (ctrl && (e.key === '=' || e.key === '+')) { e.preventDefault(); this.zoomTo(this.state.z * 1.2); return; }
     if (ctrl && (e.key === '-' || e.key === '_')) { e.preventDefault(); this.zoomTo(this.state.z / 1.2); return; }
     if (ctrl && e.key === '0') { e.preventDefault(); this.zoomTo(1); return; }
-    if (ctrl) return;
-    if (e.key === 'Escape') { if (sel) this.setState({ sel: null }); return; }
-    if (e.key === 'Tab') { e.preventDefault(); this.addChild(sel || this.map.id); return; }
-    if (!sel) return;
-    if (e.key === 'Enter') { e.preventDefault(); this.addSibling(sel); return; }
-    if (e.key === 'F2') { e.preventDefault(); const n = this.F(this.map, sel); this.startEdit(sel, true, n && n.text); return; }
-    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.remove(sel); return; }
-    if (e.key === ' ') { e.preventDefault(); this.toggle(sel); return; }
+    if (ctrl && k === 'b') { e.preventDefault(); this.flip('bold'); return; }
+    if (ctrl && k === 'i') { e.preventDefault(); this.flip('italic'); return; }
+    if (ctrl && k === 'a') { e.preventDefault(); this.selectAll(); return; }
+    if (ctrl && k === 'k') { e.preventDefault(); if (sel) this.openPop('link', sel); return; }
+    if (ctrl && k === 'f') { e.preventDefault(); this.openSearch(); return; }
+    if (ctrl && e.key === '/') { e.preventDefault(); if (sel && sel !== root) this.toggle(sel); return; }
+    if (ctrl && e.key === 'Enter') { e.preventDefault(); if (sel) this.addParent(sel); return; }
+    if (ctrl || e.altKey && !/^Arrow/.test(e.key)) return; // copy / cut / paste arrive as their own events
+    if (e.key === 'Escape') { if (this.state.menu || this.state.pop || this.state.relFrom) this.setState({ menu: null, pop: null, relFrom: null, relPt: null }); else if (this.selIds.length || this.state.selRel) this.setState({ sel: null, sels: [], selRel: null }); return; }
+    if (this.state.selRel && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); this.removeRel(this.state.selRel); return; }
+    if (this.state.selRel && (e.key === 'Enter' || e.key === 'F2')) { e.preventDefault(); this.openRelPop(this.state.selRel); return; }
+    if (e.key === 'Tab') { e.preventDefault(); this.addChild(sel || root); return; }
+    if (!sel) { if (/^Arrow|^Enter$|^ $/.test(e.key)) { e.preventDefault(); this.followOn = true; this.select(root); } return; }
+    if (e.key === 'Enter') { e.preventDefault(); if (sel === root) this.addChild(root); else this.addSibling(sel, e.shiftKey); return; }
+    if (e.key === 'F2' || e.key === ' ') { e.preventDefault(); const n = this.F(this.map, sel); this.startEdit(sel, true, n && n.text); return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.removeMany(this.tops(true)); return; }
     if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); this.moveSib(sel, e.key === 'ArrowUp' ? -1 : 1); return; }
-    if (/^Arrow/.test(e.key)) { e.preventDefault(); this.nav(e.key); return; }
-    if (e.key.length === 1 && !e.altKey) { e.preventDefault(); this.startEdit(sel, false, e.key); }
+    if (/^Arrow/.test(e.key)) { e.preventDefault(); this.nav(e.key, e.shiftKey); return; }
+    if (e.key.length === 1) { e.preventDefault(); this.startEdit(sel, false, e.key); }
   };
-  nav(key) {
-    const L = this.L(), me = L.nodes.find(n => this.same(n.id, this.selId)); if (!me) return;
+  nav(key, extend) {
+    const L = this.L(), me = this.box(this.selId); if (!me) return;
     const kids = L.nodes.filter(n => n.parentId === me.id), sibs = L.nodes.filter(n => n.parentId === me.parentId && n.dir === me.dir), i = sibs.indexOf(me);
     const mid = a => a[Math.floor((a.length - 1) / 2)];
     let to = null;
@@ -241,95 +563,215 @@ class Component extends DCLogic {
     else if (me.depth === 0) to = mid(kids.filter(n => n.dir === (key === 'ArrowRight' ? 1 : -1)));
     else if ((key === 'ArrowRight') === (me.dir > 0)) to = mid(kids);
     else to = L.nodes.find(n => n.id === me.parentId);
-    if (to) { this.followOn = true; this.setState({ sel: to.id }); }
+    if (to) { this.followOn = true; this.select(to.id, extend ? 'add' : null); }
   }
-  // ----- png: the same layout drawn onto a canvas -----
+  // ----- drawing: the map is SVG markup built here, so thousands of topics cost one string, not thousands of components -----
   nodeView(b) {
-    const n = b.n, fill = n.fill ? '#' + n.fill : null, fg = n.color ? '#' + n.color : null;
-    if (b.depth === 0) return { bg: fill || 'var(--k7, #1D1D1F)', fg: fg || (fill ? '#1D1D1F' : 'var(--kinv, #FFFFFF)'), stroke: 'none', sw: 0 }; // theme: keep — text on a user fill stays dark
+    const n = b.n, th = this.M.themeOf(this.map), fill = n.fill ? '#' + n.fill : null, fg = n.color ? '#' + n.color : null;
+    if (b.depth === 0) return { bg: fill || th.root, fg: fg || (fill ? '#1D1D1F' : th.fg), stroke: 'none', sw: 0 }; // theme: keep — text on a user fill stays dark
     if (b.depth === 1) return { bg: fill || 'var(--k51, #FFFFFF)', fg: fg || (fill ? '#1D1D1F' : 'var(--k1, #1D1D1F)'), stroke: b.color, sw: 1.5 }; // theme: keep
     return { bg: fill || 'var(--k68, rgba(255,255,255,0.72))', fg: fg || (fill ? '#3A3A3C' : 'var(--k9, #3A3A3C)'), stroke: 'var(--k36, rgba(0,0,0,0.12))', sw: 1 }; // theme: keep
   }
-  exportPng() {
+  textStyle(s, fg) { return `font-size:${s.fs}px;font-weight:${s.fw};font-style:${s.fi ? 'italic' : 'normal'};text-decoration:${s.strike ? 'line-through' : 'none'};fill:${fg}` + (s.family ? `;font-family:${escA(JSON.stringify(s.family))},'IBM Plex Sans','Noto Sans SC',sans-serif` : ''); }
+  nodeSvg(b, editing) {
+    const v = this.nodeView(b), s = b.s, n = b.n, M = this.M;
+    let o = `<g data-nid="${escA(b.id)}" transform="translate(${b.x} ${b.y})" style="cursor:pointer">`;
+    if (n.ai) o += `<rect x="-4" y="-4" width="${b.w + 8}" height="${b.h + 8}" rx="${s.rx + 4}" style="fill:rgba(127,181,154,0.14);stroke:#7FB59A;stroke-width:3"/>`;
+    o += `<rect width="${b.w}" height="${b.h}" rx="${s.rx}" style="fill:${v.bg};stroke:${v.stroke};stroke-width:${v.sw}"/>`;
+    if (b.img) o += `<image href="${escA(n.image)}" x="${(b.w - b.img.w) / 2}" y="${s.py}" width="${b.img.w}" height="${b.img.h}" preserveAspectRatio="xMidYMid meet" style="pointer-events:none"/>`;
+    if (!editing) {
+      o += `<text style="${this.textStyle(s, v.fg)}">` + b.lines.map((l, i) => `<tspan x="${s.px + b.iw}" y="${(b.ty + s.lh * (i + 0.5) + s.fs * 0.36).toFixed(1)}">${esc(l)}</tspan>`).join('') + '</text>';
+      b.icons.forEach((name, i) => { o += M.markerSvg(name, s.px + i * (b.id2 + 3), b.ty + (s.lh - b.id2) / 2, b.id2); });
+    }
+    if (b.labels.length) {
+      let x = s.px; const y = b.ty + b.lines.length * s.lh + 4, LB = M.LABEL;
+      for (const l of b.labels) { o += `<rect x="${x}" y="${y}" width="${l.w}" height="${LB.h}" rx="${LB.h / 2}" style="fill:${b.depth ? 'var(--k55, rgba(0,0,0,0.06))' : 'rgba(255,255,255,0.2)'}"/><text x="${x + LB.px}" y="${y + 12.6}" style="font-size:${LB.fs}px;font-weight:${LB.fw};fill:${v.fg};opacity:0.82">${esc(l.t)}</text>`; x += l.w + LB.gap; }
+    }
+    // the corner glyphs open the note or the link
+    const corner = []; if (n.note) corner.push(['note', '✎', $t('备注')]); if (n.link) corner.push(['link', '🔗', n.link]);
+    corner.forEach(([act, g, title], i) => { o += `<g data-act="${act}" data-id="${escA(b.id)}" transform="translate(${b.w - 13 - i * 16} -3)"><title>${esc(title)}</title><circle cx="4" cy="-3" r="8" style="fill:transparent"/><text style="font-size:10px;fill:var(--k8, #8E8E93)">${g}</text></g>`; });
+    if (b.badge) o += `<g data-act="toggle" data-id="${escA(b.id)}" transform="translate(${b.dir > 0 ? b.w + 12 : -12} ${b.h / 2})"><title>${esc($t('展开'))}</title><circle r="9" style="fill:${b.color}"/><text y="3.5" style="font-size:10px;font-weight:600;fill:#fff;text-anchor:middle">${b.badge}</text></g>`;
+    return o + '</g>';
+  }
+  svgMap(L) {
+    const ed = this.state.editing ? this.resolveId(this.state.editing) : '';
+    if (this._svgFor === L && this._svgEd === ed) return this._svg;
+    let s = '';
+    for (const c of L.clouds) s += `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="18" style="fill:${c.color};fill-opacity:0.22;stroke:${c.color};stroke-width:1.5;stroke-dasharray:6 4;pointer-events:none"/>`;
+    for (const e of L.edges) s += `<path d="${e.d}" style="fill:none;stroke:${e.color};stroke-width:${e.sw};stroke-linecap:round;pointer-events:none"/>`;
+    for (const br of L.braces) s += `<path d="${this.M.bracePath(br)}" style="fill:none;stroke:${br.color};stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none"/>`;
+    for (const b of L.nodes) s += this.nodeSvg(b, b.id === ed);
+    for (const r of L.rels) s += this.relSvg(r);
+    this._svgFor = L; this._svgEd = ed; this._svg = s;
+    return s;
+  }
+  /** A relationship line: the curve, its arrowheads and the label on a small plate; the wide invisible twin takes the clicks. */
+  relSvg(r) {
+    const c = r.color ? '#' + r.color : 'var(--k11, #6E6E73)', key = escA(r.from + '|' + r.i);
+    let o = `<g data-rel="${key}" style="cursor:pointer"><path d="${r.d}" style="fill:none;stroke:transparent;stroke-width:14"/><path d="${r.d}" style="fill:none;stroke:${c};stroke-width:1.8;stroke-dasharray:7 5;pointer-events:none"/>`;
+    if (r.arrows === 'end' || r.arrows === 'both') o += `<path d="${r.heads.end}" style="fill:${c};pointer-events:none"/>`;
+    if (r.arrows === 'start' || r.arrows === 'both') o += `<path d="${r.heads.start}" style="fill:${c};pointer-events:none"/>`;
+    if (r.label) { const w = this.measure(r.label, { fs: 12, fw: 500 }) + 14; o += `<rect x="${r.mid.x - w / 2}" y="${r.mid.y - 10}" width="${w}" height="20" rx="10" style="fill:var(--k51, #FFFFFF);stroke:${c};stroke-width:1"/><text x="${r.mid.x}" y="${r.mid.y + 4}" style="font-size:12px;font-weight:500;text-anchor:middle;fill:${c}">${esc(r.label)}</text>`; }
+    return o + '</g>';
+  }
+  /** Rings on the selection and the drop target; ＋ buttons and the collapse toggle on the topic under the pointer. */
+  svgOverlay(L) {
+    const st = this.state, sel = this.selIds, prim = this.selId, dg = st.drag, tg = dg && dg.target; let over = '', under = '';
+    const sr = st.selRel && L.rels.find(r => this.same(r.from, st.selRel.from) && r.i === st.selRel.i);
+    if (sr) over += `<path d="${sr.d}" style="fill:none;stroke:var(--k1, #1D1D1F);stroke-width:6;opacity:0.18;stroke-linecap:round;pointer-events:none"/>`;
+    const rf = st.relFrom && this.box(st.relFrom);
+    if (rf && st.relPt) over += `<line x1="${rf.x + rf.w / 2}" y1="${rf.y + rf.h / 2}" x2="${st.relPt.x}" y2="${st.relPt.y}" style="stroke:var(--k11, #6E6E73);stroke-width:1.8;stroke-dasharray:7 5;pointer-events:none"/>`;
+    for (const b of L.nodes) {
+      const on = sel.includes(b.id), drop = tg && tg.kind === 'into' && this.same(tg.id, b.id), gone = dg && dg.ids.some(id => this.same(id, b.id));
+      if (gone) over += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${b.s.rx}" style="fill:var(--k0, #FFFFFF);opacity:0.55;pointer-events:none"/>`;
+      if (on || drop) over += `<rect x="${b.x - 4}" y="${b.y - 4}" width="${b.w + 8}" height="${b.h + 8}" rx="${b.s.rx + 4}" style="pointer-events:none;fill:${drop ? 'color-mix(in srgb, var(--k59, #3F7D5C) 8%, transparent)' : 'none'};stroke:${drop ? 'var(--k59, #3F7D5C)' : 'var(--k1, #1D1D1F)'};stroke-width:${drop ? 3 : b.id === prim ? 2 : 1.5};stroke-dasharray:${drop ? '5 4' : 'none'}"/>`;
+    }
+    // the drop preview: a bar in the gap the topic would take, or its outline where it would float
+    if (tg && tg.kind === 'between') over += tg.horiz ? `<line x1="${tg.x}" y1="${tg.y0}" x2="${tg.x}" y2="${tg.y1}" style="stroke:${tg.color};stroke-width:3;stroke-linecap:round;pointer-events:none"/><circle cx="${tg.x}" cy="${tg.y0}" r="4" style="fill:${tg.color};pointer-events:none"/>`
+      : `<line x1="${tg.x0}" y1="${tg.y}" x2="${tg.x1}" y2="${tg.y}" style="stroke:${tg.color};stroke-width:3;stroke-linecap:round;pointer-events:none"/><circle cx="${tg.side === 'left' ? tg.x1 : tg.x0}" cy="${tg.y}" r="4" style="fill:${tg.color};pointer-events:none"/>`;
+    // search hits glow amber, the current one stronger
+    const ms = this.matches(); if (ms.length) { const cur = st.search.i >= 0 ? ms[st.search.i] : null, set = new Set(ms); for (const b of L.nodes) if (set.has(b.id)) over += `<rect x="${b.x - 3}" y="${b.y - 3}" width="${b.w + 6}" height="${b.h + 6}" rx="${b.s.rx + 3}" style="pointer-events:none;fill:rgba(194,138,26,${b.id === cur ? 0.22 : 0.1});stroke:#C28A1A;stroke-width:${b.id === cur ? 2.5 : 1.2}"/>`; }
+    if (tg && tg.kind === 'free') { const b = this.box(dg.ids[0]); if (b) over += `<rect x="${tg.x}" y="${tg.y}" width="${b.w}" height="${b.h}" rx="${b.s.rx}" style="fill:none;stroke:var(--k1, #1D1D1F);stroke-width:1.5;stroke-dasharray:5 4;pointer-events:none"/>`; }
+    const hb = !this.op && !dg && !st.editing && (this.box(st.hover) || (!st.hover && this.box(prim)));
+    if (hb) {
+      const b = hb, dir = b.dir, cy = b.y + b.h / 2, edge = dir > 0 ? b.x + b.w : b.x, kids = b.depth > 0 && (b.n.children || []).length > 0, px = edge + dir * (kids ? 36 : 16);
+      if (kids && !b.n.collapsed) over += `<g data-act="toggle" data-id="${escA(b.id)}" transform="translate(${edge + dir * 12} ${cy})"><title>${esc($t('折叠'))}</title><circle class="mm-btn" r="7" style="fill:var(--k51, #FFFFFF);stroke:${b.color};stroke-width:1.5"/><path class="mm-plus" d="M-3.2 0H3.2" style="stroke:${b.color};stroke-width:1.6;stroke-linecap:round"/></g>`;
+      over += plus(px, cy, 9, 'add-child', b.id, $t('新增子主题') + ' (Tab)');
+      if (b.depth > 0) over += plus(b.x + b.w / 2, b.y + b.h + 2, 7, 'add-sib', b.id, $t('新增同级') + ' (Enter)');
+      const x0 = Math.min(b.x, px - 12), x1 = Math.max(b.x + b.w, px + 12);
+      under = `<rect data-hid="${escA(b.id)}" x="${x0}" y="${b.y - 6}" width="${x1 - x0}" height="${b.h + 18}" style="fill:transparent"/>`;
+    }
+    return { over, under };
+  }
+  // ----- png: the same layout drawn onto a canvas -----
+  async exportPng() {
     const M = this.M, L = this.L(), b = L.bounds, P = 48, S = 2, W = Math.ceil(b.maxX - b.minX + P * 2), H = Math.ceil(b.maxY - b.minY + P * 2);
+    const pics = new Map(); // the topics' pictures, decoded first
+    await Promise.all(L.nodes.filter(n => n.img).map(n => new Promise(res => { const im = new Image(); im.onload = () => { pics.set(n.id, im); res(); }; im.onerror = () => res(); im.src = n.n.image; })));
     const c = document.createElement('canvas'); c.width = W * S; c.height = H * S; const g = c.getContext('2d'); g.scale(S, S);
-    g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H); g.translate(P - b.minX, P - b.minY); g.lineCap = 'round';
-    for (const e of L.edges) { g.strokeStyle = e.color; g.lineWidth = e.sw; g.stroke(new Path2D(e.d)); }
-    g.textBaseline = 'middle';
+    g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H); g.translate(P - b.minX, P - b.minY); g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const c of L.clouds) { g.beginPath(); g.roundRect(c.x, c.y, c.w, c.h, 18); g.globalAlpha = 0.22; g.fillStyle = c.color; g.fill(); g.globalAlpha = 1; g.setLineDash([6, 4]); g.strokeStyle = c.color; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]); }
+    for (const e of L.edges) { g.strokeStyle = lit(e.color); g.lineWidth = e.sw; g.stroke(new Path2D(e.d)); }
+    for (const br of L.braces) { g.strokeStyle = lit(br.color); g.lineWidth = 1.8; g.stroke(new Path2D(M.bracePath(br))); }
     for (const n of L.nodes) {
       const v = this.nodeView(n), s = n.s; for (const k of ['bg', 'fg', 'stroke']) v[k] = lit(v[k]); // the PNG is the document: always the light colours
       g.beginPath(); g.roundRect(n.x, n.y, n.w, n.h, s.rx); g.fillStyle = v.bg; g.fill(); if (v.sw) { g.strokeStyle = v.stroke; g.lineWidth = v.sw; g.stroke(); }
-      if (n.n.icon) { g.font = `${s.fs * 1.2}px ${M.FONT}`; g.fillStyle = '#1D1D1F'; g.fillText(M.glyph(n.n.icon), n.x + s.px, n.y + s.py + s.lh / 2 + 1); }
-      g.font = `${s.fw} ${s.fs}px ${M.FONT}`; g.fillStyle = v.fg;
-      n.lines.forEach((l, i) => g.fillText(l, n.x + s.px + n.iw, n.y + s.py + s.lh * (i + 0.5) + 1));
+      if (n.img && pics.get(n.id)) g.drawImage(pics.get(n.id), n.x + (n.w - n.img.w) / 2, n.y + s.py, n.img.w, n.img.h);
+      n.icons.forEach((name, i) => M.markerCanvas(g, name, n.x + s.px + i * (n.id2 + 3), n.y + n.ty + (s.lh - n.id2) / 2, n.id2));
+      g.font = M.cssFont(s); g.fillStyle = v.fg; g.textBaseline = 'middle'; g.textAlign = 'left';
+      n.lines.forEach((l, i) => { const x = n.x + s.px + n.iw, y = n.y + n.ty + s.lh * (i + 0.5) + 1; g.fillText(l, x, y); if (s.strike) g.fillRect(x, y - 0.5, g.measureText(l).width, Math.max(1, s.fs / 14)); });
+      if (n.labels.length) {
+        let x = n.x + s.px; const y = n.y + n.ty + n.lines.length * s.lh + 4, LB = M.LABEL; g.font = `${LB.fw} ${LB.fs}px ${M.FONT}`;
+        for (const l of n.labels) { g.beginPath(); g.roundRect(x, y, l.w, LB.h, LB.h / 2); g.fillStyle = n.depth ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.2)'; g.fill(); g.fillStyle = v.fg; g.fillText(l.t, x + LB.px, y + LB.h / 2 + 0.5); x += l.w + LB.gap; }
+      }
       if (n.badge) { const bx = n.dir > 0 ? n.x + n.w + 12 : n.x - 12, by = n.y + n.h / 2; g.beginPath(); g.arc(bx, by, 9, 0, Math.PI * 2); g.fillStyle = n.color; g.fill(); g.fillStyle = '#fff'; g.font = `600 10px ${M.FONT}`; g.textAlign = 'center'; g.fillText(String(n.badge), bx, by + 0.5); g.textAlign = 'left'; }
     }
-    c.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = (this.doc.title || 'mindmap') + '.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); this.toast($t('已导出 PNG')); }, 'image/png');
+    for (const r of L.rels) {
+      const col = r.color ? '#' + r.color : '#6E6E73'; g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1.8; g.setLineDash([7, 5]); g.stroke(new Path2D(r.d)); g.setLineDash([]);
+      if (r.arrows === 'end' || r.arrows === 'both') g.fill(new Path2D(r.heads.end)); if (r.arrows === 'start' || r.arrows === 'both') g.fill(new Path2D(r.heads.start));
+      if (r.label) { g.font = `500 12px ${M.FONT}`; const w = g.measureText(r.label).width + 14; g.beginPath(); g.roundRect(r.mid.x - w / 2, r.mid.y - 10, w, 20, 10); g.fillStyle = '#FFFFFF'; g.fill(); g.lineWidth = 1; g.stroke(); g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(r.label, r.mid.x, r.mid.y + 0.5); g.textAlign = 'left'; }
+    }
+    c.toBlob(bl => { this.download(bl, 'png'); this.toast($t('已导出 PNG')); }, 'image/png');
   }
+  download(blob, ext) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (this.doc.title || 'mindmap') + '.' + ext; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+  /** The map as a standalone SVG document: the same markup the canvas shows, colours resolved to the light theme, white ground. */
+  svgDoc() {
+    const L = this.L(), b = L.bounds, P = 48, W = Math.ceil(b.maxX - b.minX + P * 2), H = Math.ceil(b.maxY - b.minY + P * 2), ed = this.state.editing; this.commitEdit();
+    return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="${b.minX - P} ${b.minY - P} ${W} ${H}"><style>text{font-family:'IBM Plex Sans','Noto Sans SC',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif}</style><rect x="${b.minX - P}" y="${b.minY - P}" width="${W}" height="${H}" fill="#FFFFFF"/>${lit(this.svgMap(L))}</svg>`;
+  }
+  exportSvg() { this.download(new Blob([this.svgDoc()], { type: 'image/svg+xml' }), 'svg'); this.toast($t('已导出 SVG')); }
+  /** The map as Markdown: the centre as the heading, every topic a bullet, notes quoted under theirs. */
+  mdOutline() {
+    const M = this.M, out = ['# ' + (this.map.text || '').replace(/\s*\n\s*/g, ' '), ''];
+    M.walk(this.map, (n, p, depth) => { if (!depth) return; const pad = '  '.repeat(depth - 1), labels = M.labelList(n); out.push(pad + '- ' + (n.text || '').replace(/\s*\n\s*/g, ' ') + (n.link ? ` (${n.link})` : '') + (labels.length ? ' `' + labels.join('` `') + '`' : '')); if (n.note) out.push(...n.note.split('\n').map(l => pad + '  > ' + l)); });
+    return out.join('\n') + '\n';
+  }
+  exportMd() { this.download(new Blob([this.mdOutline()], { type: 'text/markdown' }), 'md'); this.toast($t('已导出 Markdown')); }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0, width: 900 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); }
   renderVals() {
-    const M = this.M, st = this.state, d = this.doc, pure = !!this.props.pure, showOutline = !pure && this.props.showThumbs !== false;
+    const M = this.M, st = this.state, d = this.doc, pure = !!this.props.pure, showOutline = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the outline only when its 缩略图 asks, over the map
     const base = {
-      md, stop: e => e.stopPropagation(), notPure: !pure, rootRef: this.rootRef, canvasRef: this.canvasRef, taRef: this.taRef, onKey: this.onKey,
+      md, stop: e => e.stopPropagation(), notPure: !pure, pure, showBar: !pure || !!this.props.pureTools, rootRef: this.rootRef, canvasRef: this.canvasRef, taRef: this.taRef, onKey: this.onKey,
       barL: pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !pure ? '48px' : '0px', spD: this.props.merged && !pure ? 'flex' : 'none', barR: this.props.barRight || '12px',
       fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
-      aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(),
-      cols: showOutline ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)', showOutline, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
-      tabs: [], tools: [], bubbleOpen: false, rbx: '200px', bMax: '760px', tabKey: st.tab, outline: [], edges: [], nodes: [], tf: 'none', tfTr: 'none', cursor: 'default', isEditing: false, hasGhost: false, hasSel: false, noteGlyph: { __html: '' },
-      onCanvasDown: () => { }, statCount: '', zPct: 100, zPctText: '100%', onZoomSlide: () => { }, zoomIn: () => { }, zoomOut: () => { }, fitClick: () => { }
+      aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(),
+      cols: showOutline && !pure ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)', showOutline, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      tabs: [], tools: [], bubbleOpen: false, rbx: '200px', bMax: '760px', tabKey: st.tab, outline: [], tf: 'none', tfTr: 'none', cursor: 'default', hasGhost: false, hasMarquee: false, hasMenu: false, menuItems: [],
+      hasPop: false, popRef: this.popRef, imgRef: this.imgRef, onImgFile: this.onImgFile, closePop: () => this.closePop(), onPopText: this.onPopText, onPopKey: this.onPopKey, onPopBlur: this.onPopBlur, onNoteFocus: () => this.props.onChange && this.props.onChange(structuredClone(this.doc)),
+      hasSearch: !!st.search, searchRef: this.searchRef, searchQ: st.search ? st.search.q : '', searchStat: '', onSearch: this.onSearch, onSearchKey: this.onSearchKey, closeSearch: () => this.closeSearch(),
+      isOutline: st.view === 'outline', svgDisp: st.view === 'outline' ? 'none' : 'block', outRef: this.outRef, outlineText: st.outline || '', onOutlineText: this.onOutlineText, onOutlineKey: this.onOutlineKey, onOutlineBlur: this.onOutlineBlur,
+      svgMap: { __html: '' }, svgOver: { __html: '' }, svgUnder: { __html: '' }, taVal: '', edOp: 0, edPe: 'none', edL: 0, edT: 0, edW: '2px', edH: '2px',
+      onCanvasDown: this.onCanvasDown, onCanvasMove: this.onCanvasMove, onCanvasLeave: this.onCanvasLeave, onCanvasDbl: this.onCanvasDbl, onCanvasCtx: this.onCanvasCtx,
+      onEditText: this.onEditText, onEditBlur: this.onEditBlur, onCompStart: this.onCompStart, onCompEnd: this.onCompEnd, onCopy: this.onCopy, onCut: this.onCut, onPaste: this.onPaste,
+      closeMenu: () => this.setState({ menu: null }), closeMenuCtx: e => { e.preventDefault(); this.setState({ menu: null }); },
+      statCount: '', zPct: 100, zPctText: '100%', onZoomSlide: () => { }, zoomIn: () => { }, zoomOut: () => { }, fitClick: () => { }
     };
     if (!M || !d || !d.map) return base;
-    const L = this.L(), R = id => this.resolveId(id), sel = this.selId, selNode = this.selNode, level1 = selNode && M.parentOf(d.map, sel) === d.map;
-    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick: () => { if (!o.dis) onClick(); }, title: o.title || label, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || '13.5px', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k1, #1D1D1F)' });
-    const SW = (hex, cur, key) => ({ isSw: true, sw: '#' + hex, title: '#' + hex, bg: cur === hex ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onClick: () => sel && this.patch(sel, { [key]: hex }) });
+    const L = this.L(), R = id => this.resolveId(id), sel = this.selId, selNode = this.selNode, ids = this.selIds, level1 = selNode && M.parentOf(d.map, sel) === d.map, notRoot = !!sel && sel !== d.map.id;
+    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick: () => { if (!o.dis) onClick(); }, title: o.title || label, bg: o.on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fw: o.fw || 400, fst: o.fst || 'normal', td: o.td || 'none', fs: o.fs || '13px', color: o.dis ? 'var(--k63, #C7C7CC)' : o.color || 'var(--ink, #1D1D1F)' });
+    // a marker button: its glyph in the marker's colour, lit while the primary topic carries it
+    const has = name => !!selNode && M.iconList(selNode).includes(name), mcol = name => { const mk = M.marker(name); return mk ? mk.shapes[mk.shapes.length - 1].fill : null; };
+    const MK = (name, label, fs) => B(label, () => this.toggleIcon(name), { on: has(name), title: name, color: mcol(name), fs: fs || '15px', fw: 600 });
+    const PROG = ['○', '◔', '◑', '◕', '●'];
+    const SW = (hex, cur, key) => ({ isSw: true, sw: '#' + hex, title: '#' + hex, bg: cur === hex ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: () => key === 'rel' ? this.patchRel(st.selRel, { color: hex }) : key === 'cloud' ? this.cloudToggle(hex) : ids.length ? this.patchMany(ids, { [key]: hex }) : this.toast($t('先选中一个主题')) });
+    const selRel = this.rel();
     const SEP = { isSep: true }, LBL = label => ({ isLbl: true, label });
     const need = fn => sel ? fn() : this.toast($t('先选中一个主题'));
+    const tgtId = notRoot ? sel : d.map.id, curS = (notRoot ? selNode : d.map).structure || (notRoot ? '' : 'map'); // the structure buttons act on the selected branch, else the map
     const SETS = {
       home: [B('↶', () => this.props.onUndo && this.props.onUndo(), { title: $t('撤销 Ctrl+Z') }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: $t('重做 Ctrl+Y') }), SEP,
-        B($t('新增子主题'), () => this.addChild(sel || d.map.id), { title: 'Tab' }), B($t('新增同级'), () => need(() => this.addSibling(sel)), { title: 'Enter', dis: !sel || sel === d.map.id }), B($t('删除'), () => need(() => this.remove(sel)), { title: 'Delete', dis: !sel || sel === d.map.id }), SEP,
-        B(selNode && selNode.collapsed ? $t('展开') : $t('折叠'), () => need(() => this.toggle(sel)), { title: $t('空格'), dis: !selNode || !(selNode.children || []).length || sel === d.map.id }), SEP,
-        B($t('上移'), () => need(() => this.moveSib(sel, -1)), { title: 'Alt+↑', dis: !sel || sel === d.map.id }), B($t('下移'), () => need(() => this.moveSib(sel, 1)), { title: 'Alt+↓', dis: !sel || sel === d.map.id }), SEP,
+        B($t('新增子主题'), () => this.addChild(sel || d.map.id), { title: 'Tab' }), B($t('新增同级'), () => need(() => this.addSibling(sel)), { title: 'Enter', dis: !notRoot }), B($t('插入父主题'), () => need(() => this.addParent(sel)), { title: K + 'Enter', dis: !notRoot }), B($t('删除'), () => need(() => this.removeMany(this.tops(true))), { title: 'Delete', dis: !notRoot }), SEP,
+        B(selNode && selNode.collapsed ? $t('展开') : $t('折叠'), () => need(() => this.toggle(sel)), { title: K + '/', dis: !selNode || !(selNode.children || []).length || !notRoot }), SEP,
+        B($t('备注'), () => need(() => this.openPop('note', sel)), { on: !!(selNode && selNode.note) }), B($t('链接'), () => need(() => this.openPop('link', sel)), { on: !!(selNode && selNode.link), title: $t('链接') + ' ' + K + 'K' }), B($t('标签'), () => need(() => this.openPop('labels', sel)), { on: !!(selNode && selNode.labels) }),
+        B(selNode && selNode.image ? $t('移除图片') : $t('图片'), () => need(() => selNode.image ? this.patch(sel, { image: '', imageSize: '' }) : this.imgRef.current.click())), SEP,
+        B($t('关联'), () => this.relate(), { on: !!st.relFrom, title: $t('两个选中的主题之间画一条线；只选一个时，再点另一个') }), B(selNode && selNode.cloud ? $t('去掉外框') : $t('外框'), () => this.cloudToggle(), { dis: !notRoot }), B($t('概要'), () => this.summarize(), { dis: !notRoot }), SEP,
+        B($t('上移'), () => need(() => this.moveSib(sel, -1)), { title: 'Alt+↑', dis: !notRoot }), B($t('下移'), () => need(() => this.moveSib(sel, 1)), { title: 'Alt+↓', dis: !notRoot }), SEP,
         B($t('放左侧'), () => need(() => this.patch(sel, { side: 'left' })), { dis: !level1, on: level1 && selNode.side === 'left', title: $t('一级分支放到左侧') }), B($t('放右侧'), () => need(() => this.patch(sel, { side: 'right' })), { dis: !level1, on: level1 && selNode.side === 'right', title: $t('一级分支放到右侧') })],
-      style: [LBL($t('填充')), B($t('无'), () => need(() => this.patch(sel, { fill: '' })), { on: selNode && !selNode.fill, fs: '12px' }), ...FILLS.map(h => SW(h, selNode && selNode.fill, 'fill')), SEP,
-        LBL($t('文字')), B($t('默认'), () => need(() => this.patch(sel, { color: '' })), { on: selNode && !selNode.color, fs: '12px' }), ...TEXTS.map(h => SW(h, selNode && selNode.color, 'color')), SEP,
-        LBL($t('图标')), B($t('无'), () => need(() => this.patch(sel, { icon: '' })), { on: selNode && !selNode.icon, fs: '12px' }), ...M.ICONS.map(([name, g]) => Object.assign(B(g, () => need(() => this.patch(sel, { icon: name })), { on: selNode && selNode.icon === name, title: name, fs: '16px' })))],
-      view: [...[50, 100, 150, 200].map(p => B(p + '%', () => this.zoomTo(p / 100), { on: Math.round(st.z * 100) === p })), B($t('适应画布'), () => this.fit(1.25)), SEP,
-        B($t('全部展开'), () => this.setAll(false)), B($t('全部折叠'), () => this.setAll(true)), SEP, B($t('缩略图'), () => this.props.onToggleThumbs && this.props.onToggleThumbs(), { on: showOutline, title: $t('显示/隐藏左侧大纲') })],
-      export: [B($t('导出 PNG'), () => this.exportPng()), SEP, B($t('转为 Markdown 大纲'), () => this.props.onConvert && this.props.onConvert('md')), B($t('转为 Word'), () => this.props.onConvert && this.props.onConvert('docx')), B($t('转为演示'), () => this.props.onConvert && this.props.onConvert('pptx'))]
+      style: selRel ? [LBL($t('关联线')), B('→', () => this.patchRel(st.selRel, { arrows: 'end' }), { on: selRel.arrows === 'end', title: $t('单向箭头') }), B('↔', () => this.patchRel(st.selRel, { arrows: 'both' }), { on: selRel.arrows === 'both', title: $t('双向箭头') }), B('←', () => this.patchRel(st.selRel, { arrows: 'start' }), { on: selRel.arrows === 'start', title: $t('反向箭头') }), B('—', () => this.patchRel(st.selRel, { arrows: 'none' }), { on: selRel.arrows === 'none', title: $t('无箭头') }), SEP,
+        LBL($t('颜色')), B($t('默认'), () => this.patchRel(st.selRel, { color: '' }), { on: !selRel.color, fs: '12px' }), ...TEXTS.map(h => SW(h, selRel.color, 'rel')), SEP, B($t('编辑文字'), () => this.openRelPop(st.selRel)), B($t('删除'), () => this.removeRel(st.selRel))]
+        : [B('B', () => this.flip('bold'), { title: $t('加粗') + ' ' + K + 'B', fw: 700, on: selNode && selNode.bold }), B('I', () => this.flip('italic'), { title: $t('倾斜') + ' ' + K + 'I', fst: 'italic', on: selNode && selNode.italic }), B('S', () => this.flip('strike'), { title: $t('删除线'), td: 'line-through', on: selNode && selNode.strike }), SEP,
+        LBL($t('字号')), B('A−', () => this.bump(-1), { title: $t('缩小字号') }), B('A+', () => this.bump(1), { title: $t('放大字号') }), B($t('默认'), () => ids.length ? this.patchMany(ids, { size: '' }) : this.toast($t('先选中一个主题')), { on: selNode && !selNode.size, fs: '12px' }), SEP,
+        LBL($t('填充')), B($t('无'), () => ids.length ? this.patchMany(ids, { fill: '' }) : this.toast($t('先选中一个主题')), { on: selNode && !selNode.fill, fs: '12px' }), ...FILLS.map(h => SW(h, selNode && selNode.fill, 'fill')), SEP,
+        LBL($t('文字')), B($t('默认'), () => ids.length ? this.patchMany(ids, { color: '' }) : this.toast($t('先选中一个主题')), { on: selNode && !selNode.color, fs: '12px' }), ...TEXTS.map(h => SW(h, selNode && selNode.color, 'color')), SEP,
+        LBL($t('外框')), B($t('无'), () => need(() => this.patchMany(ids.filter(id => id !== d.map.id), { cloud: '' })), { on: selNode && !selNode.cloud, fs: '12px', dis: !notRoot }), ...FILLS.map(h => SW(h, selNode && selNode.cloud, 'cloud')), SEP,
+        LBL($t('优先级')), ...M.MARKERS.priority.map((name, i) => MK(name, String(i + 1), '13px')), SEP,
+        LBL($t('进度')), ...M.MARKERS.progress.map((name, i) => MK(name, PROG[i])), SEP,
+        LBL($t('旗帜')), ...M.MARKERS.flags.map(name => MK(name, '⚑')), SEP,
+        LBL($t('星标')), ...M.MARKERS.stars.map(name => MK(name, '★')), SEP,
+        LBL($t('图标')), ...M.ICONS.map(([name, g]) => MK(name, g, '16px')), B($t('清除'), () => need(() => this.patchMany(ids, { icon: '' })), { dis: !(selNode && selNode.icon), fs: '12px', title: $t('去掉所有标记和图标') })],
+      view: [LBL($t('结构')), ...[['map', '思维导图'], ['logic', '逻辑图'], ['logic-left', '左逻辑图'], ['org', '组织结构图'], ['tree', '树状图'], ['timeline', '时间轴']].map(([k, l]) => B($t(l), () => this.patch(tgtId, { structure: notRoot || k !== 'map' ? k : '' }), { on: curS === k, dis: k === 'timeline' && notRoot, title: notRoot ? $t('只改这个分支的结构') : $t('整张图的结构') })),
+        notRoot ? B($t('跟随上级'), () => this.patch(sel, { structure: '' }), { on: !selNode.structure, fs: '12px' }) : null, SEP,
+        LBL($t('主题')), ...Object.entries(M.THEMES).map(([k, t]) => ({ isSw: true, sw: t.branches[0], title: k, bg: (d.map.theme || 'classic') === k ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: () => this.patch(d.map.id, { theme: k === 'classic' ? '' : k }) })), B($t('彩虹分支'), () => this.patch(d.map.id, { mono: !d.map.mono }), { on: !d.map.mono }), SEP,
+        LBL($t('线条')), ...[['curve', '曲线'], ['straight', '直线'], ['elbow', '折线']].map(([k, l]) => B($t(l), () => this.patch(d.map.id, { lines: k === 'curve' ? '' : k }), { on: (d.map.lines || 'curve') === k })), SEP,
+        ...[50, 100, 150, 200].map(p => B(p + '%', () => this.zoomTo(p / 100), { on: Math.round(st.z * 100) === p })), B($t('适应画布'), () => this.fit(1.25)), SEP,
+        B($t('全部展开'), () => this.setAll(false)), B($t('全部折叠'), () => this.setAll(true)), SEP, B($t('搜索'), () => this.openSearch(), { title: K + 'F', on: !!st.search }), B($t('大纲视图'), () => this.toggleOutline(), { on: st.view === 'outline' }), B($t('缩略图'), () => this.props.onToggleThumbs && this.props.onToggleThumbs(), { on: showOutline, title: $t('显示/隐藏左侧大纲') })].filter(Boolean),
+      export: [B($t('导出 PNG'), () => this.exportPng()), B($t('导出 SVG'), () => this.exportSvg()), B($t('导出 Markdown'), () => this.exportMd()), SEP, B($t('转为 Markdown 大纲'), () => this.props.onConvert && this.props.onConvert('md')), B($t('转为 Word'), () => this.props.onConvert && this.props.onConvert('docx')), B($t('转为演示'), () => this.props.onConvert && this.props.onConvert('pptx'))]
     };
     const tab = st.tab;
-    const tabs = [['home', $t('开始')], ['style', $t('样式')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => this.openTab(k, e) }; });
-    const outline = []; M.walk(d.map, (n, p, depth) => outline.push({ text: n.text || $t('（空）'), indent: (10 + depth * 13) + 'px', fw: depth === 0 ? 600 : depth === 1 ? 500 : 400, bg: R(n.id) === sel ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent', mark: n.collapsed && (n.children || []).length ? '▸' : '', onClick: () => { this.setState({ sel: n.id }); this.centreOn(n.id); } }));
-    const { z, tx, ty } = st, dg = st.drag;
-    const nodes = L.nodes.map(b => {
-      const v = this.nodeView(b), s = b.s, n = b.n, bid = R(b.id), isSel = bid === sel, editing = !!st.editing && R(st.editing) === bid, over = !!dg && R(dg.over) === bid;
-      const inner = b.lines.map((l, i) => `<tspan x="${s.px + b.iw}" y="${(s.py + s.lh * (i + 0.5) + s.fs * 0.36).toFixed(1)}">${esc(l)}</tspan>`).join('');
-      return {
-        id: b.id, tf: `translate(${b.x}px,${b.y}px)`, w: b.w + 'px', h: b.h + 'px', rx: s.rx + 'px', bg: v.bg, stroke: v.stroke, sw: v.sw, fg: v.fg, fs: s.fs + 'px', fw: s.fw, inner: { __html: editing ? '' : inner }, color: b.color,
-        cursor: dg ? 'grabbing' : 'pointer', op: dg && R(dg.id) === bid ? 0.45 : 1,
-        ring: isSel || over || !!n.ai, rw: (b.w + 8) + 'px', rh: (b.h + 8) + 'px', rrx: (s.rx + 4) + 'px', ringColor: over ? 'var(--k59, #3F7D5C)' : isSel ? 'var(--k1, #1D1D1F)' : '#7FB59A', ringW: isSel ? 2 : 3, ringDash: over ? '5 4' : 'none', ringFill: over ? 'color-mix(in srgb, var(--k59, #3F7D5C) 8%, transparent)' : n.ai && !isSel ? 'rgba(127,181,154,0.14)' : 'none',
-        hasIcon: !!n.icon && !editing, itf: `translate(${s.px}px,${(s.py + s.lh / 2 + s.fs * 0.45).toFixed(1)}px)`, ifs: (s.fs * 1.2) + 'px', iconHtml: { __html: M.glyph(n.icon) },
-        hasNote: !!n.note, ntf: `translate(${b.w - 13}px,-3px)`, hasBadge: b.badge > 0, btf: `translate(${b.dir > 0 ? b.w + 12 : -12}px,${b.h / 2}px)`, badgeHtml: { __html: String(b.badge) },
-        onMD: e => { if (e.button !== 0) return; e.stopPropagation(); if (editing) return; e.preventDefault(); this.commitEdit(); this.focusRoot(); this.followOn = false; this.setState({ sel: b.id }); this.op = { kind: 'node', id: b.id, sx: e.clientX, sy: e.clientY, moved: false }; },
-        onDbl: e => { e.stopPropagation(); this.startEdit(b.id, true, n.text); }
-      };
-    });
-    const ed = st.editing && L.nodes.find(b => this.same(b.id, st.editing)), es = ed && ed.s;
-    const ghost = dg && this.F(d.map, dg.id);
+    const tabs = [['home', $t('开始')], ['style', $t('样式')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => this.openTab(k, e) }; });
+    const outline = []; M.walk(d.map, (n, p, depth) => outline.push({ text: n.text || $t('（空）'), indent: (10 + depth * 13) + 'px', fw: depth === 0 ? 600 : depth === 1 ? 500 : 400, bg: ids.includes(R(n.id)) ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', mark: n.collapsed && (n.children || []).length ? '▸' : '', onClick: () => { this.select(n.id); this.centreOn(n.id); } }));
+    const { z, tx, ty } = st, dg = st.drag, ov = this.svgOverlay(L);
+    const ed = st.editing && this.box(st.editing), es = ed && ed.s, anchor = ed || this.box(sel);
+    const ghost = dg && this.F(d.map, dg.ids[0]), mq = st.marquee, pop = st.pop;
+    // the popup hangs under its topic, or under the middle of its relationship line
+    const pb = pop && (pop.kind === 'rel' ? (r => r && { x: r.mid.x - 132 / z, y: r.mid.y + 4 / z, h: 0, n: { text: this.F(d.map, r.from).text } })(L.rels.find(r => this.same(r.from, pop.id) && r.i === pop.i)) : this.box(pop.id));
     return Object.assign(base, {
       tabs, tools: SETS[tab] || [], bubbleOpen: st.bubble && !pure, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(820, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, outline,
-      edges: L.edges, nodes, tf: `translate(${tx}px,${ty}px) scale(${z})`, tfTr: st.anim ? 'transform .4s cubic-bezier(.2,1,.3,1)' : 'none', cursor: this.op && this.op.kind === 'pan' && this.op.moved ? 'grabbing' : 'default',
-      onCanvasDown: e => { if (e.button !== 0) return; this.commitEdit(); this.focusRoot(); this.followOn = false; this.op = { kind: 'pan', sx: e.clientX, sy: e.clientY, tx, ty, moved: false }; },
-      isEditing: !!ed, editText: st.editText, edL: ed ? (tx + ed.x * z) + 'px' : 0, edT: ed ? (ty + ed.y * z) + 'px' : 0, edW: ed ? Math.max(ed.w * z, 60) + 'px' : 0, edH: ed ? ed.h * z + 'px' : 0, edPad: ed ? `${(es.py - 2) * z}px ${(es.px - 2) * z}px` : 0, edRx: ed ? es.rx * z + 'px' : 0, edFs: ed ? es.fs * z + 'px' : 0, edLh: ed ? es.lh * z + 'px' : 0, edFw: ed ? es.fw : 400,
-      onEditText: e => this.setState({ editText: e.target.value }),
-      onEditKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.commitEdit(); this.focusRoot(); } else if (e.key === 'Escape') { e.preventDefault(); this.edDone = true; this.setState({ editing: null }); this.focusRoot(); } else if (e.key === 'Tab') { e.preventDefault(); const id = st.editing; this.commitEdit(); this.addChild(id); } },
-      onEditBlur: () => this.commitEdit(),
-      hasGhost: !!ghost, gx: dg ? (dg.x + 14) + 'px' : 0, gy: dg ? (dg.y + 14) + 'px' : 0, ghostText: ghost ? ghost.text || $t('（空）') : '',
+      svgMap: { __html: this.svgMap(L) }, svgOver: { __html: ov.over }, svgUnder: { __html: ov.under },
+      tf: `translate(${tx}px,${ty}px) scale(${z})`, tfTr: st.anim ? 'transform .4s cubic-bezier(.2,1,.3,1)' : 'none', cursor: this.op && this.op.kind === 'pan' && this.op.moved ? 'grabbing' : dg ? 'grabbing' : st.relFrom ? 'crosshair' : 'default',
+      // the field: over the topic while editing, otherwise an invisible caret at the selection (so an IME opens there)
+      taVal: ed ? st.editText : '', edOp: ed ? 1 : 0, edPe: ed ? 'auto' : 'none', edCaret: ed ? 'var(--k1, #1D1D1F)' : 'transparent',
+      edL: anchor ? (tx + anchor.x * z) + 'px' : '0px', edT: anchor ? (ty + anchor.y * z) + 'px' : '0px', edW: ed ? (ed.w + 6) * z + 'px' : '2px', edH: ed ? ed.h * z + 'px' : '2px',
+      edPad: ed ? `${(ed.ty - 2) * z}px ${(es.px - 2) * z}px ${(es.py - 2) * z}px ${(es.px - 2 + ed.iw) * z}px` : '0px', edRx: ed ? es.rx * z + 'px' : '0px', edFs: ed ? es.fs * z + 'px' : '13px', edLh: ed ? es.lh * z + 'px' : 'normal', edFw: ed ? es.fw : 400, edFi: ed && es.fi ? 'italic' : 'normal', edTd: ed && es.strike ? 'line-through' : 'none', edFam: ed && es.family ? JSON.stringify(es.family) + ",'IBM Plex Sans','Noto Sans SC',sans-serif" : "'IBM Plex Sans','Noto Sans SC',sans-serif",
+      hasMarquee: !!mq, mqL: mq ? Math.min(mq.x0, mq.x1) + 'px' : 0, mqT: mq ? Math.min(mq.y0, mq.y1) + 'px' : 0, mqW: mq ? Math.abs(mq.x1 - mq.x0) + 'px' : 0, mqH: mq ? Math.abs(mq.y1 - mq.y0) + 'px' : 0,
+      hasGhost: !!ghost, gx: dg ? (dg.x + 14) + 'px' : 0, gy: dg ? (dg.y + 14) + 'px' : 0, ghostText: ghost ? (dg.ids.length > 1 ? $t('{n} 个主题', { n: dg.ids.length }) : ghost.text || $t('（空）')) : '',
+      hasMenu: !!st.menu, menuX: st.menu ? st.menu.x + 'px' : 0, menuY: st.menu ? Math.max(8, st.menu.y) + 'px' : 0, menuItems: st.menu ? st.menu.items : [],
+      searchStat: st.search && st.search.q.trim() ? (m => st.search.i >= 0 ? (st.search.i + 1) + '/' + m : String(m))(this.matches().length) : '',
       statCount: $t('{n} 个主题', { n: M.count(d.map) }), zPct: Math.round(z * 100), zPctText: Math.round(z * 100) + '%',
       onZoomSlide: e => this.zoomTo(+e.target.value / 100), zoomIn: () => this.zoomTo(z * 1.2), zoomOut: () => this.zoomTo(z / 1.2), fitClick: () => this.fit(1.25),
-      hasSel: !!selNode, selText: selNode ? selNode.text || $t('（空）') : '', note: selNode ? selNode.note || '' : '', noteGlyph: { __html: '✎' },
-      onNoteFocus: () => this.props.onChange && this.props.onChange(structuredClone(d)),
-      onNote: e => { const v = e.target.value; this.commit(m => { const n = this.F(m, sel); if (!n) return; if (v) n.note = v; else delete n.note; }, { silent: true }); }
+      hasPop: !!pb, popL: pb ? Math.max(8, Math.min(st.box.w - 272, tx + pb.x * z)) + 'px' : 0, popT: pb ? (ty + (pb.y + pb.h) * z + 8 + 150 > st.box.h ? ty + pb.y * z - 158 : ty + (pb.y + pb.h) * z + 8) + 'px' : 0,
+      popTitle: pop ? { note: $t('备注'), link: $t('链接'), labels: $t('标签'), rel: $t('关联线') }[pop.kind] + ' ·' : '', popTopic: pb ? pb.n.text || $t('（空）') : '', popVal: pop ? pop.val : '', popIsNote: !!pop && pop.kind === 'note', popIsLine: !!pop && pop.kind !== 'note',
+      popHint: pop && pop.kind === 'link' ? $t('网址，留空则删除') : pop && pop.kind === 'rel' ? $t('线上的文字') : $t('标签，用逗号分隔')
     });
   }
 }

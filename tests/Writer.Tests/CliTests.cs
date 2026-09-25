@@ -83,7 +83,7 @@ public class CliTests : IDisposable
     {
         var file = In("doc.docx");
         File.WriteAllBytes(file, Docx(P("one")));
-        File.WriteAllText(In("notes.txt"), "hi");
+        File.WriteAllText(In("notes.xyz"), "hi");
 
         var missing = Run("get", In("nope.docx"));
         Assert.Equal(2, missing.Code);
@@ -95,7 +95,7 @@ public class CliTests : IDisposable
         Assert.Equal("PATH_NOT_FOUND", Code(badPath.Err));
         Assert.Contains("/body/paragraph[1]", Json(badPath.Err).GetProperty("error").GetProperty("hint").GetString());
 
-        var unknownFormat = Run("get", In("notes.txt"));
+        var unknownFormat = Run("get", In("notes.xyz"));
         Assert.Equal(4, unknownFormat.Code);
         Assert.Equal("UNKNOWN_FORMAT", Code(unknownFormat.Err));
 
@@ -161,7 +161,7 @@ public class CliTests : IDisposable
 
         var html = In("notes.html");
         Assert.Equal(0, Run("export", docx, "--to", html).Code);
-        Assert.Contains("<h1>Notes</h1>", File.ReadAllText(html));
+        Assert.Matches("<h1[^>]*>Notes</h1>", File.ReadAllText(html)); // the heading as its style draws it
         Assert.Equal(0, Run("export", docx, "--to", In("notes.json")).Code);
         Assert.Equal("USAGE", Code(Run("export", md).Err));
         Assert.Equal("UNKNOWN_FORMAT", Code(Run("export", md, "--to", In("notes.xyz")).Err));

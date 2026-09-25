@@ -30,14 +30,14 @@ public sealed partial class Chat
     }
 
     /// <summary>One request, retried at most once per refusal that names what to change: reasoning_effort, reasoning_content.</summary>
-    async Task<Reply> OpenAiTurn(string system, JsonArray messages, bool web, CancellationToken ct)
+    async Task<Reply> OpenAiTurn(string system, JsonArray messages, bool web, Func<string, Task>? onDelta, CancellationToken ct)
     {
         if (_fold) Fold(messages);
         while (true)
         {
             try
             {
-                return await OpenAiRequest(system, messages, web, ct);
+                return await OpenAiRequest(system, messages, web, onDelta, ct);
             }
             catch (WriterException ex) when (!_noReasoning && Says(ex, "reasoning_effort"))
             {
@@ -54,7 +54,8 @@ public sealed partial class Chat
     /// <summary>The provider's words are in the message or, when they were given a short Chinese name, in the hint.</summary>
     static bool Says(WriterException ex, string word) => ex.Message.Contains(word, StringComparison.Ordinal) || ex.Hint.Contains(word, StringComparison.Ordinal);
 
-    async Task<Reply> OpenAiRequest(string system, JsonArray messages, bool web, CancellationToken ct)
+    /// <summary>One streamed request; each content delta goes to <paramref name="onDelta"/> as it arrives.</summary>
+    async Task<Reply> OpenAiRequest(string system, JsonArray messages, bool web, Func<string, Task>? onDelta, CancellationToken ct)
     {
         var all = new JsonArray(new JsonObject { ["role"] = "system", ["content"] = system });
         foreach (var m in messages) all.Add(m!.DeepClone());
@@ -106,7 +107,11 @@ public sealed partial class Chat
                 if (chunk["error"] is not null) throw Failure(0, ErrorText(data));
                 if (chunk["choices"] is not JsonArray { Count: > 0 } choices || choices[0] is not JsonObject choice) continue;
                 var delta = choice["delta"] as JsonObject;
-                if (Str(delta?["content"]) is { } piece) text.Append(piece);
+                if (Str(delta?["content"]) is { Length: > 0 } piece)
+                {
+                    text.Append(piece);
+                    if (onDelta is not null) await onDelta(piece);
+                }
                 if (Str(delta?["reasoning_content"]) is { } thought) (reasoning ??= new()).Append(thought);
                 if (delta?["tool_calls"] is JsonArray parts)
                     foreach (var part in parts.OfType<JsonObject>()) Accumulate(part, calls, byIndex);
@@ -156,7 +161,7 @@ public sealed partial class Chat
         return new Reply(blocks, message, calls.Count > 0);
     }
 
-    /// <summary>The tools offered on /chat/completions: writer always, web_search and web_fetch when 联网搜索 is on.</summary>
+    /// <summary>The tools offered on /chat/completions: writer, batch and plan always, web_search and web_fetch when 联网搜索 is on.</summary>
     static JsonArray OpenAiTools(bool web)
     {
         // JsonNode, not JsonObject: JsonArray.Add<T> for a JsonObject is the reflection overload, which NativeAOT refuses
@@ -165,7 +170,8 @@ public sealed partial class Chat
             ["type"] = "function",
             ["function"] = new JsonObject { ["name"] = name, ["description"] = description, ["parameters"] = schema },
         };
-        var tools = new JsonArray { Fn(Mcp.ToolName, Mcp.ToolDescription, Parameters()) };
+        var tools = new JsonArray();
+        foreach (var (name, description, schema) in EditingTools()) tools.Add(Fn(name, description, schema));
         if (web)
         {
             tools.Add(Fn(Web.SearchToolName, Web.SearchDescription, Web.SearchParameters()));

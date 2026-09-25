@@ -33,6 +33,8 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '深色模式 ⇧⌘L': 'Dark mode ⇧⌘L',
   '{name} — 未存储': '{name} — Unsaved',
   '快捷打开：{tab}（可在设置中更改）': 'Quick open: {tab} (change it in Settings)',
+  '快捷打开：{tab}': 'Quick open: {tab}',
+  '更多': 'More',
   '这个编辑器没有「{q}」': 'This editor has no {q} tab',
   '先把光标放进文字里': 'Click in the text first',
   'AI 助手已在设置中关闭': 'The assistant is turned off in Settings',
@@ -42,6 +44,14 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '没有找到 {name}': 'Couldn’t find {name}',
   '无法打开：{error}': 'Couldn’t open: {error}',
   '贴靠布局在 Windows 应用里生效': 'Snap layouts work in the Windows app',
+  // the 默认打开方式 sheet on a version's first launch (mac.dc.html, win.dc.html; desktop/src-tauri/src/default_app.rs)
+  '把 Writer 设为默认打开方式？': 'Make Writer the default app for your documents?',
+  '以后双击这些文件时，直接在 Writer 里打开。': 'They’ll open in Writer when you double-click them.',
+  '点「设为默认」后，在打开的系统设置里为这些文件选择 Writer。': 'Make Default opens Windows Settings: choose Writer for these files there.',
+  '设为默认': 'Make Default',
+  '以后再说': 'Not Now',
+  '已设为默认打开方式': 'Writer is now the default app',
+  '无法设为默认打开方式：{error}': 'Couldn’t make Writer the default: {error}',
   // the editors' toolbar tabs that press() and 收起后的快捷按钮 name (the editors show the same words)
   '开始': 'Home',
   '插入': 'Insert',
@@ -104,6 +114,13 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '立即重启': 'Restart Now',
   '纸张大小': 'Paper size',
   '新建文字文档的纸张': 'Paper for new documents',
+  '默认打开方式': 'Default app',
+  'Writer 已是 {types} 的默认打开方式': 'Writer is the default app for {types}',
+  '双击 {types} 文件时还不会用 Writer 打开': 'Double-clicking {types} files doesn’t open Writer yet',
+  '打开系统设置': 'Open Windows Settings',
+  '在系统设置里，把这些文件类型的默认应用选为 Writer': 'In Windows Settings, choose Writer as the default app for these file types',
+  '版本 {v}': 'Version {v}',
+  '检查更新': 'Check for Updates',
   // 外观
   '浅色': 'Light',
   '深色': 'Dark',
@@ -219,6 +236,16 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '感谢 OfficeCLI、IBM Plex、思源黑体与思源宋体等开源项目。': 'Thanks to OfficeCLI, IBM Plex, Source Han Sans, Source Han Serif and other open-source projects.',
   '检查更新…': 'Check for Updates…',
   '自动更新即将推出': 'Automatic updates are coming soon',
+
+  // ---- the update notice and What's New (UpdateNotice.dc.html)
+  'Writer {v} 已准备好': 'Writer {v} is ready',
+  '查看更新内容': 'See What’s New',
+  '立即更新': 'Update Now',
+  '稍后': 'Later',
+  '好': 'OK',
+  '现在更新，或者下次打开 Writer 时自动生效。': 'Update now, or it takes effect the next time you open Writer.',
+  'Writer 已更新到 {v}': 'Writer has been updated to {v}',
+  'Writer {v} 已是最新版本': 'Writer {v} is up to date',
 
   // ---- Trackpad gestures (MacGestures.dc.html)
   '触控板手势': 'Trackpad Gestures',

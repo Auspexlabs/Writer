@@ -145,5 +145,14 @@ sealed class PptxDecor(PptxDocument doc, SlidePart slide, OpenXmlPart part, Open
             if (props.TryGetValue(name, out var v) && long.TryParse(v, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var emu))
                 props[name] = ((long)Math.Round(a + s * emu)).ToString(CultureInfo.InvariantCulture);
         }
+
+        /// <summary>A slide-space x, y, w or h back into the child space this transform maps from.</summary>
+        public long Unmap(string name, long emu) => this == Identity ? emu : name switch
+        {
+            "x" => (long)Math.Round((emu - Ax) / Sx),
+            "y" => (long)Math.Round((emu - Ay) / Sy),
+            "w" => (long)Math.Round(emu / Sx),
+            _ => (long)Math.Round(emu / Sy),
+        };
     }
 }

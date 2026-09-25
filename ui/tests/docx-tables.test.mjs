@@ -103,7 +103,7 @@ test('a column next to a vertical merge is added in the right grid column', asyn
     ['set', P(1, 1), '--prop', 'rowspan=1'],
     ['add', '/body/table[1]/row[1]', '--type', 'cell', '--index', '1'], ['add', '/body/table[1]/row[2]', '--type', 'cell', '--index', '1'],
     ['set', P(1, 2), '--prop', 'rowspan=2'],
-    ['set', P(2, 1), '--prop', 'fill=none'], ['set', P(1, 1), '--prop', 'fill=none']], 'the merge is split for the moment, else row 2 would get its cell after it');
+    ['set', P(1, 1), '--prop', 'fill=none'], ['set', P(2, 1), '--prop', 'fill=none']], 'the merge is split for the moment, else row 2 would get its cell after it');
   const right = await plan(b, edit(clone(b), 'insertCol', P(1, 1), true));
   assert.deepEqual(right.filter(c => c[0] !== 'set'), [['add', '/body/table[1]/row[1]', '--type', 'cell', '--index', '2'], ['add', '/body/table[1]/row[2]', '--type', 'cell', '--index', '1']]);
 });

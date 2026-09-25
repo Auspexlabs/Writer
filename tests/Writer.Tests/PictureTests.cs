@@ -170,6 +170,118 @@ public class PictureTests : IDisposable
         Assert.Null(package2.WorkbookPart!.WorksheetParts.Single().DrawingsPart);
     }
 
+    static Node Picture(Document doc, string id) => PathResolver.Single(doc.Root, $"//image[@id={id}]");
+
+    static Document Reopen(Document doc)
+    {
+        var bytes = Save(doc);
+        Assert.Empty(Errors("docx", bytes));
+        return Adapters.ForName("docx").Open(new MemoryStream(bytes));
+    }
+
+    [Fact]
+    public void A_Word_picture_floats_in_a_paragraph_at_its_place_and_comes_back_inline()
+    {
+        var (doc, image) = WithPicture("docx", _png);
+        using (doc)
+        {
+            var body = doc.Root.Children.Single();
+            Mutations.Add(body, "paragraph", Props(("text", "Text the picture floats over.")), null);
+            image = Mutations.Set(image, Props(("crop", "10,0,0,0"), ("alt", "logo")));
+            var id = image.GetProps()["id"];
+            Assert.Equal("inline", Shown(image, "wrap"));
+
+            image = Mutations.Move(image, PathResolver.Single(doc.Root, "/body/paragraph[1]"), null);
+            Assert.Equal("/body/paragraph[1]/image[1]", image.Path);
+            Assert.Equal(("square", "0cm", "0cm", "column", "paragraph"), (Shown(image, "wrap"), Shown(image, "x"), Shown(image, "y"), Shown(image, "xFrom"), Shown(image, "yFrom")));
+            Assert.DoesNotContain(body.Children, c => c.Kind == "image"); // the block the picture was in goes with it
+            Mutations.Set(image, Props(("wrap", "front"), ("x", "2.5cm"), ("y", "1cm"), ("xFrom", "page")));
+
+            using (var again = Reopen(doc))
+            {
+                var floating = Picture(again, id);
+                Assert.Equal("/body/paragraph[1]/image[1]", floating.Path);
+                foreach (var (name, value) in new[] { ("wrap", "front"), ("x", "2.5cm"), ("y", "1cm"), ("xFrom", "page"), ("yFrom", "paragraph"), ("width", "3.6cm"), ("height", "3cm"), ("crop", "10,0,0,0"), ("alt", "logo") })
+                    Assert.Equal(value, Shown(floating, name));
+                Assert.Equal("Text the picture floats over.", PathResolver.Single(again.Root, "/body/paragraph[1]").Text);
+
+                var inline = Mutations.Move(floating, again.Root.Children.Single(), 1);
+                Assert.Equal("/body/image[1]", inline.Path);
+                using var back = Reopen(again);
+                var block = Picture(back, id);
+                Assert.Equal("/body/image[1]", block.Path);
+                foreach (var (name, value) in new[] { ("wrap", "inline"), ("width", "3.6cm"), ("height", "3cm"), ("crop", "10,0,0,0"), ("alt", "logo") })
+                    Assert.Equal(value, Shown(block, name));
+                Assert.False(block.GetProps().ContainsKey("x"));
+                Assert.Equal("Text the picture floats over.", PathResolver.Single(back.Root, "/body/paragraph[1]").Text);
+            }
+        }
+    }
+
+    [Fact]
+    public void Every_Word_wrap_and_alignment_round_trips()
+    {
+        using var doc = Adapters.ForName("docx").Create();
+        var paragraph = Mutations.Add(doc.Root.Children.Single(), "paragraph", Props(("text", "Anchor")), null);
+        var image = Mutations.Add(paragraph, "image", Props(("src", _png), ("width", "2cm"), ("wrap", "behind"), ("x", "1cm"), ("y", "-0.5cm")), null);
+        var id = image.GetProps()["id"];
+        Assert.Equal(("behind", "1cm", "-0.5cm"), (Shown(image, "wrap"), Shown(image, "x"), Shown(image, "y")));
+        foreach (var wrap in new[] { "square", "tight", "through", "topBottom", "front", "behind" })
+        {
+            Mutations.Set(Picture(doc, id), Props(("wrap", wrap)));
+            using var again = Reopen(doc);
+            Assert.Equal(wrap, Shown(Picture(again, id), "wrap"));
+        }
+        Mutations.Set(Picture(doc, id), Props(("xAlign", "center"), ("xFrom", "margin"), ("yAlign", "bottom"), ("yFrom", "page")));
+        using (var again = Reopen(doc))
+        {
+            var p = Picture(again, id).GetProps();
+            Assert.Equal(("center", "margin", "bottom", "page"), (p["xAlign"], p["xFrom"], p["yAlign"], p["yFrom"]));
+            Assert.False(p.ContainsKey("x") || p.ContainsKey("y"), "an alignment replaces the offset");
+        }
+        Mutations.Set(Picture(doc, id), Props(("x", "3cm")));
+        var shown = Picture(doc, id).GetProps();
+        Assert.True(shown.ContainsKey("x") && !shown.ContainsKey("xAlign"), "an offset replaces the alignment");
+        Mutations.Set(Picture(doc, id), Props(("wrap", "inline")));
+        using (var again = Reopen(doc))
+        {
+            var p = Picture(again, id).GetProps();
+            Assert.Equal("inline", p["wrap"]);
+            Assert.False(p.ContainsKey("x") || p.ContainsKey("xFrom"));
+            Assert.Equal("Anchor", PathResolver.Single(again.Root, "/body/paragraph[1]").Text);
+        }
+    }
+
+    [Fact]
+    public void Floating_pictures_from_Word_keep_their_place_through_edits()
+    {
+        using var file = File.OpenRead(Path.Combine(TestDocs.FixtureDir("docx"), "pictures.docx"));
+        using var doc = Adapters.ForName("docx").Open(file);
+        var expected = new Dictionary<string, (string Wrap, string XFrom, string X, string YFrom, string Y)>
+        {
+            ["4"] = ("behind", "margin", "xAlign=center", "margin", "yAlign=center"),
+            ["5"] = ("square", "margin", "xAlign=right", "paragraph", "0cm"),
+            ["6"] = ("tight", "margin", "2cm", "paragraph", "1cm"),
+        };
+        void Check(Document d)
+        {
+            foreach (var (id, e) in expected)
+            {
+                var p = Registry.ToDisplay("docx", "image", Picture(d, id).GetProps());
+                Assert.Equal(e, (p["wrap"], p["xFrom"], p.TryGetValue("x", out var x) ? x : "xAlign=" + p["xAlign"], p["yFrom"], p.TryGetValue("y", out var y) ? y : "yAlign=" + p["yAlign"]));
+            }
+        }
+        Check(doc);
+        foreach (var id in expected.Keys)
+        {
+            var paragraph = Picture(doc, id).Parent!;
+            Mutations.Set(paragraph, Props(("html", "Edited <b>text</b> of the paragraph the picture floats in.")));
+        }
+        using var again = Adapters.ForName("docx").Open(new MemoryStream(Save(doc)));
+        Check(again);
+        Assert.Equal("Edited text of the paragraph the picture floats in.", Picture(again, "6").Parent!.Text);
+    }
+
     [Fact]
     public void Office_pictures_read_their_look_from_the_file()
     {

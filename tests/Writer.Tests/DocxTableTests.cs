@@ -318,8 +318,8 @@ public class DocxTableTests
         Assert.False(cell.GetProps().ContainsKey("fill"));
 
         var html = HtmlWriter.Render(doc);
-        Assert.Contains("<table style=\"width:302.4px;margin-left:auto;margin-right:auto;\">", html);
-        Assert.Contains("<td colspan=\"2\" style=\"border:none;border:1px solid #bbb;vertical-align:middle;width:", html);
+        Assert.Contains("<table style=\"width:302.4px;margin-left:auto;margin-right:auto;table-layout:fixed;\">\n<colgroup><col style=", html); // its column widths
+        Assert.Contains("<td colspan=\"2\" style=\"border:none;border:1px solid #000;vertical-align:middle;width:", html); // Word's automatic line is black
         AssertValid(doc);
     }
 

@@ -23,6 +23,7 @@ sealed class DocxComment(DocxDocument doc, W.Comment comment) : Node
         props["text"] = DocxComments.Text(comment);
         props["quote"] = DocxComments.Quote(doc, comment.Id?.Value ?? "");
         if (DocxComments.Resolved(doc, comment)) props["resolved"] = "true";
+        if (DocxComments.ParentOf(doc, comment)?.Id?.Value is { } parent) props["parent"] = parent;
         return props;
     }
 
@@ -43,6 +44,7 @@ sealed class DocxComment(DocxDocument doc, W.Comment comment) : Node
                 DocxComments.Anchor(paragraph, comment.Id.Value!, value);
                 break;
             case "resolved": DocxComments.SetResolved(doc, comment, value == "true"); break;
+            case "parent": DocxComments.SetParent(doc, comment, value); break;
         }
     }
 
@@ -67,7 +69,11 @@ static class DocxComments
     {
         var id = (1 + All(doc).Select(c => int.TryParse(c.Id?.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : -1).DefaultIfEmpty(-1).Max())
             .ToString(CultureInfo.InvariantCulture);
-        Anchor(p, id, props.GetValueOrDefault("quote")); // validates the quote before anything is added
+        var parent = props.GetValueOrDefault("parent") is { Length: > 0 } parentId
+            ? All(doc).FirstOrDefault(c => c.Id?.Value == parentId) ?? throw new WriterException(ErrorCode.Validation, $"No comment {parentId} to reply to", "Give the id of a comment in the document.")
+            : null;
+        if (parent is not null) AnchorBeside(doc, parent.Id!.Value!, id); // a reply shares its comment's place, as Word writes it
+        else Anchor(p, id, props.GetValueOrDefault("quote")); // validates the quote before anything is added
         var part = doc.Main.WordprocessingCommentsPart ?? doc.Main.AddNewPart<WordprocessingCommentsPart>();
         var comments = part.Comments ??= new W.Comments();
         var comment = new W.Comment
@@ -80,6 +86,7 @@ static class DocxComments
         SetText(comment, props.GetValueOrDefault("text") ?? "");
         comments.Append(comment);
         var node = new DocxComment(doc, comment);
+        if (parent is not null) Extended(doc, comment, create: true)!.ParaIdParent = Extended(doc, parent, create: true)!.ParaId;
         if (props.GetValueOrDefault("resolved") == "true") node.SetProp("resolved", "true");
         return node;
     }
@@ -118,6 +125,29 @@ static class DocxComments
         }
         return text.ToString();
     }
+
+    /// <summary>A reply's range and reference mark, right after its comment's.</summary>
+    static void AnchorBeside(DocxDocument doc, string parent, string id)
+    {
+        var body = doc.Main.Document!.Body!;
+        var start = body.Descendants<W.CommentRangeStart>().FirstOrDefault(x => x.Id?.Value == parent);
+        var end = body.Descendants<W.CommentRangeEnd>().FirstOrDefault(x => x.Id?.Value == parent);
+        var reference = ReferenceRun(doc, parent) ?? throw new WriterException(ErrorCode.Validation, $"Comment {parent} has no place in the text", "Reply to a comment that is anchored.");
+        if (start is not null && end is not null) { start.InsertAfterSelf(new W.CommentRangeStart { Id = id }); end.InsertAfterSelf(new W.CommentRangeEnd { Id = id }); }
+        reference.InsertAfterSelf(new W.Run(new W.CommentReference { Id = id }));
+    }
+
+    /// <summary>Makes the comment a reply to another (by id), or a comment of its own again (none).</summary>
+    public static void SetParent(DocxDocument doc, W.Comment comment, string parentId)
+    {
+        if (parentId is "none" or "") { if (Extended(doc, comment) is { } ex) ex.ParaIdParent = null; return; }
+        var parent = All(doc).FirstOrDefault(c => c.Id?.Value == parentId) ?? throw new WriterException(ErrorCode.Validation, $"No comment {parentId} to reply to", "Give the id of a comment in the document.");
+        Extended(doc, comment, create: true)!.ParaIdParent = Extended(doc, parent, create: true)!.ParaId;
+    }
+
+    /// <summary>The comment a reply answers (commentsExtended's paraIdParent).</summary>
+    public static W.Comment? ParentOf(DocxDocument doc, W.Comment comment) =>
+        Extended(doc, comment)?.ParaIdParent?.Value is { } parentPara ? All(doc).FirstOrDefault(c => c.Elements<W.Paragraph>().LastOrDefault()?.ParagraphId?.Value == parentPara) : null;
 
     public static W.Run? ReferenceRun(DocxDocument doc, string id) =>
         doc.Main.Document!.Body!.Descendants<W.CommentReference>().FirstOrDefault(r => r.Id?.Value == id)?.Parent as W.Run;
@@ -180,20 +210,15 @@ static class DocxComments
         }
         foreach (var e in body.Descendants().Where(e => e is W.CommentRangeStart s && s.Id?.Value == id || e is W.CommentRangeEnd n && n.Id?.Value == id).ToList())
         {
-            var (previous, next) = (e.PreviousSibling() as W.Run, e.NextSibling() as W.Run);
+            var (previous, next) = (e.PreviousSibling(), e.NextSibling());
             e.Remove();
-            if (previous is not null && next is not null && SameLook(previous, next) && next.ChildElements.All(c => c is W.RunProperties || DocxRuns.IsTextElement(c)))
-            {
-                foreach (var t in next.ChildElements.Where(DocxRuns.IsTextElement).ToList()) { t.Remove(); previous.Append(t); }
-                next.Remove();
-            }
+            DocxRuns.Rejoin(previous, next);
         }
     }
 
-    static bool SameLook(W.Run a, W.Run b) => (a.RunProperties?.OuterXml ?? "") == (b.RunProperties?.OuterXml ?? "");
-
     public static void Remove(DocxDocument doc, W.Comment comment)
     {
+        foreach (var reply in All(doc).Where(c => !ReferenceEquals(c, comment) && ParentOf(doc, c) == comment).ToList()) Remove(doc, reply); // its replies go with it, as in Word
         var id = comment.Id?.Value ?? "";
         Unanchor(doc, id);
         SetResolved(doc, comment, false);
@@ -202,10 +227,18 @@ static class DocxComments
         if (!All(doc).Any()) doc.Main.DeletePart(part);
     }
 
-    static W15.CommentEx? Extended(DocxDocument doc, W.Comment comment)
+    /// <summary>The comment's commentsExtended entry (done, paraIdParent), made when asked to (its last paragraph gets a paraId).</summary>
+    static W15.CommentEx? Extended(DocxDocument doc, W.Comment comment, bool create = false)
     {
-        var paraId = comment.Elements<W.Paragraph>().LastOrDefault()?.ParagraphId?.Value;
-        return paraId is null ? null : doc.Main.WordprocessingCommentsExPart?.CommentsEx?.Elements<W15.CommentEx>().FirstOrDefault(c => c.ParaId?.Value == paraId);
+        var last = comment.Elements<W.Paragraph>().LastOrDefault();
+        var paraId = last?.ParagraphId?.Value;
+        var found = paraId is null ? null : doc.Main.WordprocessingCommentsExPart?.CommentsEx?.Elements<W15.CommentEx>().FirstOrDefault(c => c.ParaId?.Value == paraId);
+        if (found is not null || !create) return found;
+        if (last is null) comment.Append(last = new W.Paragraph());
+        last.ParagraphId ??= new HexBinaryValue(Random.Shared.Next(1, 0x7FFFFFFF).ToString("X8", CultureInfo.InvariantCulture));
+        var part = doc.Main.WordprocessingCommentsExPart ?? doc.Main.AddNewPart<WordprocessingCommentsExPart>();
+        var root = part.CommentsEx ??= new W15.CommentsEx();
+        return root.AppendChild(new W15.CommentEx { ParaId = last.ParagraphId.Value, Done = false });
     }
 
     public static bool Resolved(DocxDocument doc, W.Comment comment) => Extended(doc, comment)?.Done?.Value == true;
@@ -216,6 +249,7 @@ static class DocxComments
         if (!done)
         {
             if (existing is null) return;
+            if (existing.ParaIdParent is not null || All(doc).Any(c => ParentOf(doc, c) == comment)) { existing.Done = false; return; } // a thread keeps its links
             var container = existing.Parent!;
             existing.Remove();
             if (!container.HasChildren) doc.Main.DeletePart(doc.Main.WordprocessingCommentsExPart!);

@@ -42,7 +42,29 @@ test('tree → model maps sheet props and charts', () => {
 
 test('freeze none / no sheet props → defaults', () => {
   const m = sheetModel({ kind: 'sheet', path: '/sheet[2]', props: { name: 'S2', freeze: 'none', filter: 'none' }, children: [] });
-  assert.deepEqual(m, { name: 'S2', path: '/sheet[2]', cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, charts: [], images: [] });
+  assert.deepEqual(m, { name: 'S2', path: '/sheet[2]', cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, filters: {}, frows: [], cf: [], dv: [], hiddenRows: [], hiddenCols: [], color: null, charts: [], images: [] });
+});
+
+test('sheet rules: cf, validations, filter criteria, hidden lines and the tab colour map both ways; filter-hidden rows are the filter\'s, not the user\'s', async () => {
+  const props = { name: 'R', id: '3', filter: 'A1:C9', filters: { A: { values: ['East', ''] }, C: { operator: 'greaterThan', value: '5' } }, hidden: { rows: [2, 4, 12], cols: ['B'] }, color: 'C0392B',
+    cf: [{ range: 'A2:A9', type: 'cellIs', operator: 'between', value: '1', value2: '9', fill: 'FFEB9C', color: '9C5700' }, { range: 'B2:B9', type: 'colorScale', colors: ['F8696B', '63BE7B'] }],
+    validations: [{ range: 'A2:A9', type: 'list', values: ['East', 'West'], error: 'East or West' }] };
+  const m = sheetModel({ kind: 'sheet', path: '/sheet[3]', props, children: [row(1, [cell('A1', { value: '1', rotate: '45' })])] });
+  assert.deepEqual(m.cf, [{ range: 'A2:A9', type: 'cellIs', operator: 'between', value: '1', value2: '9', fill: '#FFEB9C', color: '#9C5700' }, { range: 'B2:B9', type: 'colorScale', colors: ['#F8696B', '#63BE7B'] }]);
+  assert.deepEqual(m.dv, props.validations); assert.deepEqual(m.filters, props.filters); assert.equal(m.color, '#C0392B');
+  assert.deepEqual([m.frows, m.hiddenRows, m.hiddenCols], [[1, 3], [11], [1]], 'rows 2 and 4 sit in the filtered range: the filter hid them; row 12 was hidden by hand');
+  assert.deepEqual(m.cells.A1, { v: '1', s: { rotate: 45 } });
+  const orig = [m], cur = clone(orig), s = cur[0];
+  assert.deepEqual(await plan(orig, clone(orig)), [], 'nothing edited → nothing written');
+  s.cf[0].fill = '#C6EFCE'; s.dv = []; s.filters = { A: { values: ['West'] } }; s.frows = [2]; s.hiddenRows = []; s.hiddenCols = [1, 3]; s.color = null; s.cells.A1.s.rotate = -30;
+  const cmds = await plan(orig, cur);
+  assert.deepEqual(cmds, [
+    ['set', 'f.xlsx', '/sheet[@id=3]/cell[A1]', '--prop', 'rotate=-30'],
+    ['set', 'f.xlsx', '/sheet[@id=3]', '--prop', 'filters={"A":{"values":["West"]}}', '--prop', 'cf=' + JSON.stringify([{ range: 'A2:A9', type: 'cellIs', operator: 'between', value: '1', value2: '9', fill: 'C6EFCE', color: '9C5700' }, { range: 'B2:B9', type: 'colorScale', colors: ['F8696B', '63BE7B'] }]),
+      '--prop', 'validations=[]', '--prop', 'hidden={"rows":[3],"cols":["B","D"]}', '--prop', 'color=none']
+  ]);
+  assert.deepEqual(cellProps({ v: '1' }, { v: '1', s: { fmt: 'eur', dec: 0 } }), { format: '"€"#,##0' });
+  assert.deepEqual(fmtOf('"€"#,##0.00'), { fmt: 'eur', dec: 2, code: '"€"#,##0.00' });
 });
 
 test('format codes: kind detection and round trip', () => {
@@ -192,4 +214,18 @@ test('charts on two sheets with the same engine id are addressed under their own
     ['remove', 'f.xlsx', '/sheet[1]/chart[@id=7]'],
     ['set', 'f.xlsx', '/sheet[@id=2]/chart[@id=7]', '--prop', 'title=Only the second']
   ]);
+});
+
+test('the file\'s look: grid lines off both ways, date codes behind a locale tag, the engine\'s date type wins over the code\'s shape', () => {
+  assert.equal(fmtOf('[$-409]mmmm d, yyyy;@').fmt, 'date');
+  assert.equal(fmtOf('[$-F400]h:mm:ss AM/PM').fmt, 'time');
+  assert.equal(fmtOf('[$$-409]#,##0.00').fmt, 'usd');
+  const d = cellModel({ value: '1899-12-30 00:12:34', type: 'date', format: 'mm:ss.0' });
+  assert.equal(d.s.fmt, 'date'); assert.equal(d.s.code, 'mm:ss.0');
+  const m = sheetModel({ kind: 'sheet', path: '/sheet[1]', props: { name: 'S', gridlines: 'false' }, children: [] });
+  assert.equal(m.noGrid, true);
+  const on = clone(m); on.noGrid = false;
+  assert.deepEqual(sheetProps(m, on), { gridlines: 'true' });
+  assert.deepEqual(sheetProps(on, m), { gridlines: 'false' });
+  assert.deepEqual(sheetProps(m, clone(m)), {});
 });

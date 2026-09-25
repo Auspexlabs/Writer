@@ -1,0 +1,197 @@
+{
+  "docx/charts.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/content-controls.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/diagram.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/document-formatting.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/fields.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/formulas.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/numbering.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/paragraph-formatting.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/pictures.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/revisions.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/run-formatting.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/sections.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/tables.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "docx/textbox.docx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/animations.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/budget_review_v2.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/charts-pie.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/decor.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/diagram.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/Mars-Settlement-Guide.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/pictures-basic.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/presentation.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/shapes-basic.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/tables-merged.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/tables-styled.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/text-runs.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/textboxes-advanced.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "pptx/transitions-morph.pptx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "xlsx/budget-tracker.xlsx": {
+    "save": 0,
+    "touch": 34,
+    "added": 68
+  },
+  "xlsx/cell-formatting.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "xlsx/charts-pie.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "xlsx/charts.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 2
+  },
+  "xlsx/conditional-formatting.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 2
+  },
+  "xlsx/data-validation.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 2
+  },
+  "xlsx/pivot-tables.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 2
+  },
+  "xlsx/shapes.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 0
+  },
+  "xlsx/sheet-settings.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 2
+  },
+  "xlsx/slicers.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 2
+  },
+  "xlsx/sparklines.xlsx": {
+    "save": 0,
+    "touch": 0,
+    "added": 2
+  }
+}

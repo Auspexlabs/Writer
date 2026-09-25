@@ -53,6 +53,7 @@ Bundled:
 | React (`react.production.min.js`) | 18.3.1 | MIT | Copyright (c) Facebook, Inc. and its affiliates. | `ui/vendor/`, unmodified (matches the SRI hashes in `ui/support.js`) |
 | ReactDOM (`react-dom.production.min.js`, includes a Modernizr 3.0.0pre custom build, MIT) | 18.3.1 | MIT | Copyright (c) Facebook, Inc. and its affiliates. | `ui/vendor/`, unmodified |
 | KaTeX (`katex.min.js`, `katex.min.css`, `fonts/*.woff2`) | 0.18.9 | MIT | Copyright (c) 2013-2020 Khan Academy and other contributors | `ui/vendor/katex/`, unmodified — renders `$…$` / `$$…$$` math in `md.js` and the Markdown editor, no network request |
+| highlight.js (`highlight.min.js`, the ES build of the "common" bundle; `github-dark.min.css`) | 11.11.1 | BSD-3-Clause | Copyright (c) 2006, Ivan Sagalaev | `ui/vendor/highlight/`, unmodified, license in `ui/vendor/highlight/LICENSE` — colours the Markdown editor's code blocks, no network request |
 | IBM Plex Sans 400/500/600, IBM Plex Mono 400 (Latin subsets, via @fontsource 5.3.0) | — | OFL-1.1 | Copyright 2017, 2019 IBM Corp. | `ui/assets/fonts/`, license in `ui/assets/fonts/OFL.txt` |
 | dc-runtime (`ui/support.js`) | — | Not stated in the file | — | The runtime of the design tool that exported the `ui/*.dc.html` pages. Generated (per its first line) from `dc-runtime/src/*.ts`; changed in this repository |
 
@@ -64,6 +65,7 @@ Loaded from public CDNs at run time (not stored in this repository):
 | pdf-lib, with @pdf-lib/standard-fonts (MIT), @pdf-lib/upng (MIT), pako (MIT AND Zlib), tslib (0BSD) | 1.17.1 | MIT | Copyright (c) 2019 Andrew Dillon | `ui/pdf-kit.js` (esm.sh) |
 | JSZip, with pako (MIT AND Zlib), lie (MIT), setimmediate (MIT), readable-stream (MIT) | 3.10.1 | MIT OR GPL-3.0-or-later; used under MIT | Copyright (c) 2009-2016 Stuart Knightley, David Duponchel, Franz Buchinger, António Afonso | `ui/office-io.js` (esm.sh) |
 | @babel/standalone (only when a page imports a JSX module) | 7.29.0 | MIT | Copyright (c) 2014-present Sebastian McKenzie and other contributors | `ui/support.js` (unpkg.com) |
+| Mermaid (only when a Markdown document has a ```mermaid diagram) | 11.12.0 | MIT | Copyright (c) 2014 - 2022 Knut Sveidqvist | `ui/md.js` (cdn.jsdelivr.net) |
 | React, ReactDOM (only when `ui/vendor/offline.js` is not loaded) | 18.3.1 | MIT | Copyright (c) Facebook, Inc. and its affiliates. | `ui/support.js` (unpkg.com) |
 
 ## 3. Desktop app (`desktop/`)

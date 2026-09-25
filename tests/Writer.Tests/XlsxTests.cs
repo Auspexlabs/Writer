@@ -233,6 +233,59 @@ public class XlsxTests
         Assert.Equal("B2", settings.Root.Children[0].GetProps()["freeze"]);
         Assert.Equal("A1:B5", settings.Root.Children[3].GetProps()["filter"]);
     }
+
+    [Fact]
+    public void Shared_formulas_are_read_shifted_and_survive_edits()
+    {
+        var file = Path.Combine(TestDocs.FixtureDir("xlsx"), "budget-tracker.xlsx");
+        using var doc = new XlsxAdapter().Open(new MemoryStream(File.ReadAllBytes(file)));
+        static string Prop(Document d, string cell, string prop) => PathResolver.Single(d.Root, $"/sheet[1]/cell[{cell}]").GetProps().GetValueOrDefault(prop) ?? "";
+        Assert.Equal("SUM(C9:F9)", Prop(doc, "G9", "formula")); // <f t="shared" si="0"/>: the master's SUM(C8:F8) moved down one row
+        Assert.Equal("G14/B14", Prop(doc, "H14", "formula"));
+
+        // the same formula written back (as the app does for a retyped cell) leaves the group shared and the cached results in place
+        Mutations.Set(PathResolver.Single(doc.Root, "/sheet[1]/cell[G8]"), Props(("formula", "SUM(C8:F8)")));
+        Mutations.Set(PathResolver.Single(doc.Root, "/sheet[1]/cell[G9]"), Props(("formula", "=SUM(C9:F9)")));
+        var data = ((XlsxDocument)doc).Sheets[0].Part.Worksheet!.GetFirstChild<S.SheetData>()!;
+        Assert.Equal(7, data.Descendants<S.CellFormula>().Count(f => f.FormulaType?.InnerText == "shared" && f.SharedIndex?.Value == 0));
+        Assert.Equal("375000", Prop(doc, "G9", "value"));
+
+        // a real change to one member: every other member keeps its own formula and value, the other group is untouched
+        Mutations.Set(PathResolver.Single(doc.Root, "/sheet[1]/cell[G10]"), Props(("formula", "SUM(C10:E10)")));
+        Mutations.Set(PathResolver.Single(doc.Root, "/sheet[1]/cell[H9]"), Props(("value", "1")));
+        using var reopened = new XlsxAdapter().Open(new MemoryStream(Save(doc)));
+        Assert.Equal("SUM(C10:E10)", Prop(reopened, "G10", "formula"));
+        Assert.Equal(("SUM(C9:F9)", "375000"), (Prop(reopened, "G9", "formula"), Prop(reopened, "G9", "value")));
+        Assert.Equal(("SUM(C14:F14)", "95000"), (Prop(reopened, "G14", "formula"), Prop(reopened, "G14", "value")));
+        Assert.Equal(("", "1"), (Prop(reopened, "H9", "formula"), Prop(reopened, "H9", "value")));
+        Assert.Equal(("G10/B10", "0.95"), (Prop(reopened, "H10", "formula"), Prop(reopened, "H10", "value")));
+        Assert.Equal("SUM(B8:B14)", Prop(reopened, "B15", "formula"));
+    }
+
+    [Fact]
+    public void Strings_keep_their_storage_and_the_shared_table_is_reused()
+    {
+        var file = Path.Combine(TestDocs.FixtureDir("xlsx"), "cell-formatting.xlsx");
+        using var doc = new XlsxAdapter().Open(new MemoryStream(File.ReadAllBytes(file)));
+        var rich = PathResolver.Single(doc.Root, "/sheet[6]/cell[A3]"); // a shared string of three formatted runs
+        var text = rich.GetProps()["value"];
+        Assert.Equal("Bold + Red  Italic + Blue  Normal", text);
+        Mutations.Set(rich, Props(("value", text), ("type", "string")));
+        var sst = ((XlsxDocument)doc).Workbook.SharedStringTablePart!.SharedStringTable!;
+        Assert.Equal(3, sst.Elements<S.SharedStringItem>().First().Elements<S.Run>().Count()); // its runs are still there
+        Assert.Equal(3, sst.Elements<S.SharedStringItem>().Count());
+
+        var plain = PathResolver.Single(doc.Root, "/sheet[1]/cell[A1]"); // stored as t="str" by the file's writer
+        Mutations.Set(plain, Props(("value", "Retyped")));
+        Assert.Equal("str", ((XlsxDocument)doc).Sheets[0].Part.Worksheet!.Descendants<S.Cell>().First(c => c.CellReference?.Value == "A1").DataType?.InnerText);
+        Mutations.Set(PathResolver.Single(doc.Root, "/sheet[6]/cell[B1]"), Props(("value", "Twice")));
+        Mutations.Set(PathResolver.Single(doc.Root, "/sheet[6]/cell[B2]"), Props(("value", "Twice")));
+        Mutations.Set(PathResolver.Single(doc.Root, "/sheet[6]/cell[B3]"), Props(("value", "Bold + Red  Italic + Blue  Normal")));
+        Assert.Equal(5, sst.Elements<S.SharedStringItem>().Count()); // one entry for the two "Twice" cells; the rich entry is never handed out, B3 gets a plain one
+        using var reopened = new XlsxAdapter().Open(new MemoryStream(Save(doc)));
+        Assert.Equal("Twice", PathResolver.Single(reopened.Root, "/sheet[6]/cell[B2]").GetProps()["value"]);
+        Assert.Equal("Retyped", PathResolver.Single(reopened.Root, "/sheet[1]/cell[A1]").GetProps()["value"]);
+    }
 }
 
 public class XlsxFidelityTests

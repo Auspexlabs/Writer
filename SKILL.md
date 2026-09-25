@@ -42,9 +42,9 @@ startup.
 
 ## Workflow
 
-1. `writer view <file> outline` — every element with its path and a text preview. Always start here.
-2. `writer get <file> <path>` or `writer query <file> <path>` — inspect one node, or every match.
-3. `writer add | set | remove | move | copy` — change the file. Each command saves atomically.
+1. `writer view <file> outline` — every element with its path and a text preview. Always start here; `view <file> structure` is the short form for a long document (headings, tables, a workbook's sheets with their header row).
+2. `writer get <file> <path>`, `writer query <file> <path>`, `writer search <file> <text>` or `writer section <file> <heading path>` — inspect one node, every match, the blocks that contain a text, or a whole section.
+3. `writer add | set | remove | move | copy` — change the file. Each command saves atomically. `section --md` rewrites a section from markdown, `replace` finds and replaces (Word paragraphs keep their formatting), `formula` writes a spreadsheet formula and checks what it refers to, `batch` runs several commands and saves once — or not at all when one fails.
 4. `writer view <file> html` — check the result reads the way you intended.
 5. `writer help <format> <element>` — the properties an element accepts. Run this instead of guessing.
 
@@ -73,7 +73,12 @@ writer set file.docx /body/paragraph[2] --prop md="Revenue **grew** 25%" [--all]
 writer remove file.docx /body/paragraph[3] [--all]
 writer move file.docx /body/table[1] --to /body --index 1
 writer copy deck.pptx /slide[2] --to / --after /slide[2]    # pptx: a slide, or a shape, picture or table --to /slide[n]
-writer view file.docx outline|text|html|json
+writer view file.docx outline|structure|text|html|json
+writer search file.docx "Q3" [--ignore-case]
+writer section file.md /body/heading[2] [--md "## Title\n\nBody…" | --remove]    # a heading and its blocks: print, rewrite, remove
+writer replace file.docx [path] --find "Q3" --with "Q4" [--preview] [--ignore-case]
+writer formula book.xlsx /sheet[1]/range[E2:E20] "C2*D2" [--check]    # fills like Excel; reports references and warnings
+writer batch file.docx --run "set file.docx /body/paragraph[1] --prop text=Hi" --run "add file.docx /body --type paragraph --prop text=Bye"
 writer export file.docx --to file.md        # md, docx, html, json targets
 writer help [docx|xlsx|pptx|md|pdf] [element] [--json]
 ```
@@ -90,6 +95,12 @@ picture adjustments: `crop=l,t,r,b` (percent cut off each edge; the frame keeps 
 `reset=true` drops them all and brings back the original. `background=remove` cuts the subject out (Apple Vision, macOS
 14+) and `compress=print|web|email` re-encodes at the resolution the frame needs; both need the `writer-vision` helper
 (next to `writer`, `WRITER_VISION`, or on PATH). `bytes` reads the stored size.
+
+A Word picture also has a place: `wrap=inline` sits in the line of text (a picture of its own is a block, `/body/image[n]`);
+`square`, `tight`, `through`, `topBottom`, `front` and `behind` float in their paragraph (`/body/paragraph[n]/image[k]`) at
+`x`/`y` — or `xAlign`/`yAlign` — from `xFrom`/`yFrom` (`column`/`paragraph` unless given). `add f.docx /body/paragraph[2]
+--type image --prop src=logo.png --prop x=1cm --prop y=0cm` floats a picture there; `move` it to `/body` and it is inline
+again. Every picture has an `id`, so `//image[@id=5]` names it wherever it moves.
 
 ## Per format
 

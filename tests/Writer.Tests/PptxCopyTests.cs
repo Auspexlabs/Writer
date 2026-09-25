@@ -70,8 +70,8 @@ public class PptxCopyTests
         using var back = Reopen(doc);
         var (one, two) = (back.Root.Children[0], back.Root.Children[1]);
         Assert.Equal(one.GetRaw(), two.GetRaw());
-        Assert.Equal(new[] { "shape", "shape", "image", "table" }, two.Children.Select(c => c.Kind));
-        Assert.Equal(one.Children[2].GetBinary()!.Value.Data, two.Children[2].GetBinary()!.Value.Data);
+        Assert.Equal(new[] { "decor", "shape", "shape", "image", "table" }, two.Children.Select(c => c.Kind)); // the Title Slide layout's accent rule first
+        Assert.Equal(one.Children[3].GetBinary()!.Value.Data, two.Children[3].GetBinary()!.Value.Data);
         Assert.Equal(("Say hi", "Q4 Results"), (two.GetProps()["notes"], two.GetProps()["title"]));
         Assert.Equal("Say hi", one.GetProps()["notes"]);
     }
@@ -95,7 +95,7 @@ public class PptxCopyTests
         Assert.Equal(Ids(title.Parent!).Distinct().Count(), Ids(title.Parent!).Count);
 
         using var back = Reopen(doc);
-        Assert.Equal(Look(back.Root.Children[0].Children[0]), Look(back.Root.Children[1].Children[0]));
+        Assert.Equal(Look(PathResolver.Single(back.Root, "/slide[1]/shape[1]")), Look(PathResolver.Single(back.Root, "/slide[2]/shape[1]")));
     }
 
     [Fact]

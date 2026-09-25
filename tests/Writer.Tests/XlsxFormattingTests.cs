@@ -177,19 +177,19 @@ public class XlsxFormattingTests
         Assert.Equal("[[\"Region\",\"Q1\",\"Q2\",\"Q3\"]]", shared["values"]);
 
         var styles = Styles(doc);
-        Assert.Equal(6, styles.CellFormats!.Elements<CellFormat>().Count());
-        Assert.Equal(6u, styles.CellFormats.Count!.Value);
+        Assert.Equal(2, styles.CellFormats!.Elements<CellFormat>().Count()); // the five props make one format, not one each
+        Assert.Equal(2u, styles.CellFormats.Count!.Value);
         Assert.Equal(2, styles.Fonts!.Elements<Font>().Count());
         Assert.Equal(3, styles.Fills!.Elements<Fill>().Count());
-        Assert.Equal(3, styles.Borders!.Elements<Border>().Count());
+        Assert.Equal(2, styles.Borders!.Elements<Border>().Count());
         Set(doc, "/sheet[1]/range[A1:D1]", ("bold", "true"), ("fill", "D9E2F3"));
-        Assert.Equal(6, styles.CellFormats.Elements<CellFormat>().Count());
+        Assert.Equal(2, styles.CellFormats.Elements<CellFormat>().Count());
 
         Set(doc, "/sheet[1]/cell[B1]", ("italic", "true"));
         shared = Get(doc, "/sheet[1]/range[A1:D1]");
         Assert.Equal("true", shared["bold"]);
         Assert.False(shared.ContainsKey("italic"));
-        Assert.Equal(7, styles.CellFormats.Elements<CellFormat>().Count());
+        Assert.Equal(3, styles.CellFormats.Elements<CellFormat>().Count());
         Assert.Equal(3, styles.Fonts.Elements<Font>().Count());
     }
 
@@ -321,5 +321,40 @@ public class XlsxFormattingTests
         {
             Directory.Delete(dir, true);
         }
+    }
+
+    [Fact]
+    public void Styles_xml_does_not_grow_with_edits_that_repeat_or_come_back()
+    {
+        static (int Xfs, int Fonts, int Fills, int Borders, int Dxfs) Counts(Document d)
+        {
+            var st = Styles(d);
+            return (st.CellFormats!.Count(), st.Fonts!.Count(), st.Fills!.Count(), st.Borders!.Count(), st.DifferentialFormats?.Count() ?? 0);
+        }
+        static uint Index(Document d) => ((Cell)PathResolver.Single(d.Root, "/sheet[1]/cell[A9]").Anchor).StyleIndex?.Value ?? 0;
+        Document Cycle(Document d, string path, params (string Name, string Value)[] props)
+        {
+            Set(d, path, props);
+            var next = Reopen(d);
+            d.Dispose();
+            return next;
+        }
+        var doc = new XlsxAdapter().Open(new MemoryStream(File.ReadAllBytes(Path.Combine(TestDocs.FixtureDir("xlsx"), "budget-tracker.xlsx"))));
+        var before = Counts(doc);
+        var index = Index(doc);
+        var cf = Get(doc, "/sheet[1]")["cf"];
+        for (var round = 0; round < 2; round++)
+        {
+            doc = Cycle(doc, "/sheet[1]/cell[A9]", ("bold", "true"), ("italic", "true"), ("fill", "FFF2CC"), ("border", "medium"), ("format", "0.0"));
+            var styled = Counts(doc);
+            Assert.True(styled.Xfs == before.Xfs + 1 && styled.Fonts == before.Fonts + 1 && styled.Fills <= before.Fills + 1 && styled.Borders <= before.Borders + 1, $"{before} → {styled}"); // one each at most, no step in between
+            doc = Cycle(doc, "/sheet[1]/cell[A9]", ("bold", "false"), ("italic", "false"), ("fill", "none"), ("border", "thin"), ("format", "General"));
+            Assert.Equal(index, Index(doc)); // back to the cell's own format
+            Assert.Equal(before, Counts(doc)); // and what the edit added is gone
+        }
+        doc = Cycle(doc, "/sheet[1]", ("cf", cf)); // the editor writes the rules back as it read them
+        Assert.Equal(before, Counts(doc));
+        Assert.Equal(cf, Get(doc, "/sheet[1]")["cf"]);
+        doc.Dispose();
     }
 }

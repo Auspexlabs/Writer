@@ -28,12 +28,19 @@ sealed class PptxRoot(PptxDocument doc) : Node
             ["height"] = height.ToString(CultureInfo.InvariantCulture),
         };
         if (doc.Package.PackageProperties.Title is { Length: > 0 } title) props["title"] = title;
+        if (PptxDesign.Palette(doc) is { } palette) props["palette"] = palette;
+        if (PptxDesign.Fonts(doc) is { } fonts) props["fonts"] = fonts;
         return props;
     }
 
     public override void SetProp(string name, string value)
     {
-        if (name == "title") doc.Package.PackageProperties.Title = value.Length > 0 ? value : null;
+        switch (name)
+        {
+            case "title": doc.Package.PackageProperties.Title = value.Length > 0 ? value : null; break;
+            case "palette": PptxDesign.ApplyPalette(doc, PptxTemplate.FindPalette(value)!); break;
+            case "fonts": PptxDesign.SetFonts(doc, value); break;
+        }
     }
 
     public override Node Add(string kind, IReadOnlyDictionary<string, string> props, int? index)
@@ -56,15 +63,7 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
     protected override IEnumerable<Node> ProjectChildren()
     {
         foreach (var decor in PptxDecor.Of(doc, slide)) yield return decor;
-        foreach (var child in Tree.ChildElements)
-        {
-            switch (child)
-            {
-                case P.Shape sp: yield return new PptxShape(doc, slide, sp); break;
-                case P.Picture pic: yield return new PptxImage(doc, slide, pic); break;
-                case P.GraphicFrame frame when PptxTable.TableOf(frame) is not null: yield return new PptxTable(doc, slide, frame); break;
-            }
-        }
+        foreach (var child in PptxGroup.Members(doc, slide, Tree, PptxDecor.Transform.Identity)) yield return child;
     }
 
     public override IReadOnlyDictionary<string, string> GetProps()
@@ -84,7 +83,9 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
             if (TransitionName(transition) is { } name) props["transition"] = name;
             if (int.TryParse(transition.Duration?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var ms)) props["duration"] = ms.ToString(CultureInfo.InvariantCulture);
         }
+        if (PptxAnim.Read(slide) is { } animations) props["animations"] = animations;
         props["id"] = doc.SlideIdOf(slide).Id?.Value.ToString(CultureInfo.InvariantCulture) ?? "";
+        if (PptxSections.Starting(doc, doc.SlideIdOf(slide).Id?.Value ?? 0) is { } section) props["section"] = section;
         return props;
     }
 
@@ -108,9 +109,11 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         ["dissolve"] = "<p:dissolve/>",
         ["zoom"] = "<p:zoom/>",
         ["random"] = "<p:random/>",
+        ["morph"] = $"<p159:morph xmlns:p159=\"{P159Ns}\" option=\"byObject\"/>",
     };
 
     const string P14Ns = "http://schemas.microsoft.com/office/powerpoint/2010/main";
+    const string P159Ns = "http://schemas.microsoft.com/office/powerpoint/2015/09/main";
 
     /// <summary>The slide's p:transition, whether bare or inside the mc:AlternateContent PowerPoint 2010+ wraps it in.</summary>
     P.Transition? Transition() =>
@@ -119,10 +122,11 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
     static OpenXmlElement? TransitionType(P.Transition transition) => transition.ChildElements.FirstOrDefault(c => c is not (P.SoundAction or P.ExtensionList));
 
     static string? TransitionName(P.Transition transition) => TransitionType(transition) is { } type
-        ? type.NamespaceUri == PptxTemplate.PNs && Transitions.ContainsKey(type.LocalName) ? type.LocalName : "other"
+        ? type.NamespaceUri == PptxTemplate.PNs && Transitions.ContainsKey(type.LocalName) || type.NamespaceUri == P159Ns && type.LocalName == "morph" ? type.LocalName : "other"
         : null;
 
-    /// <summary>Rewrites the transition: none removes it; a duration puts it in the AlternateContent form PowerPoint uses for p14:dur.</summary>
+    /// <summary>Rewrites the transition: none removes it; a duration puts it in the AlternateContent form PowerPoint uses for p14:dur,
+    /// and morph (PowerPoint 2019's p159:morph) goes there too, with a fade for older versions.</summary>
     void EditTransition(string? type, string? duration)
     {
         var transition = Transition() ?? new P.Transition();
@@ -139,13 +143,16 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         }
         if (duration is not null) transition.Duration = duration;
         OpenXmlElement element = transition;
-        if (transition.Duration is not null)
+        var morph = TransitionType(transition)?.NamespaceUri == P159Ns;
+        if (transition.Duration is not null || morph)
         {
             var fallback = (P.Transition)transition.CloneNode(true);
             fallback.Duration = null;
-            var p14 = new AlternateContentChoice(transition) { Requires = "p14" };
-            p14.AddNamespaceDeclaration("p14", P14Ns);
-            element = new AlternateContent(p14, new AlternateContentFallback(fallback));
+            if (morph) { TransitionType(fallback)!.Remove(); fallback.PrependChild(new P.FadeTransition()); }
+            var wrap = new AlternateContentChoice(transition) { Requires = morph ? "p159" : "p14" };
+            wrap.AddNamespaceDeclaration("p14", P14Ns);
+            if (morph) wrap.AddNamespaceDeclaration("p159", P159Ns);
+            element = new AlternateContent(wrap, new AlternateContentFallback(fallback));
         }
         var sld = slide.Slide!;
         if ((sld.Timing ?? (OpenXmlElement?)sld.SlideExtensionList) is { } before) sld.InsertBefore(element, before);
@@ -171,9 +178,13 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
                 PptxText.SetBody(title.TextBody ??= new P.TextBody(new A.BodyProperties(), new A.ListStyle()), slide, [new RunSpec(value)]);
                 break;
             case "layout":
-                var layout = doc.FindLayout(value);
-                if (slide.SlideLayoutPart is { } current && !ReferenceEquals(current, layout)) slide.DeletePart(current);
-                if (slide.SlideLayoutPart is null) slide.AddPart(layout);
+                PptxDesign.ChangeLayout(slide, doc.FindLayout(value));
+                break;
+            case "align":
+                PptxDesign.Align(this, doc.SlideSize.Width, doc.SlideSize.Height, value);
+                break;
+            case "distribute":
+                PptxDesign.Distribute(this, doc.SlideSize.Width, doc.SlideSize.Height, value);
                 break;
             case "background":
                 var data = slide.Slide!.CommonSlideData!;
@@ -201,6 +212,12 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
             case "duration":
                 EditTransition(null, value);
                 break;
+            case "animations":
+                PptxAnim.Write(slide, value);
+                break;
+            case "section":
+                PptxSections.Set(doc, doc.SlideIdOf(slide).Id?.Value ?? 0, value);
+                break;
         }
     }
 
@@ -224,7 +241,9 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
             "shape" => PptxShape.New(doc, slide, props),
             "image" => PptxImage.New(doc, slide, props),
             "table" => PptxTable.New(doc, slide, props),
-            _ => throw new WriterException(ErrorCode.UnsupportedKind, $"Cannot add {kind} to a slide", "Slide children: shape, image, table."),
+            "connector" => PptxConnector.New(doc, slide, props),
+            "group" => PptxGroup.New(doc, slide, this, props),
+            _ => throw new WriterException(ErrorCode.UnsupportedKind, $"Cannot add {kind} to a slide", "Slide children: shape, image, table, connector, group."),
         };
         var node = Place(element, index);
         foreach (var (name, value) in props)
@@ -242,18 +261,20 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         {
             P.Shape sp => new PptxShape(doc, slide, sp),
             P.Picture pic => new PptxImage(doc, slide, pic),
+            P.ConnectionShape cxn => new PptxConnector(doc, slide, cxn),
+            P.GroupShape group => new PptxGroup(doc, slide, group),
             _ => new PptxTable(doc, slide, (P.GraphicFrame)element),
         };
     }
 
-    /// <summary>A shape, picture or table put back from its raw XML. Its relationship ids are this slide's, as a removed element's
-    /// still are; its drawing ids stay unless another shape has them now.</summary>
+    /// <summary>A shape, picture, connector, group or table put back from its raw XML. Its relationship ids are this slide's, as a
+    /// removed element's still are; its drawing ids stay unless another shape has them now.</summary>
     public override Node AddRaw(string raw, int? index)
     {
         var element = RawXml.Parse(Tree, raw, doc.Namespaces);
-        if (element is not (P.Shape or P.Picture) && !(element is P.GraphicFrame frame && PptxTable.TableOf(frame) is not null))
-            throw new WriterException(ErrorCode.Validation, $"Raw XML on a slide must be a shape, picture or table, got <{element.Prefix}:{element.LocalName}>",
-                "Pass one <p:sp>, <p:pic> or table <p:graphicFrame> as 'get --raw' printed it.");
+        if (element is not (P.Shape or P.Picture or P.ConnectionShape or P.GroupShape) && !(element is P.GraphicFrame frame && PptxTable.TableOf(frame) is not null))
+            throw new WriterException(ErrorCode.Validation, $"Raw XML on a slide must be a shape, picture, connector, group or table, got <{element.Prefix}:{element.LocalName}>",
+                "Pass one <p:sp>, <p:pic>, <p:cxnSp>, <p:grpSp> or table <p:graphicFrame> as 'get --raw' printed it.");
         PptxCopy.Ids(element, slide, keep: true);
         return Place(element, index);
     }
@@ -291,6 +312,8 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
 {
     public override string Kind => "shape";
     public override object Anchor => shape;
+    /// <summary>Slide units of a grouped shape's box (the group's child space mapped onto the slide); identity on the slide itself.</summary>
+    internal PptxDecor.Transform T { get; init; } = PptxDecor.Transform.Identity;
 
     protected override IEnumerable<Node> ProjectChildren() =>
         PptxText.Paragraphs(shape.TextBody).Select(p => (Node)new PptxParagraph(doc, slide, p));
@@ -307,6 +330,7 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
         else if (shape.ShapeProperties?.GetFirstChild<A.CustomGeometry>() is not null) props["geometry"] = "custom";
         var xfrm = shape.ShapeProperties?.Transform2D ?? InheritedTransform();
         AddBox(props, xfrm?.Offset?.X?.Value, xfrm?.Offset?.Y?.Value, xfrm?.Extents?.Cx?.Value, xfrm?.Extents?.Cy?.Value);
+        T.Apply(props);
         if (shape.ShapeProperties is { } spPr)
         {
             if (spPr.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } fill) props["fill"] = fill.ToUpperInvariant();
@@ -316,7 +340,10 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
                 if (line.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } lineColor) props["line"] = lineColor.ToUpperInvariant();
                 else if (line.GetFirstChild<A.NoFill>() is not null) props["line"] = "none";
             }
+            PptxOutline.Read(spPr, props);
         }
+        if (shape.NonVisualShapeProperties?.NonVisualShapeDrawingProperties?.ShapeLocks?.NoChangeAspect?.Value == true) props["lockAspect"] = "true";
+        PptxText.ReadBox(shape.TextBody, props);
         var firstRun = PptxText.Paragraphs(shape.TextBody).SelectMany(p => p.Elements<A.Run>()).FirstOrDefault()?.RunProperties;
         if (firstRun?.GetFirstChild<A.LatinFont>()?.Typeface?.Value is { } font && !font.StartsWith('+')) props["font"] = font;
         if (firstRun?.FontSize?.Value is { } size) props["size"] = PptxText.Points(size);
@@ -324,7 +351,19 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
         if (Placeholder is { } ph) props["placeholder"] = ph.Type?.InnerText switch { null => "body", "ctrTitle" => "title", "subTitle" => "subtitle", var t => t };
         if (Nv?.Name?.Value is { Length: > 0 } name) props["name"] = name;
         if (Nv?.Id?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
+        if (props["text"].Trim().Length > 0 && PptxDesign.Overflows(shape, Box(shape, slide), SizePt(props))) props["overflow"] = "true";
         return props;
+    }
+
+    /// <summary>The text's size in points where its runs say none: the shape's own, else what it inherits.</summary>
+    double SizePt(IReadOnlyDictionary<string, string> props) =>
+        double.TryParse(props.GetValueOrDefault("size") ?? GetComputed(props)?.GetValueOrDefault("size"), NumberStyles.Float, CultureInfo.InvariantCulture, out var pt) ? pt : 18;
+
+    /// <summary>Where the shape is: its own position, else (a placeholder) the one it inherits.</summary>
+    internal static (long X, long Y, long W, long H)? Box(P.Shape shape, SlidePart slide)
+    {
+        var xfrm = shape.ShapeProperties?.Transform2D ?? InheritedTransform(shape, slide);
+        return xfrm?.Offset is { } off && xfrm.Extents is { } ext ? (off.X?.Value ?? 0, off.Y?.Value ?? 0, ext.Cx?.Value ?? 0, ext.Cy?.Value ?? 0) : null;
     }
 
     public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props) =>
@@ -338,10 +377,12 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
         if (h is { } ph) props["h"] = ph.ToString(CultureInfo.InvariantCulture);
     }
 
+    A.Transform2D? InheritedTransform() => InheritedTransform(shape, slide);
+
     /// <summary>Placeholders without their own position take it from the layout, then the master.</summary>
-    A.Transform2D? InheritedTransform()
+    static A.Transform2D? InheritedTransform(P.Shape shape, SlidePart slide)
     {
-        if (Placeholder is not { } ph) return null;
+        if (shape.NonVisualShapeProperties?.ApplicationNonVisualDrawingProperties?.PlaceholderShape is not { } ph) return null;
         foreach (var part in new OpenXmlPart?[] { slide.SlideLayoutPart, slide.SlideLayoutPart?.SlideMasterPart })
         {
             var shapes = part switch
@@ -369,16 +410,23 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
     public override void SetProp(string name, string value)
     {
         var spPr = shape.ShapeProperties ??= new P.ShapeProperties();
+        if ((name is "rotation" or "flipH" or "flipV") && spPr.Transform2D is null) Materialise(spPr);
+        if (PptxOutline.Set(spPr, name, value)) return;
+        if (PptxText.SetBox(Body(), name, value)) return;
         switch (name)
         {
             case "text":
                 PptxText.SetBody(Body(), slide, [new RunSpec(value)]);
                 break;
+            case "lockAspect":
+                var locks = (shape.NonVisualShapeProperties!.NonVisualShapeDrawingProperties ??= new P.NonVisualShapeDrawingProperties()).ShapeLocks ??= new A.ShapeLocks();
+                locks.NoChangeAspect = value == "true" ? true : null;
+                break;
             case "md":
-                PptxText.SetBody(Body(), slide, InlineMarkdown.Parse(value));
+                PptxText.SetBody(Body(), slide, InlineMarkdown.Parse(value), Docx.DocxReplace.Source.Markdown);
                 break;
             case "html":
-                PptxText.SetBody(Body(), slide, InlineHtml.Parse(value));
+                PptxText.SetBody(Body(), slide, InlineHtml.Parse(value), Docx.DocxReplace.Source.Html);
                 break;
             case "geometry":
                 var nv = shape.NonVisualShapeProperties!.NonVisualShapeDrawingProperties ??= new P.NonVisualShapeDrawingProperties();
@@ -391,28 +439,19 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
                 break;
             case "x" or "y" or "w" or "h":
                 var transform = spPr.Transform2D ?? Materialise(spPr);
-                var emu = long.Parse(value, CultureInfo.InvariantCulture);
-                switch (name)
-                {
-                    case "x": transform.Offset!.X = emu; break;
-                    case "y": transform.Offset!.Y = emu; break;
-                    case "w": transform.Extents!.Cx = emu; break;
-                    default: transform.Extents!.Cy = emu; break;
-                }
+                PptxOutline.SetBox(transform.Offset!, transform.Extents!, name, value, T);
                 break;
             case "fill":
                 PptxText.SetColor(spPr, value);
                 if (value == "none") PptxText.InsertBeforeAny(spPr, new A.NoFill(), e => e is A.Outline or A.EffectList or A.EffectDag or A.Scene3DType or A.Shape3DType or A.ExtensionList);
                 break;
             case "line":
-                var line = spPr.GetFirstChild<A.Outline>();
-                if (line is null)
-                {
-                    line = new A.Outline();
-                    PptxText.InsertBeforeAny(spPr, line, e => e is A.EffectList or A.EffectDag or A.Scene3DType or A.Shape3DType or A.ExtensionList);
-                }
+                var line = PptxOutline.Line(spPr);
                 PptxText.SetColor(line, value);
                 if (value == "none") line.PrependChild(new A.NoFill());
+                break;
+            case "fit":
+                PptxDesign.Shrink(shape, Box(shape, slide), SizePt(GetProps()));
                 break;
             case "font" or "size" or "color":
                 foreach (var run in PptxText.Paragraphs(shape.TextBody).SelectMany(p => p.Elements<A.Run>()))
@@ -525,8 +564,11 @@ sealed class PptxParagraph(PptxDocument doc, SlidePart slide, A.Paragraph p) : N
         switch (name)
         {
             case "text": PptxText.SetParagraph(p, slide, [new RunSpec(value)]); break;
-            case "md": PptxText.SetParagraph(p, slide, InlineMarkdown.Parse(value)); break;
-            case "html": PptxText.SetParagraph(p, slide, InlineHtml.Parse(value)); break;
+            case "md": PptxText.SetParagraph(p, slide, InlineMarkdown.Parse(value), Docx.DocxReplace.Source.Markdown); break;
+            case "html": PptxText.SetParagraph(p, slide, InlineHtml.Parse(value), Docx.DocxReplace.Source.Html); break;
+            // the editor writes every paragraph's list and level on save: what already holds keeps the file's own bullet and indents
+            case "list" when (PptxText.ListOf(p.ParagraphProperties) ?? "none") == value: break;
+            case "level" when (p.ParagraphProperties?.Level?.Value ?? 0) == int.Parse(value, CultureInfo.InvariantCulture): break;
             case "list": PptxText.SetList(Properties(), value); break;
             case "level":
                 var pPr = Properties();
@@ -587,16 +629,7 @@ sealed class PptxRun(PptxDocument doc, SlidePart slide, A.Run run) : Node
     public override IReadOnlyDictionary<string, string> GetProps()
     {
         var props = new Dictionary<string, string> { ["text"] = run.Text?.Text ?? "" };
-        var rPr = run.RunProperties;
-        if (rPr?.Bold?.Value == true) props["bold"] = "true";
-        if (rPr?.Italic?.Value == true) props["italic"] = "true";
-        if (rPr?.Underline?.InnerText is { } u && u != "none") props["underline"] = "true";
-        if (rPr?.Strike?.InnerText is "sngStrike" or "dblStrike") props["strike"] = "true";
-        if (PptxText.Color(rPr) is { } color) props["color"] = color;
-        if (rPr?.FontSize?.Value is { } size) props["size"] = PptxText.Points(size);
-        if (rPr?.GetFirstChild<A.LatinFont>()?.Typeface?.Value is { } font && !font.StartsWith('+')) props["font"] = font;
-        if (PptxText.Highlight(rPr) is { } highlight) props["highlight"] = highlight;
-        if (PptxText.Link(rPr, slide) is { } link) props["link"] = link;
+        PptxText.ReadRun(run.RunProperties, slide, props);
         return props;
     }
 
@@ -631,6 +664,10 @@ sealed class PptxRun(PptxDocument doc, SlidePart slide, A.Run run) : Node
             case "size": rPr.FontSize = PptxText.Hundredths(value); break;
             case "font": PptxText.SetFont(rPr, value); break;
             case "link": PptxText.SetLink(rPr, slide, value); break;
+            case "underlineStyle": rPr.Underline = PptxText.UnderlineValue(value); break;
+            case "vertAlign": rPr.Baseline = PptxText.BaselineOf(value); break;
+            case "spacing": rPr.Spacing = PptxText.SpacingOf(value); break;
+            case "caps": rPr.Capital = PptxText.CapsOf(value); break;
         }
         _ = doc;
     }
@@ -657,6 +694,7 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
     public override object Anchor => picture;
     protected override OpenXmlCompositeElement Pic => picture;
     protected override OpenXmlPart Owner => part;
+    internal PptxDecor.Transform T { get; init; } = PptxDecor.Transform.Identity;
 
     protected override (long X, long Y, long W, long H) Frame
     {
@@ -685,6 +723,7 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
     {
         var xfrm = picture.ShapeProperties?.Transform2D;
         PptxShape.AddBox(props, xfrm?.Offset?.X?.Value, xfrm?.Offset?.Y?.Value, xfrm?.Extents?.Cx?.Value, xfrm?.Extents?.Cy?.Value);
+        T.Apply(props);
         var nv = picture.NonVisualPictureProperties?.NonVisualDrawingProperties;
         if (nv?.Description?.Value is { Length: > 0 } alt) props["alt"] = alt;
         if (nv?.Id?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
@@ -746,14 +785,7 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
         {
             case "x" or "y" or "w" or "h":
                 var xfrm = Transform();
-                var emu = long.Parse(value, CultureInfo.InvariantCulture);
-                switch (name)
-                {
-                    case "x": xfrm.Offset!.X = emu; break;
-                    case "y": xfrm.Offset!.Y = emu; break;
-                    case "w": xfrm.Extents!.Cx = emu; break;
-                    default: xfrm.Extents!.Cy = emu; break;
-                }
+                PptxOutline.SetBox(xfrm.Offset!, xfrm.Extents!, name, value, T);
                 break;
             case "alt":
                 if (picture.NonVisualPictureProperties?.NonVisualDrawingProperties is { } nv) nv.Description = value.Length > 0 ? value : null;
@@ -782,6 +814,7 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
 {
     public override string Kind => "table";
     public override object Anchor => frame;
+    internal PptxDecor.Transform T { get; init; } = PptxDecor.Transform.Identity;
 
     A.Table Table => TableOf(frame)!;
 
@@ -807,8 +840,31 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
         };
         var xfrm = frame.Transform;
         PptxShape.AddBox(props, xfrm?.Offset?.X?.Value, xfrm?.Offset?.Y?.Value, xfrm?.Extents?.Cx?.Value, xfrm?.Extents?.Cy?.Value);
+        T.Apply(props);
+        var grid = Table.TableGrid?.Elements<A.GridColumn>().Select(c => c.Width?.Value ?? 0).ToList();
+        if (grid is { Count: > 0 }) props["widths"] = NodeJson.Compact(w => { w.WriteStartArray(); foreach (var width in grid) w.WriteStringValue(Units.FormatLength(width)); w.WriteEndArray(); });
+        var pr = Table.TableProperties;
+        if (pr?.GetFirstChild<A.TableStyleId>()?.Text is { Length: > 0 } styleId) props["style"] = Styles.FirstOrDefault(s => s.Value.Equals(styleId, StringComparison.OrdinalIgnoreCase)).Key ?? styleId;
+        if (pr?.FirstRow?.Value == true) props["header"] = "true";
+        if (pr?.BandRow?.Value == true) props["banded"] = "true";
+        if (pr?.FirstColumn?.Value == true) props["firstCol"] = "true";
+        if (pr?.LastRow?.Value == true) props["total"] = "true";
+        var nv = frame.NonVisualGraphicFrameProperties?.NonVisualDrawingProperties;
+        if (nv?.Name?.Value is { Length: > 0 } name) props["name"] = name;
+        if (nv?.Id?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
         return props;
     }
+
+    /// <summary>PowerPoint's built-in table styles the editor offers, by a short name; any other style id is written as given.</summary>
+    internal static readonly Dictionary<string, string> Styles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["MediumStyle2Accent1"] = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}",
+        ["LightStyle1"] = "{9D7B26C5-4107-4FEC-AEDC-1716B250A1EF}",
+        ["LightStyle2Accent1"] = "{69012ECD-51FC-41F1-AA8D-1B2483CD663E}",
+        ["DarkStyle1"] = "{E8034E78-7F5D-4C2E-B375-FC64B27BC917}",
+        ["TableGrid"] = "{5940675A-B579-460E-94D1-54222C63F5DA}",
+        ["NoStyle"] = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}",
+    };
 
     public static (OpenXmlElement Element, string[] Consumed) New(PptxDocument doc, SlidePart slide, IReadOnlyDictionary<string, string> props)
     {
@@ -893,7 +949,7 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
         while (rows.Count < count)
         {
             var clone = (A.TableRow)rows[^1].CloneNode(true);
-            foreach (var cell in clone.Elements<A.TableCell>()) ClearCell(cell);
+            foreach (var cell in clone.Elements<A.TableCell>()) Fresh(cell);
             table.Append(clone);
             rows.Add(clone);
         }
@@ -911,6 +967,14 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
         var body = cell.TextBody ??= new A.TextBody(new A.BodyProperties(), new A.ListStyle());
         foreach (var p in body.Elements<A.Paragraph>().ToList()) p.Remove();
         body.Append(new A.Paragraph(new A.EndParagraphRunProperties { Language = "en-US" }));
+    }
+
+    /// <summary>A cell cloned from a neighbour starts unmerged: no span, not covered.</summary>
+    internal static A.TableCell Fresh(A.TableCell cell)
+    {
+        ClearCell(cell);
+        cell.GridSpan = null; cell.RowSpan = null; cell.HorizontalMerge = null; cell.VerticalMerge = null;
+        return cell;
     }
 
     internal static void SyncGrid(A.Table table)
@@ -943,23 +1007,60 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
             case "data": Fill(frame, slide, ParseRows(value)); break;
             case "x" or "y" or "w" or "h":
                 var xfrm = frame.Transform ??= new P.Transform(new A.Offset { X = 0L, Y = 0L }, new A.Extents { Cx = 914400L, Cy = 914400L });
-                var emu = long.Parse(value, CultureInfo.InvariantCulture);
-                switch (name)
-                {
-                    case "x": xfrm.Offset!.X = emu; break;
-                    case "y": xfrm.Offset!.Y = emu; break;
-                    case "w": xfrm.Extents!.Cx = emu; break;
-                    default: xfrm.Extents!.Cy = emu; break;
-                }
+                PptxOutline.SetBox(xfrm.Offset!, xfrm.Extents!, name, value, T);
+                if (name == "w" && Table.TableGrid is { } g && g.Elements<A.GridColumn>().Sum(c => c.Width?.Value ?? 0) is var sum and > 0)
+                    foreach (var col in g.Elements<A.GridColumn>()) col.Width = (long)Math.Round((col.Width?.Value ?? 0) * (double)xfrm.Extents!.Cx!.Value / sum); // the columns keep their shares
+                break;
+            case "widths":
+                var widths = ParseCells(value).Select(Units.ParseLength).ToList();
+                var columns = Table.TableGrid?.Elements<A.GridColumn>().ToList() ?? [];
+                if (widths.Count != columns.Count) throw new WriterException(ErrorCode.Validation, $"widths: {widths.Count} widths for {columns.Count} columns", "Give one length per column, e.g. widths='[\"3cm\",\"5cm\"]'.");
+                for (var i = 0; i < columns.Count; i++) columns[i].Width = widths[i];
+                if (frame.Transform?.Extents is { } ext) ext.Cx = widths.Sum();
+                break;
+            case "style":
+                var tblPr = Table.TableProperties ??= new A.TableProperties();
+                tblPr.RemoveAllChildren<A.TableStyleId>();
+                if (value.Length > 0) tblPr.Append(new A.TableStyleId { Text = Styles.GetValueOrDefault(value) ?? value });
+                break;
+            case "header" or "banded" or "firstCol" or "total":
+                var props = Table.TableProperties ??= new A.TableProperties();
+                BooleanValue? flag = value == "true" ? true : null;
+                switch (name) { case "header": props.FirstRow = flag; break; case "banded": props.BandRow = flag; break; case "firstCol": props.FirstColumn = flag; break; default: props.LastRow = flag; break; }
                 break;
         }
+    }
+
+    /// <summary>Marks the cells a merge covers (hMerge to the right of an anchor, vMerge below it) from every anchor's gridSpan and
+    /// rowSpan, and clears the marks a lowered span leaves behind; a covered cell keeps no text.</summary>
+    internal static void Remerge(A.Table table)
+    {
+        var rows = table.Elements<A.TableRow>().Select(r => r.Elements<A.TableCell>().ToList()).ToList();
+        foreach (var row in rows) foreach (var cell in row) { cell.HorizontalMerge = null; cell.VerticalMerge = null; }
+        for (var r = 0; r < rows.Count; r++)
+            for (var c = 0; c < rows[r].Count; c++)
+            {
+                var anchor = rows[r][c];
+                if (anchor.HorizontalMerge?.Value == true || anchor.VerticalMerge?.Value == true) continue;
+                int cs = anchor.GridSpan?.Value ?? 1, rs = anchor.RowSpan?.Value ?? 1;
+                for (var i = r; i < Math.Min(rows.Count, r + rs); i++)
+                    for (var j = c; j < Math.Min(rows[i].Count, c + cs); j++)
+                    {
+                        if (i == r && j == c) continue;
+                        var covered = rows[i][j];
+                        if (j > c) covered.HorizontalMerge = true;
+                        if (i > r) covered.VerticalMerge = true;
+                        covered.GridSpan = null; covered.RowSpan = null;
+                        ClearCell(covered);
+                    }
+            }
     }
 
     public override Node Add(string kind, IReadOnlyDictionary<string, string> props, int? index)
     {
         var last = Table.Elements<A.TableRow>().LastOrDefault();
         var row = last is null ? new A.TableRow(NewCell()) { Height = 370840L } : (A.TableRow)last.CloneNode(true);
-        foreach (var cell in row.Elements<A.TableCell>()) ClearCell(cell);
+        foreach (var cell in row.Elements<A.TableCell>()) Fresh(cell);
         if (!OoxmlTree.InsertBefore(this, Table, row, index)) Table.Append(row);
         var node = new PptxRow(doc, slide, row);
         foreach (var (name, value) in props) node.SetProp(name, value);
@@ -1006,7 +1107,7 @@ sealed class PptxRow(PptxDocument doc, SlidePart slide, A.TableRow row) : Node
         while (cells.Count < count)
         {
             var clone = cells.Count > 0 ? (A.TableCell)cells[^1].CloneNode(true) : PptxTable.NewCell();
-            PptxTable.ClearCell(clone);
+            PptxTable.Fresh(clone);
             if (cells.Count > 0) row.InsertAfter(clone, cells[^1]);
             else row.PrependChild(clone);
             cells.Add(clone);
@@ -1033,7 +1134,7 @@ sealed class PptxRow(PptxDocument doc, SlidePart slide, A.TableRow row) : Node
     {
         var last = row.Elements<A.TableCell>().LastOrDefault();
         var cell = last is null ? PptxTable.NewCell() : (A.TableCell)last.CloneNode(true);
-        PptxTable.ClearCell(cell);
+        PptxTable.Fresh(cell);
         if (!OoxmlTree.InsertBefore(this, row, cell, index))
         {
             if (last is null) row.PrependChild(cell);
@@ -1069,6 +1170,14 @@ sealed class PptxCell(PptxDocument doc, SlidePart slide, A.TableCell cell) : Nod
         var props = new Dictionary<string, string> { ["text"] = PptxText.BodyText(cell.TextBody), ["html"] = string.Join("<br>", Children.Where(c => c.Kind == "paragraph").Select(Exporter.HtmlOf)) };
         if (PptxText.AlignOf(PptxText.Paragraphs(cell.TextBody).FirstOrDefault()?.ParagraphProperties) is { } align) props["align"] = align;
         if (cell.TableCellProperties?.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } fill) props["fill"] = fill.ToUpperInvariant();
+        if (cell.GridSpan?.Value is { } cs && cs > 1) props["colspan"] = cs.ToString(CultureInfo.InvariantCulture);
+        if (cell.RowSpan?.Value is { } rs && rs > 1) props["rowspan"] = rs.ToString(CultureInfo.InvariantCulture);
+        if (cell.HorizontalMerge?.Value == true || cell.VerticalMerge?.Value == true) props["covered"] = "true";
+        if (cell.TableCellProperties?.LeftBorderLineProperties is { } ln)
+        {
+            if (ln.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } line) props["line"] = line.ToUpperInvariant();
+            else if (ln.GetFirstChild<A.NoFill>() is not null) props["line"] = "none";
+        }
         return props;
     }
 
@@ -1078,8 +1187,8 @@ sealed class PptxCell(PptxDocument doc, SlidePart slide, A.TableCell cell) : Nod
         switch (name)
         {
             case "text": PptxText.SetBody(body, slide, [new RunSpec(value)]); break;
-            case "md": PptxText.SetBody(body, slide, InlineMarkdown.Parse(value)); break;
-            case "html": PptxText.SetBody(body, slide, InlineHtml.Parse(value)); break;
+            case "md": PptxText.SetBody(body, slide, InlineMarkdown.Parse(value), Docx.DocxReplace.Source.Markdown); break;
+            case "html": PptxText.SetBody(body, slide, InlineHtml.Parse(value), Docx.DocxReplace.Source.Html); break;
             case "align":
                 foreach (var p in body.Elements<A.Paragraph>()) (p.ParagraphProperties ??= new A.ParagraphProperties()).Alignment = PptxText.AlignValue(value);
                 break;
@@ -1087,6 +1196,19 @@ sealed class PptxCell(PptxDocument doc, SlidePart slide, A.TableCell cell) : Nod
                 var tcPr = cell.TableCellProperties ??= new A.TableCellProperties();
                 foreach (var f in tcPr.ChildElements.Where(e => e is A.SolidFill or A.NoFill or A.GradientFill or A.PatternFill or A.BlipFill or A.GroupFill).ToList()) f.Remove();
                 if (value != "none") PptxText.InsertBeforeAny(tcPr, new A.SolidFill(new A.RgbColorModelHex { Val = value }), e => e is A.Cell3DProperties or A.ExtensionList);
+                break;
+            case "line":
+                var pr = cell.TableCellProperties ??= new A.TableCellProperties();
+                OpenXmlElement Fill() => value == "none" ? new A.NoFill() : new A.SolidFill(new A.RgbColorModelHex { Val = value });
+                pr.LeftBorderLineProperties = new A.LeftBorderLineProperties(Fill()) { Width = 12700 };
+                pr.RightBorderLineProperties = new A.RightBorderLineProperties(Fill()) { Width = 12700 };
+                pr.TopBorderLineProperties = new A.TopBorderLineProperties(Fill()) { Width = 12700 };
+                pr.BottomBorderLineProperties = new A.BottomBorderLineProperties(Fill()) { Width = 12700 };
+                break;
+            case "colspan" or "rowspan":
+                var span = int.Parse(value, CultureInfo.InvariantCulture);
+                if (name == "colspan") cell.GridSpan = span > 1 ? span : null; else cell.RowSpan = span > 1 ? span : null;
+                if (cell.Parent?.Parent is A.Table table) PptxTable.Remerge(table);
                 break;
         }
     }

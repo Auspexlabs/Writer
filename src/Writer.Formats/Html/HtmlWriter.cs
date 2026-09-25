@@ -6,7 +6,7 @@ using Writer.Core;
 namespace Writer.Formats.Html;
 
 /// <summary>The unified tree as a self-contained HTML page. Flow layout for documents, absolute layout for slides.</summary>
-public static class HtmlWriter
+public static partial class HtmlWriter
 {
     const string Css = """
         body{font-family:-apple-system,"Segoe UI",Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem;line-height:1.5;color:#222}
@@ -25,13 +25,19 @@ public static class HtmlWriter
     {
         var sb = new StringBuilder();
         var rootProps = doc.Root.GetProps();
+        var word = doc.Format == "docx";
+        var look = word ? WithComputed(doc.Root) : rootProps;
         var title = rootProps.GetValueOrDefault("title") ?? FirstHeading(doc.Root) ?? "Document";
-        sb.Append("<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>").Append(Esc(title)).Append("</title>\n<style>\n").Append(Css).Append("\n</style>\n</head>\n");
-        sb.Append(doc.Format == "pptx" ? "<body class=\"deck\">\n" : "<body>\n");
+        sb.Append("<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>").Append(Esc(title)).Append("</title>\n<style>\n").Append(Css).Append(doc.Format == "xlsx" ? SheetCss : "")
+            .Append(word ? DocxCss + DocxLookCss(look) : "").Append("\n</style>\n</head>\n");
+        sb.Append(doc.Format switch { "pptx" => "<body class=\"deck\">\n", "xlsx" => "<body class=\"book\">\n", "docx" => "<body class=\"docx\">\n", _ => "<body>\n" });
+        var book = new Book(doc);
         foreach (var top in doc.Root.Children)
         {
-            if (top.Kind == "body") Blocks(top.Children, sb);
+            if (top.Kind == "body" && word) Pages(top, look, sb);
+            else if (top.Kind == "body") Blocks(top.Children, sb);
             else if (top.Kind == "slide") Slide(top, rootProps, sb);
+            else if (top.Kind == "sheet") Sheet(top, book, rootProps, sb);
             else Block(top, sb);
         }
         sb.Append("</body>\n</html>\n");
@@ -142,7 +148,7 @@ public static class HtmlWriter
         for (; i < nodes.Count && nodes[i].Kind == "paragraph" && nodes[i].GetProps().TryGetValue("list", out _); i++)
         {
             var props = nodes[i].GetProps();
-            var tag = props["list"] == "number" ? "ol" : "ul";
+            var tag = props["list"] == "bullet" ? "ul" : "ol";
             var level = int.Parse(props.GetValueOrDefault("level") ?? "0", CultureInfo.InvariantCulture);
             while (open.Count > level + 1) Close(open, sb);
             if (open.Count == level + 1 && open[^1].Tag != tag) Close(open, sb);
@@ -170,17 +176,19 @@ public static class HtmlWriter
 
     static void Block(Node node, StringBuilder sb)
     {
-        var props = node.GetProps();
+        var props = node.Format == "docx" && node.Kind is "paragraph" or "heading" ? WithComputed(node) : node.GetProps();
         switch (node.Kind)
         {
             case "heading":
                 var level = Math.Clamp(int.Parse(props.GetValueOrDefault("level") ?? "1", CultureInfo.InvariantCulture), 1, 6);
-                sb.Append("<h").Append(level).Append(Style(props)).Append('>');
+                sb.Append("<h").Append(level).Append(Style(props, Anchored(node))).Append('>');
+                Pictures(node, sb);
                 Inlines(node, sb);
                 sb.Append("</h").Append(level).Append(">\n");
                 break;
             case "paragraph":
-                sb.Append("<p").Append(Style(props)).Append('>');
+                sb.Append("<p").Append(Style(props, Anchored(node))).Append('>');
+                Pictures(node, sb);
                 Inlines(node, sb);
                 sb.Append("</p>\n");
                 break;
@@ -218,11 +226,6 @@ public static class HtmlWriter
                 sb.Append("<section class=\"page\">\n");
                 Blocks(node.Children.Where(c => Registry.Find(c.Kind)?.Inline != true).ToList(), sb);
                 sb.Append("</section>\n");
-                break;
-            case "sheet":
-                sb.Append("<h2>").Append(Esc(props.GetValueOrDefault("name") ?? "Sheet")).Append("</h2>\n");
-                Table(node, sb, null);
-                foreach (var chart in node.Children.Where(c => c.Kind == "chart")) Block(chart, sb);
                 break;
             case "chart":
                 sb.Append("<figure class=\"chart\">").Append(Esc(props.GetValueOrDefault("title") ?? "Chart")).Append("</figure>\n");
@@ -264,7 +267,7 @@ public static class HtmlWriter
             css.Append("width:").Append(tableWidth.EndsWith('%') ? tableWidth : PxText(Px(Units.ParseLength(tableWidth).ToString(CultureInfo.InvariantCulture)))).Append(';');
         if (tableProps.TryGetValue("align", out var tableAlign) && tableAlign != "left")
             css.Append(tableAlign == "center" ? "margin-left:auto;margin-right:auto;" : "margin-left:auto;");
-        var borderColor = tableProps.TryGetValue("borderColor", out var bc) ? "#" + bc : "#bbb";
+        var borderColor = tableProps.TryGetValue("borderColor", out var bc) ? "#" + bc : table.Format == "docx" ? "#000" : "#bbb"; // Word's automatic line is black
         var borders = tableProps.GetValueOrDefault("borders");
         if (borders is "all" or "outside") css.Append("border:1px solid ").Append(borderColor).Append(';');
         else if (borders is "inside") css.Append("border-style:hidden;"); // collapsed borders: hides the cells' outer edges only
@@ -274,28 +277,22 @@ public static class HtmlWriter
             "horizontal" => "border-left:none;border-right:none;border-color:" + borderColor,
             _ => tableProps.ContainsKey("borderColor") ? "border-color:" + borderColor : null,
         };
+        var widths = table.Format == "docx" && tableProps.TryGetValue("widths", out var w) ? Lengths(w) : [];
+        if (widths.Count > 0) css.Append("table-layout:fixed;");
         sb.Append(css.Length == 0 ? "<table>\n" : $"<table style=\"{css}\">\n");
+        if (widths.Count > 0) sb.Append("<colgroup>").Append(string.Concat(widths.Select(x => $"<col style=\"width:{x}\">"))).Append("</colgroup>\n");
         var rows = table.Children.Where(c => c.Kind == "row").ToList();
         for (var r = 0; r < rows.Count; r++)
         {
             var tag = r == 0 && table.Format == "md" ? "th" : "td";
             sb.Append("<tr>");
-            var rowProps = rows[r].GetProps();
-            if (table.Kind == "sheet" && rowProps.TryGetValue("data", out var data))
-            {
-                using var parsed = System.Text.Json.JsonDocument.Parse(data);
-                foreach (var value in parsed.RootElement.EnumerateArray())
-                    sb.Append("<td>").Append(Esc(value.GetString() ?? value.GetRawText())).Append("</td>");
-                sb.Append("</tr>\n");
-                continue;
-            }
             foreach (var cell in rows[r].Children)
             {
                 var props = cell.GetProps();
                 sb.Append('<').Append(tag);
                 if (props.TryGetValue("colspan", out var colspan)) sb.Append(" colspan=\"").Append(colspan).Append('"');
                 if (props.TryGetValue("rowspan", out var rowspan)) sb.Append(" rowspan=\"").Append(rowspan).Append('"');
-                sb.Append(CellStyle(props, cellBorder)).Append('>');
+                sb.Append(CellStyle(props, cellBorder, borderColor)).Append('>');
                 var blocks = cell.Children.Where(c => Registry.Find(c.Kind)?.Inline != true).ToList();
                 if (blocks.Count == 1 && blocks[0].Kind == "paragraph" && !blocks[0].GetProps().ContainsKey("list")) Inlines(blocks[0], sb);
                 else if (blocks.Count > 0)
@@ -339,9 +336,14 @@ public static class HtmlWriter
             sb.Append(Esc(node.Text ?? "").Replace("\n", "<br>"));
             return;
         }
+        // docx notes, while a document's pages are drawn: each mark goes in at its character offset of the (undeleted) text
+        var marks = _notes is null ? [] : node.Children.Where(c => c.Kind == "footnote").Select(c => c.GetProps())
+            .OrderBy(n => int.TryParse(n.GetValueOrDefault("at"), out var at) ? at : int.MaxValue).ToList();
+        var (pos, next) = (0, 0);
+        int At(int i) => int.TryParse(marks[i].GetValueOrDefault("at"), out var at) ? at : int.MaxValue;
         foreach (var run in runs)
         {
-            var p = run.GetProps();
+            var p = run.Format == "docx" ? WithComputed(run) : run.GetProps();
             var open = new StringBuilder();
             var close = new StringBuilder();
             if (p.TryGetValue("change", out var change))
@@ -358,7 +360,7 @@ public static class HtmlWriter
             var css = new List<string>();
             if (p.TryGetValue("color", out var color) && color != "none") css.Add("color:#" + color);
             if (p.TryGetValue("size", out var size)) css.Add("font-size:" + size + "pt");
-            if (p.TryGetValue("font", out var font)) css.Add("font-family:'" + Esc(font) + "'");
+            if (p.TryGetValue("font", out var font)) css.Add("font-family:'" + Esc(font) + "'" + (p.TryGetValue("fontEa", out var fontEa) ? ",'" + Esc(fontEa) + "'" : ""));
             if (p.ContainsKey("underline")) css.Add("text-decoration:underline");
             if (css.Count > 0)
             {
@@ -369,9 +371,26 @@ public static class HtmlWriter
             Wrap(p, "italic", "em", open, close);
             Wrap(p, "strike", "s", open, close);
             Wrap(p, "code", "code", open, close);
-            sb.Append(open).Append(Esc(p.GetValueOrDefault("text") ?? "").Replace("\n", "<br>").Replace("\f", Common.InlineHtml.PageBreak)).Append(close);
+            if (p.GetValueOrDefault("vertAlign") is { } vertical && vertical is "superscript" or "subscript") { var tag = vertical == "superscript" ? "sup" : "sub"; open.Append('<').Append(tag).Append('>'); close.Insert(0, "</" + tag + ">"); }
+            var text = p.GetValueOrDefault("text") ?? "";
+            sb.Append(open);
+            var from = 0;
+            if (p.GetValueOrDefault("change") != "deleted")
+            {
+                for (; next < marks.Count && At(next) <= pos + text.Length; next++)
+                {
+                    var cut = Math.Clamp(At(next) - pos, from, text.Length);
+                    sb.Append(RunText(text[from..cut])).Append(NoteMark(marks[next]));
+                    from = cut;
+                }
+                pos += text.Length;
+            }
+            sb.Append(RunText(text[from..])).Append(close);
         }
+        for (; next < marks.Count; next++) sb.Append(NoteMark(marks[next]));
     }
+
+    static string RunText(string text) => Esc(text).Replace("\n", "<br>").Replace("\f", Common.InlineHtml.PageBreak);
 
     static void Wrap(IReadOnlyDictionary<string, string> props, string prop, string tag, StringBuilder open, StringBuilder close)
     {
@@ -380,22 +399,25 @@ public static class HtmlWriter
         close.Insert(0, "</" + tag + ">");
     }
 
-    static string Style(IReadOnlyDictionary<string, string> props)
+    static string Style(IReadOnlyDictionary<string, string> props, string? extra = null)
     {
         var css = new List<string>();
+        if (extra is not null) css.Add(extra);
         if (props.TryGetValue("align", out var align)) css.Add("text-align:" + align);
         if (props.TryGetValue("fill", out var fill) && fill != "none") css.AddRange(Fill(fill));
+        css.AddRange(ParaCss(props)); // docx: the paragraph's own 段落 settings and what its style gives beyond the document's look
+        css.AddRange(TextCss(props));
         return css.Count == 0 ? "" : " style=\"" + string.Join(';', css) + "\"";
     }
 
     /// <summary>Cell CSS: alignment and fill like any block, plus the table's line rule, the cell's own borders, vertical alignment and width.</summary>
-    static string CellStyle(IReadOnlyDictionary<string, string> props, string? tableBorder)
+    static string CellStyle(IReadOnlyDictionary<string, string> props, string? tableBorder, string lineColor)
     {
         var css = new List<string>();
         if (props.TryGetValue("align", out var align)) css.Add("text-align:" + align);
         if (props.TryGetValue("fill", out var fill) && fill != "none") css.AddRange(Fill(fill));
         if (tableBorder is not null) css.Add(tableBorder);
-        if (props.TryGetValue("borders", out var borders)) css.Add(borders == "none" ? "border:none" : "border:1px solid #bbb");
+        if (props.TryGetValue("borders", out var borders)) css.Add(borders == "none" ? "border:none" : "border:1px solid " + lineColor);
         if (props.TryGetValue("valign", out var valign)) css.Add("vertical-align:" + valign);
         if (props.TryGetValue("width", out var width) && long.TryParse(width, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)) css.Add("width:" + PxText(Px(width)));
         return css.Count == 0 ? "" : " style=\"" + string.Join(';', css) + "\"";

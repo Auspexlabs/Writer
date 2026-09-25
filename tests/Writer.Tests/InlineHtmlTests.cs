@@ -59,6 +59,17 @@ public class InlineHtmlTests
     }
 
     [Fact]
+    public void Caps_and_underline_styles_round_trip()
+    {
+        List<RunSpec> runs = [new("A", Caps: "all"), new("b", Caps: "small", Underline: true, UnderlineStyle: "double"), new("c", Underline: true)];
+        var html = InlineHtml.Render(runs);
+        Assert.Equal("<span style=\"text-transform:uppercase\">A</span><span style=\"font-variant:small-caps\"><u style=\"text-decoration-style:double\">b</u></span><u>c</u>", html);
+        Assert.Equal(runs, InlineHtml.Parse(html));
+        Assert.Equal([new RunSpec("x", Underline: true, UnderlineStyle: "wavy"), new RunSpec("y")],
+            InlineHtml.Parse("<span style=\"text-decoration:underline wavy\">x</span><span style=\"text-transform:none;text-decoration-style:dotted\">y</span>"));
+    }
+
+    [Fact]
     public void Docx_paragraphs_and_cells_read_and_write_html()
     {
         using var doc = OpenDocx(Docx(P("Old"), new DocumentFormat.OpenXml.Wordprocessing.Table(new DocumentFormat.OpenXml.Wordprocessing.TableRow(Cell("x")))));

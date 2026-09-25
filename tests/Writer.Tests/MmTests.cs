@@ -90,6 +90,105 @@ public class MmTests
     }
 
     [Fact]
+    public void Font_flags_size_and_family_live_on_the_font_element()
+    {
+        using var doc = Open(Sample);
+        var plan = At(doc, "/topic[1]").GetProps();
+        Assert.Equal(("true", "16", "SansSerif"), (plan["bold"], plan["size"], plan["font"]));
+        Assert.False(plan.ContainsKey("italic"));
+
+        var alpha = Mutations.Set(At(doc, "//topic[@id=ID_2]"), Props(("italic", "true"), ("strike", "true"), ("size", "20"), ("font", "Georgia")));
+        Assert.Contains("<font ITALIC=\"true\" STRIKETHROUGH=\"true\" SIZE=\"20\" NAME=\"Georgia\"/>", MdTests.Save(doc));
+        using var again = Reopen(doc);
+        var props = At(again, "//topic[@id=ID_2]").GetProps();
+        Assert.Equal(("true", "true", "20", "Georgia"), (props["italic"], props["strike"], props["size"], props["font"]));
+        Assert.False(props.ContainsKey("bold"));
+
+        Mutations.Set(At(again, "//topic[@id=ID_2]"), Props(("italic", "false"), ("strike", "false"), ("size", "0"), ("font", "")));
+        Assert.DoesNotContain("Georgia", MdTests.Save(again));
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(MdTests.Save(again), "<font "));
+        Assert.Equal("true", Mutations.Set(At(again, "//topic[@id=ID_3]"), Props(("bold", "true"))).GetProps()["bold"]);
+    }
+
+    [Fact]
+    public void Markers_labels_and_pictures_round_trip_as_icons_attribute_rows_and_a_hook()
+    {
+        using var doc = Open(Sample);
+        var alpha = Mutations.Set(At(doc, "//topic[@id=ID_2]"), Props(("icon", "full-1, flag-blue,50%"), ("labels", "urgent, Q4"), ("image", "data:image/png;base64,AAAA"), ("imageSize", "320,240")));
+        Assert.Equal(("full-1,flag-blue,50%", "urgent,Q4", "data:image/png;base64,AAAA", "320,240"), (alpha.GetProps()["icon"], alpha.GetProps()["labels"], alpha.GetProps()["image"], alpha.GetProps()["imageSize"]));
+        var xml = MdTests.Save(doc);
+        Assert.Contains("<icon BUILTIN=\"full-1\"/>", xml);
+        Assert.Contains("<icon BUILTIN=\"50%\"/>", xml);
+        Assert.DoesNotContain("BUILTIN=\"idea\"", xml);
+        Assert.Contains("<attribute NAME=\"label\" VALUE=\"urgent\"/>", xml);
+        Assert.Contains("<hook NAME=\"ExternalObject\" URI=\"data:image/png;base64,AAAA\" WIDTH=\"320\" HEIGHT=\"240\"/>", xml);
+
+        using var again = Reopen(doc);
+        var props = At(again, "//topic[@id=ID_2]").GetProps();
+        Assert.Equal(("full-1,flag-blue,50%", "urgent,Q4", "320,240"), (props["icon"], props["labels"], props["imageSize"]));
+        var cleared = Mutations.Set(At(again, "//topic[@id=ID_2]"), Props(("icon", "none"), ("labels", ""), ("image", "")));
+        Assert.False(cleared.GetProps().ContainsKey("icon") || cleared.GetProps().ContainsKey("labels") || cleared.GetProps().ContainsKey("image") || cleared.GetProps().ContainsKey("imageSize"));
+        Assert.DoesNotContain("<icon", MdTests.Save(again));
+        Assert.DoesNotContain("<hook NAME=\"ExternalObject\"", MdTests.Save(again));
+    }
+
+    [Fact]
+    public void Relationships_boundaries_and_summaries_are_arrowlinks_clouds_and_attribute_rows()
+    {
+        using var doc = Open(Sample);
+        var alpha = Mutations.Set(At(doc, "//topic[@id=ID_2]"), Props(("rels", "[{\"to\":\"ID_4\",\"label\":\"leads to\",\"color\":\"B5563A\",\"arrows\":\"both\"},{\"to\":\"ID_3\"}]"), ("cloud", "CFE2F3")));
+        Mutations.Set(At(doc, "//topic[@id=ID_3]"), Props(("summary", "ID_2:ID_4")));
+        var xml = MdTests.Save(doc);
+        Assert.Matches("<arrowlink DESTINATION=\"ID_4\" STARTARROW=\"Default\" ENDARROW=\"Default\" ID=\"Arrow_ID_[0-9]+\" COLOR=\"#b5563a\" MIDDLE_LABEL=\"leads to\"/>", xml);
+        Assert.Matches("<arrowlink DESTINATION=\"ID_3\" STARTARROW=\"None\" ENDARROW=\"Default\" ID=\"Arrow_ID_[0-9]+\"/>", xml);
+        Assert.Contains("<cloud COLOR=\"#cfe2f3\"/>", xml);
+        Assert.Contains("<attribute NAME=\"summary\" VALUE=\"ID_2:ID_4\"/>", xml);
+        Assert.Equal("[{\"to\":\"ID_4\",\"label\":\"leads to\",\"color\":\"B5563A\",\"arrows\":\"both\"},{\"to\":\"ID_3\",\"label\":\"\",\"color\":\"\",\"arrows\":\"end\"}]", alpha.GetProps()["rels"]);
+
+        using var again = Reopen(doc);
+        var props = At(again, "//topic[@id=ID_2]").GetProps();
+        Assert.Equal(("CFE2F3", "ID_2:ID_4"), (props["cloud"], At(again, "//topic[@id=ID_3]").GetProps()["summary"]));
+        Assert.Contains("\"to\":\"ID_4\",\"label\":\"leads to\"", props["rels"]);
+        var cleared = Mutations.Set(At(again, "//topic[@id=ID_2]"), Props(("rels", "[]"), ("cloud", "none")));
+        Assert.False(cleared.GetProps().ContainsKey("rels") || cleared.GetProps().ContainsKey("cloud"));
+        Assert.DoesNotContain("arrowlink", MdTests.Save(again));
+        Assert.Equal(ErrorCode.Validation, Assert.Throws<WriterException>(() => Mutations.Set(At(again, "//topic[@id=ID_2]"), Props(("rels", "nope")))).Code);
+
+        using var plain = Open("<map version=\"1.0.1\">\n<node TEXT=\"R\" ID=\"ID_1\"><cloud/><node TEXT=\"A\" ID=\"ID_2\"><arrowlink DESTINATION=\"ID_1\"/></node></node>\n</map>\n");
+        Assert.Equal("F0F0F0", At(plain, "/topic[1]").GetProps()["cloud"]);
+        Assert.Equal("[{\"to\":\"ID_1\",\"label\":\"\",\"color\":\"\",\"arrows\":\"end\"}]", At(plain, "//topic[@id=ID_2]").GetProps()["rels"]);
+    }
+
+    [Fact]
+    public void Structure_theme_lines_and_mono_ride_on_the_centre_as_attribute_rows()
+    {
+        using var doc = Open(Sample);
+        var root = Mutations.Set(At(doc, "/topic[1]"), Props(("structure", "org"), ("theme", "ocean"), ("lines", "elbow"), ("mono", "true")));
+        Assert.Equal(("org", "ocean", "elbow", "true"), (root.GetProps()["structure"], root.GetProps()["theme"], root.GetProps()["lines"], root.GetProps()["mono"]));
+        Assert.Contains("<attribute NAME=\"structure\" VALUE=\"org\"/>", MdTests.Save(doc));
+        Assert.Equal(ErrorCode.Validation, Assert.Throws<WriterException>(() => Mutations.Set(root, Props(("structure", "spiral")))).Code);
+        using var again = Reopen(doc);
+        Assert.Equal("ocean", At(again, "/topic[1]").GetProps()["theme"]);
+        var plain = Mutations.Set(At(again, "/topic[1]"), Props(("structure", ""), ("theme", ""), ("lines", ""), ("mono", "false")));
+        Assert.False(plain.GetProps().ContainsKey("structure") || plain.GetProps().ContainsKey("theme") || plain.GetProps().ContainsKey("lines") || plain.GetProps().ContainsKey("mono"));
+        Assert.DoesNotContain("<attribute", MdTests.Save(again));
+    }
+
+    [Fact]
+    public void Floating_topics_keep_their_place_in_an_attribute_row()
+    {
+        using var doc = Open(Sample);
+        Mutations.Set(At(doc, "//topic[@id=ID_4]"), Props(("free", "240,-160")));
+        Assert.Contains("<attribute NAME=\"free\" VALUE=\"240,-160\"/>", MdTests.Save(doc));
+        using var again = Reopen(doc);
+        Assert.Equal("240,-160", At(again, "//topic[@id=ID_4]").GetProps()["free"]);
+        Mutations.Set(At(again, "//topic[@id=ID_4]"), Props(("free", "10,10")));
+        Mutations.Set(At(again, "//topic[@id=ID_4]"), Props(("free", "")));
+        Assert.DoesNotContain("<attribute", MdTests.Save(again));
+        Assert.False(At(again, "//topic[@id=ID_4]").GetProps().ContainsKey("free"));
+    }
+
+    [Fact]
     public void Topics_are_addressable_by_id_and_rich_text_reads_as_text()
     {
         using var doc = Open(Sample);
@@ -181,7 +280,7 @@ public class MmTests
         using var doc = Open(Sample);
         Assert.Equal("Plan\n- Alpha\n  - Alpha 1\n- Rich Beta\n", Views.Text(doc.Root));
         var outline = Views.Outline(doc.Root);
-        Assert.StartsWith("/  format=mm\n  /topic[1]  \"Plan\"\n    /topic[1]/topic[1]  note=alpha note  side=right  icon=idea  \"Alpha\"\n      /topic[1]/topic[1]/topic[1]  \"Alpha 1\"\n", outline);
+        Assert.StartsWith("/  format=mm\n  /topic[1]  bold=true  size=16  font=SansSerif  \"Plan\"\n    /topic[1]/topic[1]  note=alpha note  side=right  icon=idea  \"Alpha\"\n      /topic[1]/topic[1]/topic[1]  \"Alpha 1\"\n", outline);
         var html = HtmlWriter.Render(doc);
         Assert.Contains("<ul class=\"mindmap\">\n<li>Plan<ul>\n<li>Alpha<ul>\n<li>Alpha 1</li>\n</ul>\n</li>\n<li><a href=\"https://example.com\">Rich Beta</a></li>\n</ul>\n</li>\n</ul>\n", html);
     }

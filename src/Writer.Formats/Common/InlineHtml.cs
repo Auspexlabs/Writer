@@ -106,11 +106,20 @@ public static partial class InlineHtml
                 open.Append("<a href=\"").Append(Esc(SafeUrl(run.Link))).Append("\">");
                 close.Insert(0, "</a>");
             }
+            if (run.Style is not null)
+            {
+                open.Append("<span data-style=\"").Append(Esc(run.Style)).Append("\">");
+                close.Insert(0, "</span>");
+            }
             var css = new List<string>();
             if (run.Color is not null) css.Add("color:#" + run.Color);
             if (run.Size is not null) css.Add("font-size:" + run.Size + "pt");
             if (run.Font is not null) css.Add("font-family:'" + Esc(run.Font) + "'");
             if (run.Highlight is not null) css.Add("background-color:#" + run.Highlight);
+            if (run.Spacing is not null) css.Add("letter-spacing:" + run.Spacing);
+            if (run.Caps is not null) css.Add(run.Caps == "small" ? "font-variant:small-caps" : "text-transform:uppercase");
+            if (run.Shadow) css.Add(ShadowCss);
+            if (run.Outline) css.Add(OutlineCss);
             if (css.Count > 0)
             {
                 open.Append("<span style=\"").Append(string.Join(';', css)).Append("\">");
@@ -118,9 +127,16 @@ public static partial class InlineHtml
             }
             Wrap(run.Bold, "b", open, close);
             Wrap(run.Italic, "i", open, close);
-            Wrap(run.Underline, "u", open, close);
+            if (run.Underline && run.UnderlineStyle is { } line)
+            {
+                open.Append("<u style=\"text-decoration-style:").Append(line).Append("\">");
+                close.Insert(0, "</u>");
+            }
+            else Wrap(run.Underline, "u", open, close);
             Wrap(run.Strike, "s", open, close);
             Wrap(run.Code, "code", open, close);
+            Wrap(run.VertAlign == "superscript", "sup", open, close);
+            Wrap(run.VertAlign == "subscript", "sub", open, close);
             sb.Append(open).Append(Esc(run.Text).Replace("\n", "<br>").Replace("\f", PageBreak)).Append(close);
         }
         return sb.ToString();
@@ -155,6 +171,9 @@ public static partial class InlineHtml
             "code" or "tt" or "kbd" or "samp" => style with { Code = true },
             "a" when attrs.TryGetValue("href", out var href) && href.Length > 0 => style with { Link = href },
             "mark" => style with { Highlight = "FFFF00" },
+            "sup" => style with { VertAlign = "superscript" },
+            "sub" => style with { VertAlign = "subscript" },
+            "span" when NonEmpty(attrs, "data-style") is { } characterStyle => style with { Style = characterStyle },
             _ => style,
         };
         if (attrs.TryGetValue("color", out var fontColor) && ParseColor(fontColor) is { } fc) s = s with { Color = fc };
@@ -176,14 +195,24 @@ public static partial class InlineHtml
                 case "font-weight" when value is "normal": s = s with { Bold = false }; break;
                 case "font-style" when value is "italic" or "oblique": s = s with { Italic = true }; break;
                 case "text-decoration" or "text-decoration-line":
-                    if (value.Contains("underline")) s = s with { Underline = true };
+                    if (value.Contains("underline")) s = s with { Underline = true, UnderlineStyle = LineStyle(value) ?? s.UnderlineStyle };
                     if (value.Contains("line-through")) s = s with { Strike = true };
-                    if (value == "none") s = s with { Underline = false, Strike = false };
+                    if (value == "none") s = s with { Underline = false, Strike = false, UnderlineStyle = null };
                     break;
+                case "text-decoration-style" when s.Underline: s = s with { UnderlineStyle = LineStyle(value) }; break;
+                case "text-transform": s = s with { Caps = value == "uppercase" ? "all" : null }; break;
+                case "font-variant" or "font-variant-caps": s = s with { Caps = value.Contains("small-caps") ? "small" : null }; break;
+                case "vertical-align": s = s with { VertAlign = value is "super" or "text-top" ? "superscript" : value is "sub" or "text-bottom" ? "subscript" : null }; break;
+                case "letter-spacing": s = s with { Spacing = value is "normal" or "0" ? null : ParseSpacing(value) }; break;
+                case "text-shadow": s = s with { Shadow = value != "none" }; break;
+                case "-webkit-text-stroke" or "-webkit-text-stroke-width": s = s with { Outline = value != "0" && !value.StartsWith("0px", StringComparison.Ordinal) && value != "none" }; break;
             }
         }
         return s;
     }
+
+    /// <summary>The underline's line style a text-decoration names, if any but solid.</summary>
+    static string? LineStyle(string value) => new[] { "double", "dotted", "dashed", "wavy" }.FirstOrDefault(value.Contains);
 
     static string? NonEmpty(Dictionary<string, string> attrs, string name) => attrs.TryGetValue(name, out var v) && v.Length > 0 ? v : null;
 
@@ -219,6 +248,19 @@ public static partial class InlineHtml
         {
             return null;
         }
+    }
+
+    /// <summary>Word's text effects as CSS: a soft shadow, and outlined letters (the stroke drawn, the fill transparent).</summary>
+    public const string ShadowCss = "text-shadow:1px 1px 0 #B3B3B3", OutlineCss = "-webkit-text-stroke:0.5px currentColor;-webkit-text-fill-color:transparent";
+
+    /// <summary>Character spacing in points (2pt, -0.5pt) from a letter-spacing value in pt, px or em.</summary>
+    static string? ParseSpacing(string value)
+    {
+        var m = SizePattern().Match(value.Trim().TrimStart('+'));
+        if (!m.Success) return null;
+        var n = double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) * (value.Trim().StartsWith('-') ? -1 : 1);
+        var pt = m.Groups[2].Value.ToLowerInvariant() switch { "pt" => n, "px" => n * 0.75, _ => n * 12 };
+        return pt == 0 ? null : Math.Round(pt, 2).ToString("0.##", CultureInfo.InvariantCulture) + "pt";
     }
 
     static string? ParseSize(string value)
@@ -272,7 +314,7 @@ public static partial class InlineHtml
     [GeneratedRegex(@"^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$", RegexOptions.IgnoreCase)]
     private static partial Regex RgbPattern();
 
-    [GeneratedRegex(@"^([\d.]+)\s*(pt|px|em|rem)$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^-?([\d.]+)\s*(pt|px|em|rem)$", RegexOptions.IgnoreCase)]
     private static partial Regex SizePattern();
 
     [GeneratedRegex(@"(?:page-break-before\s*:\s*always|break-before\s*:\s*page)", RegexOptions.IgnoreCase)]

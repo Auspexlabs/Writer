@@ -34,7 +34,7 @@ export function saveSession(s, storage = globalThis.localStorage) { try { storag
  *  collapsed toolbar in the same key; this merges rather than replaces). Shared by every window and kept across
  *  launches (desktop/src-tauri), so Writer reopens showing what the last window left on screen. Presentation mode
  *  is never saved here. */
-export function loadLayout(storage = globalThis.localStorage) { const m = (storage && read(storage, MAC)) || {}; return { showThumbs: m.thumbs !== false, showAI: !!m.ai }; }
+export function loadLayout(storage = globalThis.localStorage) { const m = (storage && read(storage, MAC)) || {}; return { showThumbs: m.thumbs === true, showAI: !!m.ai }; }
 export function saveLayout(showThumbs, showAI, storage = globalThis.localStorage) { try { const m = (storage && read(storage, MAC)) || {}; storage.setItem(MAC, JSON.stringify({ ...m, thumbs: showThumbs, ai: showAI })); } catch (e) { } }
 
 const TONE = { brief: 'Keep every reply to one or two short sentences.', detail: 'Reply in more detail: say what you changed, where, and why.' };

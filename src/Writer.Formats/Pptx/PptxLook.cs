@@ -193,10 +193,10 @@ sealed class PptxLook
         return Hex(r, g, b);
     }
 
-    static string Hex(double r, double g, double b) =>
+    internal static string Hex(double r, double g, double b) =>
         string.Concat(new[] { r, g, b }.Select(c => ((int)Math.Round(Math.Clamp(c, 0, 1) * 255)).ToString("X2", CultureInfo.InvariantCulture)));
 
-    static (double H, double S, double L) ToHsl(double r, double g, double b)
+    internal static (double H, double S, double L) ToHsl(double r, double g, double b)
     {
         var max = Math.Max(r, Math.Max(g, b));
         var min = Math.Min(r, Math.Min(g, b));
@@ -211,7 +211,7 @@ sealed class PptxLook
         return (h / 6, s, l);
     }
 
-    static (double R, double G, double B) HslToRgb(double h, double s, double l)
+    internal static (double R, double G, double B) HslToRgb(double h, double s, double l)
     {
         if (s == 0) return (l, l, l);
         var q = l < 0.5 ? l * (1 + s) : l + s - l * s;

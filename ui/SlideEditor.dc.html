@@ -10,52 +10,56 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <style>
-.sv-t p{margin:0}.sv-t ul,.sv-t ol{margin:0;padding-left:1.1em}.sv-t li{margin:0.15em 0}
+.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}
 .se-ed:focus{outline:none}
+.se-ed:empty::before{content:attr(data-hint);opacity:.45;pointer-events:none}.se-ed:focus::before{content:none}
 [data-thumbpanel] [draggable="true"]{content-visibility:auto;contain-intrinsic-height:auto 84px}
 </style>
 </helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
-  <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--k36, rgba(0,0,0,0.12));margin-right:4px"></span></div>
+  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
     <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
-    <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">文件</button>
+    <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
-      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.line }};font-weight:{{ t.weight }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
+      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:{{ t.color }};transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};font-weight:{{ t.weight }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
     </sc-for>
-    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playFromStart }}" title="放映 F5" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:transparent;display:flex;align-items:center;gap:7px;flex:none;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)"><span style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--k7, #1D1D1F)"></span>放映</button></div>
+    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button><button onMouseDown="{{ md }}" onClick="{{ beautifyMenu }}" title="让助手美化本页或整份" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ beautifyBg }};font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--ink, #1D1D1F);white-space:nowrap;flex:none;transition:background .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>美化</button><button onMouseDown="{{ md }}" onClick="{{ playFromStart }}" title="放映 F5" style="height:28px;padding:0 12px 0 10px;margin-left:4px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--bg, #F6F6F7);background:var(--ink, #1D1D1F);display:flex;align-items:center;gap:6px;flex:none;transition:opacity .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="opacity:0.86" style-active="transform:scale(0.94)"><span style="width:0;height:0;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;border-left:7px solid currentColor"></span>放映</button></div>
   </div></div>
   <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;transform-origin:top left">
+    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);color:var(--ink, #1D1D1F);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;transform-origin:top left">
       <sc-for list="{{ ribbon }}" as="it" hint-placeholder-count="12">
-        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:20px;background:var(--k36, rgba(0,0,0,0.12));margin:0 6px;flex:none"></span></sc-if>
+        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
         <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:30px;min-width:30px;padding:0 8px;border:none;border-radius:6px;background:{{ it.bg }};font-size:13px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:6px" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:6px" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
             <sc-if value="{{ it.hasSw }}" hint-placeholder-val="{{ false }}"><span style="width:14px;height:14px;border-radius:3px;background:{{ it.sw }};box-shadow:inset 0 0 0 1px var(--k76, rgba(0,0,0,0.15))"></span></sc-if>{{ it.label }}
           </button>
         </sc-if>
         <sc-if value="{{ it.isAlign }}" hint-placeholder-val="{{ false }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:30px;width:30px;border:none;border-radius:6px;background:{{ it.bg }};cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:{{ it.ai }};gap:2.5px;padding:0 8px;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;width:28px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:{{ it.ai }};gap:2.5px;padding:0 8px;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
             <span style="height:1.6px;width:14px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:9px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:14px;background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:8px;background:var(--k7, #1D1D1F)"></span>
           </button>
         </sc-if>
         <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}">
-          <select data-val="{{ it.value }}" title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:28px;padding:0 4px;border:1px solid var(--k17, rgba(0,0,0,0.07));border-radius:9px;background:var(--k30, rgba(255,255,255,0.6));font-size:12.5px;width:{{ it.w }};flex:none;margin:0 2px">
+          <select data-val="{{ it.value }}" title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:28px;padding:0 4px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;width:{{ it.w }};flex:none;margin:0 2px">
             <sc-for list="{{ it.options }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for>
           </select>
         </sc-if>
         <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}">
-          <label title="{{ it.title }}" style="position:relative;height:30px;min-width:32px;padding:0 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;flex:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
+          <label title="{{ it.title }}" style="position:relative;height:28px;min-width:28px;padding:0 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--ctl-r, 8px);cursor:pointer;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
             <span style="font-size:13px;line-height:1.1;font-weight:{{ it.fw }};white-space:nowrap">{{ it.label }}</span>
             <span style="width:18px;height:3.5px;border-radius:1px;background:{{ it.swatch }};margin-top:2px;box-shadow:inset 0 0 0 0.5px var(--k56, rgba(0,0,0,0.25))"></span>
             <input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">
           </label>
         </sc-if>
         <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}" style="height:30px;padding:0 8px;border:none;border-radius:6px;background:{{ it.bg }};font-size:13px;cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:4px" style-hover="background:var(--k20, rgba(255,255,255,0.7))">{{ it.label }}<span style="font-size:9px;color:var(--k8, #8E8E93)">▼</span></button>
+          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}" style="height:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:4px" style-hover="background:var(--fill, rgba(0,0,0,0.07))">{{ it.label }}<span style="font-size:8px;color:var(--ink-3, rgba(29,29,31,0.36))">▼</span></button>
         </sc-if>
         <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}">
-          <label title="{{ it.title }}" style="height:30px;display:flex;align-items:center;gap:6px;padding:0 6px;font-size:12.5px;color:var(--k11, #6E6E73);flex:none;white-space:nowrap">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}" style="width:84px;accent-color:var(--k1, #1D1D1F)"><span style="min-width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--k1, #1D1D1F)">{{ it.text }}</span></label>
+          <label title="{{ it.title }}" style="height:28px;display:flex;align-items:center;gap:6px;padding:0 6px;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62));flex:none;white-space:nowrap">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}" style="width:84px;accent-color:var(--k1, #1D1D1F)"><span style="min-width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--k1, #1D1D1F)">{{ it.text }}</span></label>
+        </sc-if>
+        <sc-if value="{{ it.isNum }}" hint-placeholder-val="{{ false }}">
+          <label title="{{ it.title }}" style="height:28px;display:flex;align-items:center;gap:4px;padding:0 4px;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62));flex:none;white-space:nowrap">{{ it.label }}<input type="number" step="{{ it.step }}" value="{{ it.value }}" onChange="{{ it.onChange }}" onKeyDown="{{ it.onKey }}" style="width:{{ it.w }};height:26px;padding:0 4px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:6px;background:transparent;font:inherit;font-size:12.5px;color:var(--k1, #1D1D1F);outline:none"></label>
         </sc-if>
       </sc-for>
     </div></div>
@@ -64,46 +68,90 @@
   </sc-if>
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ bodyCols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ showThumbs }}" hint-placeholder-val="{{ true }}">
-    <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:10px;left:10px;bottom:10px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,var(--k32, rgba(255,255,255,0.5)),var(--k33, rgba(255,255,255,0.32)));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k34, rgba(255,255,255,0.9)),0 14px 40px var(--k19, rgba(0,0,0,0.1))"><div style="height:46px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 10px 0 18px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k11, #6E6E73);cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k31, rgba(255,255,255,0.95))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;padding:0 14px 16px 8px;display:flex;flex-direction:column;gap:14px">
+    <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:12px;left:12px;bottom:12px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:var(--panel-r, 16px);overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="height:40px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 8px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;transition:background .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;padding:0 12px 16px 8px;display:flex;flex-direction:column;gap:16px">
       <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="4">
+        <sc-if value="{{ t.hasSec }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:none;display:flex;align-items:center;gap:4px;margin:2px 0 -8px 2px;font-size:12px;font-weight:600;color:var(--k11, #6E6E73)">
+            <input data-sec="{{ t.n }}" value="{{ t.secName }}" onChange="{{ t.onSec }}" onKeyDown="{{ t.onSecKey }}" title="节名" style="flex:1;min-width:0;height:22px;padding:0 4px;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;outline:none">
+            <span style="font-weight:400;color:var(--k8, #8E8E93);white-space:nowrap">{{ t.secCount }}</span>
+            <button onClick="{{ t.onSecDel }}" title="删除节" style="width:20px;height:20px;border:none;border-radius:5px;background:transparent;font-size:10px;color:var(--k8, #8E8E93);cursor:pointer">✕</button>
+          </div>
+        </sc-if>
         <div draggable="true" onDragStart="{{ t.onDragStart }}" onDragOver="{{ t.onDragOver }}" onDrop="{{ t.onDrop }}" onDragEnd="{{ t.onDragEnd }}" onClick="{{ t.onClick }}" onContextMenu="{{ t.onCtx }}" style="flex:none;display:grid;grid-template-columns:18px 144px;gap:8px;cursor:pointer;box-shadow:{{ t.dropLine }};opacity:{{ t.op }}">
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11.5px;color:var(--k8, #8E8E93);padding-top:1px">
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));padding-top:2px">
             <span>{{ t.n }}</span>
             <sc-if value="{{ t.hasAnim }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;color:var(--k35, #3F7D5C)">✦</span></sc-if>
           </div>
-          <div style="border-radius:5px;overflow:hidden;outline:{{ t.outline }};outline-offset:2px;box-shadow:0 1px 3px var(--k77, rgba(0,0,0,0.14));position:relative;pointer-events:none">
+          <div style="border-radius:5px;overflow:hidden;outline:{{ t.outline }};outline-offset:3px;box-shadow:0 0 0 1px var(--kpageb, rgba(0,0,0,0.07)),0 3px 8px var(--k65, rgba(0,0,0,0.05));position:relative;pointer-events:none">
             <dc-import name="SlideView" slide="{{ t.slide }}" theme="{{ themeKey }}" ratio="{{ ratio }}" width="{{ 144 }}" hint-size="144px,81px"></dc-import>
             <sc-if value="{{ t.hidden }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:rgba(246,244,239,0.6);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--k11, #6E6E73)">已隐藏</div></sc-if>
           </div>
         </div>
       </sc-for>
-      <button onClick="{{ addSlideQuick }}" style="flex:none;margin-left:26px;height:34px;border:1px dashed var(--k78, rgba(0,0,0,0.2));border-radius:12px;background:transparent;font-size:12.5px;color:var(--k11, #6E6E73);cursor:pointer" style-hover="background:#EFEFF4">＋ 新幻灯片</button>
+      <button onClick="{{ addSlideQuick }}" style="flex:none;margin-left:26px;height:32px;border:1px dashed var(--line, rgba(0,0,0,0.1));border-radius:10px;background:transparent;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">＋ 新幻灯片</button>
     </div></div>
+    </sc-if>
+
+    <sc-if value="{{ sorter }}" hint-placeholder-val="{{ false }}">
+    <div data-sorter="1" style="position:absolute;left:12px;right:12px;top:58px;bottom:44px;z-index:30;overflow:auto;scrollbar-width:none;padding:12px 22px 28px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px 22px;border-radius:var(--panel-r, 16px);background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95))">
+      <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="0">
+        <sc-if value="{{ t.hasSec }}" hint-placeholder-val="{{ false }}"><div style="width:100%;padding:8px 2px 0;font-size:13px;font-weight:600;color:var(--k11, #6E6E73)">{{ t.secName }}<span style="margin-left:8px;font-weight:400;color:var(--k8, #8E8E93)">{{ t.secCount }}</span></div></sc-if>
+        <div draggable="true" onDragStart="{{ t.onDragStart }}" onDragOver="{{ t.onDragOver }}" onDrop="{{ t.onDrop }}" onDragEnd="{{ t.onDragEnd }}" onClick="{{ t.onClick }}" onDoubleClick="{{ t.onOpen }}" onContextMenu="{{ t.onCtx }}" style="display:flex;flex-direction:column;gap:6px;cursor:pointer;box-shadow:{{ t.dropSide }};opacity:{{ t.op }}">
+          <div style="border-radius:6px;overflow:hidden;outline:{{ t.outline }};outline-offset:3px;box-shadow:0 1px 3px var(--k77, rgba(0,0,0,0.14));position:relative;pointer-events:none">
+            <dc-import name="SlideView" slide="{{ t.slide }}" theme="{{ themeKey }}" ratio="{{ ratio }}" width="{{ 224 }}" hint-size="224px,126px"></dc-import>
+            <sc-if value="{{ t.hidden }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:rgba(246,244,239,0.6);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--k11, #6E6E73)">已隐藏</div></sc-if>
+          </div>
+          <div style="display:flex;gap:6px;font-size:11.5px;color:var(--k8, #8E8E93)"><span>{{ t.n }}</span><sc-if value="{{ t.hasAnim }}" hint-placeholder-val="{{ false }}"><span style="color:var(--k35, #3F7D5C)">✦</span></sc-if></div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ fxPane }}" hint-placeholder-val="{{ false }}">
+    <div data-fxpane="1" data-pop="right" style="position:absolute;top:58px;right:12px;width:252px;max-height:calc(100% - 120px);z-index:45;display:flex;flex-direction:column;border-radius:var(--panel-r, 16px);overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95))">
+      <div style="height:40px;flex:none;display:flex;align-items:center;padding:0 8px 0 16px;font-size:12.5px;font-weight:600"><span style="flex:1">动画窗格</span><button onClick="{{ closeFxPane }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">✕</button></div>
+      <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 8px 10px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ fxRows }}" as="r" hint-placeholder-count="0">
+          <div onClick="{{ r.onClick }}" style="flex:none;display:flex;align-items:center;gap:6px;height:30px;padding:0 4px 0 6px;border-radius:var(--ctl-r, 8px);background:{{ r.bg }};cursor:pointer;font-size:12.5px" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
+            <span style="width:16px;text-align:right;color:var(--k8, #8E8E93);font-variant-numeric:tabular-nums;flex:none">{{ r.n }}</span>
+            <span style="width:8px;height:8px;border-radius:2px;background:{{ r.dot }};flex:none"></span>
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.label }}</span>
+            <button onClick="{{ r.up }}" title="上移" style="width:20px;height:22px;border:none;border-radius:5px;background:transparent;font-size:9px;color:var(--k11, #6E6E73);cursor:pointer;flex:none">▲</button><button onClick="{{ r.down }}" title="下移" style="width:20px;height:22px;border:none;border-radius:5px;background:transparent;font-size:9px;color:var(--k11, #6E6E73);cursor:pointer;flex:none">▼</button><button onClick="{{ r.del }}" title="删除" style="width:20px;height:22px;border:none;border-radius:5px;background:transparent;font-size:10px;color:var(--k11, #6E6E73);cursor:pointer;flex:none">✕</button>
+          </div>
+        </sc-for>
+        <sc-if value="{{ fxEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 8px;font-size:12px;line-height:1.6;color:var(--k8, #8E8E93)">选中对象后，从「进入」「强调」「退出」添加动画</div></sc-if>
+      </div>
+    </div>
     </sc-if>
 
     <div style="grid-column:2;display:flex;flex-direction:column;min-width:0;min-height:0;padding-top:58px">
       <div ref="{{ stageRef }}" onMouseDown="{{ onStageDown }}" style="flex:1;min-height:0;position:relative;overflow:auto;display:flex">
-        <div ref="{{ slideRef }}" style="position:relative;width:{{ stW }};height:{{ stH }};flex:none;margin:auto;box-shadow:0 1px 2px var(--k53, rgba(0,0,0,0.08)),0 12px 36px var(--k22, rgba(0,0,0,0.12))">
+        <div ref="{{ slideRef }}" style="position:relative;width:{{ stW }};height:{{ stH }};flex:none;margin:auto;box-shadow:var(--paper-sh, 0 0 0 1px rgba(0,0,0,0.05),0 10px 34px rgba(0,0,0,0.06))">
           <div style="position:absolute;left:0;top:0;width:1600px;height:{{ H }};transform:{{ scale }};transform-origin:0 0;background:{{ sBg }};overflow:hidden">
             <sc-for list="{{ objs }}" as="o" hint-placeholder-count="0">
-              <div data-soid="{{ o.id }}" onMouseDown="{{ o.onMD }}" onDoubleClick="{{ o.onDbl }}" style="position:absolute;left:{{ o.left }};top:{{ o.top }};width:{{ o.width }};height:{{ o.height }};transform:{{ o.tf }};opacity:{{ o.op }};cursor:{{ o.cursor }};pointer-events:{{ o.pe }}">
-                <div style="position:absolute;inset:0;background:{{ o.bg }};border-radius:{{ o.radius }};clip-path:{{ o.clip }};box-shadow:{{ o.stroke }}"></div>
+              <div data-soid="{{ o.id }}" onMouseDown="{{ o.onMD }}" onDoubleClick="{{ o.onDbl }}" style="position:absolute;left:{{ o.left }};top:{{ o.top }};width:{{ o.width }};height:{{ o.height }};transform:{{ o.tf }};opacity:{{ o.op }};cursor:{{ o.cursor }};pointer-events:{{ o.pe }};filter:{{ o.flt }}">
+                <div style="position:absolute;inset:0;background:{{ o.bg }};border-radius:{{ o.radius }};border:{{ o.border }};box-sizing:border-box" dangerouslySetInnerHTML="{{ o.svg }}"></div>
+                <sc-if value="{{ o.isGroup }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ o.kids }}" as="g" hint-placeholder-count="0">
+                    <div style="position:absolute;left:{{ g.left }};top:{{ g.top }};width:{{ g.width }};height:{{ g.height }};transform:{{ g.tf }};opacity:{{ g.op }};filter:{{ g.flt }};pointer-events:none">
+                      <div style="position:absolute;inset:0;background:{{ g.bg }};border-radius:{{ g.radius }};border:{{ g.border }};box-sizing:border-box" dangerouslySetInnerHTML="{{ g.svg }}"></div>
+                      <sc-if value="{{ g.isImg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;{{ g.picFrame }}"><img src="{{ g.src }}" alt="" draggable="false" style="{{ g.picImage }}"></div></sc-if>
+                      <sc-if value="{{ g.hasText }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;padding:{{ g.pad }};display:flex;flex-direction:column;justify-content:{{ g.va }};color:{{ g.color }};font-size:{{ g.fs }};font-family:{{ g.font }};font-weight:{{ g.fw }};font-style:{{ g.fst }};text-decoration:{{ g.td }};text-align:{{ g.align }};line-height:{{ g.lh }};overflow:hidden;word-break:break-word;{{ g.tx }}"><div class="sv-t" dangerouslySetInnerHTML="{{ g.inner }}"></div></div></sc-if>
+                    </div>
+                  </sc-for>
+                </sc-if>
                 <sc-if value="{{ o.isImg }}" hint-placeholder-val="{{ false }}">
                   <div style="position:absolute;inset:0;pointer-events:none;{{ o.picFrame }}"><img src="{{ o.src }}" alt="" draggable="false" style="{{ o.picImage }}"></div>
                 </sc-if>
                 <sc-if value="{{ o.hasText }}" hint-placeholder-val="{{ false }}">
-                  <div style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:{{ o.ovf }};word-break:break-word;outline:{{ o.phLine }}">
-                    <div class="sv-t se-ed" data-edit="{{ o.id }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ o.onBlur }}" dangerouslySetInnerHTML="{{ o.inner }}" style="min-height:1em;cursor:{{ o.tcur }};user-select:{{ o.us }};outline:none"></div>
+                  <div data-tbox="{{ o.id }}" style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:{{ o.ovf }};word-break:break-word;outline:{{ o.phLine }};{{ o.tx }}">
+                    <div class="sv-t se-ed" data-edit="{{ o.id }}" data-hint="{{ o.hint }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ o.onBlur }}" dangerouslySetInnerHTML="{{ o.inner }}" style="min-height:1em;cursor:{{ o.tcur }};user-select:{{ o.us }};outline:none"></div>
                   </div>
                 </sc-if>
                 <sc-if value="{{ o.isTable }}" hint-placeholder-val="{{ false }}">
-                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;font-size:{{ o.fs }};font-family:{{ o.font }}">
-                    <sc-for list="{{ o.trows }}" as="r" hint-placeholder-count="0">
-                      <div style="flex:1;display:flex;min-height:0">
-                        <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="0">
-                          <div data-edit="{{ c.key }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ c.onBlur }}" style="flex:1;display:flex;align-items:center;padding:0 16px;background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};border-bottom:1px solid rgba(128,128,128,0.25);overflow:hidden;outline:none;cursor:{{ o.tcur }}">{{ c.text }}</div>
-                        </sc-for>
-                      </div>
+                  <div style="position:absolute;inset:0;display:grid;grid-template-columns:{{ o.gtc }};grid-template-rows:{{ o.gtr }};font-size:{{ o.fs }};font-family:{{ o.font }}">
+                    <sc-for list="{{ o.tcells }}" as="c" hint-placeholder-count="0">
+                      <div data-edit="{{ c.key }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ c.onBlur }}" onMouseDown="{{ c.onMD }}" onFocus="{{ c.onFocus }}" style="grid-column:{{ c.gc }};grid-row:{{ c.gr }};display:flex;align-items:center;justify-content:{{ c.jc }};padding:0 16px;background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};border:{{ c.border }};border-bottom:{{ c.bb }};overflow:hidden;outline:{{ c.outline }};cursor:{{ o.tcur }};box-sizing:border-box">{{ c.text }}</div>
                     </sc-for>
                   </div>
                 </sc-if>
@@ -112,14 +160,23 @@
                 </sc-if>
               </div>
             </sc-for>
-            <sc-if value="{{ gV }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:800px;top:0;bottom:0;border-left:{{ guideW }} dashed #D9534F;pointer-events:none"></div></sc-if>
-            <sc-if value="{{ gH }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:{{ halfH }};left:0;right:0;border-top:{{ guideW }} dashed #D9534F;pointer-events:none"></div></sc-if>
+            <sc-for list="{{ guides }}" as="g" hint-placeholder-count="0"><div style="position:absolute;left:{{ g.left }};top:{{ g.top }};right:{{ g.right }};bottom:{{ g.bottom }};border-left:{{ g.bl }};border-top:{{ g.bt }};pointer-events:none"></div></sc-for>
+            <sc-for list="{{ hints }}" as="h" hint-placeholder-count="0">
+              <div style="position:absolute;left:{{ h.left }};top:{{ h.top }};width:{{ h.width }};height:{{ h.height }};border-left:{{ h.bl }};border-top:{{ h.bt }};pointer-events:none"></div>
+              <span style="position:absolute;left:{{ h.lx }};top:{{ h.ly }};transform:translate(-50%,-50%);font-size:{{ h.fs }};line-height:1;padding:{{ h.pad }};border-radius:{{ h.rad }};background:#D9534F;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-variant-numeric:tabular-nums;pointer-events:none;white-space:nowrap">{{ h.text }}</span>
+            </sc-for>
           </div>
           <div style="position:absolute;left:0;top:0;width:1600px;height:{{ H }};transform:{{ scale }};transform-origin:0 0;pointer-events:none">
+            <sc-for list="{{ frames }}" as="f" hint-placeholder-count="0">
+              <div style="position:absolute;left:{{ f.left }};top:{{ f.top }};width:{{ f.width }};height:{{ f.height }};transform:{{ f.tf }};outline:{{ f.line }};outline-offset:0"></div>
+            </sc-for>
             <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
               <div style="position:absolute;left:{{ fr.left }};top:{{ fr.top }};width:{{ fr.width }};height:{{ fr.height }};transform:{{ fr.tf }};outline:{{ fr.line }};outline-offset:0">
                 <sc-for list="{{ handles }}" as="h" hint-placeholder-count="0">
                   <span onMouseDown="{{ h.onMD }}" style="position:absolute;left:{{ h.left }};top:{{ h.top }};width:{{ hs }};height:{{ hs }};transform:translate(-50%,-50%);background:var(--k0, #FFFFFF);border:{{ hb }} solid var(--k59, #3F7D5C);border-radius:{{ h.radius }};cursor:{{ h.cursor }};pointer-events:auto;box-sizing:border-box"></span>
+                </sc-for>
+                <sc-for list="{{ colHandles }}" as="ch" hint-placeholder-count="0">
+                  <span onMouseDown="{{ ch.onMD }}" style="position:absolute;left:{{ ch.left }};top:0;bottom:0;width:{{ ch.w }};transform:translateX(-50%);cursor:col-resize;pointer-events:auto"></span>
                 </sc-for>
               </div>
             </sc-if>
@@ -130,22 +187,25 @@
         </sc-if>
       </div>
       <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
-        <div style="flex:none;height:84px;margin:0 16px 4px;border-radius:18px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-direction:column">
-          <textarea value="{{ notes }}" onChange="{{ onNotes }}" placeholder="单击此处添加备注" style="flex:1;border:none;background:transparent;resize:none;padding:10px 18px;font-size:13px;line-height:1.6;outline:none;color:var(--k1, #1D1D1F)"></textarea>
+        <div onMouseDown="{{ notesGrab }}" title="拖动以调整备注窗格的高度" style="flex:none;height:8px;margin:0 16px;cursor:ns-resize"></div>
+        <div data-notes="1" style="flex:none;height:{{ notesH }};margin:0 16px 36px;border-top:1px solid var(--line, rgba(0,0,0,0.1));display:flex;flex-direction:column">
+          <textarea value="{{ notes }}" onChange="{{ onNotes }}" placeholder="单击此处添加备注" style="flex:1;border:none;background:transparent;resize:none;padding:10px 4px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px;line-height:1.6;outline:none;color:var(--ink, #1D1D1F)"></textarea>
         </div>
       </sc-if>
+      <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out">{{ statusText }}</div></sc-if>
       <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-      <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:30;height:34px;display:flex;align-items:center;gap:14px;padding:0 16px;border-radius:999px;background:var(--k69, rgba(255,255,255,0.38));backdrop-filter:blur(14px) saturate(180%);-webkit-backdrop-filter:blur(14px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 6px 20px var(--k53, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k11, #6E6E73);opacity:0.32;transition:opacity .45s cubic-bezier(.2,1,.3,1),background .45s;white-space:nowrap" style-hover="opacity:1;background:var(--k15, rgba(255,255,255,0.62))">
+      <div style="position:absolute;right:18px;bottom:12px;z-index:30;height:20px;display:flex;align-items:center;gap:12px;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));font-variant-numeric:tabular-nums;white-space:nowrap">
         <span>{{ statusText }}</span>
         <div style="flex:1"></div>
-        <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-left:1px solid var(--k36, rgba(0,0,0,0.12));border-right:1px solid var(--k36, rgba(0,0,0,0.12))">
-          <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--k11, #6E6E73);width:20px">−</button>
-          <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" style="width:100px;accent-color:var(--k1, #1D1D1F)">
-          <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--k11, #6E6E73);width:20px">＋</button>
-          <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400，100 = 适应窗口）" style="width:46px;height:22px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--k20, rgba(255,255,255,0.7))">
-          <button onClick="{{ fitZoom }}" title="适应窗口 Ctrl+0" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--k11, #6E6E73)">适应窗口</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">−</button>
+          <input type="range" min="20" max="400" step="1" value="{{ zoomPct }}" onChange="{{ onZoom }}" title="{{ zoomPct }}%" style="width:60px;height:12px;margin:0;accent-color:var(--ink-2, rgba(29,29,31,0.62))">
+          <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">＋</button>
+          <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400，100 = 适应窗口）" style="width:40px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
+          <button onClick="{{ fitZoom }}" title="适应窗口 Ctrl+0" style="border:none;background:transparent;cursor:pointer;font-size:11px;color:inherit;padding:0" style-hover="color:var(--ink, #1D1D1F)">适应窗口</button>
         </div>
-        <button onClick="{{ toggleNotes }}" style="border:none;background:transparent;font-size:12px;cursor:pointer;color:var(--k11, #6E6E73)">{{ notesLabel }}</button>
+        <button onClick="{{ toggleNotes }}" style="border:none;background:transparent;font-size:11px;cursor:pointer;color:inherit;padding:0" style-hover="color:var(--ink, #1D1D1F)">{{ notesLabel }}</button>
+        <button onClick="{{ toggleSorter }}" style="border:none;background:transparent;font-size:11px;cursor:pointer;color:inherit;padding:0" style-hover="color:var(--ink, #1D1D1F)">{{ sorterLabel }}</button>
       </div>
       </sc-if>
     </div>
@@ -154,22 +214,27 @@
   <input ref="{{ imgRef }}" type="file" accept="image/*" onChange="{{ onImgFile }}" style="display:none">
 
   <sc-if value="{{ showing }}" hint-placeholder-val="{{ false }}">
-    <div ref="{{ showRef }}" tabIndex="0" onKeyDown="{{ onShowKey }}" onClick="{{ onShowClick }}" onContextMenu="{{ onShowCtx }}" style="position:fixed;inset:0;z-index:1000;background:#000;display:flex;align-items:center;justify-content:center;outline:none;cursor:none">
-      <div ref="{{ showSlideRef }}" style="width:{{ showWpx }};height:{{ showHpx }}">
-        <dc-import name="SlideView" slide="{{ showSlide }}" theme="{{ themeKey }}" ratio="{{ ratio }}" width="{{ showW }}" hidden="{{ showHidden }}" hint-size="10px,10px"></dc-import>
+    <div ref="{{ showRef }}" tabIndex="0" onKeyDown="{{ onShowKey }}" onClick="{{ onShowClick }}" onContextMenu="{{ onShowCtx }}" onMouseDown="{{ onShowDown }}" onMouseMove="{{ onShowMove }}" onMouseUp="{{ onShowUp }}" style="position:fixed;inset:0;z-index:1000;background:#000;display:flex;align-items:center;justify-content:center;outline:none;cursor:{{ showCursor }}">
+      <div ref="{{ showSlideRef }}" style="position:relative;width:{{ showWpx }};height:{{ showHpx }}">
+        <dc-import name="SlideView" slide="{{ showSlide }}" theme="{{ themeKey }}" ratio="{{ ratio }}" width="{{ showW }}" hidden="{{ showHidden }}" hints="{{ false }}" hint-size="10px,10px"></dc-import>
+        <div style="position:absolute;inset:0;pointer-events:none" dangerouslySetInnerHTML="{{ inkSvg }}"></div>
       </div>
+      <sc-if value="{{ laserOn }}" hint-placeholder-val="{{ false }}"><div style="position:fixed;left:{{ laserX }};top:{{ laserY }};width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle,#FF3B30 0 32%,rgba(255,59,48,0.35) 58%,transparent 70%);pointer-events:none;z-index:3"></div></sc-if>
+      <sc-if value="{{ showBlank }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:{{ blankBg }};z-index:2"></div></sc-if>
+      <sc-if value="{{ presenterIn }}" hint-placeholder-val="{{ false }}"><div onClick="{{ onPresenterClick }}" style="position:absolute;inset:0;z-index:4" dangerouslySetInnerHTML="{{ presenterHtml }}"></div></sc-if>
+      <sc-if value="{{ hasJump }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:20px;bottom:14px;z-index:5;color:rgba(255,255,255,0.75);font-size:13px;font-family:'IBM Plex Sans',sans-serif">{{ jumpText }}</div></sc-if>
       <div style="position:absolute;right:20px;bottom:14px;color:rgba(255,255,255,0.45);font-size:13px;font-family:'IBM Plex Sans',sans-serif">{{ showCounter }}</div>
     </div>
   </sc-if>
 
   <sc-if value="{{ hasPop }}" hint-placeholder-val="{{ false }}">
     <div onMouseDown="{{ closePop }}" style="position:fixed;inset:0;z-index:90"></div>
-    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:180px;max-height:440px;overflow:auto;border-radius:16px;background:linear-gradient(180deg,var(--k23, rgba(255,255,255,0.82)),var(--k40, rgba(255,255,255,0.66)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));padding:5px;display:flex;flex-direction:column">
+    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:180px;max-height:440px;overflow:auto;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);padding:6px;display:flex;flex-direction:column">
       <sc-for list="{{ popItems }}" as="mi" hint-placeholder-count="0">
         <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 10px 3px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ mi.label }}</div></sc-if>
-        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:#EFEFF4;margin:4px 6px"></div></sc-if>
+        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--line, rgba(0,0,0,0.1));margin:4px 6px"></div></sc-if>
         <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:transparent;border-radius:5px;font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center" style-hover="background:var(--k27, rgba(255,255,255,0.75))"><span style="width:14px;color:var(--k35, #3F7D5C)">{{ mi.check }}</span><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
+          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:transparent;border-radius:var(--ctl-r, 8px);font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center" style-hover="background:var(--fill, rgba(0,0,0,0.07))"><span style="width:14px;color:var(--k35, #3F7D5C)">{{ mi.check }}</span><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
         </sc-if>
       </sc-for>
       <sc-if value="{{ popIsGrid }}" hint-placeholder-val="{{ false }}">
@@ -182,6 +247,17 @@
           </div>
         </div>
       </sc-if>
+      <sc-if value="{{ popIsGallery }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:6px 8px 2px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ galleryLabel }}</div>
+        <div style="padding:4px 8px 8px;display:grid;grid-template-columns:repeat(3,120px);gap:10px 12px">
+          <sc-for list="{{ gallery }}" as="g" hint-placeholder-count="0">
+            <button onClick="{{ g.onClick }}" title="{{ g.label }}" style="padding:4px 0 2px;border:none;border-radius:8px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--k1, #1D1D1F)" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
+              <div style="border-radius:4px;overflow:hidden;outline:{{ g.outline }};outline-offset:2px;box-shadow:0 1px 3px var(--k77, rgba(0,0,0,0.14));pointer-events:none"><dc-import name="SlideView" slide="{{ g.slide }}" theme="{{ themeKey }}" ratio="{{ ratio }}" width="{{ 112 }}" hint-size="112px,63px"></dc-import></div>
+              <span>{{ g.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
     </div>
   </sc-if>
 </div>
@@ -190,20 +266,19 @@
 const md = e => e.preventDefault();
 const FONTS = [['', '主题字体'], ['Noto Serif SC', '思源宋体'], ['Noto Sans SC', '思源黑体'], ['IBM Plex Sans', 'Plex Sans'], ['Georgia', 'Georgia'], ['Arial', 'Arial']];
 const SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 54, 60, 72, 84, 96, 120];
-const SHAPES = [['rect', '矩形'], ['round', '圆角矩形'], ['ellipse', '椭圆'], ['pill', '胶囊'], ['triangle', '三角形'], ['diamond', '菱形'], ['arrow', '箭头'], ['line', '线条']];
-const ANIMS = [['none', '无'], ['fade', '淡入'], ['rise', '上浮'], ['zoom', '缩放'], ['fly', '飞入']];
-const TRANS = [['none', '无'], ['fade', '淡入淡出'], ['push', '推入'], ['zoom', '缩放']];
+const DASHES = [['solid', '实线'], ['dash', '短划线'], ['lgDash', '长划线'], ['dot', '圆点'], ['dashDot', '划线–点'], ['sysDash', '方点划线']];
+const ENDS = [['none', '无'], ['triangle', '三角箭头'], ['arrow', '开放箭头'], ['stealth', '燕尾箭头'], ['diamond', '菱形'], ['oval', '圆形']];
+const LINE_WIDTHS = [1, 2, 3, 4, 6, 8, 12];
+const FX_START = [['click', '单击时'], ['with', '与上一动画同时'], ['after', '上一动画之后']];
+const FX_DOT = { entr: '#3F9E5C', emph: '#D9A13A', exit: '#D9534F', other: '#8E8E93' };
+const EASE = 'cubic-bezier(.2,.7,.2,1)';
+const TYPE_NAMES = { text: '文本框', shape: '形状', image: '图片', table: '表格', line: '线条', group: '组合' };
 const HANDLES = [['nw', '0%', '0%', 'nwse-resize'], ['n', '50%', '0%', 'ns-resize'], ['ne', '100%', '0%', 'nesw-resize'], ['e', '100%', '50%', 'ew-resize'], ['se', '100%', '100%', 'nwse-resize'], ['s', '50%', '100%', 'ns-resize'], ['sw', '0%', '100%', 'nesw-resize'], ['w', '0%', '50%', 'ew-resize']];
-const KF = {
-  fade: [{ opacity: 0 }, { opacity: 1 }], rise: [{ opacity: 0, transform: 'translateY(60px)' }, { opacity: 1, transform: 'none' }],
-  zoom: [{ opacity: 0, transform: 'scale(0.6)' }, { opacity: 1, transform: 'none' }], fly: [{ opacity: 0, transform: 'translateX(-400px)' }, { opacity: 1, transform: 'none' }],
-  push: [{ opacity: 0.3, transform: 'translateX(12%)' }, { opacity: 1, transform: 'none' }], tzoom: [{ opacity: 0, transform: 'scale(0.92)' }, { opacity: 1, transform: 'none' }]
-};
 const ZMIN = 0.2, ZMAX = 4;
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 
 class Component extends DCLogic {
-  state = { tab: 'home', cur: 0, sel: null, editing: null, live: null, guides: null, pop: null, gridHover: null, box: { w: 800, h: 500 }, zoom: 1, zoomEdit: null, show: null, showNotes: true, drop: null, vw: window.innerWidth, vh: window.innerHeight };
+  state = { tab: 'home', cur: 0, sel: null, sels: [], editing: null, lives: null, guides: null, pop: null, gridHover: null, box: { w: 800, h: 500 }, zoom: 1, zoomEdit: null, show: null, showNotes: true, drop: null, vw: window.innerWidth, vh: window.innerHeight };
   stageRef = React.createRef(); slideRef = React.createRef(); imgRef = React.createRef(); showRef = React.createRef(); showSlideRef = React.createRef();
   componentDidMount() {
     import('./glass.js');
@@ -221,7 +296,7 @@ class Component extends DCLogic {
   attachFollow() { const st = this.stageRef.current; if (this.gone || !this.F || !st || (this.follow && this.follow.el === st)) return; this.follow && this.follow.detach(); this.follow = this.F.attach(st, r => { if (this.state.editing) return this.F.caretRect(st); const el = r === 'nudge' && this.state.sel && st.querySelector(`[data-soid="${this.state.sel}"]`); return el ? el.getBoundingClientRect() : null; }, { insets: { top: 0 } }); }
   /** Ctrl/⌘ + wheel and trackpad pinch zoom the stage instead of the browser page: a native non-passive listener on the editor root. */
   attachWheel() { if (this.rootEl) return; const el = this.stageRef.current && this.stageRef.current.closest('[data-edroot]'); if (el) { this.rootEl = el; el.addEventListener('wheel', this.onWheel, { passive: false }); } }
-  componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); window.removeEventListener('resize', this.onResize); document.removeEventListener('fullscreenchange', this.onFs); this.ro && this.ro.disconnect(); if (this.rootEl) this.rootEl.removeEventListener('wheel', this.onWheel); this.gone = true; this.follow && this.follow.detach(); }
+  componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); window.removeEventListener('resize', this.onResize); document.removeEventListener('fullscreenchange', this.onFs); this.ro && this.ro.disconnect(); if (this.rootEl) this.rootEl.removeEventListener('wheel', this.onWheel); this.gone = true; this.follow && this.follow.detach(); clearInterval(this.clockT); if (this.presenter && !this.presenter.closed) this.presenter.close(); }
   /** Zoom factor over the fitted scale, 20%–400% (100% = fit); `at` (client coords) is the point on the slide that stays put. */
   setZoom(z, at) {
     z = Math.max(ZMIN, Math.min(ZMAX, z)); const stg = this.stageRef.current, sl = this.slideRef.current, k0 = this.k; if (!stg || !sl || Math.abs(z - this.state.zoom) < 1e-4) return;
@@ -241,8 +316,11 @@ class Component extends DCLogic {
       if (el) { const all = this.selectAll; this.focusEdit = null; this.selectAll = false; el.focus(); const r = document.createRange(); r.selectNodeContents(el); if (!all) r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
     }
     if (this.state.show && this.showRef.current && document.activeElement !== this.showRef.current) this.showRef.current.focus();
-    if (this.pendAnim && this.showRef.current) { const pa = this.pendAnim; this.pendAnim = null; requestAnimationFrame(() => { const el = pa.id ? this.showRef.current && this.showRef.current.querySelector(`[data-oid="${pa.id}"]`) : this.showSlideRef.current; if (el && KF[pa.kind]) el.animate(KF[pa.kind], { duration: pa.id ? 550 : 480, easing: 'cubic-bezier(.2,.7,.2,1)' }); }); }
-    if (this.previewTrans && this.slideRef.current) { const k = this.previewTrans; this.previewTrans = null; if (KF[k]) this.slideRef.current.animate(KF[k], { duration: 480, easing: 'cubic-bezier(.2,.7,.2,1)' }); }
+    if (this.pendShow) this.playShow();
+    if (this.presenter) this.syncPresenter();
+    if (this.pendTrans) { this.pendTrans = false; this.previewTransition(); }
+    if (this.focusSec != null) { const el = document.querySelector && document.querySelector(`[data-sec="${this.focusSec}"]`); this.focusSec = null; if (el) { el.focus(); el.select(); } }
+    if (this.K && !this.state.editing) this.measureFits();
   }
   onResize = () => this.setState({ vw: window.innerWidth, vh: window.innerHeight });
   onFs = () => { if (!document.fullscreenElement && this.wasFs && this.state.show) { this.wasFs = false; this.setState({ show: null }); } };
@@ -251,36 +329,140 @@ class Component extends DCLogic {
   get ci() { return Math.max(0, Math.min(this.state.cur, this.doc.slides.length - 1)); }
   get slide() { return this.doc.slides[this.ci]; }
   get obj() { const s = this.slide; return s && s.objs.find(o => o.id === this.state.sel); }
+  /** Every selected object (⇧-click adds to the selection); the primary one is state.sel. */
+  get sels() { const s = this.slide, ids = this.state.sels && this.state.sels.length ? this.state.sels : this.state.sel ? [this.state.sel] : []; return s ? ids.map(id => s.objs.find(o => o.id === id)).filter(Boolean) : []; }
+  select(id, add) { const ids = add ? (this.state.sels.includes(id) ? this.state.sels.filter(x => x !== id) : this.state.sels.concat(id)) : [id]; this.setState({ sel: ids[ids.length - 1] || null, sels: ids, editing: null, pop: null }); }
   get k() { const { w, h } = this.state.box; return Math.max(0.1, Math.min((w - 64) / 1600, (h - 48) / this.H)) * (this.state.zoom || 1); }
   toast(m) { this.props.toast && this.props.toast(m); }
-  commit(fn, silent) { const d = structuredClone(this.doc); fn(d, d.slides[this.ci]); this.props.onChange && this.props.onChange(d, silent ? { silent: true } : undefined); }
+  commit(fn, silent) {
+    const d = structuredClone(this.doc), s = d.slides[this.ci]; fn(d, s);
+    this.K.keepSections(this.doc.slides, d.slides);
+    if (s) { this.K.relinkLines(s); if (s.anims && s.anims.length) { const ids = new Set(this.K.flatObjs(s.objs).map(o => o.id)); s.anims = s.anims.filter(a => !a.id || ids.has(a.id)); } } // an object's effects go with it
+    this.props.onChange && this.props.onChange(d, silent ? { silent: true } : undefined);
+  }
   patchObj(id, patch, silent) { this.commit((d, s) => { const o = s.objs.find(x => x.id === id); if (o) Object.assign(o, patch); }, silent); }
   patchSel(patch) { const o = this.obj; if (o) this.patchObj(o.id, patch); }
+  /** The same change on every selected object. */
+  patchSels(patch) { const ids = this.sels.map(o => o.id); if (ids.length) this.commit((d, s) => s.objs.forEach(o => { if (ids.includes(o.id)) Object.assign(o, typeof patch === 'function' ? patch(o) : patch); })); }
+  deleteSels() { const ids = this.sels.map(o => o.id); if (!ids.length) return; this.commit((d, s) => { s.objs = s.objs.filter(x => !ids.includes(x.id)); }); this.setState({ sel: null, sels: [] }); }
+  /** 组合 Ctrl+G: the selected objects become one group where the topmost of them was; 取消组合 puts a group's members back. */
+  groupSels() { const ids = this.sels.map(o => o.id); if (ids.length < 2) return this.toast($t('先选中两个以上的对象')); let g; this.commit((d, s) => { const kids = s.objs.filter(o => ids.includes(o.id)); g = this.K.group(kids); const at = Math.max(...kids.map(k => s.objs.indexOf(k))); s.objs.splice(at + 1, 0, g); s.objs = s.objs.filter(o => !ids.includes(o.id)); }); this.setState({ sel: g.id, sels: [g.id] }); }
+  ungroup() { const o = this.obj; if (!o || o.t !== 'group') return; const ids = o.kids.map(k => k.id); this.commit((d, s) => { const i = s.objs.findIndex(x => x.id === o.id); s.objs.splice(i, 1, ...s.objs[i].kids); }); this.setState({ sel: ids[ids.length - 1], sels: ids }); }
+  /** Slide units per centimetre, for the exact size and position fields. */
+  get cmU() { const g = this.doc._orig && this.doc._orig.geo; return g ? 1 / g.kx : (this.doc.ratio === '4:3' ? 25.4 : 33.867) / 1600; }
   endEdit() { const a = document.activeElement; if (a && a.isContentEditable) a.blur(); }
-  addSlide(layout, at) { const K = this.K, i = at ?? this.ci + 1; const s = K.makeSlide(layout === 'blank' ? 'blank' : layout, {}, this.doc.ratio); this.commit(d => d.slides.splice(i, 0, s)); this.setState({ cur: i, sel: null }); }
+  /** A new slide of a layout (a key of K.LAYOUT_SPECS, its placeholders empty) after the current one, or at index at. */
+  addSlide(layout, at) { const i = at ?? this.ci + 1, s = this.K.makeSlide(layout, this.doc.ratio); this.commit(d => d.slides.splice(i, 0, s)); this.setState({ cur: i, sel: null, pop: null }); }
+  /** 版式: the current slide takes another layout as the engine does on save (PptxDesign.ChangeLayout): each placeholder, in drawing
+   *  order, becomes the first free slot of its family and moves there, text kept; a leftover keeps its place when it has text and goes
+   *  when it is empty; the slots nobody took are added empty; everything else stays. The layout's graphics replace the old layout's. */
   relayout(layout) {
-    const K = this.K, s = this.slide; if (!s) return;
-    const text = o => { const t = document.createElement('div'); t.innerHTML = o.html || ''; return t; };
-    const tObj = s.objs.find(o => o.ph === 'title'), bObj = s.objs.find(o => o.ph === 'body'), sub = s.objs.find(o => o.ph === 'sub');
-    const title = tObj ? text(tObj).innerText.trim() : '';
-    const bullets = bObj ? Array.from(text(bObj).querySelectorAll('li,p')).map(n => n.innerText.trim()).filter(Boolean) : [];
-    const ns = K.makeSlide(layout, { title: title || undefined, bullets: bullets.length ? bullets : undefined, subtitle: sub ? text(sub).innerText.trim() : undefined }, this.doc.ratio);
-    const keep = s.objs.filter(o => !o.ph && (o.t === 'image' || o.t === 'table' || (o.t === 'text' && o !== tObj)) && !(o.t === 'shape'));
-    this.commit((d, cs) => { cs.objs = ns.objs.concat(keep.filter(o => o.t !== 'text' || !o.ph)); });
+    const K = this.K, spec = K.LAYOUT_SPECS[layout]; if (!spec || !this.slide) return;
+    this.commit((d, s) => {
+      const slots = spec.ph.map(slot => ({ slot, taken: false })), objs = [];
+      for (const o of s.objs) {
+        const free = o.ph && slots.find(x => !x.taken && K.phFamily(x.slot.ph) === K.phFamily(o.ph));
+        if (free) { free.taken = true; const p = K.placeholder(free.slot, d.ratio); objs.push(Object.assign(o, { ph: p.ph, x: p.x, y: p.y, w: p.w, h: p.h, fs: p.fs, va: p.va, align: p.align })); }
+        else if (!o.ph || K.textOf(o.html)) objs.push(o);
+      }
+      for (const x of slots) if (!x.taken) objs.push(K.placeholder(x.slot, d.ratio));
+      Object.assign(s, { layout, objs, decor: (s.decor || []).filter(x => x.source === 'master').concat(K.makeSlide(layout, d.ratio).decor) });
+    });
+    this.setState({ sel: null, pop: null });
   }
-  insertObj(o) { this.endEdit(); this.commit((d, s) => s.objs.push(o)); this.setState({ sel: o.id }); return o; }
+  /** The layout gallery (新建幻灯片, the thumbnails' ＋, 版式): a preview of every layout; mode 'new' adds a slide at index at, 'relayout' re-applies one. */
+  openGallery(id, mode, e, at) {
+    if (this.state.pop && this.state.pop.id === id) return this.setState({ pop: null });
+    const r = e.currentTarget.getBoundingClientRect();
+    this.setState({ pop: { id, mode, at, x: Math.max(8, Math.min(r.left, window.innerWidth - 430)), y: Math.max(8, Math.min(r.bottom + 4, window.innerHeight - 440)) }, gridHover: null });
+  }
+  preview(key) { const k = key + '|' + (this.doc.ratio || '16:9'); this.previews = this.previews || {}; return this.previews[k] || (this.previews[k] = this.K.makeSlide(key, this.doc.ratio)); }
+  /** ✦ 美化: the assistant designs the current slide, or the whole deck, by the slide design rules it carries; its edits show as they
+   *  land and end in the usual keep/undo card. */
+  beautify(whole) {
+    const ask = this.props.onAsk; if (!ask) return this.toast($t('引擎还没有就绪'));
+    ask(whole ? $t('美化整份幻灯片：先为全稿定一套配色（palette）和字体（fonts），再逐页统一字号层级、对齐与留白，缩小溢出的文字，需要时换版式；不改动文字内容。')
+      : $t('美化第 {n} 页幻灯片：统一字号层级、对齐与留白，缩小溢出的文字，需要时换版式或配色；只改这一页，不改动文字内容。', { n: this.ci + 1 }));
+  }
+  insertObj(o) { this.endEdit(); this.commit((d, s) => s.objs.push(o)); this.setState({ sel: o.id, sels: [o.id] }); return o; }
   insertText() { const K = this.K, H = this.H; const o = this.insertObj(K.txt({ x: 500, y: H / 2 - 50, w: 600, h: 100, html: `<p>${$t('单击输入文本')}</p>`, fs: 36 })); this.setState({ editing: o.id }); this.focusEdit = o.id; this.selectAll = true; }
-  insertShape(kind) { const K = this.K, H = this.H; if (kind === 'line') return this.insertObj(K.shape({ shape: 'rect', x: 500, y: H / 2, w: 600, h: 6, html: '' })); this.insertObj(K.shape({ shape: kind, x: 600, y: H / 2 - 150, w: kind === 'pill' ? 480 : 400, h: kind === 'pill' ? 120 : 300, html: '' })); }
-  insertTable(r, c) { const K = this.K, H = this.H; const rows = Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => i === 0 ? $t('标题 {n}', { n: j + 1 }) : '')); this.insertObj(K.txt({ t: 'table', x: 160, y: Math.max(60, H / 2 - r * 40), w: 1280, h: r * 80, fs: 26, rows, html: '' })); this.setState({ pop: null }); }
+  /** 插入 › 形状: a shape of the gallery in the middle of the slide (lines and connectors as line objects). */
+  insertShape(kind) {
+    const K = this.K, H = this.H, lk = K.LINE_KINDS[kind];
+    if (lk) return this.insertObj(K.line(Object.assign({ x: 500, y: lk.bent ? H / 2 - 100 : H / 2, w: 600, h: lk.bent ? 200 : 0 }, lk)));
+    const wide = /Arrow|chevron|Callout|pill|parallelogram|trapezoid/.test(kind), sq = /star|pentagon|hexagon|octagon|ellipse|diamond/.test(kind);
+    const w = wide ? 480 : sq ? 300 : 400, h = kind === 'pill' ? 120 : wide ? 240 : 300;
+    this.insertObj(K.shape({ shape: kind, x: Math.round(800 - w / 2), y: Math.round(H / 2 - h / 2), w, h, html: '' }));
+  }
+  insertTable(r, c) { const K = this.K, H = this.H; const rows = Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => i === 0 ? $t('标题 {n}', { n: j + 1 }) : '')); this.insertObj(K.txt({ t: 'table', x: 160, y: Math.max(60, H / 2 - r * 40), w: 1280, h: r * 80, fs: 26, rows, html: '', merges: [], cells: {}, tstyle: 'MediumStyle2Accent1', header: true, banded: true, firstCol: false })); this.setState({ pop: null }); }
+  /** 表格工具: one of the model edits (office-io tableInsertRow…) on the selected table, at the current cell; the cell stays current. */
+  tableOp(fn) { const o = this.obj; if (!o || o.t !== 'table') return; const cell = this.state.cell || { r: 0, c: 0 }; this.commit((d, s) => { const t = s.objs.find(x => x.id === o.id); if (t) { t.merges = t.merges || []; t.cells = t.cells || {}; fn(t, cell, this.state.cellSel); } }); this.setState({ cellSel: null }); }
+  /** The cells 合并 works on: the shift-clicked range, else the current cell's own merge. */
+  cellRange() { const c = this.state.cell || { r: 0, c: 0 }, s = this.state.cellSel; return s ? [Math.min(c.r, s.r), Math.min(c.c, s.c), Math.max(c.r, s.r), Math.max(c.c, s.c)] : [c.r, c.c, c.r, c.c]; }
+  /** A cell's own style (fill, line, align) on the current cell or the whole shift-clicked range. */
+  patchCells(patch) { const [r1, c1, r2, c2] = this.cellRange(); this.tableOp(t => { for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) t.cells[r + ':' + c] = Object.assign({}, t.cells[r + ':' + c], patch); }); }
   arrange(kind) { const o = this.obj; if (!o) return; this.commit((d, s) => { const i = s.objs.findIndex(x => x.id === o.id); const [x] = s.objs.splice(i, 1); const j = kind === 'front' ? s.objs.length : kind === 'back' ? 0 : kind === 'up' ? Math.min(s.objs.length, i + 1) : Math.max(0, i - 1); s.objs.splice(j, 0, x); }); }
-  alignObj(kind) { const o = this.obj; if (!o) return; const H = this.H; const p = { left: { x: 0 }, hc: { x: (1600 - o.w) / 2 }, right: { x: 1600 - o.w }, top: { y: 0 }, vc: { y: (H - o.h) / 2 }, bottom: { y: H - o.h } }[kind]; this.patchSel(p); }
+  /** 对齐: one object lines up with the slide, several with the box around them (as PowerPoint does). */
+  alignObj(kind) {
+    const os = this.sels; if (!os.length) return; const H = this.H, b = os.length > 1 ? this.K.union(os) : { x: 0, y: 0, w: 1600, h: H };
+    this.patchSels(o => Object.assign({}, this.moveKids(o, { left: { x: b.x }, hc: { x: Math.round(b.x + (b.w - o.w) / 2) }, right: { x: b.x + b.w - o.w }, top: { y: b.y }, vc: { y: Math.round(b.y + (b.h - o.h) / 2) }, bottom: { y: b.y + b.h - o.h } }[kind])));
+  }
+  /** A box change on a group carries its kids along: the patch, with the kids moved. */
+  moveKids(o, patch) { if (o.t !== 'group') return patch; const nx = patch.x ?? o.x, ny = patch.y ?? o.y, sx = patch.w ? patch.w / o.w : 1, sy = patch.h ? patch.h / o.h : 1; return Object.assign({ kids: o.kids.map(k => Object.assign({}, k, { x: Math.round(nx + (k.x - o.x) * sx), y: Math.round(ny + (k.y - o.y) * sy), w: Math.round(k.w * sx), h: Math.round(k.h * sy) })) }, patch); }
   /** A copy of object o: its own id and no engine path, and from: where o is in the file, which a save copies exactly (engine.js). */
-  copyOf(o) { const n = Object.assign(structuredClone(o), { id: this.K.oid(), from: o.path || o.from }); delete n.path; return n; }
+  copyOf(o) { const n = Object.assign(structuredClone(o), { id: this.K.oid(), from: o.path || o.from }); delete n.path; if (n.kids) n.kids = o.kids.map(k => this.copyOf(k)); return n; }
   /** What Ctrl+C and Ctrl+X keep: a copy whose picture shows its own bytes once read, as a cut one may have left the file by the paste. */
   clipOf(o) { const c = this.copyOf(o); this.clipDoc = this.doc.id; if (c.t === 'image' && this.EN) this.EN.pictureData(this.doc.path, o).then(u => { if (u) c.src = u; }); return c; }
   dup(o, dx) { const n = Object.assign(this.copyOf(o), { x: o.x + (dx ?? 32), y: o.y + (dx ?? 32) }); this.commit((d, s) => s.objs.push(n)); this.setState({ sel: n.id }); }
   /** Slide i again right after it, made of copies, and shown: 开始 › 复制 and the thumbnail's 复制幻灯片. */
-  dupSlide(i) { const s = this.doc.slides[i], n = Object.assign(structuredClone(s), { id: this.K.oid(), from: s.path || s.from, objs: s.objs.map(o => this.copyOf(o)) }); delete n.path; this.commit(d => d.slides.splice(i + 1, 0, n)); this.setState({ cur: i + 1 }); }
+  dupSlide(i) { const n = this.slideCopy(this.doc.slides[i], true); this.commit(d => d.slides.splice(i + 1, 0, n)); this.setState({ cur: i + 1 }); }
+  /** A copy of slide s to insert: its objects copies with ids of their own and its effects on them; it starts no section. from (where
+   *  the file has it) only into the same deck, so a save copies the markup there; into another deck it is made from the model. */
+  slideCopy(s, same) {
+    const objs = s.objs.map(o => this.copyOf(o)), to = {}, pair = (a, b) => { to[a.id] = b.id; (a.kids || []).forEach((k, j) => pair(k, b.kids[j])); };
+    s.objs.forEach((o, j) => pair(o, objs[j]));
+    const n = Object.assign(structuredClone(s), { id: this.K.oid(), from: s.path || s.from, objs, sec: '', anims: this.animsOf(s).filter(a => same || (a.id && a.fx !== 'other')).map(a => Object.assign({}, a, a.id ? { id: to[a.id] } : {})) });
+    delete n.path;
+    if (!same) { const strip = o => { delete o.from; (o.kids || []).forEach(strip); }; delete n.from; n.objs.forEach(strip); }
+    return n;
+  }
+  /** Ctrl+C / Ctrl+X with the thumbnails or 幻灯片浏览 in focus: the current slide, for this deck or another open one (its pictures
+   *  read now, so they come along). */
+  copySlide(cut) {
+    const s = this.slide; if (!s) return; const c = this.slideCopy(s, true), K = this.K, from = K.flatObjs(s.objs), to = K.flatObjs(c.objs);
+    if (this.EN) from.forEach((o, j) => { if (o.t === 'image') this.EN.pictureData(this.doc.path, o).then(u => { if (u) to[j].src = u; }); });
+    window.__writerSlideClip = { doc: this.doc.id, slide: c };
+    if (cut) this.deleteSlide(this.ci);
+  }
+  pasteSlide() { const clip = window.__writerSlideClip; if (!clip) return; const n = this.slideCopy(clip.slide, clip.doc === this.doc.id), i = this.ci + 1; this.commit(d => d.slides.splice(i, 0, n)); this.setState({ cur: i, sel: null, sels: [] }); }
+  deleteSlide(i) { if (this.doc.slides.length < 2) return this.toast($t('至少保留一页')); this.commit(d => d.slides.splice(i, 1)); this.setState({ cur: Math.max(0, i - 1), sel: null, sels: [] }); }
+  /** 新增节: a section starts at slide i, named for the user to rename (the slides before it get 默认节 when it is the first, as in PowerPoint). */
+  addSection(i) { this.commit(d => { if (i > 0 && !d.slides.some(x => x.sec)) d.slides[0].sec = $t('默认节'); d.slides[i].sec = $t('无标题节'); }); this.focusSec = i; }
+  /** Tab / ⇧Tab and 增加缩进 / 减少缩进: the bullet level (data-lvl 0–4) of the paragraph at the caret, or of every paragraph when the box is only selected. */
+  indent(delta) {
+    const lvl = n => Math.max(0, Math.min(4, (+n.getAttribute('data-lvl') || 0) + delta)), put = n => { const l = lvl(n); if (l) n.setAttribute('data-lvl', String(l)); else n.removeAttribute('data-lvl'); };
+    if (this.state.editing) {
+      const el = this.stageRef.current && this.stageRef.current.querySelector(`[data-edit="${this.state.editing}"]`), sel = window.getSelection(); if (!el || !sel || !sel.rangeCount) return;
+      let n = sel.anchorNode; while (n && n !== el && !(n.nodeType === 1 && /^(LI|P|DIV)$/.test(n.tagName))) n = n.parentNode;
+      if (n && n !== el) put(n); return;
+    }
+    const o = this.obj; if (!o || !(o.t === 'text' || o.t === 'shape')) return;
+    const t = document.createElement('div'); t.innerHTML = o.html || ''; t.querySelectorAll('li,p,div').forEach(put); this.patchSel({ html: t.innerHTML });
+  }
+  /** 溢出时缩排文字: after a render, every shrink-autofit box whose text overflows takes a smaller font scale (o.fit, saved as the
+   *  file's fontScale); a box whose text or size changed starts again at full size. Converges in a few renders. */
+  measureFits() {
+    const s = this.slide, st = this.stageRef.current; if (!s || !st) return;
+    this.fitKeys = this.fitKeys || {}; const patch = {};
+    for (const o of s.objs) {
+      if (o.autofit !== 'shrink' || !(o.t === 'text' || o.t === 'shape')) continue;
+      const key = [o.html, o.w, o.h, o.fs, o.lh, o.cols].join('|'), box = st.querySelector(`[data-tbox="${o.id}"]`); if (!box) continue;
+      if (this.fitKeys[o.id] !== key) { this.fitKeys[o.id] = key; if ((o.fit || 1) < 1) { patch[o.id] = 1; continue; } }
+      const over = box.scrollHeight - box.clientHeight;
+      if (over > 1) { const fit = Math.max(0.4, Math.round((o.fit || 1) * box.clientHeight / box.scrollHeight * 0.97 * 100) / 100); if (fit < (o.fit || 1) - 0.005) patch[o.id] = fit; }
+    }
+    if (Object.keys(patch).length) this.commit((d, cs) => cs.objs.forEach(x => { if (patch[x.id] != null) x.fit = patch[x.id]; }), true);
+  }
   toggleList(ordered) {
     const o = this.obj; if (!o || o.t === 'table' || o.t === 'image') return;
     if (this.state.editing) { document.execCommand(ordered ? 'insertOrderedList' : 'insertUnorderedList'); return; }
@@ -290,52 +472,169 @@ class Component extends DCLogic {
     else { const items = Array.from(t.querySelectorAll('p,div,li')).map(n => `<li>${n.innerHTML}</li>`).join('') || `<li>${t.innerHTML}</li>`; this.patchSel({ html: `<${tag}>${items}</${tag}>` }); }
   }
   txtCmd(cmd, key) { if (this.state.editing) { document.execCommand(cmd); return; } const o = this.obj; if (o) this.patchSel({ [key]: !o[key] }); }
-  startShow(from) {
-    const vis = this.doc.slides.map((s, i) => [s, i]).filter(([s]) => !s.hidden).map(([, i]) => i); if (!vis.length) return this.toast($t('没有可放映的幻灯片'));
-    const i = vis.find(x => x >= from) ?? vis[0];
-    this.endEdit(); this.setState({ show: { i, step: 0 }, pop: null }); this.pendAnim = { kind: this.doc.slides[i].trans === 'push' ? 'push' : 'fade' };
+  /** 放映 from slide `from` (the first shown one at or after it); presenter: with 演示者视图, in a second window when there is one. */
+  startShow(from, presenter) {
+    const i = this.shownFrom(from, 1) ?? this.shownFrom(0, 1); if (i == null) return this.toast($t('没有可放映的幻灯片'));
+    const pv = !!presenter && !this.openPresenter(); // no second window: the presenter view covers the show, the audience's slide under it
+    this.endEdit(); this.showT0 = Date.now(); clearInterval(this.clockT); this.clockT = setInterval(() => this.tick(), 1000);
+    this.setState({ pop: null, ink: {}, jump: '', laser: null }); this.goSlide(i, null, { pv });
     setTimeout(() => { const el = this.showRef.current; if (el && el.requestFullscreen) el.requestFullscreen().then(() => { this.wasFs = true; }).catch(() => { }); }, 30);
   }
-  exitShow() { this.setState({ show: null }); if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); this.wasFs = false; }
-  animsOf(s) { return s.objs.filter(o => o.anim && o.anim !== 'none'); }
+  exitShow() {
+    this.pendShow = null; clearInterval(this.clockT); this.typed = '';
+    if (this.presenter && !this.presenter.closed) this.presenter.close(); this.presenter = null;
+    this.setState({ show: null }); if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); this.wasFs = false;
+  }
+  /** 演示者视图 in a window of its own: true when the browser gives one (a web view may not). Its keys and buttons drive the show. */
+  openPresenter() {
+    let w = null; try { w = window.open('', 'writer-presenter', 'popup,width=1180,height=720'); } catch (e) { w = null; }
+    if (!w || !w.document) return false;
+    const d = w.document; d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><base href="${this.K.escHtml(location.href)}"><title>${this.K.escHtml($t('演示者视图'))}</title></head><body style="margin:0;background:#141414"><div id="pv" style="position:fixed;inset:0"></div></body></html>`); d.close();
+    w.addEventListener('keydown', e => this.showKey(e));
+    d.addEventListener('click', e => { const a = e.target.closest && e.target.closest('[data-act]'); if (a) this.presenterAct(a.getAttribute('data-act')); });
+    this.presenter = w; this.pvKey = null; return true;
+  }
+  /** The presenter window follows the show: redrawn when the slide (or the deck) changes; the clock ticks on its own. */
+  syncPresenter() {
+    const w = this.presenter, sh = this.state.show; if (!w || w.closed || !sh || (this.pvKey === sh.i && this.pvDoc === this.doc)) return;
+    this.pvKey = sh.i; this.pvDoc = this.doc; const el = w.document.getElementById('pv'); if (el) el.innerHTML = this.K.presenterHtml(this.doc, sh.i, this.clock());
+  }
+  clock() { const t = Math.max(0, Math.floor((Date.now() - (this.showT0 || Date.now())) / 1000)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); }
+  tick() { const t = this.clock(); for (const d of [this.presenter && !this.presenter.closed && this.presenter.document, this.showRef.current]) if (d) d.querySelectorAll('[data-clock]').forEach(n => { n.textContent = t; }); }
+  presenterAct(act) {
+    const sh = this.state.show; if (!sh) return;
+    if (act === 'next') this.showNext(); else if (act === 'prev') this.showPrev(); else if (act === 'end') this.exitShow();
+    else if (act === 'black') this.setState({ show: Object.assign({}, sh, { blank: sh.blank ? null : '#000' }) });
+    else if (act === 'reset') { this.showT0 = Date.now(); this.tick(); }
+  }
+  /** The show's keys, from the show or the presenter window: PowerPoint's. A digit typed and Enter jumps to that slide; B / . black and
+   *  W / , white the screen until the next key; Ctrl+L the laser pointer, Ctrl+P the pen (E wipes the ink); Esc puts a tool away, then ends. */
+  showKey(e) {
+    const sh = this.state.show; if (!sh) return; const k = e.key, ctrl = e.ctrlKey || e.metaKey, set = patch => this.setState({ show: Object.assign({}, this.state.show, patch) });
+    if (sh.blank) { e.preventDefault(); return set({ blank: null }); }
+    if (/^[0-9]$/.test(k)) { this.typed = (this.typed || '') + k; return this.setState({ jump: this.typed }); }
+    if (k === 'Enter' && this.typed) { e.preventDefault(); const n = +this.typed - 1; this.typed = ''; this.setState({ jump: '' }); if (n >= 0 && n < this.doc.slides.length && n !== sh.i) this.goSlide(n, sh.i); return; }
+    if (this.typed) { this.typed = ''; this.setState({ jump: '' }); }
+    const low = k.toLowerCase();
+    if (ctrl && low === 'l') { e.preventDefault(); return set({ tool: sh.tool === 'laser' ? null : 'laser' }); }
+    if (ctrl && low === 'p') { e.preventDefault(); return set({ tool: sh.tool === 'pen' ? null : 'pen' }); }
+    if (low === 'e' && !ctrl) return this.setState({ ink: Object.assign({}, this.state.ink, { [sh.i]: [] }) });
+    if (low === 'b' || k === '.') { e.preventDefault(); return set({ blank: '#000' }); }
+    if (low === 'w' || k === ',') { e.preventDefault(); return set({ blank: '#FFFFFF' }); }
+    if (['ArrowRight', 'ArrowDown', ' ', 'Enter', 'PageDown', 'n', 'N'].includes(k)) { e.preventDefault(); this.showNext(); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p', 'P'].includes(k)) { e.preventDefault(); this.showPrev(); }
+    else if (k === 'Escape') { e.preventDefault(); if (sh.tool) set({ tool: null }); else this.exitShow(); }
+    else if (k === 'Home' || k === 'End') { const j = k === 'Home' ? this.shownFrom(0, 1) : this.shownFrom(this.doc.slides.length - 1, -1); if (j != null && j !== sh.i) this.goSlide(j, sh.i); }
+  }
+  /** A point of the pen's ink, in slide units. */
+  inkPt(e) { const r = this.showSlideRef.current.getBoundingClientRect(); return [Math.round((e.clientX - r.left) / r.width * 1600), Math.round((e.clientY - r.top) / r.height * this.H)]; }
+  animsOf(s) { return (s && s.anims) || []; }
+  /** The first slide the show shows from i on, in direction d (hidden ones are skipped), or null. */
+  shownFrom(i, d) { const sl = this.doc.slides; for (let j = i; j >= 0 && j < sl.length; j += d) if (!sl[j].hidden) return j; return null; }
+  /** A slide's clicks: its animation steps, less the one that plays by itself as it appears. */
+  stepsOf(s) { const st = this.K.fxSteps(this.animsOf(s)); return { st, auto: st[0] && st[0].auto ? 1 : 0 }; }
+  /** The show moves to slide j (from slide `from`, whose objects a morph continues): its transition, then what plays by itself. */
+  goSlide(j, from, extra) {
+    const s = this.doc.slides[j], { st, auto } = this.stepsOf(s);
+    this.pendShow = { reset: true, trans: { kind: s.trans || 'none', dur: s.duration, from }, fx: auto ? st[0] : null };
+    this.setState({ show: Object.assign({}, this.state.show, extra, { i: j, step: 0, live: true }), cur: j });
+  }
   showNext() {
-    const sh = this.state.show; if (!sh) return; const s = this.doc.slides[sh.i]; const an = this.animsOf(s);
-    if (sh.step < an.length) { this.pendAnim = { id: an[sh.step].id, kind: an[sh.step].anim }; this.setState({ show: { i: sh.i, step: sh.step + 1 } }); return; }
-    let j = sh.i + 1; while (j < this.doc.slides.length && this.doc.slides[j].hidden) j++;
-    if (j >= this.doc.slides.length) return this.exitShow();
-    const tr = this.doc.slides[j].trans || 'none'; if (tr !== 'none') this.pendAnim = { kind: tr === 'zoom' ? 'tzoom' : tr };
-    this.setState({ show: { i: j, step: 0 }, cur: j });
+    const sh = this.state.show; if (!sh) return; const { st, auto } = this.stepsOf(this.doc.slides[sh.i]);
+    if (sh.step < st.length - auto) { this.pendShow = { fx: st[sh.step + auto] }; this.setState({ show: Object.assign({}, sh, { step: sh.step + 1, live: true }) }); return; }
+    const j = this.shownFrom(sh.i + 1, 1) ?? (this.state.loop ? this.shownFrom(0, 1) : null); if (j == null) return this.exitShow(); // 循环放映: back to the first
+    this.goSlide(j, sh.i);
   }
   showPrev() {
-    const sh = this.state.show; if (!sh) return; if (sh.step > 0) return this.setState({ show: { i: sh.i, step: sh.step - 1 } });
-    let j = sh.i - 1; while (j >= 0 && this.doc.slides[j].hidden) j--; if (j < 0) return;
-    this.setState({ show: { i: j, step: this.animsOf(this.doc.slides[j]).length }, cur: j });
+    const sh = this.state.show; if (!sh) return; this.pendShow = { reset: true };
+    if (sh.step > 0) return this.setState({ show: Object.assign({}, sh, { step: sh.step - 1, live: false }) });
+    const j = this.shownFrom(sh.i - 1, -1); if (j == null) return;
+    const { st, auto } = this.stepsOf(this.doc.slides[j]); this.setState({ show: Object.assign({}, sh, { i: j, step: st.length - auto, live: false }), cur: j });
   }
+  /** What the show plays once it has drawn: the transition, then a step's effects (after the transition when they play by themselves). */
+  playShow() {
+    const p = this.pendShow, root = this.showRef.current, box = this.showSlideRef.current, sh = this.state.show; if (!p || !root || !box || !sh) return;
+    const K = this.K, H = this.H, s = this.doc.slides[sh.i], el = id => root.querySelector(`[data-oid="${id}"]`);
+    if (s.objs.length && !el(s.objs[0].id)) { if ((p.tries = (p.tries || 0) + 1) < 30) requestAnimationFrame(() => this.playShow()); return; } // the slide view draws once its kit has loaded
+    this.pendShow = null;
+    if (p.reset) { try { root.getAnimations({ subtree: true }).forEach(a => a.cancel()); } catch (e) { } }
+    const base = p.trans ? this.playTrans(box, el, s, p.trans.from != null ? this.doc.slides[p.trans.from] : null, p.trans.kind, p.trans.dur) : 0;
+    if (p.fx) for (const { a, at } of p.fx.fx) { const o = s.objs.find(x => x.id === a.id), e = o && el(a.id); if (e) e.animate(K.fxFrames(a, o, H), { duration: K.fxDur(a), delay: base + at, fill: 'both', easing: EASE }); }
+  }
+  /** A transition into slide s on its box (el finds an object's element): 平滑 carries each object from its pair on slide prev. Its length in ms. */
+  playTrans(box, el, s, prev, kind, dur) {
+    const K = this.K; if (!kind || kind === 'none' || kind === 'cut' || kind === 'other') return 0;
+    const ms = dur || (kind === 'morph' ? 1000 : 700);
+    if (kind === 'morph' && prev) { const pairs = K.morphPairs(prev.objs, s.objs); for (const o of s.objs) { const e = el(o.id); if (e) e.animate(pairs[o.id] ? K.morphFrames(pairs[o.id], o) : [{ opacity: 0 }, { opacity: 1 }], { duration: ms, easing: EASE }); } }
+    else box.animate(K.TRANS_FRAMES[kind] || K.TRANS_FRAMES.fade, { duration: ms, easing: EASE });
+    return ms;
+  }
+  /** 切换 › 预览: the current slide's transition on the stage, from the slide before it. */
+  previewTransition() { const s = this.slide, box = this.slideRef.current, st = this.stageRef.current; if (s && box && st) this.playTrans(box, id => st.querySelector(`[data-soid="${id}"]`), s, this.doc.slides[this.ci - 1] || null, s.trans, s.duration); }
+  /** 动画 › 进入 / 强调 / 退出: the effect on every selected object, after the slide's others (as 添加动画 does); the last one is current. */
+  addFx(key) {
+    const ids = this.sels.map(o => o.id); if (!ids.length) return this.toast($t('先选中一个对象'));
+    const n = this.animsOf(this.slide).length;
+    this.commit((d, s) => { s.anims = this.animsOf(s).concat(ids.map(id => ({ id, fx: key, start: 'click', dur: this.K.fxDefault(key), delay: 0 }))); });
+    this.setState({ fx: n + ids.length - 1 });
+  }
+  /** The current effect (动画窗格's selection) changes: its start, length or delay. */
+  patchFx(patch) { const i = this.state.fx; if (i == null || !this.animsOf(this.slide)[i]) return this.toast($t('先在动画窗格中选中一个动画')); this.commit((d, s) => Object.assign(s.anims[i], patch)); }
+  moveFx(i, d) { const j = i + d; if (j < 0 || j >= this.animsOf(this.slide).length) return; this.commit((dd, s) => { const [x] = s.anims.splice(i, 1); s.anims.splice(j, 0, x); }); this.setState({ fx: j }); }
+  delFx(i) { this.commit((d, s) => s.anims.splice(i, 1)); this.setState({ fx: null }); }
+  /** 动画 › 预览: the slide's effects on the stage, one click after the other. */
+  previewFx() {
+    const s = this.slide, root = this.stageRef.current, K = this.K; if (!s || !root) return; let t0 = 0;
+    for (const step of K.fxSteps(this.animsOf(s))) {
+      let end = 0;
+      for (const { a, at } of step.fx) { const o = s.objs.find(x => x.id === a.id), e = o && root.querySelector(`[data-soid="${a.id}"]`); if (e) e.animate(K.fxFrames(a, o, this.H), { duration: K.fxDur(a), delay: t0 + at, fill: 'backwards', easing: EASE }); end = Math.max(end, at + K.fxDur(a)); }
+      t0 += end + 300;
+    }
+  }
+  /** The slide point under the pointer. */
+  slidePt(e) { const rc = this.slideRef.current.getBoundingClientRect(), k = this.k; return [(e.clientX - rc.left) / k, (e.clientY - rc.top) / k]; }
   onWM = e => {
     const op = this.op; if (!op) return; const k = this.k, dx = (e.clientX - op.sx) / k, dy = (e.clientY - op.sy) / k;
+    if (op.kind === 'notes') return this.setState({ notesH: Math.round(Math.max(48, Math.min(this.state.box.h * 0.6 + op.h, op.h - (e.clientY - op.sy)))) }); // the divider drags the notes pane taller, the slide gives way
+    const box = o => ({ x: o.x, y: o.y, w: o.w, h: o.h, rot: o.rot || 0 });
+    const K = this.K, s = this.slide, th = 8 / k, snapping = !(e.ctrlKey || e.metaKey); // ⌘ / Ctrl drags free of the guides
+    const others = () => s.objs.filter(o => !(op.objs || [op.o]).some(m => m.id === o.id) && o.t !== 'line');
     if (op.kind === 'move') {
       if (!op.moved && Math.abs(dx) + Math.abs(dy) < 3 / k) return; op.moved = true;
-      let x = Math.round(op.o.x + dx), y = Math.round(op.o.y + dy); const H = this.H, th = 10 / k; let gV = false, gH = false;
-      if (!e.altKey) { if (Math.abs(x + op.o.w / 2 - 800) < th) { x = Math.round(800 - op.o.w / 2); gV = true; } if (Math.abs(y + op.o.h / 2 - H / 2) < th) { y = Math.round(H / 2 - op.o.h / 2); gH = true; } if (Math.abs(x) < th) x = 0; if (Math.abs(y) < th) y = 0; if (Math.abs(x + op.o.w - 1600) < th) x = 1600 - op.o.w; if (Math.abs(y + op.o.h - H) < th) y = H - op.o.h; }
-      this.setState({ live: { id: op.o.id, x, y, w: op.o.w, h: op.o.h, rot: op.o.rot || 0 }, guides: { gV, gH } });
+      const b0 = op.objs.length > 1 ? K.union(op.objs) : box(op.o); let x = Math.round(b0.x + dx), y = Math.round(b0.y + dy), guides = [], hints = [];
+      if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) y = b0.y; else x = b0.x; } // ⇧ keeps the move on one axis
+      if (snapping) { const os = others(), r = K.snapMove({ x, y, w: b0.w, h: b0.h }, K.snapCands(os, 1600, this.H), th); x = r.x; y = r.y; guides = r.guides; hints = K.gapHints({ x, y, w: b0.w, h: b0.h }, os); }
+      const lives = {}; for (const o of op.objs) lives[o.id] = Object.assign(box(o), { x: o.x + x - b0.x, y: o.y + y - b0.y });
+      this.setState({ lives, guides: { lines: guides, hints } });
     }
     if (op.kind === 'resize') {
-      let { x, y, w, h } = op.o; const d = op.dir, keep = e.shiftKey || (op.o.t === 'image' && d.length === 2);
+      let { x, y, w, h } = op.o; const d = op.dir, keep = e.shiftKey || op.o.lockAspect || (op.o.t === 'image' && d.length === 2); let guides = [];
       if (d.includes('e')) w = Math.max(20, op.o.w + dx); if (d.includes('s')) h = Math.max(10, op.o.h + dy);
       if (d.includes('w')) { w = Math.max(20, op.o.w - dx); x = op.o.x + op.o.w - w; } if (d.includes('n')) { h = Math.max(10, op.o.h - dy); y = op.o.y + op.o.h - h; }
+      if (snapping && !keep) { const r = K.snapResize({ x, y, w, h }, d, K.snapCands(others(), 1600, this.H), th); ({ x, y, w, h, guides } = r); }
       if (keep && d.length === 2) { const r = op.o.w / op.o.h; if (w / h > r) { const nw = h * r; if (d.includes('w')) x += w - nw; w = nw; } else { const nh = w / r; if (d.includes('n')) y += h - nh; h = nh; } }
-      this.setState({ live: { id: op.o.id, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), rot: op.o.rot || 0 } });
+      this.setState({ lives: { [op.o.id]: { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), rot: op.o.rot || 0 } }, guides: { lines: guides, hints: [] } });
+    }
+    if (op.kind === 'col') { const ws = K.colWidths(op.o).slice(), d = Math.max(40 - ws[op.col], Math.round(dx)); ws[op.col] += d; this.setState({ lives: { [op.o.id]: Object.assign(box(op.o), { w: op.o.w + d, colW: ws }) } }); }
+    if (op.kind === 'end') { // a line's end follows the pointer, and sticks to a shape's side when dropped over one
+      const [px, py] = this.slidePt(e), [a, b] = K.lineEnds(op.o), pts = [[op.o.x + a[0], op.o.y + a[1]], [op.o.x + b[0], op.o.y + b[1]]];
+      const target = !e.altKey && s.objs.slice().reverse().find(o => o.id !== op.o.id && o.t !== 'line' && px >= o.x && px <= o.x + o.w && py >= o.y && py <= o.y + o.h);
+      let at = [px, py], ref = null;
+      if (target) { const sites = [0, 1, 2, 3].map(i => K.site(target, i)); let best = 0; sites.forEach((q, i) => { if (Math.hypot(q[0] - px, q[1] - py) < Math.hypot(sites[best][0] - px, sites[best][1] - py)) best = i; }); at = sites[best]; ref = { id: target.id, idx: best }; }
+      if (e.shiftKey && !target) { const o2 = pts[1 - op.end]; if (Math.abs(px - o2[0]) > Math.abs(py - o2[1])) at = [px, o2[1]]; else at = [o2[0], py]; }
+      pts[op.end] = at;
+      this.setState({ lives: { [op.o.id]: Object.assign(K.lineBox(pts[0], pts[1]), { rot: 0, [op.end ? 'end' : 'start']: ref }) }, guides: null });
     }
     if (op.kind === 'rot') {
       const rc = this.slideRef.current.getBoundingClientRect(); const cx = rc.left + (op.o.x + op.o.w / 2) * k, cy = rc.top + (op.o.y + op.o.h / 2) * k;
       let a = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90; if (e.shiftKey) a = Math.round(a / 15) * 15; else if ([0, 90, 180, 270, 360, -90].some(t => Math.abs(a - t) < 4)) a = Math.round(a / 90) * 90;
       a = ((Math.round(a) % 360) + 360) % 360;
-      this.setState({ live: { id: op.o.id, x: op.o.x, y: op.o.y, w: op.o.w, h: op.o.h, rot: a } });
+      this.setState({ lives: { [op.o.id]: Object.assign(box(op.o), { rot: a }) } });
     }
   };
   onWU = () => {
-    const op = this.op; this.op = null; if (!op) return; const lv = this.state.live;
-    if (lv) { this.patchObj(lv.id, { x: lv.x, y: lv.y, w: lv.w, h: lv.h, rot: lv.rot }); this.setState({ live: null, guides: null }); }
+    const op = this.op; this.op = null; if (!op) return; const lives = this.state.lives;
+    if (lives) { this.commit((d, s) => { for (const o of s.objs) { const lv = lives[o.id]; if (!lv) continue; if (o.t === 'group') { const dx = lv.x - o.x, dy = lv.y - o.y, sx = o.w ? lv.w / o.w : 1, sy = o.h ? lv.h / o.h : 1; o.kids.forEach(kd => Object.assign(kd, { x: Math.round(lv.x + (kd.x - o.x) * sx), y: Math.round(lv.y + (kd.y - o.y) * sy), w: Math.round(kd.w * sx), h: Math.round(kd.h * sy) })); void dx; void dy; } Object.assign(o, lv); } }); this.setState({ lives: null, guides: null }); }
   };
   openPop(id, e, x, y, extra) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && x == null ? null : Object.assign({ id, x: x ?? r.left, y: y ?? r.bottom + 4 }, extra), gridHover: null }); }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
@@ -368,20 +667,24 @@ class Component extends DCLogic {
     const K = this.K, st = this.state, d = this.doc;
     if (!K) return { md, tabs: [], ribbon: [], thumbs: [], objs: [], handles: [], stW: '0', stH: '0', H: '900px', scale: 'none', sBg: 'var(--k51, #fff)', noSlides: false, popItems: [], gridCells: [] };
     const th = K.THEMES[d.theme] || K.THEMES.paper, H = this.H, k = this.k, s = this.slide, o = this.obj;
-    const B = (label, onClick, op = {}) => ({ isBtn: true, label: $t(label), onClick, title: $t(op.title || label), bg: op.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: op.fw || 400, fs: op.fs || 'normal', td: op.td || 'none', color: op.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)', hasSw: !!op.sw, sw: op.sw || '' });
+    const B = (label, onClick, op = {}) => ({ isBtn: true, label: $t(label), onClick, title: $t(op.title || label), bg: op.on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fw: op.fw || 400, fs: op.fs || 'normal', td: op.td || 'none', color: op.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)', hasSw: !!op.sw, sw: op.sw || '' });
     const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value: String(value), options: options.map(([v, l]) => ({ v: String(v), l: $t(l) })), onChange, w, title: title ? $t(title) : title });
     const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label: $t(label), swatch: swatch || 'transparent', value: /^#[0-9a-f]{6}$/i.test(swatch || '') ? swatch : '#000000', onChange, title: title ? $t(title) : title, fw: fw || 400 });
-    const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label: $t(label), title: $t(title || label), bg: st.pop && st.pop.id === id ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
-    const AL = (a, title) => ({ isAlign: true, title: title ? $t(title) : title, bg: o && (o.align || 'left') === a ? 'rgba(255,255,255,0.9)' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => { if (st.editing) document.execCommand(a === 'center' ? 'justifyCenter' : a === 'right' ? 'justifyRight' : 'justifyLeft'); else this.patchSel({ align: a }); } });
+    const M = (id, label, items, title, open) => { this.menus[id] = items; return { isMenu: true, label: $t(label), title: $t(title || label), bg: st.pop && st.pop.id === id ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onToggle: e => open ? open(e) : this.openPop(id, e) }; };
+    const AL = (a, title) => ({ isAlign: true, title: title ? $t(title) : title, bg: o && (o.align || 'left') === a ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => { if (st.editing) document.execCommand(a === 'center' ? 'justifyCenter' : a === 'right' ? 'justifyRight' : 'justifyLeft'); else this.patchSel({ align: a }); } });
     const SEP = { isSep: true };
     const I = (label, onClick, op = {}) => ({ isItem: true, label: $t(label), check: op.on ? '✓' : '', hint: op.hint ? $t(op.hint) : '', onClick: () => { this.setState({ pop: null }); onClick(); } });
     const HD = label => ({ isHead: true, label: $t(label) }), IS = { isSepI: true };
+    const N = (label, value, onChange, op = {}) => ({ isNum: true, label: $t(label), value, step: op.step || 0.1, w: op.w || '58px', title: $t(op.title || label), onChange: e => onChange(+e.target.value), onKey: e => { if (e.key === 'Enter') e.target.blur(); } });
     this.menus = {};
     const tabsDef = [['home', '开始'], ['insert', '插入'], ['design', '设计'], ['trans', '切换'], ['anim', '动画'], ['show', '放映@@tab']];
-    if (o) tabsDef.push(o.t === 'image' && this.P ? ['picture', '图片'] : ['format', '形状格式']);
+    if (o) tabsDef.push(o.t === 'image' && this.P ? ['picture', '图片'] : o.t === 'table' ? ['table', '表格工具'] : ['format', '形状格式']);
     let tab = st.tab; if (!tabsDef.some(t => t[0] === tab)) tab = 'home';
-    const tabs = tabsDef.map(([key, l]) => ({ label: $t(l), color: tab === key ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === key ? 600 : 400, line: st.bubble && tab === key ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === key ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(key, e) }));
+    const tabs = tabsDef.map(([key, l]) => ({ label: $t(l), color: st.bubble && tab === key ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: st.bubble && tab === key ? 600 : 400, bg: st.bubble && tab === key ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(key, e) }));
     const layoutItems = fn => K.LAYOUTS.map(([key, l]) => I(l, () => fn(key)));
+    const G = (id, label) => M(id, label, [], null, e => this.openGallery(id, id === 'relayout' ? 'relayout' : 'new', e));
+    this.menus.beautify = [I('美化本页', () => this.beautify(false)), I('美化整份', () => this.beautify(true))];
+    const ptPx = (d._orig && d._orig.geo && d._orig.geo.ptPx) || 1600 / (d.ratio === '4:3' ? 720 : 960);
     const textGroup = [
       S(o && o.font && o.font !== 'head' ? o.font : '', FONTS, e => this.patchSel({ font: e.target.value || null }), '92px', '字体'),
       S(o ? o.fs : 32, SIZES.map(n => [n, n + '']).concat(o && !SIZES.includes(o.fs) ? [[o.fs, o.fs + '']] : []), e => this.patchSel({ fs: +e.target.value }), '58px', '字号'),
@@ -391,19 +694,28 @@ class Component extends DCLogic {
       AL('left', '左对齐'), AL('center', '居中'), AL('right', '右对齐'),
       M('va', '垂直对齐', [['top', '顶端'], ['middle', '居中'], ['bottom', '底端']].map(([key, l]) => I(l, () => this.patchSel({ va: key }), { on: o && o.va === key }))),
       B('• 列表', () => this.toggleList(false)), B('1. 列表', () => this.toggleList(true)),
-      M('lh', '行距', [1, 1.15, 1.35, 1.6, 2].map(v => I(String(v), () => this.patchSel({ lh: v }), { on: o && o.lh === v })))
+      B('⇤', () => this.indent(-1), { title: '减少缩进 ⇧Tab' }), B('⇥', () => this.indent(1), { title: '增加缩进 Tab' }),
+      M('lh', '行距', [1, 1.15, 1.35, 1.6, 2].map(v => I(String(v), () => this.patchSel({ lh: v }), { on: o && o.lh === v }))),
+      M('para', '段落', [HD('段前'), ...[0, 6, 12, 18].map(v => I($t('{n} 磅', { n: v }), () => this.patchSel({ sb: Math.round(v * ptPx) }), { on: o && Math.round((o.sb || 0) / ptPx) === v })), IS, HD('段后'), ...[0, 6, 12, 18].map(v => I($t('{n} 磅', { n: v }), () => this.patchSel({ sa: Math.round(v * ptPx) }), { on: o && Math.round((o.sa || 0) / ptPx) === v }))], '段落间距'),
+      M('cs', '字距', [['-1', '紧缩'], ['0', '常规'], ['1.5', '宽松'], ['3', '很松'], ['6', '极松']].map(([v, l]) => I(l, () => this.patchSel({ cs: Math.round(+v * ptPx * 10) / 10 }), { on: o && Math.round(((o.cs || 0) / ptPx) * 10) / 10 === +v })), '字符间距'),
+      M('cols', '分栏', [1, 2, 3].map(v => I(v === 1 ? '一栏' : v === 2 ? '两栏' : '三栏', () => this.patchSel({ cols: v }), { on: o && (o.cols || 1) === v }))),
+      M('fit', '自动调整', [['none', '不自动调整'], ['shrink', '溢出时缩排文字'], ['resize', '根据文字调整形状大小']].map(([v, l]) => I(l, () => this.patchSel({ autofit: v, fit: 1 }), { on: o && (o.autofit || 'none') === v }))),
+      M('vert', '文字方向', [['horz', '横排'], ['vert', '竖排'], ['eaVert', '竖排（东亚）'], ['vert270', '所有文字旋转 270°']].map(([v, l]) => I(l, () => this.patchSel({ vert: v }), { on: o && (o.vert || 'horz') === v }))),
+      M('art', '艺术字', [I('无', () => this.patchSel({ tOutline: '', tShadow: false, tGrad: '' }), { on: o && !o.tOutline && !o.tShadow && !o.tGrad }), IS,
+        I('描边', () => this.patchSel({ tOutline: 'fg', tShadow: false, tGrad: '' })), I('阴影', () => this.patchSel({ tOutline: '', tShadow: true, tGrad: '' })), I('渐变填充', () => this.patchSel({ tOutline: '', tShadow: false, tGrad: 'acc,sub,90' })),
+        I('描边 + 阴影', () => this.patchSel({ tOutline: 'fg', tShadow: true, tGrad: '' })), I('渐变 + 阴影', () => this.patchSel({ tOutline: '', tShadow: true, tGrad: 'acc,fg,90' })), I('空心描边', () => this.patchSel({ tOutline: 'acc', tShadow: false, tGrad: `${th.bg},${th.bg},0` }))])
     ];
     let ribbon = [];
     if (tab === 'home') ribbon = [
       B('↶', () => this.props.onUndo && this.props.onUndo(), { title: '撤销 Ctrl+Z' }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: '重做 Ctrl+Y' }), SEP,
-      M('newslide', '新建幻灯片', layoutItems(key => this.addSlide(key))), M('relayout', '版式', layoutItems(key => this.relayout(key))),
+      G('newslide', '新建幻灯片'), G('relayout', '版式'),
       B('复制@@dup', () => { if (s) this.dupSlide(this.ci); }, { title: '复制幻灯片' }),
       B('删除', () => { if (d.slides.length < 2) return this.toast($t('至少保留一页')); this.commit(dd => dd.slides.splice(this.ci, 1)); this.setState({ cur: Math.max(0, this.ci - 1), sel: null }); }, { title: '删除幻灯片' }), SEP,
       ...textGroup
     ];
     if (tab === 'insert') ribbon = [
-      M('newslide2', '新建幻灯片', layoutItems(key => this.addSlide(key))), SEP,
-      B('文本框', () => this.insertText()), M('shape', '形状', SHAPES.map(([key, l]) => I(l, () => this.insertShape(key)))), B('图片', () => this.imgRef.current.click()), M('table', '表格', []), SEP,
+      G('newslide2', '新建幻灯片'), SEP,
+      B('文本框', () => this.insertText()), M('shape', '形状', K.SHAPE_GALLERY.flatMap(([name, items]) => [HD(name), ...items.map(([key, l]) => I(l, () => this.insertShape(key)))])), B('图片', () => this.imgRef.current.click()), M('table', '表格', []), SEP,
       B('日期', () => this.insertObj(K.txt({ x: 1100, y: H - 90, w: 400, h: 50, fs: 20, align: 'right', color: 'sub', html: `<p>${new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN')}</p>` }))),
       B('页码', () => this.commit(dd => dd.slides.forEach((sl, i) => { sl.objs = sl.objs.filter(x => x.ph !== 'num'); sl.objs.push(K.txt({ ph: 'num', x: 1400, y: H - 80, w: 120, h: 44, fs: 20, align: 'right', color: 'sub', html: `<p>${i + 1}</p>` })); })), { title: '为所有幻灯片添加页码' })
     ];
@@ -414,88 +726,174 @@ class Component extends DCLogic {
       M('ratio', '幻灯片大小', [['16:9', '宽屏 16:9'], ['4:3', '标准 4:3']].map(([key, l]) => I(l, () => this.commit(dd => { dd.ratio = key; }), { on: (d.ratio || '16:9') === key })))
     ];
     if (tab === 'trans') ribbon = [
-      ...TRANS.map(([key, l]) => B(l, () => { this.commit((dd, cs) => { cs.trans = key; if (key === 'none') cs.duration = null; }); if (key !== 'none') this.previewTrans = key === 'zoom' ? 'tzoom' : key; }, { on: s && (s.trans || 'none') === key })), SEP,
-      B('预览', () => { const t = s && s.trans; if (t && t !== 'none') { this.previewTrans = t === 'zoom' ? 'tzoom' : t; this.forceUpdate(); } }),
-      B('应用到全部', () => { const t = s && s.trans; this.commit(dd => dd.slides.forEach(x => x.trans = t)); this.toast($t('已应用到全部幻灯片')); })
+      ...K.TRANS.map(([key, l]) => B(l, () => { this.commit((dd, cs) => { cs.trans = key; if (key === 'none') cs.duration = null; }); if (key !== 'none') this.pendTrans = true; }, { on: s && (s.trans || 'none') === key })), SEP,
+      N('持续时间', s && s.duration ? s.duration / 1000 : s && s.trans === 'morph' ? 1 : 0.7, v => this.commit((dd, cs) => { cs.duration = Math.max(10, Math.round(v * 1000)); }), { title: '持续时间（秒）' }),
+      B('预览', () => this.previewTransition()),
+      B('应用到全部', () => { const t = s && s.trans, du = s && s.duration; this.commit(dd => dd.slides.forEach(x => { x.trans = t; x.duration = du; })); this.toast($t('已应用到全部幻灯片')); })
     ];
+    const anims = this.animsOf(s), curFx = anims[st.fx];
     if (tab === 'anim') ribbon = [
-      ...ANIMS.map(([key, l]) => B(l, () => { if (!o) return this.toast($t('先选中一个对象')); this.patchSel({ anim: key }); }, { on: o && (o.anim || 'none') === key, dis: !o })), SEP,
-      B('预览', () => { if (!s) return; const an = this.animsOf(s); const root = this.slideRef.current; an.forEach((x, i) => { const el = root && root.querySelector(`[data-soid="${x.id}"]`); if (el) setTimeout(() => el.animate(KF[x.anim], { duration: 550, easing: 'cubic-bezier(.2,.7,.2,1)' }), i * 450); }); }),
-      B('清除本页动画', () => this.commit((dd, cs) => cs.objs.forEach(x => x.anim = 'none')))
+      ...K.FX.map(([cls, label, list]) => M('fx' + cls, label, list.map(([key, l]) => I(l, () => this.addFx(key))), { entr: '添加进入动画', emph: '添加强调动画', exit: '添加退出动画' }[cls])), SEP,
+      S(curFx ? curFx.start || 'click' : 'click', FX_START, e => this.patchFx({ start: e.target.value }), '120px', '动画开始方式'),
+      N('持续时间', curFx ? K.fxDur(curFx) / 1000 : 0.5, v => this.patchFx({ dur: Math.max(1, Math.round(v * 1000)) }), { step: 0.25, title: '持续时间（秒）' }),
+      N('延迟', curFx ? (curFx.delay || 0) / 1000 : 0, v => this.patchFx({ delay: Math.max(0, Math.round(v * 1000)) }), { step: 0.25, title: '延迟（秒）' }), SEP,
+      B('动画窗格', () => this.setState({ fxPane: !st.fxPane }), { on: !!st.fxPane }), B('预览', () => this.previewFx()),
+      B('清除本页动画', () => { this.commit((dd, cs) => { cs.anims = []; }); this.setState({ fx: null }); })
     ];
-    if (tab === 'show') ribbon = [B('从头开始', () => this.startShow(0), { title: 'F5' }), B('从当前幻灯片开始', () => this.startShow(this.ci), { title: 'Shift+F5' }), SEP, B(s && s.hidden ? '取消隐藏' : '隐藏幻灯片', () => this.commit((dd, cs) => { cs.hidden = !cs.hidden; })), SEP, B(st.showNotes ? '隐藏备注' : '显示备注', () => this.setState({ showNotes: !st.showNotes }))];
+    // 动画窗格: the effects in the order they play, numbered by the click that starts them
+    let clickNo = 0; const fxNo = {};
+    const fxRows = anims.map((a, i) => {
+      const click = !a.start || a.start === 'click'; if (click) clickNo++; if (a.id && !(a.id in fxNo)) fxNo[a.id] = clickNo;
+      const ob = a.id && s.objs.find(x => x.id === a.id), name = ob ? (K.textOf(ob.html).slice(0, 14) || $t(TYPE_NAMES[ob.t] || '形状')) : $t('其他对象');
+      return { n: click ? clickNo : '', dot: FX_DOT[K.fxClass(a)], label: $t(K.fxLabel(a)) + ' · ' + name, bg: st.fx === i ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent',
+        onClick: () => this.setState(ob ? { fx: i, sel: ob.id, sels: [ob.id] } : { fx: i }), up: e => { e.stopPropagation(); this.moveFx(i, -1); }, down: e => { e.stopPropagation(); this.moveFx(i, 1); }, del: e => { e.stopPropagation(); this.delFx(i); } };
+    });
+    if (tab === 'show') ribbon = [B('从头开始', () => this.startShow(0), { title: 'F5' }), B('从当前幻灯片开始', () => this.startShow(this.ci), { title: 'Shift+F5' }),
+      B('演示者视图', () => this.startShow(this.ci, true), { title: 'Alt+F5' }), B('循环放映', () => this.setState({ loop: !st.loop }), { on: !!st.loop, title: '放映到最后一张后从头开始，按 Esc 结束' }), SEP, B('幻灯片浏览', () => this.setState({ sorter: !st.sorter, sel: null, sels: [], editing: null }), { on: !!st.sorter }), SEP, B(s && s.hidden ? '取消隐藏' : '隐藏幻灯片', () => this.commit((dd, cs) => { cs.hidden = !cs.hidden; })), SEP, B(st.showNotes ? '隐藏备注' : '显示备注', () => this.setState({ showNotes: !st.showNotes }))];
     const placeTools = () => [
       M('arr', '排列', [I('置于顶层', () => this.arrange('front')), I('上移一层', () => this.arrange('up')), I('下移一层', () => this.arrange('down')), I('置于底层', () => this.arrange('back'))]),
       M('aln', '对齐', [I('左对齐', () => this.alignObj('left')), I('水平居中', () => this.alignObj('hc')), I('右对齐', () => this.alignObj('right')), IS, I('顶端对齐', () => this.alignObj('top')), I('垂直居中', () => this.alignObj('vc')), I('底端对齐', () => this.alignObj('bottom'))])];
-    const copyTools = () => [B('复制@@dup', () => this.dup(o), { title: 'Ctrl+D' }), B('删除', () => { this.commit((dd, cs) => { cs.objs = cs.objs.filter(x => x.id !== o.id); }); this.setState({ sel: null }); })];
-    if (tab === 'format' && o) ribbon = [
-      C('填充', K.resolveColor(o.fill, th, o.t === 'shape' ? th.acc : '') || 'var(--k0, #FFFFFF)', e => this.patchSel({ fill: e.target.value }), '填充颜色'),
+    const copyTools = () => [B('复制@@dup', () => this.sels.forEach(x => this.dup(x)), { title: 'Ctrl+D' }), B('删除', () => this.deleteSels())];
+    const cm = v => +(v * this.cmU).toFixed(2), px = v => Math.round(v / this.cmU);
+    // exact size and position, in centimetres as PowerPoint shows them; a group's members follow its box
+    const boxFields = () => [N('X', cm(o.x), v => this.patchSel(this.moveKids(o, { x: px(v) }))), N('Y', cm(o.y), v => this.patchSel(this.moveKids(o, { y: px(v) }))), N('宽', cm(o.w), v => this.patchSel(this.moveKids(o, { w: Math.max(1, px(v)) }))), N('高', cm(o.h), v => this.patchSel(this.moveKids(o, { h: Math.max(0, px(v)) })))];
+    const rotTools = () => [M('rot', '旋转', [I('向右旋转 90°', () => this.patchSel({ rot: ((o.rot || 0) + 90) % 360 })), I('向左旋转 90°', () => this.patchSel({ rot: ((o.rot || 0) + 270) % 360 })), I('重置旋转', () => this.patchSel({ rot: 0 }))]), N('°', o.rot || 0, v => this.patchSel({ rot: ((Math.round(v) % 360) + 360) % 360 }), { step: 1, w: '50px', title: '旋转' })];
+    const isLine = o && o.t === 'line';
+    const outlineTools = () => [
+      C(isLine ? '线条' : '边框', K.resolveColor(o.stroke, th, isLine ? th.acc : '') || 'var(--k7, #1D1D1F)', e => this.patchSel({ stroke: e.target.value, sw: o.sw || (isLine ? 3 : 2) }), isLine ? '线条颜色' : '边框颜色'),
+      M('sw', '粗细', (isLine ? [] : [0]).concat(LINE_WIDTHS).map(v => I(v ? v + ' px' : '无边框', () => this.patchSel({ sw: v, stroke: o.stroke || 'acc' }), { on: (o.sw || 0) === v })), isLine ? '线条粗细' : '边框粗细'),
+      M('dash', '虚线', DASHES.map(([v, l]) => I(l, () => this.patchSel({ dash: v }), { on: (o.dash || 'solid') === v })), '虚线类型'),
+      B('阴影', () => this.patchSel({ shadow: !o.shadow }), { on: !!o.shadow })];
+    const groupTools = () => [B('组合', () => this.groupSels(), { title: 'Ctrl+G', dis: this.sels.length < 2 })].concat(o.t === 'group' ? [B('取消组合', () => this.ungroup(), { title: 'Ctrl+Shift+G' })] : []);
+    const mix = (c, to, t) => { const h = K.resolveColor(c, th, th.acc).replace('#', ''); if (h.length !== 6) return c; return '#' + [0, 2, 4].map(i => Math.round(parseInt(h.slice(i, i + 2), 16) * (1 - t) + to * t).toString(16).padStart(2, '0')).join(''); };
+    const gradients = () => { const base = K.resolveColor(o.fill, th, th.acc); return [I('无渐变', () => this.patchSel({ fill: String(o.fill || '').startsWith('grad:') ? o.fill.slice(5).split(',')[0] : o.fill }), { on: !String(o.fill || '').startsWith('grad:') }), IS,
+      I('浅 → 深', () => this.patchSel({ fill: `grad:${mix(base, 255, 0.35)},${base},90` })), I('深 → 浅', () => this.patchSel({ fill: `grad:${base},${mix(base, 255, 0.35)},90` })), I('左 → 右', () => this.patchSel({ fill: `grad:${base},${mix(base, 0, 0.3)},0` })), I('对角', () => this.patchSel({ fill: `grad:${mix(base, 255, 0.3)},${mix(base, 0, 0.25)},45` })), I('强调色 → 卡片色', () => this.patchSel({ fill: `grad:${th.acc},${th.card},90` }))]; };
+    if (tab === 'format' && o) ribbon = isLine ? [
+      ...outlineTools(), M('head', '起点箭头', ENDS.map(([v, l]) => I(l, () => this.patchSel({ head: v }), { on: (o.head || 'none') === v }))), M('tail', '终点箭头', ENDS.map(([v, l]) => I(l, () => this.patchSel({ tail: v }), { on: (o.tail || 'none') === v }))),
+      M('lk', '线型', [I('直线', () => this.patchSel({ bent: false }), { on: !o.bent }), I('肘形连接符', () => this.patchSel({ bent: true }), { on: !!o.bent })]), SEP,
+      ...placeTools(), ...groupTools(), SEP, ...boxFields(), SEP, ...copyTools()
+    ] : o.t === 'group' ? [
+      ...placeTools(), ...groupTools(), ...rotTools(), SEP, ...boxFields(), SEP, ...copyTools()
+    ] : [
+      C('填充', K.resolveColor(String(o.fill || '').startsWith('grad:') ? o.fill.slice(5).split(',')[0] : o.fill, th, o.t === 'shape' ? th.acc : '') || 'var(--k0, #FFFFFF)', e => this.patchSel({ fill: e.target.value }), '填充颜色'),
       M('fillq', '主题色', [['acc', '强调色'], ['card', '卡片色'], ['fg', '文字色'], ['', '无填充']].map(([v, l]) => I(l, () => this.patchSel({ fill: v === '' ? '' : v })))),
-      C('边框', o.stroke || 'var(--k7, #1D1D1F)', e => this.patchSel({ stroke: e.target.value, sw: o.sw || 2 }), '边框颜色'),
-      M('sw', '边框粗细', [0, 1, 2, 4, 8].map(v => I(v ? v + ' px' : '无边框', () => this.patchSel({ sw: v, stroke: o.stroke || 'var(--k1, #1D1D1F)' }), { on: (o.sw || 0) === v }))),
+      M('grad', '渐变', gradients()), SEP,
+      ...outlineTools(),
       M('op', '透明度', [1, 0.8, 0.6, 0.4, 0.2].map(v => I(Math.round((1 - v) * 100) + '%', () => this.patchSel({ op: v }), { on: (o.op ?? 1) === v }))),
-      o.t === 'shape' ? M('shp', '更改形状', SHAPES.filter(x => x[0] !== 'line').map(([key, l]) => I(l, () => this.patchSel({ shape: key }), { on: o.shape === key }))) : SEP, SEP,
-      ...placeTools(),
-      M('rot', '旋转', [I('向右旋转 90°', () => this.patchSel({ rot: ((o.rot || 0) + 90) % 360 })), I('向左旋转 90°', () => this.patchSel({ rot: ((o.rot || 0) + 270) % 360 })), I('重置旋转', () => this.patchSel({ rot: 0 }))]), SEP,
+      o.t === 'shape' ? M('shp', '更改形状', K.SHAPE_GALLERY.filter(g => g[0] !== '线条').flatMap(([name, items]) => [HD(name), ...items.map(([key, l]) => I(l, () => this.patchSel({ shape: key }), { on: o.shape === key }))])) : SEP,
+      B('锁定纵横比', () => this.patchSel({ lockAspect: !o.lockAspect }), { on: !!o.lockAspect }), SEP,
+      ...placeTools(), ...groupTools(), ...rotTools(), SEP, ...boxFields(), SEP,
       ...copyTools()
     ];
     if (tab === 'picture' && o && o.t === 'image') ribbon = this.P.pictureRibbon({ B, M, I, C, SEP }, this.picTools(), this.picLook(o), st.picBusy).concat([SEP, ...placeTools(), SEP, ...copyTools()]);
-    let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
+    if (tab === 'table' && o && o.t === 'table') {
+      const cell = st.cell || { r: 0, c: 0 }, own = (o.cells || {})[cell.r + ':' + cell.c] || {}, [r1, c1, r2, c2] = this.cellRange(), merged = (o.merges || []).some(m => m.r === cell.r && m.c === cell.c);
+      ribbon = [
+        B('上方插入行', () => this.tableOp((t, c) => K.tableInsertRow(t, c.r))), B('下方插入行', () => this.tableOp((t, c) => K.tableInsertRow(t, c.r + 1))),
+        B('左侧插入列', () => this.tableOp((t, c) => K.tableInsertCol(t, c.c))), B('右侧插入列', () => this.tableOp((t, c) => K.tableInsertCol(t, c.c + 1))),
+        B('删除行', () => { this.tableOp((t, c) => K.tableDeleteRow(t, c.r)); this.setState({ cell: { r: Math.max(0, cell.r - 1), c: cell.c } }); }), B('删除列', () => { this.tableOp((t, c) => K.tableDeleteCol(t, c.c)); this.setState({ cell: { r: cell.r, c: Math.max(0, cell.c - 1) } }); }), SEP,
+        B('合并单元格', () => { this.tableOp(t => K.tableMerge(t, r1, c1, r2, c2)); this.setState({ cell: { r: r1, c: c1 } }); }, { dis: r1 === r2 && c1 === c2 }), B('拆分单元格', () => this.tableOp((t, c) => K.tableSplit(t, c.r, c.c)), { dis: !merged }), SEP,
+        C('填充', own.fill || th.card, e => this.patchCells({ fill: e.target.value }), '单元格填充'), B('无填充', () => this.patchCells({ fill: null })),
+        C('边框', own.line && own.line !== 'none' ? own.line : th.fg, e => this.patchCells({ line: e.target.value }), '单元格边框'), B('无边框', () => this.patchCells({ line: 'none' })),
+        M('cal', '对齐', [['left', '左对齐'], ['center', '居中'], ['right', '右对齐']].map(([v, l]) => I(l, () => this.patchCells({ align: v }), { on: (own.align || 'left') === v }))), SEP,
+        M('tstyle', '表格样式', K.TABLE_STYLES.map(([key, l]) => I(l, () => this.patchSel({ tstyle: key }), { on: (o.tstyle || 'MediumStyle2Accent1') === key }))),
+        B('标题行', () => this.patchSel({ header: o.header === false }), { on: o.header !== false }), B('镶边行', () => this.patchSel({ banded: o.banded === false }), { on: o.banded !== false }), B('第一列', () => this.patchSel({ firstCol: !o.firstCol }), { on: !!o.firstCol }), SEP,
+        ...placeTools(), SEP, ...copyTools()
+      ];
+    }
+    let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '', popIsGallery = false, gallery = [], galleryLabel = '';
     if (st.pop) {
-      if (st.pop.id === 'table') { popIsGrid = true; const h = st.gridHover || { r: 0, c: 0 }; gridLabel = st.gridHover ? $t('{r} × {c} 表格', { r: h.r, c: h.c }) : $t('插入表格'); for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) { const on = r <= h.r && c <= h.c; gridCells.push({ border: on ? 'var(--k59, #3F7D5C)' : 'var(--k10, #D1D1D6)', bg: on ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)', onEnter: () => this.setState({ gridHover: { r, c } }), onClick: () => this.insertTable(r, c) }); } }
-      else if (st.pop.id === 'thumb') { const i = st.pop.i, sl = d.slides[i]; popItems = [HD('新建幻灯片')].concat(layoutItems(key => this.addSlide(key, i + 1))).concat([IS, I('复制幻灯片', () => this.dupSlide(i)), I(sl.hidden ? '取消隐藏' : '隐藏幻灯片', () => this.commit(dd => { dd.slides[i].hidden = !dd.slides[i].hidden; })), I('从此页放映', () => this.startShow(i)), IS, I('删除幻灯片', () => { if (d.slides.length < 2) return this.toast($t('至少保留一页')); this.commit(dd => dd.slides.splice(i, 1)); this.setState({ cur: Math.max(0, Math.min(this.ci, d.slides.length - 2)) }); })]); }
+      if (st.pop.mode) { popIsGallery = true; const re = st.pop.mode === 'relayout'; galleryLabel = $t(re ? '版式' : '新建幻灯片'); gallery = K.LAYOUTS.map(([key, l]) => ({ label: $t(l), slide: this.preview(key), outline: re && s && s.layout === key ? '2px solid var(--k7, #1D1D1F)' : 'none', onClick: () => re ? this.relayout(key) : this.addSlide(key, st.pop.at) })); }
+      else if (st.pop.id === 'table') { popIsGrid = true; const h = st.gridHover || { r: 0, c: 0 }; gridLabel = st.gridHover ? $t('{r} × {c} 表格', { r: h.r, c: h.c }) : $t('插入表格'); for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) { const on = r <= h.r && c <= h.c; gridCells.push({ border: on ? 'var(--k59, #3F7D5C)' : 'var(--k10, #D1D1D6)', bg: on ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)', onEnter: () => this.setState({ gridHover: { r, c } }), onClick: () => this.insertTable(r, c) }); } }
+      else if (st.pop.id === 'thumb') {
+        const i = st.pop.i, sl = d.slides[i];
+        popItems = [HD('新建幻灯片'), ...layoutItems(key => this.addSlide(key, i + 1)), IS, I('复制幻灯片', () => this.dupSlide(i)), I(sl.hidden ? '取消隐藏' : '隐藏幻灯片', () => this.commit(dd => { dd.slides[i].hidden = !dd.slides[i].hidden; })), I('从此页放映', () => this.startShow(i)), IS,
+          I('复制', () => this.copySlide(false), { hint: 'Ctrl+C' }), I('剪切', () => this.copySlide(true), { hint: 'Ctrl+X' }), ...(window.__writerSlideClip ? [I('粘贴', () => this.pasteSlide(), { hint: 'Ctrl+V' })] : []), IS,
+          sl.sec ? I('删除节', () => this.commit(dd => { dd.slides[i].sec = ''; })) : I('新增节', () => this.addSection(i)), IS, I('删除幻灯片', () => this.deleteSlide(i))];
+      }
       else popItems = this.menus[st.pop.id] || [];
     }
-    const lv = st.live;
-    const anims = s ? this.animsOf(s) : [];
-    const ptPx = (d._orig && d._orig.geo && d._orig.geo.ptPx) || 1600 / (d.ratio === '4:3' ? 720 : 960);
+    const lives = st.lives || {}, live = x => { const lv = lives[x.id]; return lv ? Object.assign({}, x, lv, this.moveKids(x, lv)) : x; };
     // a picture tool's result shows at once, before the engine has answered
     const livePic = x => { const pl = st.picLive; if (!pl || pl.id !== x.id) return x; const look = Object.assign({}, pl.look); delete look.rotation; return Object.assign({}, x, { look, rot: Number(pl.look.rotation) || 0 }); };
-    const decor = s ? (s.decor || []).map(x => Object.assign(K.objView(x, th, ptPx), { id: x.id, ce: false, cursor: 'default', pe: 'none', phLine: 'none', trows: [], onMD: null, onDbl: null, onBlur: null })) : [];
+    const decor = s ? (s.decor || []).map(x => Object.assign(K.objView(x, th, ptPx), { id: x.id, ce: false, cursor: 'default', pe: 'none', phLine: 'none', onMD: null, onDbl: null, onBlur: null })) : [];
     const objs = s ? decor.concat(s.objs.map(x => {
-      const y = livePic(lv && lv.id === x.id ? Object.assign({}, x, lv) : x);
+      const y = livePic(live(x));
       const v = K.objView(y, th, ptPx), editing = st.editing === x.id, isSel = st.sel === x.id;
-      const ai = anims.findIndex(a => a.id === x.id);
       return Object.assign(v, {
         id: x.id, ce: editing, us: editing ? 'text' : 'none', tcur: editing ? 'text' : 'inherit', cursor: editing ? 'text' : 'move', pe: 'auto', ovf: editing ? 'visible' : 'hidden',
         op: st.picBusy && isSel ? 0.5 : v.op,
-        phLine: x.ph && !isSel && /单击添加|Click to add/.test(x.html || '') ? `${1 / k}px dashed rgba(128,128,128,0.5)` : 'none',
-        hasBadge: tab === 'anim' && ai >= 0, badge: ai + 1,
-        trows: v.rows.map((r, ri) => ({ cells: r.cells.map((c, ci) => Object.assign({}, c, { key: x.id + ':' + ri + ':' + ci, onBlur: e => { const t = e.currentTarget.innerText.trim(); if (t !== (x.rows[ri][ci] || '')) this.commit((dd, cs) => { const oo = cs.objs.find(z => z.id === x.id); if (oo) oo.rows[ri][ci] = t; }); const rt = e.relatedTarget; if (!rt || !String(rt.getAttribute && rt.getAttribute('data-edit') || '').startsWith(x.id)) this.setState({ editing: null }); } })) })),
-        onMD: e => { if (editing) { e.stopPropagation(); return; } e.stopPropagation(); e.preventDefault(); this.endEdit(); this.setState({ sel: x.id, editing: null, pop: null }); this.op = { kind: 'move', o: x, sx: e.clientX, sy: e.clientY, moved: false }; e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true }); },
-        onDbl: e => { e.stopPropagation(); if (x.t === 'image') return; this.setState({ editing: x.id, sel: x.id }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = /单击|Click/.test(x.html || ''); },
+        phLine: x.ph && !isSel && !K.textOf(x.html) ? `${1 / k}px dashed rgba(128,128,128,0.5)` : 'none',
+        hasBadge: tab === 'anim' && x.id in fxNo, badge: fxNo[x.id],
+        tcells: v.tcells.map(c => Object.assign(c, {
+          outline: isSel && st.cell && ((st.cell.r === c.r && st.cell.c === c.c) || (st.cellSel && c.r >= Math.min(st.cell.r, st.cellSel.r) && c.r <= Math.max(st.cell.r, st.cellSel.r) && c.c >= Math.min(st.cell.c, st.cellSel.c) && c.c <= Math.max(st.cell.c, st.cellSel.c))) ? `${1.5 / k}px solid var(--k59, #3F7D5C)` : 'none',
+          onBlur: e => { const t = e.currentTarget.innerText.trim(); if (t !== (x.rows[c.r][c.c] || '')) this.commit((dd, cs) => { const oo = cs.objs.find(z => z.id === x.id); if (oo) oo.rows[c.r][c.c] = t; }); const rt = e.relatedTarget; if (!rt || !String(rt.getAttribute && rt.getAttribute('data-edit') || '').startsWith(x.id)) this.setState({ editing: null }); },
+          onFocus: () => { if (!st.cell || st.cell.r !== c.r || st.cell.c !== c.c) this.setState({ cell: { r: c.r, c: c.c } }); },
+          // in a selected table a click puts the caret in the cell (⇧-click extends the range 合并 works on) instead of dragging the table
+          onMD: e => { if (!isSel) return; e.stopPropagation(); if (e.shiftKey && st.cell) { e.preventDefault(); this.setState({ cellSel: { r: c.r, c: c.c } }); return; } if (!editing) { e.preventDefault(); this.setState({ editing: x.id, cell: { r: c.r, c: c.c }, cellSel: null }); this.focusEdit = c.key; this.selectAll = false; } else this.setState({ cell: { r: c.r, c: c.c }, cellSel: null }); }
+        })),
+        onMD: e => {
+          if (editing) { e.stopPropagation(); return; } e.stopPropagation(); e.preventDefault(); this.endEdit(); this.thumbFocus = false;
+          const inSel = this.state.sels.includes(x.id); if (e.shiftKey || !inSel) this.select(x.id, e.shiftKey); else this.setState({ sel: x.id, editing: null, pop: null });
+          let objs = e.shiftKey ? [] : (inSel ? this.sels : [x]);
+          if (e.altKey && objs.length) { // ⌥-drag moves a copy and leaves the original
+            const copies = objs.map(o => this.copyOf(o)); this.commit((dd, cs) => cs.objs.push(...copies)); this.setState({ sel: copies[copies.length - 1].id, sels: copies.map(c => c.id) }); objs = copies;
+          }
+          if (objs.length) this.op = { kind: 'move', o: objs.find(o => o.id === x.id) || objs[objs.length - 1], objs, sx: e.clientX, sy: e.clientY, moved: false };
+          e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true });
+        },
+        onDbl: e => { e.stopPropagation(); if (x.t === 'image' || x.t === 'line' || x.t === 'group') return; if (x.ph === 'pic') { this.picFor = x.id; this.imgRef.current.click(); return; } this.setState({ editing: x.id, sel: x.id, sels: [x.id] }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = false; },
         onBlur: e => { const h = e.currentTarget.innerHTML; if (h !== x.html) this.patchObj(x.id, { html: h }); this.setState({ editing: null }); }
       });
     })) : [];
-    const fo = o && livePic(lv && lv.id === o.id ? Object.assign({}, o, lv) : o);
+    const fo = o && livePic(live(o));
     const hs = 12 / k;
-    const handles = fo && !st.editing ? HANDLES.map(([dir, l, t, cur]) => ({ left: l, top: t, cursor: cur, radius: '2px', onMD: e => { e.stopPropagation(); e.preventDefault(); this.op = { kind: 'resize', dir, o: fo, sx: e.clientX, sy: e.clientY }; } })).concat([{ left: '50%', top: -28 / k + 'px', cursor: 'grab', radius: '50%', onMD: e => { e.stopPropagation(); e.preventDefault(); this.op = { kind: 'rot', o: fo, sx: e.clientX, sy: e.clientY }; } }]) : [];
+    const grab = (kind, extra) => e => { e.stopPropagation(); e.preventDefault(); this.op = Object.assign({ kind, o: fo, sx: e.clientX, sy: e.clientY }, extra); };
+    // a line has a handle at each end (dragging one re-aims it and can stick it to a shape); anything else PowerPoint's eight and the rotation handle
+    const handles = fo && !st.editing ? (fo.t === 'line'
+      ? K.lineEnds(fo).map((p, i) => ({ left: p[0] + 'px', top: p[1] + 'px', cursor: 'crosshair', radius: '50%', onMD: grab('end', { end: i }) }))
+      : HANDLES.map(([dir, l, t, cur]) => ({ left: l, top: t, cursor: cur, radius: '2px', onMD: grab('resize', { dir }) })).concat([{ left: '50%', top: -28 / k + 'px', cursor: 'grab', radius: '50%', onMD: grab('rot') }])) : [];
+    const frames = this.sels.filter(x => x.id !== (o && o.id)).map(x => { const y = live(x); return { left: y.x + 'px', top: y.y + 'px', width: y.w + 'px', height: y.h + 'px', tf: `rotate(${y.rot || 0}deg)`, line: `${1.5 / k}px solid var(--k59, #3F7D5C)` }; });
+    // a table's column boundaries drag: the column to the left changes width and the table with it, as in PowerPoint
+    const colHandles = fo && fo.t === 'table' && !st.editing ? K.colWidths(fo).slice(0, -1).map((w, i, ws) => ({ left: ws.slice(0, i + 1).reduce((a, b) => a + b, 0) + 'px', w: 8 / k + 'px', onMD: grab('col', { col: i }) })) : [];
     const sh = st.show, vw = st.vw, vh = st.vh, showW = Math.min(vw, vh * 1600 / H);
     const showSlide = sh ? d.slides[sh.i] : null;
+    const secCount = i => { let n = 1; while (i + n < d.slides.length && !d.slides[i + n].sec) n++; return n; };
     const thumbs = d.slides.map((sl, i) => ({
-      n: i + 1, slide: sl, hidden: !!sl.hidden, hasAnim: this.animsOf(sl).length > 0, outline: i === this.ci ? '2px solid var(--k7, #1D1D1F)' : sl.ai ? '2px solid #7FB59A' : 'none', op: this.dragI === i ? 0.4 : 1,
-      dropLine: st.drop === i ? '0 -6px 0 -4px var(--k59, #3F7D5C)' : 'none',
-      onClick: () => { this.endEdit(); this.setState({ cur: i, sel: null, editing: null }); },
-      onCtx: e => { e.preventDefault(); this.setState({ cur: i, pop: { id: 'thumb', i, x: e.clientX, y: Math.min(e.clientY, window.innerHeight - 380) } }); },
+      hasSec: !!sl.sec, secName: sl.sec || '', secCount: sl.sec ? $t('{n} 张', { n: secCount(i) }) : '', secKey: 'sec' + i,
+      onSec: e => this.commit(dd => { dd.slides[i].sec = e.target.value || ' '; }, true), onSecKey: e => { e.stopPropagation(); if (e.key === 'Enter' || e.key === 'Escape') e.target.blur(); },
+      onSecDel: () => this.commit(dd => { dd.slides[i].sec = ''; }),
+      onOpen: () => this.setState({ sorter: false, cur: i, sel: null, sels: [] }),
+      n: i + 1, slide: sl, hidden: !!sl.hidden, hasAnim: this.animsOf(sl).length > 0, outline: i === this.ci ? '2px solid #3478F6' : sl.ai ? '2px solid #7FB59A' : 'none', op: this.dragI === i ? 0.4 : 1,
+      dropLine: st.drop === i ? '0 -6px 0 -4px var(--k59, #3F7D5C)' : 'none', dropSide: st.drop === i ? '-9px 0 0 -6px var(--k59, #3F7D5C)' : 'none',
+      onClick: () => { this.endEdit(); this.thumbFocus = true; this.setState({ cur: i, sel: null, sels: [], editing: null, fx: null }); },
+      onCtx: e => { e.preventDefault(); this.thumbFocus = true; this.setState({ cur: i, sel: null, sels: [], pop: { id: 'thumb', i, x: e.clientX, y: Math.min(e.clientY, window.innerHeight - 460) } }); },
       onDragStart: e => { this.dragI = i; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(i)); } catch (er) { } },
       onDragOver: e => { e.preventDefault(); if (st.drop !== i) this.setState({ drop: i }); },
       onDrop: e => { e.preventDefault(); const from = this.dragI; this.dragI = null; this.setState({ drop: null }); if (from == null || from === i) return; this.commit(dd => { const [m] = dd.slides.splice(from, 1); dd.slides.splice(i, 0, m); }); this.setState({ cur: i }); },
       onDragEnd: () => { this.dragI = null; this.setState({ drop: null }); }
     }));
     return {
-      notPure: !this.props.pure, showThumbs: !this.props.pure && this.props.showThumbs !== false, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      notPure: !this.props.pure, pure: !!this.props.pure, showBar: !this.props.pure || !!this.props.pureTools, showThumbs: !st.sorter && (this.props.pure ? this.props.showThumbs === true : this.props.showThumbs !== false), closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       bodyCols: !this.props.pure && this.props.showThumbs !== false ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)',
-      md, tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), thumbs, themeKey: d.theme || 'paper', ratio: d.ratio || '16:9',
+      md, tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), thumbs, themeKey: d.theme || 'paper', ratio: d.ratio || '16:9',
       playFromStart: () => this.startShow(0),
-      addSlideQuick: () => this.addSlide('content', d.slides.length),
+      addSlideQuick: e => this.openGallery('plus', 'new', e, d.slides.length),
+      beautifyMenu: e => this.openPop('beautify', e), beautifyBg: st.pop && st.pop.id === 'beautify' ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent',
       stageRef: this.stageRef, slideRef: this.slideRef, imgRef: this.imgRef, showRef: this.showRef, showSlideRef: this.showSlideRef,
-      onStageDown: e => { this.endEdit(); this.setState({ sel: null, editing: null, pop: null }); e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true }); },
-      stW: 1600 * k + 'px', stH: H * k + 'px', H: H + 'px', halfH: H / 2 + 'px', scale: `scale(${k})`, sBg: s ? (s.bg || th.bg) : 'var(--k0, #FFFFFF)', noSlides: !s,
-      objs, gV: !!(st.guides && st.guides.gV), gH: !!(st.guides && st.guides.gH), guideW: 1.5 / k + 'px',
-      hasSel: !!fo, fr: fo ? { left: fo.x + 'px', top: fo.y + 'px', width: fo.w + 'px', height: fo.h + 'px', tf: `rotate(${fo.rot || 0}deg)`, line: `${1.5 / k}px solid var(--k59, #3F7D5C)` } : {},
+      onStageDown: e => { this.endEdit(); this.thumbFocus = false; this.setState({ sel: null, sels: [], editing: null, pop: null }); e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true }); },
+      stW: 1600 * k + 'px', stH: H * k + 'px', H: H + 'px', scale: `scale(${k})`, sBg: s ? (s.bg || th.bg) : 'var(--k0, #FFFFFF)', noSlides: !s,
+      objs,
+      guides: ((st.guides && st.guides.lines) || []).map(g => g.axis === 'v' ? { left: g.at + 'px', top: 0, right: 'auto', bottom: 0, bl: `${1.5 / k}px dashed #D9534F`, bt: 'none' } : { top: g.at + 'px', left: 0, right: 0, bottom: 'auto', bt: `${1.5 / k}px dashed #D9534F`, bl: 'none' }),
+      hints: ((st.guides && st.guides.hints) || []).map(h => Object.assign({ text: h.text, fs: 11 / k + 'px', pad: `${3 / k}px ${5 / k}px`, rad: 4 / k + 'px' }, h.axis === 'h'
+        ? { left: h.from + 'px', top: h.at + 'px', width: (h.to - h.from) + 'px', height: 0, bt: `${1 / k}px solid #D9534F`, bl: 'none', lx: (h.from + h.to) / 2 + 'px', ly: h.at + 'px' }
+        : { left: h.at + 'px', top: h.from + 'px', width: 0, height: (h.to - h.from) + 'px', bl: `${1 / k}px solid #D9534F`, bt: 'none', lx: h.at + 'px', ly: (h.from + h.to) / 2 + 'px' })),
+      hasSel: !!fo, fr: fo ? { left: fo.x + 'px', top: fo.y + 'px', width: fo.w + 'px', height: fo.h + 'px', tf: `rotate(${fo.rot || 0}deg)`, line: fo.t === 'line' ? 'none' : `${1.5 / k}px solid var(--k59, #3F7D5C)` } : {}, frames, colHandles,
       handles, hs: hs + 'px', hb: 1.5 / k + 'px', badge: 26 / k + 'px', badgeFs: 13 / k + 'px',
-      showNotes: st.showNotes && !this.props.pure, notes: s ? s.notes || '' : '', onNotes: e => this.commit((dd, cs) => { cs.notes = e.target.value; }, true),
+      showNotes: st.showNotes && !this.props.pure, notes: s ? s.notes || '' : '', notesH: (st.notesH || 84) + 'px',
+      notesGrab: e => { e.preventDefault(); this.op = { kind: 'notes', sy: e.clientY, h: st.notesH || 84 }; }, onNotes: e => this.commit((dd, cs) => { cs.notes = e.target.value; }, true),
       toggleNotes: () => this.setState({ showNotes: !st.showNotes }), notesLabel: st.showNotes ? $t('隐藏备注') : $t('显示备注'),
+      sorter: !!st.sorter, toggleSorter: () => this.setState({ sorter: !st.sorter, sel: null, sels: [], editing: null }), sorterLabel: st.sorter ? $t('普通视图') : $t('幻灯片浏览'),
       zoomPct: Math.round(st.zoom * 100), onZoom: e => this.setZoom(+e.target.value / 100), zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1), fitZoom: () => this.setZoom(1),
       zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
       onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(Math.round(this.state.zoom * 100)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
@@ -507,39 +905,69 @@ class Component extends DCLogic {
           rot: o.rot ? '  ' + $t('旋转 {deg}°', { deg: o.rot }) : ''
         }) : '')
         + '　·　' + $t('主题「{name}」', { name: $t(th.name) }), // i18n-ok — a plain separator, not text
-      onImgFile: e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const rd = new FileReader(); rd.onload = () => { const img = new Image(); img.onload = () => { let w = img.naturalWidth, h = img.naturalHeight; const sc = Math.min(1, 1000 / w, (H * 0.7) / h); w = Math.round(w * sc); h = Math.round(h * sc); this.insertObj(K.txt({ t: 'image', src: rd.result, x: Math.round((1600 - w) / 2), y: Math.round((H - h) / 2), w, h, html: '' })); }; img.src = rd.result; }; rd.readAsDataURL(f); },
+      onImgFile: e => {
+        const f = e.target.files[0], into = this.picFor; e.target.value = ''; this.picFor = null; if (!f) return;
+        const rd = new FileReader(); rd.onload = () => { const img = new Image(); img.onload = () => {
+          // into a picture placeholder: fitted inside its box, which the picture then replaces; else on the slide's middle
+          const ph = into && s && s.objs.find(x => x.id === into), box = ph || { x: 0, y: 0, w: 1600, h: H };
+          let w = img.naturalWidth, h = img.naturalHeight; const sc = Math.min(1, (ph ? box.w : 1000) / w, (ph ? box.h : H * 0.7) / h); w = Math.round(w * sc); h = Math.round(h * sc);
+          const pic = K.txt({ t: 'image', src: rd.result, x: Math.round(box.x + (box.w - w) / 2), y: Math.round(box.y + (box.h - h) / 2), w, h, html: '' });
+          if (ph) { this.commit((dd, cs) => { cs.objs.splice(cs.objs.findIndex(x => x.id === into), 1, pic); }); this.setState({ sel: pic.id }); } else this.insertObj(pic);
+        }; img.src = rd.result; }; rd.readAsDataURL(f);
+      },
       onRootKey: e => {
-        const t = e.target; if (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName)) { if (e.key === 'Escape' && t.isContentEditable) t.blur(); return; }
+        const t = e.target; if (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName)) { if (e.key === 'Escape' && t.isContentEditable) t.blur(); else if (e.key === 'Tab' && t.isContentEditable && st.editing) { e.preventDefault(); this.indent(e.shiftKey ? -1 : 1); } return; }
         const ctrl = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
-        if (e.key === 'F5') { e.preventDefault(); this.startShow(e.shiftKey ? this.ci : 0); return; }
+        if (e.key === 'F5') { e.preventDefault(); this.startShow(e.shiftKey || e.altKey ? this.ci : 0, e.altKey); return; }
         if (ctrl && (e.key === '=' || e.key === '+' || e.key === 'Add')) { e.preventDefault(); this.setZoom(this.state.zoom + 0.1); return; }
         if (ctrl && (e.key === '-' || e.key === 'Subtract')) { e.preventDefault(); this.setZoom(this.state.zoom - 0.1); return; }
         if (ctrl && e.key === '0') { e.preventDefault(); this.setZoom(1); return; }
         if (ctrl && key === 'z') { e.preventDefault(); e.shiftKey ? this.props.onRedo && this.props.onRedo() : this.props.onUndo && this.props.onUndo(); return; }
         if (ctrl && key === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); return; }
         if (ctrl && key === 'm') { e.preventDefault(); this.addSlide('content'); return; }
+        if (ctrl && key === 'a' && s) { e.preventDefault(); const ids = s.objs.map(x => x.id); this.setState({ sel: ids[ids.length - 1] || null, sels: ids }); return; }
+        if (ctrl && key === 'g') { e.preventDefault(); e.shiftKey ? this.ungroup() : this.groupSels(); return; }
         if (o) {
-          if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.commit((dd, cs) => { cs.objs = cs.objs.filter(x => x.id !== o.id); }); this.setState({ sel: null }); return; }
+          if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteSels(); return; }
           const nd = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
-          if (nd) { e.preventDefault(); const st2 = e.shiftKey ? 10 : 1; this.patchSel({ x: o.x + nd[0] * st2, y: o.y + nd[1] * st2 }); this.follow && this.follow.update('nudge'); return; }
-          if (ctrl && key === 'c') { this.clip = this.clipOf(o); return; }
-          if (ctrl && key === 'x') { this.clip = this.clipOf(o); this.commit((dd, cs) => { cs.objs = cs.objs.filter(x => x.id !== o.id); }); this.setState({ sel: null }); return; }
-          if (ctrl && key === 'd') { e.preventDefault(); this.dup(o); return; }
+          if (nd) { e.preventDefault(); const st2 = e.shiftKey ? 10 : 1; this.patchSels(x => this.moveKids(x, { x: x.x + nd[0] * st2, y: x.y + nd[1] * st2 })); this.follow && this.follow.update('nudge'); return; }
+          if (ctrl && key === 'c') { this.clip = this.sels.map(x => this.clipOf(x)); return; }
+          if (ctrl && key === 'x') { this.clip = this.sels.map(x => this.clipOf(x)); this.deleteSels(); return; }
+          if (ctrl && key === 'd') { e.preventDefault(); this.sels.forEach(x => this.dup(x)); return; }
           if (e.key === 'Enter' && (o.t === 'text' || o.t === 'shape')) { e.preventDefault(); this.setState({ editing: o.id }); this.focusEdit = o.id; return; }
-          if (e.key === 'Escape') { this.setState({ sel: null }); return; }
+          if (e.key === 'Escape') { this.setState({ sel: null, sels: [] }); return; }
         } else {
-          if (e.key === 'PageDown' || e.key === 'ArrowDown') { e.preventDefault(); this.setState({ cur: Math.min(d.slides.length - 1, this.ci + 1) }); return; }
-          if (e.key === 'PageUp' || e.key === 'ArrowUp') { e.preventDefault(); this.setState({ cur: Math.max(0, this.ci - 1) }); return; }
-          if (e.key === 'Delete' && d.slides.length > 1) { this.commit(dd => dd.slides.splice(this.ci, 1)); this.setState({ cur: Math.max(0, this.ci - 1) }); return; }
+          if (this.thumbFocus || st.sorter) { // the slides themselves: copied, cut and pasted, within this deck or into another
+            if (ctrl && key === 'c') { e.preventDefault(); this.copySlide(false); return; }
+            if (ctrl && key === 'x') { e.preventDefault(); this.copySlide(true); return; }
+            if (ctrl && key === 'v' && window.__writerSlideClip) { e.preventDefault(); this.pasteSlide(); return; }
+          }
+          if (e.key === 'PageDown' || e.key === 'ArrowDown' || (st.sorter && e.key === 'ArrowRight')) { e.preventDefault(); this.setState({ cur: Math.min(d.slides.length - 1, this.ci + 1) }); return; }
+          if (e.key === 'PageUp' || e.key === 'ArrowUp' || (st.sorter && e.key === 'ArrowLeft')) { e.preventDefault(); this.setState({ cur: Math.max(0, this.ci - 1) }); return; }
+          if (st.sorter && e.key === 'Enter') { e.preventDefault(); this.setState({ sorter: false }); return; }
+          if ((e.key === 'Delete' || (st.sorter && e.key === 'Backspace')) && d.slides.length > 1) { this.deleteSlide(this.ci); return; }
         }
-        if (ctrl && key === 'v' && this.clip) { e.preventDefault(); this.dup(this.clipDoc === d.id ? this.clip : Object.assign({}, this.clip, { from: null }), 24); this.clip = Object.assign({}, this.clip, { x: this.clip.x + 24, y: this.clip.y + 24 }); }
+        if (ctrl && key === 'v' && this.clip && this.clip.length) { e.preventDefault(); const same = this.clipDoc === d.id; this.clip.forEach(c => this.dup(same ? c : Object.assign({}, c, { from: null }), 24)); this.clip = this.clip.map(c => Object.assign({}, c, this.moveKids(c, { x: c.x + 24, y: c.y + 24 }))); }
       },
       showing: !!sh, showSlide, showW, showWpx: showW + 'px', showHpx: showW * H / 1600 + 'px',
-      showHidden: sh && showSlide ? this.animsOf(showSlide).slice(sh.step).map(x => x.id) : [],
+      showHidden: sh && showSlide ? K.fxHidden(this.animsOf(showSlide), sh.step + this.stepsOf(showSlide).auto, sh.live) : [],
+      fxPane: !!st.fxPane && !!s, fxRows, fxEmpty: !anims.length, closeFxPane: () => this.setState({ fxPane: false }),
       showCounter: sh ? `${sh.i + 1} / ${d.slides.length}` : '',
-      onShowKey: e => { const key = e.key; if (['ArrowRight', 'ArrowDown', ' ', 'Enter', 'PageDown', 'n', 'N'].includes(key)) { e.preventDefault(); this.showNext(); } else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p', 'P'].includes(key)) { e.preventDefault(); this.showPrev(); } else if (key === 'Escape') { e.preventDefault(); this.exitShow(); } else if (key === 'Home') this.setState({ show: { i: 0, step: 0 } }); },
-      onShowClick: () => this.showNext(), onShowCtx: e => { e.preventDefault(); this.showPrev(); },
-      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popItems, popIsGrid, gridCells, gridLabel,
+      onShowKey: e => this.showKey(e),
+      onShowClick: () => { if (!sh || sh.tool === 'pen') return; if (sh.blank) this.setState({ show: Object.assign({}, sh, { blank: null }) }); else this.showNext(); },
+      onShowCtx: e => { e.preventDefault(); this.showPrev(); },
+      onShowDown: e => { if (!sh || sh.tool !== 'pen' || e.button) return; e.preventDefault(); this.drawing = true; this.setState({ ink: Object.assign({}, st.ink, { [sh.i]: ((st.ink || {})[sh.i] || []).concat([[this.inkPt(e)]]) }) }); },
+      onShowMove: e => {
+        if (!sh) return; if (sh.tool === 'laser') this.setState({ laser: [e.clientX, e.clientY] });
+        if (this.drawing) { const l = (this.state.ink[sh.i] || []).slice(); l[l.length - 1] = l[l.length - 1].concat([this.inkPt(e)]); this.setState({ ink: Object.assign({}, this.state.ink, { [sh.i]: l }) }); }
+      },
+      onShowUp: () => { this.drawing = false; },
+      showCursor: sh && sh.tool === 'pen' ? 'crosshair' : 'none', laserOn: !!(sh && sh.tool === 'laser' && st.laser), laserX: st.laser ? st.laser[0] + 'px' : 0, laserY: st.laser ? st.laser[1] + 'px' : 0,
+      inkSvg: { __html: sh && ((st.ink || {})[sh.i] || []).length ? `<svg viewBox="0 0 1600 ${H}" width="100%" height="100%" style="display:block">${st.ink[sh.i].map(l => `<polyline points="${l.map(p => p.join(',')).join(' ')}" fill="none" stroke="#FF3B30" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}</svg>` : '' },
+      showBlank: !!(sh && sh.blank), blankBg: sh && sh.blank || '#000', hasJump: !!st.jump, jumpText: $t('跳转到第 {n} 张', { n: st.jump || '' }),
+      presenterIn: !!(sh && sh.pv), presenterHtml: { __html: sh && sh.pv ? K.presenterHtml(d, sh.i, this.clock()) : '' },
+      onPresenterClick: e => { e.stopPropagation(); const a = e.target.closest && e.target.closest('[data-act]'); if (a) this.presenterAct(a.getAttribute('data-act')); },
+      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popItems, popIsGrid, gridCells, gridLabel, popIsGallery, gallery, galleryLabel,
       gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null })
     };
   }

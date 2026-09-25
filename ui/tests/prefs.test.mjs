@@ -45,11 +45,11 @@ test('load merges what is stored over the defaults and survives junk', () => {
   assert.deepEqual(load(null), DEF);
 });
 
-test('loadLayout: the sidebar defaults open and the assistant panel closed, same as the shell\'s own defaults; junk and no storage fall back too', () => {
-  assert.deepEqual(loadLayout(fakeStorage(null)), { showThumbs: true, showAI: false });
+test('loadLayout: the sidebar and the assistant panel default closed, same as the shell\'s own defaults; junk and no storage fall back too', () => {
+  assert.deepEqual(loadLayout(fakeStorage(null)), { showThumbs: false, showAI: false });
   assert.deepEqual(loadLayout(fakeStorage('{"thumbs":false,"ai":true}')), { showThumbs: false, showAI: true });
-  assert.deepEqual(loadLayout(fakeStorage('not json')), { showThumbs: true, showAI: false });
-  assert.deepEqual(loadLayout(null), { showThumbs: true, showAI: false });
+  assert.deepEqual(loadLayout(fakeStorage('not json')), { showThumbs: false, showAI: false });
+  assert.deepEqual(loadLayout(null), { showThumbs: false, showAI: false });
 });
 
 test('saveLayout merges into \'writer-mac\' instead of replacing it: mac.dc.html/win.dc.html keep the collapsed toolbar in the same key', () => {

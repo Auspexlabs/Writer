@@ -101,7 +101,7 @@ test('a slide deleted while another is added is listed as deleted: slides go by 
 // ---- the panel (index.dc.html): its logic in a vm, as storage.test.mjs runs it ----
 function shell(docs, cur) {
   const code = readFileSync(new URL('../index.dc.html', import.meta.url), 'utf8').match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
-  const ctx = { location: { search: '' }, URLSearchParams, structuredClone, setTimeout: () => 0, clearTimeout: () => { }, window: { innerWidth: 1200 },
+  const ctx = { location: { search: '' }, URLSearchParams, structuredClone, AbortController, setTimeout: () => 0, clearTimeout: () => { }, window: { innerWidth: 1200 },
     document: { querySelector: () => null, documentElement: { dataset: {} } },
     $t: (s, v) => v ? String(s).replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s, // i18n.js's $t, always in Chinese here (no dictionary loaded)
     React: { createRef: () => ({ current: null }) }, DCLogic: class { setState(u) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); } } };
@@ -133,6 +133,32 @@ test('the panel scrolls a new change card into view, 保留 / 撤销 included, u
   el.scrollTop = 900; c.componentDidUpdate(); // the user scrolls up to read; the shell renders for something else
   render([...again.slice(0, 3), { ...reply, change: card }], 1980);
   assert.equal(el.scrollTop, 900, 'scrolled up on purpose: left where the user is');
+});
+
+test('the document reloads after each write the assistant makes — one read at a time — and once more when the turn ends', async () => {
+  const c = shell([{ id: 'a', title: 'a', type: 'md', path: 'a.md', text: 'v0', loaded: true }], 'a');
+  c.state.chatOn = true; c.flushSave = async () => { }; c.refreshFiles = () => { };
+  const tick = () => new Promise(r => setImmediate(r));
+  let reads = 0; const seen = [];
+  c.EN = {
+    open: async cur => { reads++; await tick(); return Object.assign({}, cur, { text: 'v' + reads }); },
+    diffMark: () => [['修改', '文本']],
+    chat: async (d0, history, onEvent) => {
+      onEvent('tool', { command: 'set a.md /body/paragraph[1] --prop text=一', code: 0 });
+      await tick(); await tick(); seen.push(c.state.docs[0].text);
+      onEvent('tool', { command: 'view a.md outline', code: 0 }); // a read changes nothing
+      onEvent('tool', { command: 'set a.md /body/paragraph[1] --prop text=二', code: 0 });
+      onEvent('tool', { command: 'set a.md /body/paragraph[1] --prop text=三', code: 0 }); // lands while the read for 二 runs: one more read covers both
+      await tick(); await tick(); await tick(); await tick(); seen.push(c.state.docs[0].text);
+      onEvent('text', { text: '好了。' });
+    }
+  };
+  await c.chatTurn('a');
+  assert.deepEqual(seen, ['v1', 'v3'], 'the editor showed the first edit before the turn went on, and the last two together');
+  assert.equal(reads, 4, 'three reads during the turn, one after it');
+  assert.equal(c.state.docs[0].text, 'v4');
+  const reply = c.state.chats.a[0];
+  assert.deepEqual([reply.text, reply.change.state, reply.change.snap.text, Array.from(c.hist.a.past, d => d.text)], ['好了。', 'pending', 'v0', ['v0']], 'one keep/undo card against the document as it was; one undo step');
 });
 
 test('the writer commands collapse behind 「执行了 N 条命令」; the reply text always shows; the line expands the list', () => {

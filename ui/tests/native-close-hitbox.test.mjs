@@ -24,6 +24,25 @@ test('the close button gets a hit box wider than its 12px drawing', () => {
     assert.match(readFileSync(new URL(`../${page}.dc.html`, import.meta.url), 'utf8'), /<button data-close="1" onClick="\{\{ close \}\}"/, page);
 });
 
+test('the lights show their symbols on hover and darken while pressed, like macOS', () => {
+  // panels: the × sits in ::after (::before stays the hit box), the button darkens on :active and greys out with the window
+  assert.match(native, /button\[data-close\]::after\{[^}]*opacity:0[^}]*svg/);
+  assert.match(native, /button\[data-close\]:hover::after\{opacity:1\}/);
+  assert.match(native, /button\[data-close\]:active\{filter:brightness\(0\.8\)\}/);
+  assert.match(native, /html\.w-dim button\[data-close\]\{background:#D6D6D6!important/);
+  assert.match(native, /classList\.toggle\('w-dim', !document\.hasFocus\(\)\)/);
+  // document windows: one svg symbol per light, all three following the hover flag, the green one's arrows turning in for full screen
+  const mac = readFileSync(new URL('../mac.dc.html', import.meta.url), 'utf8');
+  const lights = mac.match(/<button data-light="1" onClick="\{\{ do(Close|Min|Zoom) \}\}"[^>]*style-active="filter:brightness\(0\.8\)"><svg[^>]*opacity:\{\{ gOp \}\}"/g) || [];
+  assert.equal(lights.length, 3, 'close, minimize and zoom each carry a symbol bound to gOp, a pressed style and the wider hit box');
+  assert.match(mac, /\[data-mactest\] \[data-light\]::before\{content:'';position:absolute;inset:-4px\}/);
+  assert.match(mac, /gOp: st\.lh \? 1 : 0/);
+  assert.match(mac, /style="display:\{\{ fsOut \}\}"/);
+  assert.match(mac, /style="display:\{\{ fsIn \}\}"/);
+  assert.match(mac, /fsOut: st\.full \? 'none' : 'block', fsIn: st\.full \? 'block' : 'none'/);
+  assert.doesNotMatch(mac, /\{\{ g[123] \}\}/, 'the old text symbols are gone');
+});
+
 test('the drag mousedown listener still targets only the header background, not the button', () => {
   const dragHandler = native.match(/document\.addEventListener\('mousedown'[\s\S]*?\}\);/);
   assert.ok(dragHandler, 'native.js should still install the header-drag mousedown listener');

@@ -10,30 +10,36 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <style>
-.sv-t p{margin:0}.sv-t ul,.sv-t ol{margin:0;padding-left:1.1em}.sv-t li{margin:0.15em 0}
+.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}
+.sv-t:empty::before{content:attr(data-hint);opacity:.45}
 </style>
 </helmet>
 <div style="width:{{ w }};height:{{ h }};overflow:hidden;position:relative;background:{{ bg }}">
   <div style="position:absolute;left:0;top:0;width:1600px;height:{{ H }};transform:{{ scale }};transform-origin:0 0">
     <sc-for list="{{ objs }}" as="o" hint-placeholder-count="0">
-      <div data-oid="{{ o.id }}" style="position:absolute;left:{{ o.left }};top:{{ o.top }};width:{{ o.width }};height:{{ o.height }};transform:{{ o.tf }};opacity:{{ o.op }};visibility:{{ o.vis }}">
-        <div style="position:absolute;inset:0;background:{{ o.bg }};border-radius:{{ o.radius }};clip-path:{{ o.clip }};box-shadow:{{ o.stroke }}"></div>
+      <div data-oid="{{ o.id }}" style="position:absolute;left:{{ o.left }};top:{{ o.top }};width:{{ o.width }};height:{{ o.height }};transform:{{ o.tf }};opacity:{{ o.op }};visibility:{{ o.vis }};filter:{{ o.flt }}">
+        <div style="position:absolute;inset:0;background:{{ o.bg }};border-radius:{{ o.radius }};border:{{ o.border }};box-sizing:border-box" dangerouslySetInnerHTML="{{ o.svg }}"></div>
+        <sc-if value="{{ o.isGroup }}" hint-placeholder-val="{{ false }}">
+          <sc-for list="{{ o.kids }}" as="g" hint-placeholder-count="0">
+            <div style="position:absolute;left:{{ g.left }};top:{{ g.top }};width:{{ g.width }};height:{{ g.height }};transform:{{ g.tf }};opacity:{{ g.op }};filter:{{ g.flt }}">
+              <div style="position:absolute;inset:0;background:{{ g.bg }};border-radius:{{ g.radius }};border:{{ g.border }};box-sizing:border-box" dangerouslySetInnerHTML="{{ g.svg }}"></div>
+              <sc-if value="{{ g.isImg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;{{ g.picFrame }}"><img src="{{ g.src }}" alt="" style="{{ g.picImage }}"></div></sc-if>
+              <sc-if value="{{ g.hasText }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;padding:{{ g.pad }};display:flex;flex-direction:column;justify-content:{{ g.va }};color:{{ g.color }};font-size:{{ g.fs }};font-family:{{ g.font }};font-weight:{{ g.fw }};font-style:{{ g.fst }};text-decoration:{{ g.td }};text-align:{{ g.align }};line-height:{{ g.lh }};overflow:hidden;word-break:break-word;{{ g.tx }}"><div class="sv-t" dangerouslySetInnerHTML="{{ g.inner }}"></div></div></sc-if>
+            </div>
+          </sc-for>
+        </sc-if>
         <sc-if value="{{ o.isImg }}" hint-placeholder-val="{{ false }}">
           <div style="position:absolute;inset:0;{{ o.picFrame }}"><img src="{{ o.src }}" alt="" style="{{ o.picImage }}"></div>
         </sc-if>
         <sc-if value="{{ o.hasText }}" hint-placeholder-val="{{ false }}">
-          <div style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:hidden;word-break:break-word">
-            <div class="sv-t" dangerouslySetInnerHTML="{{ o.inner }}"></div>
+          <div style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:hidden;word-break:break-word;outline:{{ o.phOut }};{{ o.tx }}">
+            <div class="sv-t" data-hint="{{ o.hint }}" dangerouslySetInnerHTML="{{ o.inner }}"></div>
           </div>
         </sc-if>
         <sc-if value="{{ o.isTable }}" hint-placeholder-val="{{ false }}">
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;font-size:{{ o.fs }};font-family:{{ o.font }}">
-            <sc-for list="{{ o.rows }}" as="r" hint-placeholder-count="0">
-              <div style="flex:1;display:flex">
-                <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="0">
-                  <div style="flex:1;display:flex;align-items:center;padding:0 16px;background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};border-bottom:1px solid rgba(128,128,128,0.25);overflow:hidden">{{ c.text }}</div>
-                </sc-for>
-              </div>
+          <div style="position:absolute;inset:0;display:grid;grid-template-columns:{{ o.gtc }};grid-template-rows:{{ o.gtr }};font-size:{{ o.fs }};font-family:{{ o.font }}">
+            <sc-for list="{{ o.tcells }}" as="c" hint-placeholder-count="0">
+              <div style="grid-column:{{ c.gc }};grid-row:{{ c.gr }};display:flex;align-items:center;justify-content:{{ c.jc }};padding:0 16px;background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};border:{{ c.border }};border-bottom:{{ c.bb }};overflow:hidden;box-sizing:border-box">{{ c.text }}</div>
             </sc-for>
           </div>
         </sc-if>
@@ -42,17 +48,17 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:180},&quot;slide&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ink&quot;,&quot;paper&quot;,&quot;sea&quot;,&quot;clay&quot;],&quot;default&quot;:&quot;paper&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;ratio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;16:9&quot;,&quot;4:3&quot;],&quot;default&quot;:&quot;16:9&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:320,&quot;tsType&quot;:&quot;number&quot;},&quot;hidden&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:180},&quot;slide&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ink&quot;,&quot;paper&quot;,&quot;sea&quot;,&quot;clay&quot;,&quot;mist&quot;,&quot;sand&quot;,&quot;rose&quot;,&quot;night&quot;],&quot;default&quot;:&quot;paper&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;ratio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;16:9&quot;,&quot;4:3&quot;],&quot;default&quot;:&quot;16:9&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:320,&quot;tsType&quot;:&quot;number&quot;},&quot;hidden&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;},&quot;hints&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
   componentDidMount() { import('./office-io.js').then(m => { this.K = m; this.forceUpdate(); }); }
   renderVals() {
     const K = this.K, s = this.props.slide, W = this.props.width || 160;
     const H = this.props.ratio === '4:3' ? 1200 : 900, k = W / 1600;
     if (!K || !s) return { w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: '#EEE', scale: `scale(${k})`, objs: [] };
-    const th = K.THEMES[this.props.theme] || K.THEMES.paper, hid = this.props.hidden || [];
+    const th = K.THEMES[this.props.theme] || K.THEMES.paper, hid = this.props.hidden || [], hints = this.props.hints !== false; // 放映 shows no placeholder prompts
     return {
       w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: s.bg || th.bg, scale: `scale(${k})`,
-      objs: (s.decor || []).concat(s.objs).map(o => Object.assign(K.objView(o, th, 1600 / (this.props.ratio === '4:3' ? 720 : 960)), { id: o.id, vis: hid.includes(o.id) ? 'hidden' : 'visible' }))
+      objs: (s.decor || []).concat(s.objs).map(o => { const v = K.objView(o, th, 1600 / (this.props.ratio === '4:3' ? 720 : 960)); if (!hints) v.hint = ''; return Object.assign(v, { id: o.id, vis: hid.includes(o.id) ? 'hidden' : 'visible', phOut: v.hint ? '2px dashed rgba(128,128,128,0.45)' : 'none' }); })
     };
   }
 }

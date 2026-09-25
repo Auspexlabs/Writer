@@ -1,5 +1,6 @@
 using System.Globalization;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using Writer.Core;
 using Writer.Formats.Common;
 using W = DocumentFormat.OpenXml.Wordprocessing;
@@ -20,10 +21,20 @@ sealed class DocxRoot(DocxDocument doc) : Node
         if (doc.Package.PackageProperties.Title is { Length: > 0 } title) props["title"] = title;
         DocxSection.Read(doc, props);
         if (DocxRevisions.Tracking(doc)) props["track"] = "true";
+        if (doc.Main.DocumentSettingsPart?.Settings?.GetFirstChild<W.AutoHyphenation>() is { } hyphenation && DocxRun.On(hyphenation)) props["hyphenation"] = "true";
         if (DocxRevisions.DefaultAuthor(doc) is { } author) props["author"] = author;
         props["revisions"] = DocxRevisions.Count(doc).ToString(CultureInfo.InvariantCulture);
         props["comments"] = DocxComments.Count(doc).ToString(CultureInfo.InvariantCulture);
+        props["styles"] = DocxStyleGallery.Read(doc);
         return props;
+    }
+
+    /// <summary>The document's own look (its default paragraph style over docDefaults, theme fonts resolved) and its last section's page as lengths.</summary>
+    public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props)
+    {
+        var computed = DocxLook.Of(doc, null);
+        if (doc.Main.Document!.Body!.GetFirstChild<W.SectionProperties>() is { } section) DocxSection.ReadGeometry(section, computed);
+        return computed;
     }
 
     public override void SetProp(string name, string value)
@@ -31,6 +42,7 @@ sealed class DocxRoot(DocxDocument doc) : Node
         switch (name)
         {
             case "title": doc.Package.PackageProperties.Title = value.Length > 0 ? value : null; break;
+            case "style": DocxStyleGallery.Define(doc, value); break;
             case "page": DocxSection.SetPage(doc, value); break;
             case "orientation": DocxSection.SetOrientation(doc, value); break;
             case "margin": DocxSection.SetMargin(doc, value); break;
@@ -40,6 +52,12 @@ sealed class DocxRoot(DocxDocument doc) : Node
             case "firstHeader": DocxSection.SetHeaderFooter(doc, header: true, first: true, value); break;
             case "firstFooter": DocxSection.SetHeaderFooter(doc, header: false, first: true, value); break;
             case "titlePg": DocxSection.SetTitlePage(doc, value == "true"); break;
+            case "lineNumbers": DocxSection.SetLineNumbers(doc, value == "true"); break;
+            case "hyphenation":
+                var settings = (doc.Main.DocumentSettingsPart ?? doc.Main.AddNewPart<DocumentSettingsPart>()).Settings ??= new W.Settings();
+                settings.RemoveAllChildren<W.AutoHyphenation>();
+                if (value == "true") settings.AddChild(new W.AutoHyphenation());
+                break;
             case "track": DocxRevisions.SetTracking(doc, value == "true"); break;
             case "author": DocxRevisions.SetDefaultAuthor(doc, value); break;
             case "accept": DocxRevisions.Resolve(doc.Main.Document!.Body!, accept: true); break;
@@ -68,7 +86,8 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
     public override string Kind => doc.Styles.HeadingLevel(p) > 0 ? "heading" : doc.Styles.IsCode(p) ? "code" : "paragraph";
 
     protected override IEnumerable<Node> ProjectChildren() =>
-        Kind == "code" ? [] : DocxRuns.Walk(p, deleted: true).Select(x => (Node)new DocxRun(doc, x.Run, x.Link)).Concat(DocxComments.In(doc, p));
+        Kind == "code" ? [] : DocxRuns.Walk(p, deleted: true).Select(x => (Node)new DocxRun(doc, x.Run, x.Link))
+            .Concat(DocxImage.In(p).Select(d => (Node)new DocxImage(doc, d))).Concat(DocxComments.In(doc, p)).Concat(DocxFootnotes.In(doc, p)).Concat(DocxEquation.In(p)).Concat(DocxShape.In(p));
 
     public override IReadOnlyDictionary<string, string> GetProps()
     {
@@ -84,22 +103,34 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             {
                 props["list"] = list;
                 props["level"] = listLevel.ToString(CultureInfo.InvariantCulture);
+                // numbering that starts again here: the item before it counts in another list of the same kind
+                if (list != "bullet" && p.PreviousSibling<W.Paragraph>() is { } previous && doc.Styles.ListInfo(previous).List == list && !doc.Styles.SameList(previous, p))
+                    props["restart"] = "true";
             }
         }
         if (AlignOf(p.ParagraphProperties) is { } align) props["align"] = align;
         if (Kind != "code" && p.ParagraphProperties?.PageBreakBefore is { } pageBreak) props["pageBreakBefore"] = DocxRun.On(pageBreak) ? "true" : "false";
         if (Kind != "code" && FillOf(p.ParagraphProperties?.Shading) is { } fill) props["fill"] = fill;
+        if (Kind != "code") DocxParaFormat.Read(p.ParagraphProperties, props);
+        if (DocxMarks.Bookmark(p) is { } bookmark) props["bookmark"] = bookmark;
+        if (Kind != "code" && DocxMarks.Caption(p) is { } caption) props["caption"] = caption;
+        if (DocxMarks.DropCap(p) is { } dropCap) props["dropCap"] = dropCap;
+        if (DocxSection.SectionBreakOf(p) is { } sectionBreak) { props["sectionBreak"] = sectionBreak; DocxSection.ReadPage(p.ParagraphProperties!.SectionProperties!, props); }
         if (p.ParagraphId?.Value is { } id) props["id"] = id;
         return props;
     }
 
-    /// <summary>What the paragraph's style gives where the paragraph itself is silent: a page break before it, its shading.</summary>
+    /// <summary>What the paragraph's style gives where the paragraph itself is silent: a page break before it, its shading, and the
+    /// spacing, indents, font, size and colour it has beyond the document's own look (the root's computed); for a paragraph that ends a
+    /// section, that section's page as lengths.</summary>
     public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props)
     {
         if (Kind == "code") return null;
         var computed = new Dictionary<string, string>();
         if (!props.ContainsKey("pageBreakBefore") && DocxRun.On(doc.Styles.Inherited(p, s => s.PageBreakBefore))) computed["pageBreakBefore"] = "true";
         if (p.ParagraphProperties?.Shading is null && FillOf(doc.Styles.Inherited(p, s => s.Shading)) is { } fill) computed["fill"] = fill;
+        foreach (var (key, value) in DocxLook.Differences(doc, p.ParagraphProperties?.ParagraphStyleId?.Val?.Value, props)) computed[key] = value;
+        if (p.ParagraphProperties?.SectionProperties is { } section) DocxSection.ReadGeometry(section, computed);
         return computed.Count > 0 ? computed : null;
     }
 
@@ -113,7 +144,8 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         "left" or "start" => "left",
         "center" => "center",
         "right" or "end" => "right",
-        "both" or "distribute" => "justify",
+        "both" => "justify",
+        "distribute" => "distribute",
         _ => null,
     };
 
@@ -124,6 +156,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             "center" => W.JustificationValues.Center,
             "right" => W.JustificationValues.Right,
             "justify" => W.JustificationValues.Both,
+            "distribute" => W.JustificationValues.Distribute,
             _ => W.JustificationValues.Left,
         },
     };
@@ -154,6 +187,9 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             case "list":
                 SetList(value);
                 break;
+            case "restart":
+                SetRestart(value == "true");
+                break;
             case "align":
                 Properties().Justification = JustificationOf(value);
                 break;
@@ -164,6 +200,19 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             case "fill": // none says so only where the style would shade it
                 Properties().Shading = value != "none" ? new W.Shading { Val = W.ShadingPatternValues.Clear, Color = "auto", Fill = value }
                     : doc.Styles.Inherited(p, s => s.Shading) is not null ? new W.Shading { Val = W.ShadingPatternValues.Clear, Color = "auto", Fill = "auto" } : null;
+                break;
+            case "lineSpacing" or "spaceBefore" or "spaceAfter" or "indentLeft" or "indentRight" or "indentFirst" or "border" or "keepNext" or "keepLines" or "tabs":
+                DocxParaFormat.Write(Properties(), name, value);
+                if (!p.ParagraphProperties!.HasChildren) p.ParagraphProperties.Remove();
+                break;
+            case "sectionBreak": DocxSection.SetSectionBreak(doc, p, value); break;
+            case "bookmark": DocxMarks.SetBookmark(doc, p, value); break;
+            case "caption": DocxMarks.SetCaption(doc, p, value); break;
+            case "dropCap": DocxMarks.SetDropCap(p, value); break;
+            case "page" or "orientation" or "margin" or "columns":
+                var section = p.ParagraphProperties?.SectionProperties
+                    ?? throw new WriterException(ErrorCode.Validation, $"{name} applies to a paragraph that ends a section", "Set sectionBreak=nextPage or continuous first; the document's own page setup is on /.");
+                if (name == "page") DocxSection.SetPage(section, value); else if (name == "orientation") DocxSection.SetOrientation(section, value); else if (name == "margin") DocxSection.SetMargin(section, value); else DocxSection.SetColumns(section, value);
                 break;
         }
     }
@@ -180,9 +229,10 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             return;
         }
         var level = pp.NumberingProperties?.NumberingLevelReference?.Val?.Value ?? 0;
+        if (doc.Styles.ListInfo(p).List == kind) return; // already in a list of this kind: it keeps counting where it is
         int? continueFrom = null;
-        if (kind == "number" && p.PreviousSibling<W.Paragraph>() is { } previous && doc.Styles.ListInfo(previous).List == "number")
-            continueFrom = previous.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
+        if (kind != "bullet" && p.PreviousSibling<W.Paragraph>() is { } previous && doc.Styles.ListInfo(previous).List == kind)
+            continueFrom = doc.Styles.NumIdOf(previous);
         var numId = doc.Styles.ListNumId(kind, continueFrom);
         pp.NumberingProperties = new W.NumberingProperties(
             new W.NumberingLevelReference { Val = level },
@@ -191,9 +241,33 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             pp.ParagraphStyleId = new W.ParagraphStyleId { Val = doc.Styles.ResolveStyle("ListParagraph", "paragraph") };
     }
 
+    /// <summary>重新开始编号 / 继续编号: this item and the ones after it in its list count in a new list from 1, or join the list of
+    /// the item before them.</summary>
+    void SetRestart(bool on)
+    {
+        var old = doc.Styles.NumIdOf(p) ?? throw new WriterException(ErrorCode.Validation, "restart applies to list paragraphs", "Set list=number first.");
+        int numId;
+        if (on) numId = doc.Styles.RestartedNumId(p);
+        else if (p.PreviousSibling<W.Paragraph>() is { } previous && doc.Styles.ListInfo(previous).List == doc.Styles.ListInfo(p).List) numId = doc.Styles.NumIdOf(previous)!.Value;
+        else return;
+        for (var q = p; q is not null && doc.Styles.NumIdOf(q) == old; q = q.NextSibling<W.Paragraph>())
+            Renumber(q, numId);
+    }
+
+    static void Renumber(W.Paragraph q, int numId)
+    {
+        var pp = q.ParagraphProperties ??= new W.ParagraphProperties();
+        var numPr = pp.NumberingProperties ??= new W.NumberingProperties(new W.NumberingLevelReference { Val = 0 });
+        numPr.NumberingId = new W.NumberingId { Val = numId };
+    }
+
     public override Node Add(string kind, IReadOnlyDictionary<string, string> props, int? index)
     {
         if (kind == "comment") return DocxComments.Add(doc, p, props);
+        if (kind == "footnote") return DocxFootnotes.Add(doc, p, props);
+        if (kind == "equation") return DocxEquation.Add(p, props);
+        if (kind == "shape") return DocxShape.Add(doc, p, props);
+        if (kind == "image") return DocxImage.AddTo(doc, this, p, props, index);
         if (!props.ContainsKey("text") && !props.ContainsKey("md"))
             throw new WriterException(ErrorCode.Validation, "A run needs text", "Add --prop text=\"...\" or --prop md=\"...\".");
         var run = new W.Run();
@@ -203,10 +277,11 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         return node;
     }
 
-    /// <summary>Removes the paragraph and, as Word does, the comments anchored in it.</summary>
+    /// <summary>Removes the paragraph and, as Word does, the comments and notes anchored in it.</summary>
     public override void Remove()
     {
         foreach (var comment in DocxComments.In(doc, p).ToList()) comment.Remove();
+        foreach (var note in DocxFootnotes.In(doc, p).ToList()) note.Remove();
         DocxBlocks.Detach(p);
     }
 
@@ -253,9 +328,14 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
             props["size"] = (halfPoints / 2).ToString("0.##", CultureInfo.InvariantCulture);
         if (rp?.RunFonts?.Ascii?.Value is { } font) props["font"] = font;
         if (rp?.Shading?.Fill?.Value is { } fill && !fill.Equals("auto", StringComparison.OrdinalIgnoreCase)) props["highlight"] = fill.ToUpperInvariant();
-        else if (rp?.Highlight?.Val?.InnerText is { } highlight && highlight != "none" && InlineHtml.ParseColor(highlight) is { } named) props["highlight"] = named;
+        else if (rp?.Highlight?.Val?.InnerText is { } highlight && DocxRuns.HighlightHex(highlight) is { } named) props["highlight"] = named;
+        if (rp?.VerticalTextAlignment?.Val?.Value is { } vertical && vertical != W.VerticalPositionValues.Baseline) props["vertAlign"] = vertical == W.VerticalPositionValues.Superscript ? "superscript" : "subscript";
+        if (rp?.Spacing?.Val?.Value is { } spacing && spacing != 0) props["spacing"] = (spacing / 20.0).ToString("0.##", CultureInfo.InvariantCulture) + "pt";
+        if (On(rp?.Outline)) props["outline"] = "true";
+        if (On(rp?.Shadow)) props["shadow"] = "true";
         var currentLink = link ?? run.Parent as W.Hyperlink;
         if (currentLink is not null && LinkTarget(doc, currentLink) is { } target) props["link"] = target;
+        if (rp?.RunStyle?.Val?.Value is { Length: > 0 } characterStyle && !characterStyle.Equals("Hyperlink", StringComparison.OrdinalIgnoreCase)) props["style"] = characterStyle;
         if (DocxRuns.Revision(run) is W.RunTrackChangeType change)
         {
             props["change"] = change is W.DeletedRun ? "deleted" : "inserted";
@@ -263,6 +343,16 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
             if (change.Date?.InnerText is { Length: > 0 } date) props["date"] = date;
         }
         return props;
+    }
+
+    /// <summary>The fonts the run's own w:rFonts name through the theme (asciiTheme, eastAsiaTheme), and its East Asian font where it is not its font.</summary>
+    public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props)
+    {
+        if (run.RunProperties?.RunFonts is not { } fonts) return null;
+        var computed = new Dictionary<string, string>();
+        if (!props.ContainsKey("font") && DocxLook.Font(doc, fonts.AsciiTheme?.InnerText, null) is { } latin) computed["font"] = latin;
+        if (DocxLook.Font(doc, fonts.EastAsiaTheme?.InnerText, fonts.EastAsia?.Value) is { } eastAsia && eastAsia != (props.GetValueOrDefault("font") ?? computed.GetValueOrDefault("font"))) computed["fontEa"] = eastAsia;
+        return computed.Count > 0 ? computed : null;
     }
 
     internal static bool On(W.OnOffType? t) => t is not null && (t.Val is null || t.Val.Value);
@@ -309,10 +399,12 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
                 rp.FontSizeComplexScript = new W.FontSizeComplexScript { Val = half };
                 break;
             case "font": rp.RunFonts = new W.RunFonts { Ascii = value, HighAnsi = value, EastAsia = value, ComplexScript = value }; break;
-            case "highlight":
-                rp.Highlight = null;
-                rp.Shading = value == "none" ? null : new W.Shading { Val = W.ShadingPatternValues.Clear, Color = "auto", Fill = value };
-                break;
+            case "highlight": DocxRuns.SetHighlight(rp, value == "none" ? null : value); break;
+            case "vertAlign": rp.VerticalTextAlignment = value is "baseline" or "none" ? null : new W.VerticalTextAlignment { Val = value == "superscript" ? W.VerticalPositionValues.Superscript : W.VerticalPositionValues.Subscript }; break;
+            case "spacing": rp.Spacing = value == "none" ? null : new W.Spacing { Val = (int)Math.Round(double.Parse(value.TrimEnd('p', 't', ' '), CultureInfo.InvariantCulture) * 20) }; break;
+            case "outline": rp.Outline = on ? new W.Outline() : null; break;
+            case "shadow": rp.Shadow = on ? new W.Shadow() : null; break;
+            case "style": rp.RunStyle = value is "none" or "" ? null : new W.RunStyle { Val = doc.Styles.ResolveStyle(value, "character") }; break;
         }
         if (!rp.HasChildren) rp.Remove();
     }

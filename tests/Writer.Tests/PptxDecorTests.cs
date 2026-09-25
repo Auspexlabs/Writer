@@ -143,7 +143,7 @@ public class PptxDecorTests
         Assert.Equal(("Line one\nLine two", "true", "push", "1200"), (p["notes"], p["hidden"], p["transition"], p["duration"]));
         Assert.Equal("fade", Slide(doc, 1).GetProps()["transition"]);                     // spd="slow" only: no duration
         Assert.False(Slide(doc, 1).GetProps().ContainsKey("duration"));
-        Assert.Equal("other", Slide(doc, 3).GetProps()["transition"]);                    // p159:morph
+        Assert.Equal("morph", Slide(doc, 3).GetProps()["transition"]);                    // p159:morph in mc:AlternateContent
         Assert.False(Slide(doc, 1).GetProps().ContainsKey("hidden"));
         Assert.False(Slide(doc, 1).GetProps().ContainsKey("notes"));
         Assert.DoesNotContain(Errors(doc), e => e.Contains("notes", StringComparison.OrdinalIgnoreCase));
@@ -234,7 +234,7 @@ public class PptxDecorTests
         var original = Fixture("decor.pptx");
         using var doc = Open(original);
         var before = Errors(doc);
-        var slide = Mutations.Set(Slide(doc, 3), Props(("transition", name)));           // replaces the morph the engine does not model
+        var slide = Mutations.Set(Slide(doc, 3), Props(("transition", name)));           // replaces the morph
         Assert.Equal(name, slide.GetProps()["transition"]);
         var type = Part(slide).Slide!.Transition!.ChildElements.Single();
         Assert.Equal((PptxTemplate.PNs, name), (type.NamespaceUri, type.LocalName));

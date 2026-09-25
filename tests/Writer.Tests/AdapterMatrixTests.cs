@@ -21,6 +21,9 @@ public class AdapterMatrixTests : IDisposable
         ("docx", "pagebreak", "/body"),
         ("docx", "toc", "/body"),
         ("docx", "comment", "/body/paragraph[1]"),
+        ("docx", "footnote", "/body/paragraph[1]"),
+        ("docx", "equation", "/body/paragraph[1]"),
+        ("docx", "shape", "/body/paragraph[1]"),
         ("md", "heading", "/body"),
         ("md", "paragraph", "/body"),
         ("md", "code", "/body"),
@@ -33,6 +36,8 @@ public class AdapterMatrixTests : IDisposable
         ("pptx", "shape", "/slide[1]"),
         ("pptx", "image", "/slide[1]"),
         ("pptx", "table", "/slide[1]"),
+        ("pptx", "connector", "/slide[1]"),
+        ("pptx", "group", "/slide[1]"),
         ("pptx", "paragraph", "/slide[1]/shape[1]"),
         ("pptx", "run", "/slide[1]/shape[1]/paragraph[1]"),
         ("pptx", "row", "/slide[1]/table[1]"),
@@ -90,6 +95,7 @@ public class AdapterMatrixTests : IDisposable
         {
             var value = p.Name == "src" ? _png : p.Example!;
             node = Mutations.Set(node, new Dictionary<string, string> { [p.Name] = value });
+            if (p.Name == "restart") continue; // contextual: reads true only after another list of the same kind (DocxEditTests covers it)
             var canonical = node.GetProps();
             Assert.True(canonical.ContainsKey(p.Name), $"{kind}.{p.Name} is not readable after being set");
             var expected = Registry.NormalizeValue(p, value);

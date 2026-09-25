@@ -10,27 +10,27 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
-<style>body{margin:0;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased}*{box-sizing:border-box}a{color:#3F7D5C}a:hover{color:#2E6048}</style>
+<style>body{margin:0;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);-webkit-font-smoothing:antialiased}*{box-sizing:border-box}a{color:#3F7D5C}a:hover{color:#2E6048}</style>
 </helmet>
-<div style="position:relative;width:300px;border-radius:{{ radius }};overflow:hidden;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.74),rgba(246,246,248,0.6)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);color:var(--k1, #1D1D1F);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 28px 80px rgba(0,0,0,0.26),0 2px 8px rgba(0,0,0,0.08);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">
+<div style="position:relative;width:300px;border-radius:{{ radius }};overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);color:var(--ink, #1D1D1F);box-shadow:inset 0 0 0 1px var(--panel-bd, rgba(0,0,0,0.06)),0 28px 80px rgba(0,0,0,0.22),0 2px 8px rgba(0,0,0,0.06);font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif)">
   <div style="height:38px;display:flex;align-items:center;gap:8px;padding:0 14px">
     <sc-if value="{{ notWin }}" hint-placeholder-val="{{ true }}"><button data-close="1" onClick="{{ close }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:#FF5F57;cursor:default"></button>
     <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span>
-    <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span></sc-if><sc-if value="{{ isWin }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:14px;top:0;height:36px;z-index:2;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--k1, #1D1D1F);pointer-events:none"><img src="./assets/writer-glyph.svg" alt="" style="width:16px;height:16px;display:block;filter:var(--gmark, none)"><span>{{ winTitle }}</span></div><button onClick="{{ close }}" title="关闭" style="position:absolute;right:0;top:0;z-index:2;width:46px;height:36px;padding:0;border:none;background:transparent;color:var(--k1, #1D1D1F);cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:#C42B1C;color:#FFFFFF"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" stroke-width="1"></path></svg></button></sc-if>
+    <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span></sc-if><sc-if value="{{ isWin }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:14px;top:0;height:36px;z-index:2;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink, #1D1D1F);pointer-events:none"><img src="./assets/writer-glyph.svg" alt="" style="width:16px;height:16px;display:block;filter:var(--gmark, none)"><span>{{ winTitle }}</span></div><button onClick="{{ close }}" title="关闭" style="position:absolute;right:0;top:0;z-index:2;width:46px;height:36px;padding:0;border:none;background:transparent;color:var(--ink, #1D1D1F);cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:#C42B1C;color:#FFFFFF"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" stroke-width="1"></path></svg></button></sc-if>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:4px 26px 24px;text-align:center">
     <div style="width:108px;height:108px;border-radius:24px;box-shadow:0 0 0 0.5px var(--k19, rgba(0,0,0,0.1)),0 10px 26px var(--k26, rgba(0,0,0,0.16));margin-bottom:16px">
       <img class="wr-logo-light" src="{{ logoLight }}" alt="Writer" style="width:108px;height:108px;display:block"><img class="wr-logo-dark" src="{{ logoDark }}" alt="Writer" style="width:108px;height:108px;display:block">
     </div>
     <div style="font-size:19px;font-weight:600">Writer</div>
-    <div style="font-size:12px;color:var(--k11, #6E6E73);margin-top:3px;font-family:'IBM Plex Mono',monospace">版本 {{ version }}</div>
-    <div style="font-size:11.5px;color:var(--k8, #8E8E93);margin-top:14px;line-height:1.6">文字、表格、演示、纯文本与 PDF，<br>一个安静的地方写完它们。</div>
+    <div style="font-size:12px;color:var(--ink-2, rgba(29,29,31,0.62));margin-top:3px;font-variant-numeric:tabular-nums">版本 {{ version }}</div>
+    <div style="font-size:11.5px;color:var(--ink-2, rgba(29,29,31,0.62));margin-top:14px;line-height:1.6">文字、表格、演示、纯文本与 PDF，<br>一个安静的地方写完它们。</div>
     <div style="display:flex;gap:8px;margin-top:18px">
-      <button onClick="{{ onAck }}" style="height:26px;padding:0 14px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.7)),var(--k16, rgba(255,255,255,0.4)));border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 4px 12px var(--k22, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k1, #1D1D1F);cursor:default;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">致谢</button>
-      <sc-if value="{{ updOn }}" hint-placeholder-val="{{ true }}"><button onClick="{{ onUpd }}" style="height:26px;padding:0 14px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.7)),var(--k16, rgba(255,255,255,0.4)));border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 4px 12px var(--k22, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k1, #1D1D1F);cursor:default;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">{{ updLabel }}</button></sc-if>
+      <button onClick="{{ onAck }}" style="height:28px;padding:0 12px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));font-size:12.5px;color:var(--ink, #1D1D1F);cursor:default;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--line, rgba(0,0,0,0.1))" style-active="transform:scale(0.94)">致谢</button>
+      <sc-if value="{{ updOn }}" hint-placeholder-val="{{ true }}"><button onClick="{{ onUpd }}" style="height:28px;padding:0 12px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));font-size:12.5px;color:var(--ink, #1D1D1F);cursor:default;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--line, rgba(0,0,0,0.1))" style-active="transform:scale(0.94)">{{ updLabel }}</button></sc-if>
     </div>
-    <sc-if value="{{ ack }}" hint-placeholder-val="{{ false }}"><div data-pop="menu" style="font-size:11px;color:var(--k11, #6E6E73);margin-top:14px;line-height:1.6">感谢 OfficeCLI、IBM Plex、思源黑体与思源宋体等开源项目。</div></sc-if>
-    <div style="font-size:10.5px;color:var(--k8, #8E8E93);margin-top:16px;line-height:1.6">Writer by Auspex<br>Copyright © 2026 北京奥斯佩克斯网络科技中心 (Auspex)</div><!-- i18n-ok: the company's registered name -->
+    <sc-if value="{{ ack }}" hint-placeholder-val="{{ false }}"><div data-pop="menu" style="font-size:11px;color:var(--ink-2, rgba(29,29,31,0.62));margin-top:14px;line-height:1.6">感谢 OfficeCLI、IBM Plex、思源黑体与思源宋体等开源项目。</div></sc-if>
+    <div style="font-size:10.5px;color:var(--ink-3, rgba(29,29,31,0.36));margin-top:16px;line-height:1.6">Writer by Auspex<br>Copyright © 2026 北京奥斯佩克斯网络科技中心 (Auspex)</div><!-- i18n-ok: the company's registered name -->
   </div>
 </div>
 </x-dc>
@@ -50,7 +50,7 @@ class Component extends DCLogic {
       close: () => this.props.onClose && this.props.onClose(),
       version: ver ? ver + (build ? ` (${build})` : '') : '…', ack: this.state.ack,
       onAck: () => this.setState(s => ({ ack: !s.ack })),
-      // 检查更新… only where the app updates itself; the answer is a native dialog (desktop/src-tauri/src/update.rs)
+      // 检查更新… only where the app updates itself; the answer shows in the front document window (UpdateNotice.dc.html)
       updOn: !!(window.__WRITER_NATIVE__ || {}).updater, onUpd: () => { const T = window.__TAURI_INTERNALS__; if (T && T.invoke) T.invoke('check_update'); },
       updLabel: $t('检查更新…')
     };

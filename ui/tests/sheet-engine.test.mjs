@@ -243,3 +243,17 @@ test('performance: a 200×20 grid of chained formulas evaluates in well under a 
   const v = c.value(0, 199, 19), ms = performance.now() - t0;
   assert.equal(bad, 0); assert.equal(typeof v, 'number'); assert.ok(ms < 1000, `${ms.toFixed(0)} ms`);
 });
+
+test('a file\'s format code draws every kind: the sign leads a currency, [Red] colours a section, General sits inside a code', () => {
+  assert.equal(E.fmt(-1234.5, { fmt: 'usd', dec: 2, code: '"$"#,##0.00' }), '-$1,234.50');
+  assert.equal(E.fmt(0.0725, { fmt: 'pct', dec: 2, code: '0.00%' }), '7.25%');
+  assert.equal(E.fmt(-5, { fmt: 'number', dec: 0, code: '#,##0;[Red](#,##0)' }), '(5)');
+  assert.equal(E.fmt(1234.5, { fmt: 'acct', dec: 2, code: '_("¥"* #,##0.00_)' }), ' ¥1,234.50 ');
+  assert.equal(E.fmtColor(-5, '#,##0;[Red](#,##0)'), '#FF0000');
+  assert.equal(E.fmtColor(5, '#,##0;[Red](#,##0)'), null);
+  assert.equal(E.fmtCode(7, '[Blue]General'), '7');
+  assert.equal(E.fmtCode(3, '"x"General'), 'x3');
+  assert.equal(E.fmt(1.5, { fmt: 'plain', dec: 0, code: '# ?/?' }), '1 1/2', 'fractions: the nearest with as many denominator digits as the code has ?s');
+  assert.equal(E.fmtCode(-1.25, '# ?/?'), '-1 1/4');
+  assert.equal(E.fmtCode(0.75, '?/4'), '3/4');
+});

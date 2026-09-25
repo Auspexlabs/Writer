@@ -596,6 +596,17 @@ sealed class DocxTable(DocxDocument doc, W.Table table) : Node, IDocxContainer
         };
     }
 
+    /// <summary>The sides drawn, for a cell's own mix (top, bottom, left, right in that order); null when none is.</summary>
+    internal static string? SidesOf(OpenXmlElement borders)
+    {
+        var sides = new List<string>();
+        if (On<W.TopBorder>(borders)) sides.Add("top");
+        if (On<W.BottomBorder>(borders)) sides.Add("bottom");
+        if (On<W.LeftBorder>(borders) || On<W.StartBorder>(borders)) sides.Add("left");
+        if (On<W.RightBorder>(borders) || On<W.EndBorder>(borders)) sides.Add("right");
+        return sides.Count == 0 ? null : string.Join(' ', sides);
+    }
+
     static bool On<T>(OpenXmlElement borders) where T : W.BorderType =>
         borders.GetFirstChild<T>()?.Val?.Value is { } val && val != W.BorderValues.Nil && val != W.BorderValues.None;
 
@@ -615,14 +626,19 @@ sealed class DocxTable(DocxDocument doc, W.Table table) : Node, IDocxContainer
     internal static string? BorderColorOf(OpenXmlElement borders) =>
         borders.Elements<W.BorderType>().Select(b => b.Color?.Value).FirstOrDefault(c => c is not null && !c.Equals("auto", StringComparison.OrdinalIgnoreCase))?.ToUpperInvariant();
 
+    /// <summary>Borders for a kind (none, all, outside, inside, horizontal) or, for a cell, the sides to draw listed (top bottom left right).</summary>
     internal static T MakeBorders<T>(string kind, string? color) where T : OpenXmlCompositeElement, new()
     {
-        var sides = kind is "all" or "outside";
+        var known = kind is "none" or "all" or "outside" or "inside" or "horizontal" or "box";
+        var listed = known ? [] : kind.Split([' ', ','], StringSplitOptions.RemoveEmptyEntries).Select(s => s.ToLowerInvariant()).ToHashSet();
+        if (listed.Except(["top", "bottom", "left", "right"]).Any())
+            throw new WriterException(ErrorCode.Validation, $"Unknown borders '{kind}'", "Use none, all, outside, inside, horizontal, or the sides to draw: top bottom left right.");
+        var sides = kind is "all" or "outside" or "box";
         var topBottom = sides || kind == "horizontal";
         var insideH = kind is "all" or "inside" or "horizontal";
         var insideV = kind is "all" or "inside";
         var borders = new T();
-        borders.Append(Border<W.TopBorder>(topBottom, color), Border<W.LeftBorder>(sides, color), Border<W.BottomBorder>(topBottom, color), Border<W.RightBorder>(sides, color),
+        borders.Append(Border<W.TopBorder>(topBottom || listed.Contains("top"), color), Border<W.LeftBorder>(sides || listed.Contains("left"), color), Border<W.BottomBorder>(topBottom || listed.Contains("bottom"), color), Border<W.RightBorder>(sides || listed.Contains("right"), color),
             Border<W.InsideHorizontalBorder>(insideH, color), Border<W.InsideVerticalBorder>(insideV, color));
         return borders;
     }
@@ -782,7 +798,7 @@ sealed class DocxCell(DocxDocument doc, W.TableCell cell) : Node, IDocxContainer
         if (colspan > 1) props["colspan"] = colspan.ToString(Inv);
         var rowspan = DocxTable.RowSpan(cell);
         if (rowspan > 1) props["rowspan"] = rowspan.ToString(Inv);
-        if (pr?.TableCellBorders is { } borders && DocxTable.BordersOf(borders) is { } kind) props["borders"] = kind;
+        if (pr?.TableCellBorders is { } borders && (DocxTable.BordersOf(borders) ?? DocxTable.SidesOf(borders)) is { } kind) props["borders"] = kind;
         if (pr?.TableCellVerticalAlignment?.Val?.InnerText is { } valign)
             props["valign"] = valign switch { "center" => "middle", "bottom" => "bottom", _ => "top" };
         if (pr?.TableCellWidth is { } tw && tw.Type?.Value == W.TableWidthUnitValues.Dxa

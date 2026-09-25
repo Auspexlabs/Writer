@@ -26,21 +26,24 @@ pub fn in_recent(recent: &[PathBuf], wanted: &str) -> Option<PathBuf> {
     recent.iter().find(|p| same(p)).cloned()
 }
 
-/// The Save dialog's suggested file name: the title without path characters, plus a document extension.
+/// The Save dialog's suggested file name: the title without path characters, plus an extension the engine writes.
 pub fn save_name(title: &str, ext: &str) -> Option<String> {
-    crate::DOC_EXTS.contains(&ext).then_some(())?;
+    crate::SAVE_EXTS.contains(&ext).then_some(())?;
     let clean: String = title.chars().map(|c| if r#"\/:*?"<>|"#.contains(c) || c.is_control() { ' ' } else { c }).collect();
     let clean = clean.trim();
     Some(format!("{}.{ext}", if clean.is_empty() { "未命名" } else { clean }))
 }
 
-/// 存储 / 另存为: the system Save dialog (Documents, the suggested name). The chosen file is granted to the calling window's
-/// engine before its path goes back to the page.
+/// 存储 / 另存为: the system Save dialog (the suggested name, in dir when the page names one — a compatibility-mode
+/// draft is offered beside the .doc/.xls/.ppt it came from — else Documents). The chosen file is granted to the calling
+/// window's engine before its path goes back to the page.
 #[tauri::command]
-pub async fn save_dialog(app: AppHandle, window: WebviewWindow, name: String, ext: String) -> Option<String> {
+pub async fn save_dialog(app: AppHandle, window: WebviewWindow, name: String, ext: String, dir: Option<String>) -> Option<String> {
     let file_name = save_name(&name, &ext)?;
     let mut dialog = app.dialog().file().set_title(crate::t("存储")).set_file_name(&file_name).add_filter(&ext, &[ext.as_str()]).set_parent(&window);
-    if let Ok(dir) = app.path().document_dir() {
+    if let Some(dir) = dir.map(PathBuf::from).filter(|d| d.is_absolute() && d.is_dir()) {
+        dialog = dialog.set_directory(dir);
+    } else if let Ok(dir) = app.path().document_dir() {
         dialog = dialog.set_directory(dir);
     }
     let mut path = dialog.blocking_save_file()?.into_path().ok()?;
@@ -91,5 +94,7 @@ mod tests {
         assert_eq!(save_name("季度/报告", "docx").as_deref(), Some("季度 报告.docx"));
         assert_eq!(save_name("", "md").as_deref(), Some("未命名.md"));
         assert_eq!(save_name("x", "exe"), None);
+        assert_eq!(save_name("x", "doc"), None); // read-only compatibility formats are opened, never saved as
+        assert!(crate::DOC_EXTS.contains(&"doc") && crate::DOC_EXTS.contains(&"wps") && crate::DOC_EXTS.contains(&"csv"));
     }
 }

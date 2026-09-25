@@ -10,9 +10,9 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
-<style>body{margin:0;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased}*{box-sizing:border-box}a{color:#3F7D5C}a:hover{color:#2E6048}</style>
+<style>body{margin:0;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);-webkit-font-smoothing:antialiased}*{box-sizing:border-box}a{color:#3F7D5C}a:hover{color:#2E6048}</style>
 </helmet>
-<div style="width:560px;border-radius:18px;overflow:hidden;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.74),rgba(246,246,248,0.6)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);color:var(--k1, #1D1D1F);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 28px 80px rgba(0,0,0,0.26),0 2px 8px rgba(0,0,0,0.08);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">
+<div style="width:560px;border-radius:18px;overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);color:var(--ink, #1D1D1F);box-shadow:inset 0 0 0 1px var(--panel-bd, rgba(0,0,0,0.06)),0 28px 80px rgba(0,0,0,0.22),0 2px 8px rgba(0,0,0,0.06);font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif)">
   <div style="height:44px;display:flex;align-items:center;gap:8px;padding:0 16px;position:relative">
     <button data-close="1" onClick="{{ close }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:#FF5F57;cursor:default"></button>
     <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span>
@@ -21,21 +21,21 @@
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 18px 14px">
     <sc-for list="{{ rows }}" as="g" hint-placeholder-count="6">
-      <div style="display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:13px;background:var(--gcard, rgba(255,255,255,0.55));box-shadow:inset 0 0 0 1px var(--gcardb, rgba(255,255,255,0.8)),0 1px 2px rgba(0,0,0,0.04)">
-        <div style="position:relative;height:64px;border-radius:10px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.7)),var(--k16, rgba(255,255,255,0.35)));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 0 0 1px var(--k17, rgba(0,0,0,0.06))">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:var(--gcard, rgba(255,255,255,0.55));box-shadow:inset 0 0 0 1px var(--panel-bd, rgba(0,0,0,0.06))">
+        <div style="position:relative;height:64px;border-radius:10px;background:var(--fill, rgba(0,0,0,0.07))">
           <sc-for list="{{ g.dots }}" as="d" hint-placeholder-count="2">
-            <span style="position:absolute;left:{{ d.x }};top:{{ d.y }};width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;background:{{ accent }};opacity:0.85;box-shadow:0 0 0 5px rgba(63,125,92,0.14)"></span>
+            <span style="position:absolute;left:{{ d.x }};top:{{ d.y }};width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;background:{{ accent }};opacity:0.85;box-shadow:0 0 0 5px color-mix(in srgb, {{ accent }} 16%, transparent)"></span>
           </sc-for>
-          <span style="position:absolute;right:10px;bottom:6px;font-size:12px;color:var(--k8, #8E8E93)">{{ g.arrow }}</span>
+          <span style="position:absolute;right:10px;bottom:6px;font-size:12px;color:var(--ink-3, rgba(29,29,31,0.36))">{{ g.arrow }}</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
           <span style="font-size:13px;font-weight:600">{{ g.name }}</span>
-          <span style="font-size:12px;color:var(--k11, #6E6E73);line-height:1.5;text-wrap:pretty">{{ g.desc }}</span>
+          <span style="font-size:12px;color:var(--ink-2, rgba(29,29,31,0.62));line-height:1.5;text-wrap:pretty">{{ g.desc }}</span>
         </div>
       </div>
     </sc-for>
   </div>
-  <div style="padding:0 22px 18px;font-size:11.5px;color:var(--k8, #8E8E93)">可在 系统设置 › 触控板 中调整轻点与轻扫的方式。</div>
+  <div style="padding:0 22px 18px;font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36))">可在 系统设置 › 触控板 中调整轻点与轻扫的方式。</div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:600,&quot;height&quot;:560},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">

@@ -20,6 +20,11 @@ static class Commands
         "move" => Move(a),
         "copy" => Copy(a),
         "view" => View(a),
+        "search" => Edits.Search(a),
+        "section" => Edits.Section(a),
+        "replace" => Edits.Replace(a),
+        "formula" => Edits.Formula(a),
+        "batch" => Edits.Batch(a),
         "export" => Export(a),
         "mcp" => ServeMcp(),
         "serve" => ServeHttp(a, null, app: false),
@@ -152,10 +157,11 @@ static class Commands
         return mode switch
         {
             "outline" => Views.Outline(doc.Root),
+            "structure" => Edits.Structure(doc),
             "text" => Views.Text(doc.Root),
             "html" => HtmlWriter.Render(doc),
             "json" => NodeJson.Serialize(doc.Root, int.MaxValue) + "\n",
-            _ => throw new WriterException(ErrorCode.Usage, $"Unknown view '{mode}'", "Views: outline, text, html, json."),
+            _ => throw new WriterException(ErrorCode.Usage, $"Unknown view '{mode}'", "Views: outline, structure, text, html, json."),
         };
     }
 

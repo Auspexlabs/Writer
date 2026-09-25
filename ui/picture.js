@@ -191,6 +191,146 @@ export function pictureRibbon(k, tools, look, busy) {
   ];
 }
 
+// ---- where a Word picture sits: in the line of text, or floating in its paragraph (the engine's wrap / x / y / xFrom / yFrom /
+// xAlign / yAlign, as `get` prints them, lengths in cm) ----
+
+export const PLACE = ['wrap', 'x', 'y', 'xFrom', 'yFrom', 'xAlign', 'yAlign'];
+const UNIT_PX = { cm: 96 / 2.54, mm: 9.6 / 2.54, in: 96, pt: 96 / 72, px: 1, emu: 96 / 914400 };
+/** A length as the engine prints it ("2.5cm", "12pt", "96px"; a bare number is cm) in px. */
+export function lengthPx(s) { const m = /^(-?[\d.]+)\s*([a-z]+)?$/i.exec(String(s == null ? '' : s).trim()); return m ? +m[1] * (UNIT_PX[(m[2] || 'cm').toLowerCase()] || UNIT_PX.cm) : 0; }
+export const cmText = px => +(px / UNIT_PX.cm).toFixed(3) + 'cm';
+export const floating = place => !!place && !!place.wrap && place.wrap !== 'inline';
+
+/** How a picture placed by `place` sits in its paragraph, as CSS properties for its frame (w × h px): square, tight and through
+ *  float at their offset with the text beside them (on the side they leave free), topBottom breaks the text, front and behind lie
+ *  over and under it. geo, once the editor knows it: { colW, pageW, pageH, mL, mT, top } — the text column's width, the page, its
+ *  margins and the paragraph's top on its page, px; without it, offsets count from the column and the paragraph. Every property is
+ *  set, so applying it again undoes the last placement. ponytail: a float wraps text on one side only and a page-relative picture
+ *  sits absolutely without wrapping — real Word wrapping needs a layout engine. */
+export function placeStyle(place, w, h, geo) {
+  const s = { position: '', left: '', top: '', float: '', clear: '', margin: '', zIndex: '' };
+  if (!floating(place)) return s;
+  const p = place, g = geo || {}, colW = g.colW || 0, W = p.xFrom === 'page' ? g.pageW || colW : colW, H = p.yFrom === 'page' ? g.pageH || 0 : p.yFrom === 'margin' ? (g.pageH || 0) - 2 * (g.mT || 0) : 0;
+  let x = p.xAlign ? ({ center: (W - w) / 2, right: W - w, outside: W - w }[p.xAlign] || 0) : lengthPx(p.x);
+  if (p.xFrom === 'page') x -= g.mL || 0;
+  let y = p.yAlign ? ({ center: (H - h) / 2, bottom: H - h, outside: H - h }[p.yAlign] || 0) : lengthPx(p.y);
+  if (p.yFrom === 'page') y -= g.top || 0; else if (p.yFrom === 'margin') y += (g.mT || 0) - (g.top || 0);
+  const r = v => Math.round(v * 100) / 100, flows = (!p.yFrom || p.yFrom === 'paragraph' || p.yFrom === 'line') && !p.yAlign;
+  if ((p.wrap === 'square' || p.wrap === 'tight' || p.wrap === 'through') && flows) {
+    const right = colW > 0 && x + w / 2 > colW / 2;
+    return Object.assign(s, { position: 'relative', float: right ? 'right' : 'left', margin: right ? `${r(y)}px ${r(Math.max(0, colW - x - w))}px 8px 12px` : `${r(y)}px 12px 8px ${r(x)}px` });
+  }
+  if (p.wrap === 'topBottom' && flows) return Object.assign(s, { position: 'relative', float: 'left', clear: 'both', margin: `${r(y)}px calc(100% - ${r(x + w)}px) 8px ${r(x)}px` }); // a margin box as wide as the column: the text goes on below
+  return Object.assign(s, { position: 'absolute', left: r(x) + 'px', top: r(y) + 'px', margin: '0', zIndex: p.wrap === 'behind' ? '-1' : '1' });
+}
+
+/** A frame resized by a handle: `edge` is l, r, t, b or a corner (lt, rt, lb, rb); dx, dy the pointer's move along the frame's own
+ *  axes. A corner keeps the aspect (the axis moved more decides) unless `free`; an edge stretches one side. Never under 16 px. */
+export function resizeMath(w0, h0, edge, dx, dy, free) {
+  const sx = edge.includes('l') ? -1 : edge.includes('r') ? 1 : 0, sy = edge.includes('t') ? -1 : edge.includes('b') ? 1 : 0;
+  let w = Math.max(16, w0 + sx * dx), h = Math.max(16, h0 + sy * dy);
+  if (sx && sy && !free) { const k = Math.abs(dx) >= Math.abs(dy) ? w / w0 : h / h0; w = Math.max(16, w0 * k); h = Math.max(16, h0 * k); }
+  return { w: Math.round(w), h: Math.round(h) };
+}
+
+/** A floating picture nudged by an arrow key: `step` px from where it stands now in its paragraph (`at`: { x, y } px), as an offset from
+ *  the column and the paragraph (an alignment becomes the offset it stood for). Null for an inline picture, whose arrows move the caret. */
+export function nudgePlace(place, key, step, at) {
+  const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[key];
+  if (!d || !floating(place)) return null;
+  const { xAlign, yAlign, ...p } = place;
+  return Object.assign(p, { xFrom: 'column', yFrom: 'paragraph', x: cmText(at.x + d[0]), y: cmText(at.y + d[1]) });
+}
+
+/** Resize handles on a selected picture: eight squares on its frame's edges and corners, over everything (a fixed layer), turned with
+ *  the picture. host: frame() → { cx, cy, w, h } on screen (px, unrotated) or null once it is gone; rotation() in degrees; resize(w, h)
+ *  while a handle drags; resized(w, h) on release (screen px). Returns { layout, remove }; layout() again after a scroll, zoom or edit. */
+export function handleBox(host) {
+  const layer = document.createElement('div');
+  layer.setAttribute('data-handles', '1');
+  layer.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;z-index:60;pointer-events:none';
+  const HANDLES = [['lt', 0, 0, 'nwse'], ['t', 0.5, 0, 'ns'], ['rt', 1, 0, 'nesw'], ['r', 1, 0.5, 'ew'], ['rb', 1, 1, 'nwse'], ['b', 0.5, 1, 'ns'], ['lb', 0, 1, 'nesw'], ['l', 0, 0.5, 'ew']];
+  const handles = HANDLES.map(([edge, hx, hy, cur]) => {
+    const h = document.createElement('span');
+    h.setAttribute('data-edge', edge);
+    h.style.cssText = `position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:2px;background:var(--k0, #FFFFFF);border:1.5px solid var(--k59, #3F7D5C);box-sizing:border-box;cursor:${cur}-resize;pointer-events:auto`;
+    layer.appendChild(h);
+    return [h, hx, hy];
+  });
+  let f = null;
+  const rot = () => (host.rotation ? host.rotation() : 0) || 0;
+  const layout = () => {
+    f = host.frame();
+    layer.style.display = f ? '' : 'none';
+    if (!f) return;
+    layer.style.transform = `translate(${f.cx}px,${f.cy}px) rotate(${rot()}deg)`;
+    handles.forEach(([el, hx, hy]) => { el.style.left = (hx - 0.5) * f.w + 'px'; el.style.top = (hy - 0.5) * f.h + 'px'; });
+  };
+  layer.addEventListener('pointerdown', e => {
+    const edge = e.target.getAttribute && e.target.getAttribute('data-edge');
+    if (!edge || !f) return;
+    e.preventDefault(); e.stopPropagation();
+    const d = { x: e.clientX, y: e.clientY, w: f.w, h: f.h, a: -rot() * Math.PI / 180, r: null };
+    const move = ev => {
+      const dx = ev.clientX - d.x, dy = ev.clientY - d.y; // as a move along the unturned frame's axes
+      d.r = resizeMath(d.w, d.h, edge, dx * Math.cos(d.a) - dy * Math.sin(d.a), dx * Math.sin(d.a) + dy * Math.cos(d.a), ev.shiftKey);
+      host.resize(d.r.w, d.r.h); layout();
+    };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); if (d.r) host.resized(d.r.w, d.r.h); layout(); };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  });
+  document.body.appendChild(layer);
+  layout();
+  return { layout, remove: () => layer.remove() };
+}
+
+/** Drags a picture with the pointer, from the pointerdown `e` on it (not the browser's own drag): nothing under 4 px; then a translucent
+ *  ghost of `frame` follows the pointer and move(x, y, ev) gets the ghost's top left on screen, drop(x, y, ev) on release, cancel() on Esc
+ *  or a press that never moved. */
+export function dragPicture(e, frame, { move, drop, cancel }) {
+  const r = frame.getBoundingClientRect(), gx = e.clientX - r.left, gy = e.clientY - r.top, x0 = e.clientX, y0 = e.clientY;
+  const img = frame.matches('img') ? frame : frame.querySelector('img');
+  let ghost = null;
+  const at = ev => [ev.clientX - gx, ev.clientY - gy];
+  const onMove = ev => {
+    if (!ghost) {
+      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 4) return;
+      ghost = document.createElement('div');
+      ghost.style.cssText = `position:fixed;left:0;top:0;width:${r.width}px;height:${r.height}px;z-index:70;pointer-events:none;opacity:.55;background:url("${img ? img.src : ''}") center/100% 100% no-repeat;outline:1.5px dashed var(--k59, #3F7D5C)`;
+      document.body.appendChild(ghost);
+    }
+    const [x, y] = at(ev);
+    ghost.style.transform = `translate(${x}px,${y}px)`;
+    move && move(x, y, ev);
+  };
+  const end = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); document.removeEventListener('keydown', onKey, true); ghost && ghost.remove(); };
+  const onUp = ev => { const moved = !!ghost; end(); if (moved) drop(...at(ev), ev); else cancel && cancel(); };
+  const onKey = ev => { if (ev.key === 'Escape') { ev.preventDefault(); end(); cancel && cancel(); } };
+  window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp); document.addEventListener('keydown', onKey, true);
+}
+
+/** The caret under a point on screen, as a collapsed Range (null where there is none). */
+export function caretAt(x, y) {
+  if (document.caretRangeFromPoint) return document.caretRangeFromPoint(x, y);
+  const p = document.caretPositionFromPoint && document.caretPositionFromPoint(x, y);
+  if (!p) return null;
+  const r = document.createRange(); r.setStart(p.offsetNode, p.offset); r.collapse(true);
+  return r;
+}
+/** The insertion mark a drag shows: show(range) draws a bar at that caret, hide() takes it away. */
+export function caretMark() {
+  let bar = null;
+  return {
+    show(range) {
+      let rc = range.getBoundingClientRect();
+      if (!rc.height) { const c = range.startContainer, el = c.nodeType === 1 ? c : c.parentElement; if (el) rc = el.getBoundingClientRect(); } // a caret in an empty block: the block's own line
+      if (!bar) { bar = document.createElement('div'); bar.style.cssText = 'position:fixed;width:2px;border-radius:1px;background:var(--k59, #3F7D5C);z-index:70;pointer-events:none'; document.body.appendChild(bar); }
+      Object.assign(bar.style, { left: rc.left - 1 + 'px', top: rc.top + 'px', height: (rc.height || 20) + 'px' });
+    },
+    hide() { bar && bar.remove(); bar = null; }
+  };
+}
+
 /**
  * Crop with handles: the whole picture shows dimmed around the part kept, whose edges and corners drag (inside it, drag to
  * move it). `frame` is the picture's frame on screen { cx, cy, w, h } (unrotated size); the box turns and mirrors with the
