@@ -20,7 +20,7 @@ use tauri::utils::config::WindowEffectsConfig;
 #[cfg(not(feature = "appstore"))]
 use tauri::window::{Effect, EffectState};
 use tauri::{
-    AppHandle, DragDropEvent, Manager, RunEvent, Theme, TitleBarStyle, WebviewUrl, WebviewWindow,
+    AppHandle, DragDropEvent, Manager, RunEvent, Theme, WebviewUrl, WebviewWindow,
     WebviewWindowBuilder, WindowEvent, Wry,
 };
 use tauri_plugin_dialog::DialogExt;
@@ -41,6 +41,7 @@ const RECENT_MAX: usize = 10;
 /// The design draws its own traffic lights (12px, 8px apart; ui/mac.dc.html and the Mac panels). macOS 27's are 14px
 /// and 23px apart, so no inset can match them: the native buttons stay hidden on every window, also after resizing
 /// and full screen, and the pages' lights call the window plugin (close, minimize, set_fullscreen, toggle_maximize).
+#[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
 fn hide_lights(window: &WebviewWindow) {
     #[cfg(target_os = "macos")]
     let _ = window.with_webview(|webview| {
@@ -548,10 +549,10 @@ fn open_panel(app: &AppHandle, which: &str, tab: Option<String>) {
         .resizable(false)
         .minimizable(false)
         .maximizable(false)
-        .title_bar_style(TitleBarStyle::Overlay)
-        .hidden_title(true)
         .initialization_script(init_script(app, which))
         .center();
+    #[cfg(target_os = "macos")]
+    let built = built.title_bar_style(tauri::TitleBarStyle::Overlay).hidden_title(true);
     // A transparent window over macOS vibrancy needs Tauri's private-API feature, which the Mac App Store forbids;
     // the store build keeps the panels opaque and their pages draw the design's glass themselves.
     #[cfg(not(feature = "appstore"))]
@@ -1136,6 +1137,7 @@ fn main() {
 
     let mut restarting = false;
     app.run(move |app, event| match event {
+        #[cfg(target_os = "macos")]
         RunEvent::Opened { urls } => {
             let files: Vec<PathBuf> = urls.iter().filter_map(|u| u.to_file_path().ok()).collect();
             if shell(app).launched {
@@ -1144,6 +1146,7 @@ fn main() {
                 shell(app).launch_files.extend(files);
             }
         }
+        #[cfg(target_os = "macos")]
         RunEvent::Reopen { has_visible_windows: false, .. } => {
             let front = shell(app).front.clone().and_then(|l| app.get_webview_window(&l));
             match front {
