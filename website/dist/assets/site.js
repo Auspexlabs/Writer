@@ -10,6 +10,12 @@ fetch('download/latest.json', { cache: 'no-cache' })
   })
   .catch(() => {});
 
+// The hero's download button follows the visitor's system; the download section offers both.
+if (/Windows/i.test(navigator.userAgent)) {
+  const b = document.querySelector('[data-dl-hero]');
+  if (b) { b.href = 'download/windows'; b.textContent = '下载 Windows 版'; }
+}
+
 // Sections rise into place once. <head> set the "js" class that hides them, and the fallback there waits for this flag.
 window.__reveal = true;
 const reveal = new IntersectionObserver((entries) => {

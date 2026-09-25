@@ -9,12 +9,12 @@
 <h1 align="center">Writer</h1>
 
 <p align="center">
-  <b>纯净轻量的 Mac 办公软件。无广告，完全免费。</b><br>
+  <b>纯净轻量的办公软件，支持 Mac 和 Windows。无广告，完全免费。</b><br>
   Word、Excel、PPT 打开就能改，改动一秒内存回原文件。内置 AI 助手，用你自己的模型。
 </p>
 
 <p align="center">
-  <a href="https://github.com/Auspexlabs/writer/releases/latest">下载 Mac 版</a> ·
+  <a href="https://github.com/Auspexlabs/writer/releases/latest">下载 Mac 版和 Windows 版</a> ·
   <a href="docs/engine.md">引擎文档</a> ·
   <a href="README.en.md">English</a>
 </p>
@@ -27,7 +27,7 @@
 
 这个仓库里有两样东西，用的是同一套代码：
 
-- **Writer 应用**：Mac 上的文档应用。Word、Excel、PowerPoint、Markdown 和思维导图打开就能改，改动直接存回原文件；PDF 可以查看。内置 AI 助手，接入你自己的模型。
+- **Writer 应用**：Mac 和 Windows 上的文档应用。Word、Excel、PowerPoint、Markdown 和思维导图打开就能改，改动直接存回原文件；PDF 可以查看。内置 AI 助手，接入你自己的模型。
 - **Writer 引擎**：一个名为 `writer` 的可执行文件，读、写、改 .docx、.xlsx、.pptx、.md 和 .mm 文件，读取 PDF，在格式之间转换。文档是一棵树，每个元素都有路径，每条命令都输出 JSON。它同时是命令行工具、MCP 服务和本地 HTTP 接口。应用里的编辑器和 AI 助手用的都是它。
 
 ## 功能
@@ -62,8 +62,8 @@ brew install --cask auspexlabs/tap/writer
 
 也可以让 AI 帮你装：能在终端里执行命令的 AI 助手，运行上面那条 brew 命令就能装好，全程不用点按钮；装好后把 `writer mcp` 注册为它的 MCP 服务，它就能直接读写你的文档。给 AI 看的说明在 [SKILL.md](SKILL.md)。
 
-- 系统要求：macOS 14 或更高版本，目前适用于 Apple 芯片的 Mac。
-- Windows 版正在开发中。
+- 系统要求：Mac 需要 macOS 14 或更高版本、Apple 芯片；Windows 需要 Windows 10 或更高的 64 位版本。
+- Windows 版目前是预览版。
 - 官方发布的 Writer 应用对所有人免费，企业和组织在工作中使用也一样。
 
 ## 给开发者
@@ -113,7 +113,7 @@ npm run dev                    # 构建内置引擎，打开开发窗口
 src/          引擎（.NET 10）：Writer.Core 文档树与路径，Writer.Formats 各格式的读写，
               Writer.Cli 命令行、MCP 服务、HTTP 服务和 AI 助手
 ui/           编辑器：每种格式一个页面，engine.js 负责和引擎通信
-desktop/      Mac 应用（Tauri 2 窗口加内置引擎），Windows 版在开发中
+desktop/      Mac 和 Windows 应用（Tauri 2 窗口加内置引擎）
 website/      官网，纯静态页面
 tests/        引擎测试：单元、格式适配器、命令行和往返保真
 docs/         引擎参考、设计文档和计划、README 用的截图

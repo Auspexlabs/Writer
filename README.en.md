@@ -9,13 +9,13 @@
 <h1 align="center">Writer</h1>
 
 <p align="center">
-  <b>A clean, lightweight office app for Mac. No ads, completely free.</b><br>
+  <b>A clean, lightweight office app for Mac and Windows. No ads, completely free.</b><br>
   Word, Excel and PowerPoint files open ready to edit, and every change is saved back to the original file within a
   second. A built-in AI assistant works with the model of your choice.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Auspexlabs/writer/releases/latest">Download for Mac</a> ·
+  <a href="https://github.com/Auspexlabs/writer/releases/latest">Download for Mac and Windows</a> ·
   <a href="docs/engine.md">Engine reference</a> ·
   <a href="README.md">中文</a>
 </p>
@@ -30,7 +30,7 @@ The app's interface is in Chinese for now.
 
 This repository holds two things built from the same code:
 
-- **The Writer app**: a document app for the Mac. Word, Excel, PowerPoint, Markdown and mind-map files open ready to
+- **The Writer app**: a document app for Mac and Windows. Word, Excel, PowerPoint, Markdown and mind-map files open ready to
   edit, and changes go straight back to the original file; PDFs open for viewing. A built-in AI assistant works with the
   model of your choice.
 - **The Writer engine**: one executable, `writer`, that reads, creates and edits .docx, .xlsx, .pptx, .md and .mm files,
@@ -82,8 +82,8 @@ An AI agent that can run terminal commands can install it for you with the brew 
 register `writer mcp` as an MCP server to read and edit your documents. Instructions for agents are in
 [SKILL.md](SKILL.md).
 
-- Requires macOS 14 or later, on a Mac with Apple silicon for now.
-- A Windows version is in development.
+- Requires macOS 14 or later on a Mac with Apple silicon, or 64-bit Windows 10 or later.
+- The Windows version is a preview for now.
 - The official Writer app is free for everyone, including businesses and organizations that use it for work.
 
 ## For developers
@@ -134,7 +134,7 @@ Packaging, signing and diagnostics are in [desktop/README.md](desktop/README.md)
 src/          the engine (.NET 10): Writer.Core, the document tree and paths; Writer.Formats, reading and
               writing each format; Writer.Cli, the command line, MCP server, HTTP server and AI assistant
 ui/           the editors, one page per format; engine.js talks to the engine
-desktop/      the Mac app (Tauri 2 windows around a bundled engine); Windows in development
+desktop/      the Mac and Windows app (Tauri 2 windows around a bundled engine)
 website/      the website, as static pages
 tests/        engine tests: unit, format adapters, command line and round-trip fidelity
 docs/         the engine reference, design documents and plans, screenshots for this README
