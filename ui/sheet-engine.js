@@ -180,7 +180,7 @@ function serial(y, m, d) { // DATE() semantics: month/day overflow rolls over, y
 const wday = v => ((Math.floor(v) - 1) % 7 + 7) % 7; // 0 = Sunday, follows Excel's serials (so 1900-01-01 is a "Sunday")
 function hms(v) { let t = Math.min(86399, Math.round((v - Math.floor(v)) * 86400)); const h = Math.floor(t / 3600); t -= h * 3600; return { h, mi: Math.floor(t / 60), s: t % 60 }; }
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const WDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], CWD = '日一二三四五六';
+const WDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], CWD = '日一二三四五六'; // i18n-ok: date-format output, not UI
 const monthOf = name => { const i = MONTHS.findIndex(m => m.toLowerCase().startsWith(name.toLowerCase())); return name.length >= 3 && i >= 0 ? i + 1 : 0; };
 const yearOf = y => y == null ? new Date().getFullYear() : +y < 100 ? +y + (+y < 30 ? 2000 : 1900) : +y;
 // Text → serial (date and/or time) or null. Accepts 2024-1-1, 2024/1/1, 2024年1月1日, 1/1/2024, 1/1 (this year), 22-Aug-2011, Aug 22, 2011, 12:30[:15] [AM/PM].
@@ -242,7 +242,7 @@ function fmtCode(v, code) {
     const p = dateParts(v); const ap = toks.some(t => t.k === 'ap'); let out = '';
     toks.forEach((t, i) => {
       if (t.k === 'lit') { out += t.v; return; }
-      if (t.k === 'ap') { out += /上午/.test(t.v) ? (p.h < 12 ? '上午' : '下午') : t.v.length === 3 ? (p.h < 12 ? 'A' : 'P') : (p.h < 12 ? 'AM' : 'PM'); return; }
+      if (t.k === 'ap') { out += /上午/.test(t.v) ? (p.h < 12 ? '上午' : '下午') : t.v.length === 3 ? (p.h < 12 ? 'A' : 'P') : (p.h < 12 ? 'AM' : 'PM'); return; } // i18n-ok: date-format output, not UI
       if (t.k !== 'date') { out += t.v; return; }
       const c = t.v, h12 = ap ? (p.h % 12 || 12) : p.h;
       if (c[0] === '[') { const secs = Math.round(v * 86400); out += c[1] === 'h' ? Math.floor(secs / 3600) : c[1] === 'm' ? Math.floor(secs / 60) : secs; return; }
@@ -250,7 +250,7 @@ function fmtCode(v, code) {
       if (c[0] === 'd') { out += c.length === 1 ? p.d : c.length === 2 ? pad(p.d) : c.length === 3 ? WDAYS[p.wd].slice(0, 3) : WDAYS[p.wd]; return; }
       if (c[0] === 'h') { out += c.length === 1 ? h12 : pad(h12); return; }
       if (c[0] === 's') { out += c.length === 1 ? p.s : pad(p.s); return; }
-      if (c[0] === 'a') { out += c.length >= 4 ? '星期' + CWD[p.wd] : '周' + CWD[p.wd]; return; }
+      if (c[0] === 'a') { out += c.length >= 4 ? '星期' + CWD[p.wd] : '周' + CWD[p.wd]; return; } // i18n-ok: date-format output, not UI
       const prev = toks.slice(0, i).reverse().find(x => x.k === 'date'), nxt = toks.slice(i + 1).find(x => x.k === 'date');
       const minute = (prev && /^\[?h/.test(prev.v)) || (nxt && /^s/.test(nxt.v));
       if (minute) out += c.length === 1 ? p.mi : pad(p.mi);

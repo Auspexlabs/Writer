@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="./theme-page.css">
 <script>(function () { try { var s = JSON.parse(localStorage.getItem('writer-settings') || '{}'), t = s.theme || 'light'; if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = t; } catch (e) { } })();</script>
 <script src="./memo.js"></script>
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -29,7 +29,7 @@ html,body{margin:0;height:100%;background:var(--k0, #FFFFFF);color:var(--k1, #1D
 .ai-md pre{margin:0 0 8px;padding:10px 12px;border-radius:8px;background:var(--k17, rgba(0,0,0,0.07));overflow:auto}
 .ai-md code{font-family:'IBM Plex Mono',monospace;font-size:0.92em}
 .ai-md pre code{background:none;padding:0}
-.ai-md :not(pre)>code{background:var(--k17, rgba(0,0,0,0.07));padding:1px 5px;border-radius:4px}
+.ai-md :not(pre)>code{background:var(--k17, rgba(0,0,0,0.07));padding:1px 5px;border-radius:4px} /* i18n-ok: css child-combinator '>' reads as a tag close to the template-text scanner, which then swallows the rest of <style> */
 .ai-md blockquote{margin:0 0 8px;padding:0 0 0 10px;border-left:2px solid var(--k29, rgba(0,0,0,0.1));color:var(--k11, #6E6E73)}
 .ai-md table{border-collapse:collapse;margin:0 0 8px;font-size:0.94em}
 .ai-md th,.ai-md td{border:1px solid var(--k29, rgba(0,0,0,0.1));padding:4px 8px}
@@ -39,11 +39,11 @@ html,body{margin:0;height:100%;background:var(--k0, #FFFFFF);color:var(--k1, #1D
 .ai-md .md-math-block{margin:6px 0;overflow-x:auto}
 *{box-sizing:border-box}
 html,body{transition:background .3s}
-/* settings (prefs.js applyTo sets these on <html>): accent, reduced motion, AI off, density — the defaults add nothing */
+/* settings (prefs.js applyTo sets these on the html element): accent, reduced motion, AI off, density — the defaults add nothing */
 html[data-accent][data-accent]{--k59:var(--accent)}
 html[data-accent] [data-accent-btn]{background:var(--accent)!important;color:#FFFFFF!important}
 html[data-motion="reduce"] *,html[data-motion="reduce"] *::before,html[data-motion="reduce"] *::after{transition-duration:.12s!important;transition-delay:0s!important;transition-timing-function:ease-out!important;animation-duration:.12s!important;animation-iteration-count:1!important}
-html[data-ai="off"] [title="AI 助手"],html[data-ai="off"] [data-ai-ui]{display:none!important}
+html[data-ai="off"] [title="AI 助手"],html[data-ai="off"] [data-ai-btn],html[data-ai="off"] [data-ai-ui]{display:none!important}
 html[data-density="compact"] :is([data-glass-bar],[data-shell-bar],[data-menu]) button{height:30px!important}
 html[data-density="compact"] [data-bubble] button[style*="min-width"]{height:28px!important}
 html[data-density="loose"] :is([data-glass-bar],[data-shell-bar],[data-menu]) button{height:38px!important}
@@ -215,7 +215,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
       </button>
     </div>
     <div ref="{{ rightPillRef }}" data-shell-bar="1" style="position:absolute;top:10px;right:12px;z-index:50;display:{{ rightPillDisp }};align-items:center;gap:1px;padding:4px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1))">
-      <button onClick="{{ toggleAI }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBtnBg }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
+      <button onClick="{{ toggleAI }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBtnBg }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
       <sc-if value="{{ isDoc }}" hint-placeholder-val="{{ true }}">
         <button onClick="{{ enterPure }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)">
           <span style="position:relative;width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center">
@@ -405,9 +405,10 @@ const EXT_TYPE = { docx: 'docx', xlsx: 'xlsx', pptx: 'pptx', md: 'md', markdown:
 const clone = o => structuredClone(o);
 const countTopics = n => 1 + (n.children || []).reduce((a, c) => a + countTopics(c), 0);
 const clearAi = n => { delete n.ai; (n.children || []).forEach(clearAi); };
-function cleanTitle(p, type) { const t = p.replace(/^(帮我|请|给我)?(写|做|生成|创建|起草|整理)(一份|一个|一套|一下)?/, '').replace(/[，。,.].*$/, '').trim(); return (t || ('未命名' + TAG[type].n)).slice(0, 18); }
+function cleanTitle(p, type) { const t = p.replace(/^(帮我|请|给我)?(写|做|生成|创建|起草|整理)(一份|一个|一套|一下)?/, '').replace(/[，。,.].*$/, '').trim(); return (t || $t('未命名{n}', { n: $t(TAG[type].n) })).slice(0, 18); }
 const WRITES = /^(add|set|remove|move|create|export)\b/;
 const escHtml = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'); // md.js fallback before it has loaded (chat isn't usable that early, but never render raw text as HTML)
+const hintPart = h => h ? $t('（') + $t(h) + $t('）') : ''; // a backend hint after an error toast, e.g. 保存失败：xxx（hint）
 const SPELL = '.wd-ed,.wd-hf,.pt-ed,.pt-src,.se-ed,[data-edit],[data-aid],.mm-note'; // editable document text (formula and label inputs keep their own setting)
 const QUOTE = '.wd-ed,.pt-ed,.pt-src'; // smart CJK punctuation: Word and Markdown
 const MAC_DESKTOP = new URLSearchParams(location.search).get('desktop') === 'mac'; // Tauri shell on macOS: hidden title bar, traffic lights at 18/20
@@ -424,10 +425,10 @@ class Component extends DCLogic {
     Promise.all([import('./office-io.js'), import('./sheet-engine.js'), import('./md.js'), import('./pdf-kit.js'), import('./engine.js'), import('./prefs.js')]).then(async ([K, E, MD, PK, EN, P]) => {
       this.K = K; this.E = E; this.MD = MD; this.PK = PK; this.EN = EN; this.P = P; this.applyTheme();
       let files = [];
-      try { files = await EN.files(); } catch (e) { this.toastMsg('无法连接引擎：' + e.message); }
-      const p = this.prefs, s = P.loadSession(), L = P.launch(files, p, s);
+      try { files = await EN.files(); } catch (e) { this.toastMsg($t('无法连接引擎：{msg}', { msg: $t(e.message) })); }
+      const p = this.prefs, s = P.loadSession(), L = P.launch(files, p, s), layout = P.loadLayout();
       this.closed = new Set(p.restore !== false ? (s.closed || []).filter(x => files.some(f => f.path === x)) : []);
-      this.setState({ ready: true, docs: L.docs, chatOn: EN.state.chat, model: EN.state.model, view: L.open ? 'doc' : 'create' });
+      this.setState({ ready: true, docs: L.docs, chatOn: EN.state.chat, model: EN.state.model, view: L.open ? 'doc' : 'create', showThumbs: layout.showThumbs, showAI: layout.showAI });
       if (L.open) this.open(L.open.id); else if (L.blank) this.createBlank(L.blank);
     });
     window.addEventListener('keydown', this.onKey);
@@ -510,7 +511,7 @@ class Component extends DCLogic {
   emitShell() {
     if (!this.props.onShell || !this.state.ready) return;
     const st = this.state, d = this.doc, isDoc = st.view === 'doc' && !!d;
-    const info = { docs: st.docs.map(x => ({ id: x.id, title: x.title, type: x.type, path: x.path, open: !!x.loaded, on: isDoc && x.id === d.id, draft: this.EN ? this.EN.isDraft(x.path) : false })), isDoc, title: isDoc ? d.title : '新建', type: isDoc ? d.type : '', path: isDoc ? d.path : '', draft: isDoc && this.EN ? this.EN.isDraft(d.path) : false, showThumbs: !!st.showThumbs, showAI: !!st.showAI, pure: !!(isDoc && st.pure), dark: document.documentElement.dataset.theme === 'dark' };
+    const info = { docs: st.docs.map(x => ({ id: x.id, title: x.title, type: x.type, path: x.path, open: !!x.loaded, on: isDoc && x.id === d.id, draft: this.EN ? this.EN.isDraft(x.path) : false })), isDoc, title: isDoc ? d.title : $t('新建'), type: isDoc ? d.type : '', path: isDoc ? d.path : '', draft: isDoc && this.EN ? this.EN.isDraft(d.path) : false, showThumbs: !!st.showThumbs, showAI: !!st.showAI, pure: !!(isDoc && st.pure), dark: document.documentElement.dataset.theme === 'dark' };
     const k = JSON.stringify(info); if (k !== this._shK) { this._shK = k; this.props.onShell(info, this.shellApi); }
   }
   /** What reopens next time (退出时保留窗口 / 上次文档): the open documents in order, the ones closed, the last active one. */
@@ -519,6 +520,12 @@ class Component extends DCLogic {
     const d = st.view === 'doc' && st.docs.find(x => x.id === st.cur); if (d) this._last = d.path;
     const s = { order: st.docs.map(x => x.path), closed: [...this.closed], last: this._last || '' }, k = JSON.stringify(s);
     if (k !== this._ssK) { this._ssK = k; this.P.saveSession(s); }
+  }
+  /** The left sidebar and assistant panel, so next launch opens showing what this one left on screen (not presentation mode). */
+  saveLayout() {
+    const st = this.state; if (!this.P || !st.ready) return;
+    const k = st.showThumbs + ':' + st.showAI; if (k === this._loK) return; this._loK = k;
+    this.P.saveLayout(st.showThumbs, st.showAI);
   }
   macVals() {
     const p = this.props, off = p.macActive === false, h = this.state.macHover;
@@ -531,7 +538,7 @@ class Component extends DCLogic {
     };
   }
   componentDidUpdate() {
-    this.emitShell(); this.saveSession();
+    this.emitShell(); this.saveSession(); this.saveLayout();
     // 最近使用 is read again whenever the start page comes back (DC passes no prevState, so remember the last view)
     if (this.state.view === 'create' && this._viewWas !== 'create') this.loadRecent(); this._viewWas = this.state.view;
     const msgs = this.state.chats[this.state.cur] || [], el = this.chatRef.current, cards = msgs.filter(m => m.change).length;
@@ -582,9 +589,9 @@ class Component extends DCLogic {
     const d = this.state.docs.find(x => x.id === id); if (!d) return;
     if (!d.loaded) {
       if (this.loading === id) return; this.loading = id; this.setState({ menu: null, docsOpen: false });
-      this.toastMsg('正在打开 ' + d.title + '…');
+      this.toastMsg($t('正在打开 {title}…', { title: d.title }));
       try { const nd = await this.EN.open(d); this.loading = null; this.setState(s => ({ docs: s.docs.map(x => x.id === id ? nd : x), cur: id, view: 'doc', menu: null, docsOpen: false, toast: null })); }
-      catch (e) { this.loading = null; this.toastMsg('无法打开 ' + d.title + '：' + e.message); return; }
+      catch (e) { this.loading = null; this.toastMsg($t('无法打开 {title}：{msg}', { title: d.title, msg: $t(e.message) })); return; }
     } else { this.setState({ cur: id, view: 'doc', menu: null, docsOpen: false }); this.checkExternal(id); }
     this.watch(id);
   }
@@ -606,7 +613,7 @@ class Component extends DCLogic {
   }
   async reloadExternal(id) {
     const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) return;
-    try { const nd = await this.EN.open(d); nd.rev = (d.rev || 0) + 1; this.setDoc(nd, true, { quiet: true }); this.toastMsg('已载入外部修改'); } catch (e) { }
+    try { const nd = await this.EN.open(d); nd.rev = (d.rev || 0) + 1; this.setDoc(nd, true, { quiet: true }); this.toastMsg($t('已载入外部修改')); } catch (e) { }
   }
   /** The file changed outside Writer while local edits were pending (or a save just lost the race with 409): the local
    *  edits are saved as a copy beside the file, which is then reloaded, so neither side is lost. */
@@ -620,10 +627,10 @@ class Component extends DCLogic {
       const copy = await this.EN.saveConflictCopy(d);
       st.again = false; st.failed = null; // only now: the local edits are safely on disk, so a later check may reload without losing anything
       const nd = await this.EN.open(d); nd.rev = (d.rev || 0) + 1; this.setDoc(nd, true, { quiet: true });
-      this.toastMsg('文件已被外部修改，本地修改已存为「' + copy.replace(/\\/g, '/').split('/').pop() + '」');
+      this.toastMsg($t('文件已被外部修改，本地修改已存为「{name}」', { name: copy.replace(/\\/g, '/').split('/').pop() }));
     } catch (e) {
       st.failed = e.message; // still pending: leave the local edits in the editor, do not let the next check reload over them
-      this.toastMsg('检测到外部修改，但未能保存本地副本：' + e.message);
+      this.toastMsg($t('检测到外部修改，但未能保存本地副本：{msg}', { msg: $t(e.message) }));
     }
     st.busy = false;
   }
@@ -642,13 +649,13 @@ class Component extends DCLogic {
   }
   async createBlank(type, title) {
     try { const d = await this.newFile(type, title); await this.addLazy(d, true); return this.state.docs.find(x => x.id === d.id); }
-    catch (e) { this.toastMsg('创建失败：' + e.message); }
+    catch (e) { this.toastMsg($t('创建失败：{msg}', { msg: $t(e.message) })); }
   }
   async importFiles(files) {
     let last = null;
     for (const f of Array.from(files || [])) {
-      try { this.toastMsg('正在上传 ' + f.name + '…'); const d = await this.EN.upload(f); this.closed.delete(d.path); this.setState(s => ({ docs: [d, ...s.docs.filter(x => x.path !== d.path)] })); last = d; }
-      catch (e) { this.toastMsg('无法打开 ' + f.name + '：' + (e.message || '文件格式错误')); }
+      try { this.toastMsg($t('正在上传 {name}…', { name: f.name })); const d = await this.EN.upload(f); this.closed.delete(d.path); this.setState(s => ({ docs: [d, ...s.docs.filter(x => x.path !== d.path)] })); last = d; }
+      catch (e) { this.toastMsg($t('无法打开 {name}：{msg}', { name: f.name, msg: $t(e.message || '文件格式错误') })); }
     }
     if (last) this.open(last.id);
   }
@@ -662,7 +669,7 @@ class Component extends DCLogic {
     if (d && d.loaded && this.EN.isDraft(d.path) && this.props.onSaveDialog) {
       const c = await this.askClose(d);
       if (c === 'cancel' || (c === 'save' && !(await this.save(id)))) return false;
-      if (c === 'discard') { const sv = this.sv[id]; if (sv) { clearTimeout(sv.t); sv.t = null; sv.again = false; } try { await this.EN.discard(d); } catch (e) { this.toastMsg('未能删除草稿：' + e.message); } }
+      if (c === 'discard') { const sv = this.sv[id]; if (sv) { clearTimeout(sv.t); sv.t = null; sv.again = false; } try { await this.EN.discard(d); } catch (e) { this.toastMsg($t('未能删除草稿：{msg}', { msg: $t(e.message) })); } }
     }
     const st = this.state, i = st.docs.findIndex(x => x.id === id), rest = st.docs.filter(x => x.id !== id);
     if (i >= 0) this.closed.add(st.docs[i].path);
@@ -678,21 +685,21 @@ class Component extends DCLogic {
   }
   async convert(kind, p) {
     const d = this.doc, what = { docx: '可编辑的 Word 文档', md: 'Markdown 大纲', pptx: '演示文稿' }[kind]; if (!d || !what) return;
-    try { this.toastMsg('正在转换…'); await this.flushSave(d.id); const nd = await this.EN.exportTo(d, kind); await this.addLazy(nd, true); this.addMsg(nd.id, [{ role: 'ai', text: '已转换为' + what + '，原文件保持不变。' }]); this.toastMsg('已创建「' + nd.title + '」'); }
-    catch (e) { this.toastMsg('转换失败：' + e.message); }
+    try { this.toastMsg($t('正在转换…')); await this.flushSave(d.id); const nd = await this.EN.exportTo(d, kind); await this.addLazy(nd, true); this.addMsg(nd.id, [{ role: 'ai', text: $t('已转换为{what}，原文件保持不变。', { what: $t(what) }) }]); this.toastMsg($t('已创建「{title}」', { title: nd.title })); }
+    catch (e) { this.toastMsg($t('转换失败：{msg}', { msg: $t(e.message) })); }
   }
-  async duplicate() { const d = this.doc; if (!d) return; try { await this.flushSave(d.id); const nd = await this.EN.copy(d); await this.addLazy(nd, true); } catch (e) { this.toastMsg('复制失败：' + e.message); } }
+  async duplicate() { const d = this.doc; if (!d) return; try { await this.flushSave(d.id); const nd = await this.EN.copy(d); await this.addLazy(nd, true); } catch (e) { this.toastMsg($t('复制失败：{msg}', { msg: $t(e.message) })); } }
   async commitTitle() {
     const d = this.doc, t = (this.state.titleDraft || '').trim(); this.setState({ titleDraft: null });
     if (!d || !t || t === d.title) return;
-    try { await this.flushSave(d.id); const path = await this.EN.rename(d, t); this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { title: t, path }) : x) })); this.watch(d.id); this.toastMsg('已重命名为 ' + path); }
-    catch (e) { this.toastMsg('重命名失败：' + e.message); }
+    try { await this.flushSave(d.id); const path = await this.EN.rename(d, t); this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { title: t, path }) : x) })); this.watch(d.id); this.toastMsg($t('已重命名为 {path}', { path })); }
+    catch (e) { this.toastMsg($t('重命名失败：{msg}', { msg: $t(e.message) })); }
   }
   /** 存储: a draft asks the host where (its Save dialog) and moves there; other documents are already autosaved. */
   async save(id = this.state.cur) {
     const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) return false;
     await this.flushSave(id);
-    if (!(this.EN.isDraft(d.path) && this.props.onSaveDialog)) { this.toastMsg('已存储到 ' + d.path); return true; }
+    if (!(this.EN.isDraft(d.path) && this.props.onSaveDialog)) { this.toastMsg($t('已存储到 {path}', { path: d.path })); return true; }
     const target = await this.props.onSaveDialog(d.title, d.path.split('.').pop());
     if (!target) return false;
     return this.moveTo(d, target, false);
@@ -710,8 +717,8 @@ class Component extends DCLogic {
       const title = path.replace(/\\/g, '/').split('/').pop().replace(/\.[^.]+$/, '');
       this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { path, title }) : x) }));
       if (this.state.cur === d.id) this.watch(d.id); // a draft closed from its tab may not be the one on screen
-      this.toastMsg('已存储到 ' + target); return true;
-    } catch (e) { this.toastMsg('存储失败：' + e.message); return false; }
+      this.toastMsg($t('已存储到 {path}', { path: target })); return true;
+    } catch (e) { this.toastMsg($t('存储失败：{msg}', { msg: $t(e.message) })); return false; }
   }
 
   // ---- state + autosave ----
@@ -737,7 +744,7 @@ class Component extends DCLogic {
         st.at = Date.now(); st.failed = null;
       } catch (e) {
         if (e.code === 'CONFLICT') { this.setState({ saving: false }); await this.resolveConflict(id); return; }
-        st.at = Date.now(); st.failed = e.message; this.toastMsg('保存失败：' + e.message + (e.hint ? '（' + e.hint + '）' : ''));
+        st.at = Date.now(); st.failed = e.message; this.toastMsg($t('保存失败：{msg}', { msg: $t(e.message) }) + hintPart(e.hint));
       }
       st.busy = false; this.setState({ saving: false });
       if (st.again) { st.again = false; await this.flushSave(id); }
@@ -754,14 +761,14 @@ class Component extends DCLogic {
       await this.EN.run(['set', d.path, '/', '--prop', accept ? 'accept=all' : 'reject=all']);
       const cur = this.state.docs.find(x => x.id === id);
       if (cur) { const nd = await this.EN.open(cur); nd.rev = (cur.rev || 0) + 1; this.setDoc(nd, true, { quiet: true }); }
-      this.toastMsg(accept ? '已接受所有修订' : '已拒绝所有修订');
-    } catch (e) { this.toastMsg('修订处理失败：' + e.message + (e.hint ? '（' + e.hint + '）' : '')); }
+      this.toastMsg($t(accept ? '已接受所有修订' : '已拒绝所有修订'));
+    } catch (e) { this.toastMsg($t('修订处理失败：{msg}', { msg: $t(e.message) }) + hintPart(e.hint)); }
     st.at = Date.now(); st.busy = false; this.setState({ saving: false });
     if (st.again) { st.again = false; this.flushSave(id); }
   }
   undo(redo) {
     const d = this.doc, h = d && this.hist[d.id]; if (!h) return;
-    const src = redo ? h.future : h.past, dst = redo ? h.past : h.future; if (!src.length) return this.toastMsg(redo ? '没有可重做的操作' : '没有可撤销的操作');
+    const src = redo ? h.future : h.past, dst = redo ? h.past : h.future; if (!src.length) return this.toastMsg($t(redo ? '没有可重做的操作' : '没有可撤销的操作'));
     const nd = src.pop(); dst.push(d); const out = d.type === 'docx' ? Object.assign({}, nd, { rev: (d.rev || 0) + 1, _orig: d._orig }) : this.EN.adopt(clone(nd), d);
     Object.assign(out, { path: d.path, title: d.title }); // undo brings back content, not the file's old place (存储 and renames move it)
     this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? out : x) }));
@@ -776,18 +783,18 @@ class Component extends DCLogic {
     if (p && p.animate) { if (!calm) p.style.willChange = 'transform, opacity'; const a = calm ? p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-out', fill: 'forwards' }) : p.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(-18px) scale(0.97)' }], { duration: 260, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }); a.onfinish = done; setTimeout(done, 320); } // transform + opacity only, see glass.js
     else done();
   }
-  print() { const d = this.doc; if (!d) return; if (d.type === 'mm') return this.toastMsg('思维导图请在「导出」标签导出 PNG'); if (d.type === 'md') return this.download('mdprint'); if (d.type === 'pdf') return this.download('pdfprint'); this.K.printDoc(d, { E: this.E }); }
+  print() { const d = this.doc; if (!d) return; if (d.type === 'mm') return this.toastMsg($t('思维导图请在「导出」标签导出 PNG')); if (d.type === 'md') return this.download('mdprint'); if (d.type === 'pdf') return this.download('pdfprint'); this.K.printDoc(d, { E: this.E }); }
   async download(kind) {
     const d = this.doc; if (!d) return; this.setState({ menu: null });
     try {
       if (kind === 'file' || kind === 'docx' || kind === 'xlsx' || kind === 'pptx' || kind === 'md') { await this.flushSave(d.id); this.EN.download(d.path); }
       else if (kind === 'mdprint') { const html = this.MD.wordHtml(this.MD.mdToHtml(d.text)); this.K.printDoc(Object.assign({}, d, { type: 'docx', html, page: { size: 'A4', margin: 'normal' } }), { E: this.E }); return; }
-      else if (kind === 'pdfdoc') { this.toastMsg('正在生成 PDF…'); this.PK.download(await this.PK.exportPdf(d.id, d), d.title + '.pdf'); }
+      else if (kind === 'pdfdoc') { this.toastMsg($t('正在生成 PDF…')); this.PK.download(await this.PK.exportPdf(d.id, d), d.title + '.pdf'); }
       else if (kind === 'pdfprint') { const bytes = await this.PK.exportPdf(d.id, d); const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0'; f.src = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); document.body.appendChild(f); f.onload = () => { try { f.contentWindow.print(); } catch (e) { } }; return; }
       else if (kind === 'csv') this.K.exportCsv(d, this.E);
       else return this.print();
-      this.toastMsg('已下载「' + d.title + '」');
-    } catch (e) { this.toastMsg('导出失败：' + (e.message || e)); }
+      this.toastMsg($t('已下载「{title}」', { title: d.title }));
+    } catch (e) { this.toastMsg($t('导出失败：{msg}', { msg: $t(e.message || String(e)) })); }
   }
 
   // ---- assistant: every turn goes through the engine, which edits the file; the editor reloads and marks what changed ----
@@ -795,7 +802,7 @@ class Component extends DCLogic {
   send(text) {
     text = (text || '').trim(); const d = this.doc; if (!text || this.state.sending || !d) return;
     this.addMsg(d.id, { role: 'user', text }); this.setState({ input: '' });
-    if (!this.state.chatOn) { this.addMsg(d.id, { role: 'ai', text: NO_CHAT, setup: true }); return; }
+    if (!this.state.chatOn) { this.addMsg(d.id, { role: 'ai', text: $t(NO_CHAT), setup: true }); return; }
     this.setState({ thinking: true, sending: true });
     this.chatTurn(d.id);
   }
@@ -816,11 +823,11 @@ class Component extends DCLogic {
       await this.EN.chat(d0, history, (name, data) => {
         if (name === 'text') { msg.text = (msg.text ? msg.text + '\n\n' : '') + (data.text || ''); this.setState({ thinking: false }); push(); }
         else if (name === 'tool') { if (WRITES.test(data.command) && data.code === 0) changed = true; msg.steps.push({ text: data.command, ok: data.code === 0 }); push(); }
-        else if (name === 'error') { msg.text = (msg.text ? msg.text + '\n\n' : '') + '出错了：' + (data.message || '') + (data.hint ? '\n' + data.hint : ''); push(); }
+        else if (name === 'error') { msg.text = (msg.text ? msg.text + '\n\n' : '') + $t('出错了：{msg}', { msg: $t(data.message || '') }) + (data.hint ? '\n' + $t(data.hint) : ''); push(); }
       }, opts);
-    } catch (e) { if (e.name === 'AbortError') aborted = true; else { msg.text = (msg.text ? msg.text + '\n\n' : '') + '请求失败：' + e.message; push(); } }
+    } catch (e) { if (e.name === 'AbortError') aborted = true; else { msg.text = (msg.text ? msg.text + '\n\n' : '') + $t('请求失败：{msg}', { msg: $t(e.message) }); push(); } }
     this.chatAbort = null; this.chatting = null; this.setState({ thinking: false, sending: false });
-    if (!msg.text && !msg.steps.length) { msg.text = aborted ? '已停止' : '（助手没有回复）'; push(); }
+    if (!msg.text && !msg.steps.length) { msg.text = $t(aborted ? '已停止' : '（助手没有回复）'); push(); }
     if (changed || aborted) {
       try {
         const cur = this.state.docs.find(x => x.id === id);
@@ -832,7 +839,7 @@ class Component extends DCLogic {
           this.setDoc(keep ? this.unmark(nd) : nd, true, { quiet: true });
           if (items.length) { msg.change = { items, state: keep ? 'kept' : 'pending', snap }; push(); }
         }
-      } catch (e) { this.toastMsg('重新载入失败：' + e.message); }
+      } catch (e) { this.toastMsg($t('重新载入失败：{msg}', { msg: $t(e.message) })); }
     }
     this.refreshFiles();
   }
@@ -864,7 +871,7 @@ class Component extends DCLogic {
   }
   async generate(text) {
     if (this.state.gen !== null) return;
-    const type = this.state.createType, p = (text || this.state.prompt).trim() || STARTERS[type][0];
+    const type = this.state.createType, p = (text || this.state.prompt).trim() || $t(STARTERS[type][0]);
     this.setState({ gen: 0, prompt: p });
     try {
       const d = await this.EN.create(type, cleanTitle(p, type)); this.setState({ gen: 1 });
@@ -872,8 +879,8 @@ class Component extends DCLogic {
       this.setState(s => ({ docs: [nd, ...s.docs.filter(x => x.path !== nd.path)], cur: nd.id, view: 'doc', gen: null, prompt: '', showAI: true, chats: Object.assign({}, s.chats, { [nd.id]: [{ role: 'user', text: p }] }) }));
       this.watch(nd.id);
       if (this.state.chatOn) { this.setState({ thinking: true }); this.chatTurn(nd.id); }
-      else this.addMsg(nd.id, { role: 'ai', text: '已创建空白文件「' + nd.title + '」。' + NO_CHAT, setup: true });
-    } catch (e) { this.setState({ gen: null }); this.toastMsg('创建失败：' + e.message); }
+      else this.addMsg(nd.id, { role: 'ai', text: $t('已创建空白文件「{title}」。', { title: nd.title }) + $t(NO_CHAT), setup: true });
+    } catch (e) { this.setState({ gen: null }); this.toastMsg($t('创建失败：{msg}', { msg: $t(e.message) })); }
   }
 
   /** Callbacks keep their identity across renders (memo.js), so an editor whose props did not change skips the render. */
@@ -885,7 +892,7 @@ class Component extends DCLogic {
     let iconSet = 'b'; try { iconSet = JSON.parse(localStorage.getItem('writer-settings') || '{}').iconStyle || 'b'; } catch (e) { }
     const ICO = t => `./assets/icons/${iconSet === 'c' ? 'c' : 'b'}/${({ docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' })[t] || 'word'}.svg`;
     const menuItems = [];
-    const MI = (label, fn, hint, color) => menuItems.push({ isItem: true, label, hint: hint || '', color: color || 'var(--k1, #1D1D1F)', onClick: () => { this.setState({ menu: null }); fn(); } });
+    const MI = (label, fn, hint, color) => menuItems.push({ isItem: true, label: $t(label), hint: hint || '', color: color || 'var(--k1, #1D1D1F)', onClick: () => { this.setState({ menu: null }); fn(); } });
     const MS = () => menuItems.push({ isSep: true });
     if (st.menu && d) {
       MI('新建空白文档', () => this.createBlank('docx')); MI('新建空白表格', () => this.createBlank('xlsx')); MI('新建空白演示', () => this.createBlank('pptx')); MI('新建 Markdown', () => this.createBlank('md')); MI('新建思维导图', () => this.createBlank('mm')); if (ai) MI('用 AI 新建…', () => this.setState({ view: 'create' })); MS();
@@ -903,12 +910,13 @@ class Component extends DCLogic {
     }
     const msgs = (d && st.chats[d.id]) || [];
     const sv = d && this.sv[d.id], pending = !!(sv && (sv.t || sv.busy));
-    const metaText = d ? (pending ? '保存中…' : sv && sv.failed ? '保存失败：' + sv.failed : '已保存') + ' · ' + (d.type === 'xlsx' ? `${d.sheets.length} 个工作表` : d.type === 'pptx' || d.type === 'pdf' ? `${(d.slides || d.pages).length} 页` : d.type === 'md' ? '纯文本' : d.type === 'mm' ? `${countTopics(d.map)} 个主题` : d.path) : '';
+    const saveState = pending ? $t('保存中…') : sv && sv.failed ? $t('保存失败：{msg}', { msg: $t(sv.failed) }) : $t('已保存');
+    const metaText = d ? saveState + ' · ' + (d.type === 'xlsx' ? $t('{n} 个工作表', { n: d.sheets.length }) : d.type === 'pptx' || d.type === 'pdf' ? $t('{n} 页', { n: (d.slides || d.pages).length }) : d.type === 'md' ? $t('纯文本') : d.type === 'mm' ? $t('{n} 个主题', { n: countTopics(d.map) }) : d.path) : '';
     return {
       ...this.macVals(),
       loading: false, notPure: !pure, pure, neverShow: false, panelW: (this.panelW = Math.max(260, Math.min(310, Math.round((window.innerWidth || 1200) * 0.26)))) + 'px', edRight: showPanel ? (this.panelW + 20) + 'px' : '0px', pillRight: '12px', showRightPill: !isDoc, rightPillDisp: isDoc || !ai ? 'none' : 'flex', barRight: '12px', barLeft: (isDoc && !pure ? (st.showThumbs ? (d.type === 'xlsx' ? (st.barLeft || 200 + MAC_INSET) : 224) : 76 + MAC_INSET + (this.props.mac ? 66 : 0)) : 12) + 'px', lpLeft: (MAC_DESKTOP ? 84 : isDoc && !pure ? 16 : 12) + 'px', lpTop: (isDoc && !pure ? 16 : 10) + 'px', lpOp: 1, lpMaxW: (isDoc && !pure && st.showThumbs ? (MAC_DESKTOP ? 122 : this.props.mac ? 160 : 156) : 320 + (this.props.mac ? 66 : 0)) + 'px', merged: false, leadW: 40, ttlMax: !isDoc || (st.showThumbs && !st.closingThumbs) ? (this.props.mac && isDoc ? '84px' : '160px') : '0px', ttlOp: !isDoc || (st.showThumbs && !st.closingThumbs) ? 1 : 0, ttlPad: !isDoc || (st.showThumbs && !st.closingThumbs) ? '0 13px 0 11px' : '0', ttlDelay: '0s', lpBg: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'transparent' : "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "blur(10px) saturate(190%)", lpBd: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? '1px solid transparent' : "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, aiOn: !!(st.showAI && isDoc), aiBtnBd: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
       desktopMac: MAC_DESKTOP, showThumbs: st.showThumbs, toggleThumbs: () => this.toggleThumbsAnim(), thumbBtnBg: st.showThumbs && isDoc ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent',
-      barTitle: isDoc ? d.title : (this.loading ? '正在打开…' : '新建'), openDocs: () => this.setState({ docsOpen: !st.docsOpen, menu: null }), closeDocs: () => this.setState({ docsOpen: false }), hasDocs: !!st.docsOpen, docsBtnBg: st.docsOpen ? 'var(--k64, rgba(255,255,255,0.85))' : 'transparent',
+      barTitle: isDoc ? d.title : (this.loading ? $t('正在打开…') : $t('新建')), openDocs: () => this.setState({ docsOpen: !st.docsOpen, menu: null }), closeDocs: () => this.setState({ docsOpen: false }), hasDocs: !!st.docsOpen, docsBtnBg: st.docsOpen ? 'var(--k64, rgba(255,255,255,0.85))' : 'transparent',
       onFileMenu: r => this.setState({ menu: this.state.menu ? null : { x: r.left, y: r.bottom + 8 }, docsOpen: false }),
       aiBtnSh: st.showAI && isDoc ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k51, #fff)' : 'none',
       enterPure: () => this.setState({ pure: true }), exitPure: () => this.setState({ pure: false }),
@@ -921,39 +929,39 @@ class Component extends DCLogic {
       onDragLeave: e => { if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget)) this.setState({ dragging: false }); },
       onDrop: e => { if (!e.dataTransfer.files.length) return; e.preventDefault(); this.setState({ dragging: false }); this.importFiles(e.dataTransfer.files); }, dragging: st.dragging,
       isCreate: st.view === 'create', isDoc,
-      typeTabs: ['md', 'docx', 'xlsx', 'pptx', 'mm'].map(k => ({ icon: ICO(k), tag: TAG[k].l, tagBg: TAG[k].bg, label: TAG[k].n, bg: st.createType === k ? 'var(--k0, #FFFFFF)' : 'transparent', border: st.createType === k ? 'var(--k7, #1D1D1F)' : 'var(--k10, #D1D1D6)', onClick: () => st.gen === null && this.setState({ createType: k }) })),
-      blankLabel: '空白' + TAG[st.createType].n, createBlank: () => this.createBlank(st.createType),
-      prompt: st.prompt, promptPh: '例如：' + STARTERS[st.createType][0], onPrompt: e => this.setState({ prompt: e.target.value }),
+      typeTabs: ['md', 'docx', 'xlsx', 'pptx', 'mm'].map(k => ({ icon: ICO(k), tag: TAG[k].l, tagBg: TAG[k].bg, label: $t(TAG[k].n), bg: st.createType === k ? 'var(--k0, #FFFFFF)' : 'transparent', border: st.createType === k ? 'var(--k7, #1D1D1F)' : 'var(--k10, #D1D1D6)', onClick: () => st.gen === null && this.setState({ createType: k }) })),
+      blankLabel: $t('空白{n}', { n: $t(TAG[st.createType].n) }), createBlank: () => this.createBlank(st.createType),
+      prompt: st.prompt, promptPh: $t('例如：{s}', { s: $t(STARTERS[st.createType][0]) }), onPrompt: e => this.setState({ prompt: e.target.value }),
       onPromptKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.generate(); } }, generate: () => this.generate(),
-      starters: STARTERS[st.createType].map(s => ({ text: s, onClick: () => this.generate(s) })),
+      starters: STARTERS[st.createType].map(s => { const label = $t(s); return { text: label, onClick: () => this.generate(label) }; }),
       hasRecent: !!(this.props.onOpenRecent && st.recent.length),
       recentItems: st.recent.map(p => { const n = p.replace(/\\/g, '/'); const name = n.split('/').pop(); return { path: p, name, dir: n.slice(0, n.lastIndexOf('/')), icon: ICO(EXT_TYPE[name.split('.').pop().toLowerCase()] || 'docx'), onClick: () => this.props.onOpenRecent(p) }; }),
       generating: st.gen !== null, notGenerating: st.gen === null,
-      genSteps: ['创建文件', '交给助手撰写', '写入文件', '打开'].map((l, i) => ({ label: l, mark: st.gen > i ? '✓' : st.gen === i ? '…' : '·', color: st.gen >= i ? 'var(--k1, #1D1D1F)' : 'var(--k52, #AEAEB2)' })),
+      genSteps: ['创建文件', '交给助手撰写', '写入文件', '打开'].map((l, i) => ({ label: $t(l), mark: st.gen > i ? '✓' : st.gen === i ? '…' : '·', color: st.gen >= i ? 'var(--k1, #1D1D1F)' : 'var(--k52, #AEAEB2)' })),
       doc: d, title: st.titleDraft != null ? st.titleDraft : (d ? d.title : ''), onTitle: e => this.setState({ titleDraft: e.target.value }), commitTitle: () => this.commitTitle(), onTitleKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); e.currentTarget.blur(); } if (e.key === 'Escape') this.setState({ titleDraft: null }); },
       metaText,
       openFileMenu: e => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ menu: st.menu ? null : { x: r.left, y: r.bottom + 4 } }); }, fileBtnBg: st.menu ? '#EFEFF4' : 'transparent',
       hasMenu: !!st.menu, menuX: st.menu ? st.menu.x + 'px' : 0, menuY: st.menu ? st.menu.y + 'px' : 0, menuItems, closeMenu: () => this.setState({ menu: null }),
       toggleAI: () => this.setState({ showAI: !st.showAI }), aiBtnBg: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
-      doShare: () => { const u = location.origin + '/app/index.dc.html'; if (navigator.clipboard) navigator.clipboard.writeText(u).catch(() => { }); this.toastMsg('本地地址已复制：' + u); },
-      doDownload: () => this.download(d.type === 'pdf' ? 'pdfdoc' : 'file'), dlLabel: '下载',
+      doShare: () => { const u = location.origin + '/app/index.dc.html'; if (navigator.clipboard) navigator.clipboard.writeText(u).catch(() => { }); this.toastMsg($t('本地地址已复制：{url}', { url: u })); },
+      doDownload: () => this.download(d.type === 'pdf' ? 'pdfdoc' : 'file'), dlLabel: $t('下载'),
       isDocx: isDoc && d.type === 'docx', isXlsx: isDoc && d.type === 'xlsx', isPptx: isDoc && d.type === 'pptx',
       onDocChange: (nd, opts) => this.setDoc(nd, !(opts && opts.silent)), onUndo: () => this.undo(false), onRedo: () => this.undo(true), onRevise: accept => this.revise(accept), toastFn: m => this.toastMsg(m),
-      showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? WELCOME[d.type] + (st.model ? '（' + st.model + '）' : '') : NO_CHAT) : '', thinking: st.thinking,
+      showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? $t(WELCOME[d.type]) + (st.model ? $t('（') + st.model + $t('）') : '') : $t(NO_CHAT)) : '', thinking: st.thinking,
       needsModel: !st.chatOn, openAiSettings: () => this.openSettings('ai'),
-      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', html: { __html: m.text ? (this.MD ? this.MD.mdToHtml(m.text, { safe: true }) : escHtml(m.text)) : '' }, setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: `执行了 ${(m.steps || []).length} 条命令`, stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? `${ch.items.length} 处修改` : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复', onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
-      chips: d ? CHIPS[d.type].map(t => ({ text: t, onClick: () => this.send(t) })) : [],
+      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', html: { __html: m.text ? (this.MD ? this.MD.mdToHtml(m.text, { safe: true }) : escHtml(m.text)) : '' }, setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: $t('执行了 {n} 条命令', { n: (m.steps || []).length }), stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? $t('{n} 处修改', { n: ch.items.length }) : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: $t(ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复'), onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
+      chips: d && !msgs.length ? CHIPS[d.type].map(t => { const label = $t(t); return { text: label, onClick: () => this.send(label) }; }) : [],
       input: st.input, onInput: e => this.setState({ input: e.target.value }),
       onInputKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.send(st.input); } },
-      sendClick: () => st.sending ? this.stopChat() : this.send(st.input), sendLabel: st.sending ? '停止' : '↑', sendW: st.sending ? '44px' : '30px', sendFs: st.sending ? '11.5px' : '14px',
+      sendClick: () => st.sending ? this.stopChat() : this.send(st.input), sendLabel: st.sending ? $t('停止') : '↑', sendW: st.sending ? '44px' : '30px', sendFs: st.sending ? '11.5px' : '14px',
       hasToast: !!st.toast, toast: st.toast || '',
-      toggleDark: this.toggleDark, darkLabel: document.documentElement.dataset.theme === 'dark' ? '浅色模式' : '深色模式',
+      toggleDark: this.toggleDark, darkLabel: $t(document.documentElement.dataset.theme === 'dark' ? '浅色模式' : '深色模式'),
       openSettings: () => this.openSettings(), openAbout: () => this.setState({ ov: 'about', docsOpen: false }), openGestures: () => this.setState({ ov: 'gestures', docsOpen: false }),
       hasOverlay: !!st.ov, ovPrefs: st.ov === 'prefs', ovAbout: st.ov === 'about', ovGestures: st.ov === 'gestures', prefsTab: st.prefsTab || 'general',
       closeOverlay: () => this.setState({ ov: null }), stopProp: e => e.stopPropagation(),
       hasAsk: !!st.ask, askTitle: st.ask ? st.ask.title : '', askSave: () => st.ask && st.ask.res('save'), askDiscard: () => st.ask && st.ask.res('discard'), askCancel: () => st.ask && st.ask.res('cancel'),
       workspace: this.EN ? this.EN.state.workspace : '', version: this.EN ? this.EN.state.version : '',
-      createSub: ai ? '描述你要的内容，助手会先写好初稿；也可以从空白开始。' : '选择类型，从空白开始。',
+      createSub: ai ? $t('描述你要的内容，助手会先写好初稿；也可以从空白开始。') : $t('选择类型，从空白开始。'),
       mdAuto: this.prefs.md !== false, gridOn: this.prefs.grid !== false
     };
   }

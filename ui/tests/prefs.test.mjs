@@ -2,7 +2,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DEF, load, applyTo, instructions, chatOptions, pairQuote, launch, newFileArgs } from '../prefs.js';
+import { DEF, load, applyTo, instructions, chatOptions, pairQuote, launch, newFileArgs, loadLayout, saveLayout } from '../prefs.js';
+
+/** A stand-in for localStorage that remembers what was last set, so save then load round-trips. */
+function fakeStorage(initial) {
+  let v = initial;
+  return { getItem: () => v, setItem: (k, val) => { v = val; } };
+}
 
 /** A stand-in for <html>: attributes and inline custom properties. */
 function fakeEl() {
@@ -37,6 +43,22 @@ test('load merges what is stored over the defaults and survives junk', () => {
   assert.equal(load(store('{"theme":"dark"}')).newType, 'docx');
   assert.deepEqual(load(store('not json')), DEF);
   assert.deepEqual(load(null), DEF);
+});
+
+test('loadLayout: the sidebar defaults open and the assistant panel closed, same as the shell\'s own defaults; junk and no storage fall back too', () => {
+  assert.deepEqual(loadLayout(fakeStorage(null)), { showThumbs: true, showAI: false });
+  assert.deepEqual(loadLayout(fakeStorage('{"thumbs":false,"ai":true}')), { showThumbs: false, showAI: true });
+  assert.deepEqual(loadLayout(fakeStorage('not json')), { showThumbs: true, showAI: false });
+  assert.deepEqual(loadLayout(null), { showThumbs: true, showAI: false });
+});
+
+test('saveLayout merges into \'writer-mac\' instead of replacing it: mac.dc.html/win.dc.html keep the collapsed toolbar in the same key', () => {
+  const s = fakeStorage('{"collapsed":true}');
+  saveLayout(false, true, s);
+  assert.deepEqual(JSON.parse(s.getItem()), { collapsed: true, thumbs: false, ai: true });
+  saveLayout(true, false, s);
+  assert.deepEqual(JSON.parse(s.getItem()), { collapsed: true, thumbs: true, ai: false });
+  assert.deepEqual(loadLayout(s), { showThumbs: true, showAI: false });
 });
 
 test('instructions: reply style plus the user\'s own text; chatOptions adds the selection only without whole-document context', () => {

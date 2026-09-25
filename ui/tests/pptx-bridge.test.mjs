@@ -145,6 +145,8 @@ async function deck(file) {
 function editor(get, set) {
   const html = readFileSync(new URL('../SlideEditor.dc.html', import.meta.url), 'utf8'), code = html.match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
   const ctx = { window: { innerWidth: 1360, innerHeight: 860 }, document: {}, React: { createRef: () => ({ current: null }) }, structuredClone,
+    // a stand-in for ui/i18n.js: no dictionary loaded, so every call falls back to the Chinese (the '@@' context dropped), as in Chinese mode
+    $t: (s, v) => { const i = String(s).indexOf('@@'), bare = i < 0 ? String(s) : String(s).slice(0, i); return v ? bare.replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : bare; }, $lang: () => 'zh',
     DCLogic: class { setState(u, cb) { Object.assign(this.state, u); if (cb) cb(); } forceUpdate() { } } };
   vm.runInNewContext(code + '\nglobalThis.SlideEditor = Component;', ctx);
   const c = new ctx.SlideEditor(); c.props = { get doc() { return get(); }, onChange: set };

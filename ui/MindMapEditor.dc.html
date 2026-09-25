@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -29,7 +29,7 @@
         </div>
         <div style="display:flex;align-items:center;flex:none">
           <span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span>
-          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
+          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
           <button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="纯净模式 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button>
         </div>
       </div>
@@ -150,9 +150,9 @@ class Component extends DCLogic {
   };
   L() { const m = this.map, k = this.doc._tmpToId; if (this._layoutFor !== m || this._layoutIds !== k) { this._layout = this.M.layout(m, this.measure); this._layoutFor = m; this._layoutIds = k; } return this._layout; }
   // ----- edits: every change is a fresh copy handed to the shell (history + autosave live there) -----
-  addChild(pid, text) { const id = this.M.newId(); this.commit(m => { const p = this.F(m, pid); if (!p) return; (p.children = p.children || []).push({ id, text: text || '新主题', children: [] }); delete p.collapsed; }); this.startEdit(id, true, text || '新主题'); }
-  addSibling(id) { const p = this.PO(this.map, id); if (!p) return this.addChild(id); const nid = this.M.newId(); this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i + 1, 0, { id: nid, text: '新主题', children: [] }); }); this.startEdit(nid, true, '新主题'); }
-  remove(id) { const p = this.PO(this.map, id); if (!p) return this.toast('中心主题不能删除'); let next = p.id; this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i, 1); next = (pp.children[i] || pp.children[i - 1] || pp).id; }); this.followOn = true; this.setState({ sel: next, editing: null }); }
+  addChild(pid, text) { const id = this.M.newId(); const t2 = text || $t('新主题'); this.commit(m => { const p = this.F(m, pid); if (!p) return; (p.children = p.children || []).push({ id, text: t2, children: [] }); delete p.collapsed; }); this.startEdit(id, true, t2); }
+  addSibling(id) { const p = this.PO(this.map, id); if (!p) return this.addChild(id); const nid = this.M.newId(); const t2 = $t('新主题'); this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i + 1, 0, { id: nid, text: t2, children: [] }); }); this.startEdit(nid, true, t2); }
+  remove(id) { const p = this.PO(this.map, id); if (!p) return this.toast($t('中心主题不能删除')); let next = p.id; this.commit(m => { const pp = this.F(m, p.id); const i = pp.children.findIndex(c => this.same(c.id, id)); pp.children.splice(i, 1); next = (pp.children[i] || pp.children[i - 1] || pp).id; }); this.followOn = true; this.setState({ sel: next, editing: null }); }
   toggle(id) { this.commit(m => { const n = this.F(m, id); if (n && n !== m && (n.children || []).length) { if (n.collapsed) delete n.collapsed; else n.collapsed = true; } }); }
   patch(id, props) { this.commit(m => { const n = this.F(m, id); if (!n) return; for (const k in props) { if (props[k] == null || props[k] === '' || props[k] === false) delete n[k]; else n[k] = props[k]; } }); }
   moveSib(id, dir) { this.commit(m => { const p = this.PO(m, id); if (!p) return; const i = p.children.findIndex(c => this.same(c.id, id)), j = i + dir; if (j < 0 || j >= p.children.length) return; [p.children[i], p.children[j]] = [p.children[j], p.children[i]]; }); }
@@ -264,7 +264,7 @@ class Component extends DCLogic {
       n.lines.forEach((l, i) => g.fillText(l, n.x + s.px + n.iw, n.y + s.py + s.lh * (i + 0.5) + 1));
       if (n.badge) { const bx = n.dir > 0 ? n.x + n.w + 12 : n.x - 12, by = n.y + n.h / 2; g.beginPath(); g.arc(bx, by, 9, 0, Math.PI * 2); g.fillStyle = n.color; g.fill(); g.fillStyle = '#fff'; g.font = `600 10px ${M.FONT}`; g.textAlign = 'center'; g.fillText(String(n.badge), bx, by + 0.5); g.textAlign = 'left'; }
     }
-    c.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = (this.doc.title || 'mindmap') + '.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); this.toast('已导出 PNG'); }, 'image/png');
+    c.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = (this.doc.title || 'mindmap') + '.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); this.toast($t('已导出 PNG')); }, 'image/png');
   }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0, width: 900 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); }
   renderVals() {
@@ -283,23 +283,23 @@ class Component extends DCLogic {
     const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick: () => { if (!o.dis) onClick(); }, title: o.title || label, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || '13.5px', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k1, #1D1D1F)' });
     const SW = (hex, cur, key) => ({ isSw: true, sw: '#' + hex, title: '#' + hex, bg: cur === hex ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onClick: () => sel && this.patch(sel, { [key]: hex }) });
     const SEP = { isSep: true }, LBL = label => ({ isLbl: true, label });
-    const need = fn => sel ? fn() : this.toast('先选中一个主题');
+    const need = fn => sel ? fn() : this.toast($t('先选中一个主题'));
     const SETS = {
-      home: [B('↶', () => this.props.onUndo && this.props.onUndo(), { title: '撤销 Ctrl+Z' }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: '重做 Ctrl+Y' }), SEP,
-        B('新增子主题', () => this.addChild(sel || d.map.id), { title: 'Tab' }), B('新增同级', () => need(() => this.addSibling(sel)), { title: 'Enter', dis: !sel || sel === d.map.id }), B('删除', () => need(() => this.remove(sel)), { title: 'Delete', dis: !sel || sel === d.map.id }), SEP,
-        B(selNode && selNode.collapsed ? '展开' : '折叠', () => need(() => this.toggle(sel)), { title: '空格', dis: !selNode || !(selNode.children || []).length || sel === d.map.id }), SEP,
-        B('上移', () => need(() => this.moveSib(sel, -1)), { title: 'Alt+↑', dis: !sel || sel === d.map.id }), B('下移', () => need(() => this.moveSib(sel, 1)), { title: 'Alt+↓', dis: !sel || sel === d.map.id }), SEP,
-        B('放左侧', () => need(() => this.patch(sel, { side: 'left' })), { dis: !level1, on: level1 && selNode.side === 'left', title: '一级分支放到左侧' }), B('放右侧', () => need(() => this.patch(sel, { side: 'right' })), { dis: !level1, on: level1 && selNode.side === 'right', title: '一级分支放到右侧' })],
-      style: [LBL('填充'), B('无', () => need(() => this.patch(sel, { fill: '' })), { on: selNode && !selNode.fill, fs: '12px' }), ...FILLS.map(h => SW(h, selNode && selNode.fill, 'fill')), SEP,
-        LBL('文字'), B('默认', () => need(() => this.patch(sel, { color: '' })), { on: selNode && !selNode.color, fs: '12px' }), ...TEXTS.map(h => SW(h, selNode && selNode.color, 'color')), SEP,
-        LBL('图标'), B('无', () => need(() => this.patch(sel, { icon: '' })), { on: selNode && !selNode.icon, fs: '12px' }), ...M.ICONS.map(([name, g]) => Object.assign(B(g, () => need(() => this.patch(sel, { icon: name })), { on: selNode && selNode.icon === name, title: name, fs: '16px' })))],
-      view: [...[50, 100, 150, 200].map(p => B(p + '%', () => this.zoomTo(p / 100), { on: Math.round(st.z * 100) === p })), B('适应画布', () => this.fit(1.25)), SEP,
-        B('全部展开', () => this.setAll(false)), B('全部折叠', () => this.setAll(true)), SEP, B('缩略图', () => this.props.onToggleThumbs && this.props.onToggleThumbs(), { on: showOutline, title: '显示/隐藏左侧大纲' })],
-      export: [B('导出 PNG', () => this.exportPng()), SEP, B('转为 Markdown 大纲', () => this.props.onConvert && this.props.onConvert('md')), B('转为 Word', () => this.props.onConvert && this.props.onConvert('docx')), B('转为演示', () => this.props.onConvert && this.props.onConvert('pptx'))]
+      home: [B('↶', () => this.props.onUndo && this.props.onUndo(), { title: $t('撤销 Ctrl+Z') }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: $t('重做 Ctrl+Y') }), SEP,
+        B($t('新增子主题'), () => this.addChild(sel || d.map.id), { title: 'Tab' }), B($t('新增同级'), () => need(() => this.addSibling(sel)), { title: 'Enter', dis: !sel || sel === d.map.id }), B($t('删除'), () => need(() => this.remove(sel)), { title: 'Delete', dis: !sel || sel === d.map.id }), SEP,
+        B(selNode && selNode.collapsed ? $t('展开') : $t('折叠'), () => need(() => this.toggle(sel)), { title: $t('空格'), dis: !selNode || !(selNode.children || []).length || sel === d.map.id }), SEP,
+        B($t('上移'), () => need(() => this.moveSib(sel, -1)), { title: 'Alt+↑', dis: !sel || sel === d.map.id }), B($t('下移'), () => need(() => this.moveSib(sel, 1)), { title: 'Alt+↓', dis: !sel || sel === d.map.id }), SEP,
+        B($t('放左侧'), () => need(() => this.patch(sel, { side: 'left' })), { dis: !level1, on: level1 && selNode.side === 'left', title: $t('一级分支放到左侧') }), B($t('放右侧'), () => need(() => this.patch(sel, { side: 'right' })), { dis: !level1, on: level1 && selNode.side === 'right', title: $t('一级分支放到右侧') })],
+      style: [LBL($t('填充')), B($t('无'), () => need(() => this.patch(sel, { fill: '' })), { on: selNode && !selNode.fill, fs: '12px' }), ...FILLS.map(h => SW(h, selNode && selNode.fill, 'fill')), SEP,
+        LBL($t('文字')), B($t('默认'), () => need(() => this.patch(sel, { color: '' })), { on: selNode && !selNode.color, fs: '12px' }), ...TEXTS.map(h => SW(h, selNode && selNode.color, 'color')), SEP,
+        LBL($t('图标')), B($t('无'), () => need(() => this.patch(sel, { icon: '' })), { on: selNode && !selNode.icon, fs: '12px' }), ...M.ICONS.map(([name, g]) => Object.assign(B(g, () => need(() => this.patch(sel, { icon: name })), { on: selNode && selNode.icon === name, title: name, fs: '16px' })))],
+      view: [...[50, 100, 150, 200].map(p => B(p + '%', () => this.zoomTo(p / 100), { on: Math.round(st.z * 100) === p })), B($t('适应画布'), () => this.fit(1.25)), SEP,
+        B($t('全部展开'), () => this.setAll(false)), B($t('全部折叠'), () => this.setAll(true)), SEP, B($t('缩略图'), () => this.props.onToggleThumbs && this.props.onToggleThumbs(), { on: showOutline, title: $t('显示/隐藏左侧大纲') })],
+      export: [B($t('导出 PNG'), () => this.exportPng()), SEP, B($t('转为 Markdown 大纲'), () => this.props.onConvert && this.props.onConvert('md')), B($t('转为 Word'), () => this.props.onConvert && this.props.onConvert('docx')), B($t('转为演示'), () => this.props.onConvert && this.props.onConvert('pptx'))]
     };
     const tab = st.tab;
-    const tabs = [['home', '开始'], ['style', '样式'], ['view', '视图'], ['export', '导出']].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => this.openTab(k, e) }; });
-    const outline = []; M.walk(d.map, (n, p, depth) => outline.push({ text: n.text || '（空）', indent: (10 + depth * 13) + 'px', fw: depth === 0 ? 600 : depth === 1 ? 500 : 400, bg: R(n.id) === sel ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent', mark: n.collapsed && (n.children || []).length ? '▸' : '', onClick: () => { this.setState({ sel: n.id }); this.centreOn(n.id); } }));
+    const tabs = [['home', $t('开始')], ['style', $t('样式')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => this.openTab(k, e) }; });
+    const outline = []; M.walk(d.map, (n, p, depth) => outline.push({ text: n.text || $t('（空）'), indent: (10 + depth * 13) + 'px', fw: depth === 0 ? 600 : depth === 1 ? 500 : 400, bg: R(n.id) === sel ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent', mark: n.collapsed && (n.children || []).length ? '▸' : '', onClick: () => { this.setState({ sel: n.id }); this.centreOn(n.id); } }));
     const { z, tx, ty } = st, dg = st.drag;
     const nodes = L.nodes.map(b => {
       const v = this.nodeView(b), s = b.s, n = b.n, bid = R(b.id), isSel = bid === sel, editing = !!st.editing && R(st.editing) === bid, over = !!dg && R(dg.over) === bid;
@@ -324,10 +324,10 @@ class Component extends DCLogic {
       onEditText: e => this.setState({ editText: e.target.value }),
       onEditKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.commitEdit(); this.focusRoot(); } else if (e.key === 'Escape') { e.preventDefault(); this.edDone = true; this.setState({ editing: null }); this.focusRoot(); } else if (e.key === 'Tab') { e.preventDefault(); const id = st.editing; this.commitEdit(); this.addChild(id); } },
       onEditBlur: () => this.commitEdit(),
-      hasGhost: !!ghost, gx: dg ? (dg.x + 14) + 'px' : 0, gy: dg ? (dg.y + 14) + 'px' : 0, ghostText: ghost ? ghost.text || '（空）' : '',
-      statCount: `${M.count(d.map)} 个主题`, zPct: Math.round(z * 100), zPctText: Math.round(z * 100) + '%',
+      hasGhost: !!ghost, gx: dg ? (dg.x + 14) + 'px' : 0, gy: dg ? (dg.y + 14) + 'px' : 0, ghostText: ghost ? ghost.text || $t('（空）') : '',
+      statCount: $t('{n} 个主题', { n: M.count(d.map) }), zPct: Math.round(z * 100), zPctText: Math.round(z * 100) + '%',
       onZoomSlide: e => this.zoomTo(+e.target.value / 100), zoomIn: () => this.zoomTo(z * 1.2), zoomOut: () => this.zoomTo(z / 1.2), fitClick: () => this.fit(1.25),
-      hasSel: !!selNode, selText: selNode ? selNode.text || '（空）' : '', note: selNode ? selNode.note || '' : '', noteGlyph: { __html: '✎' },
+      hasSel: !!selNode, selText: selNode ? selNode.text || $t('（空）') : '', note: selNode ? selNode.note || '' : '', noteGlyph: { __html: '✎' },
       onNoteFocus: () => this.props.onChange && this.props.onChange(structuredClone(d)),
       onNote: e => { const v = e.target.value; this.commit(m => { const n = this.F(m, sel); if (!n) return; if (v) n.note = v; else delete n.note; }, { silent: true }); }
     });

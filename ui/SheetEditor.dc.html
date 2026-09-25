@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -15,7 +15,7 @@
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
       <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.line }};font-weight:{{ t.weight }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
     </sc-for>
-    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
+    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
   </div></div>
   <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;transform-origin:top left">
@@ -231,11 +231,11 @@ const HEAD_ON = 'linear-gradient(var(--k50, rgba(255,255,255,0.9)),var(--k50, rg
 const Z = { cell: [1, 5, 9], mark: [2, 6, 10], handle: [3, 7, 11], object: [4, 8, 12],
   rowHead: 13, frozenRowHead: 14, colHead: 15, frozenColHead: 16, corner: 17, mirror: 18, editor: 19, popover: 20 };
 const PAL = ['#3F7D5C', '#E3B25A', '#2F5D8A', '#B5563A', '#7A6A9A', '#5C8A8A'];
-const FILLS = [['', '无填充'], ['#F3E6C4', '暖黄'], ['#DCEBDF', '浅绿'], ['#DCE5F0', '浅蓝'], ['#F6D9D3', '浅红'], ['#EFEFF4', '浅灰'], ['#1D1D1F', '墨色']];
-const FMTS = [['general', '常规'], ['number', '数值'], ['money', '货币 ¥'], ['usd', '货币 $'], ['acct', '会计专用'], ['pct', '百分比'], ['thousands', '千位分隔'], ['date', '日期'], ['time', '时间'], ['text', '文本']];
-const FONTS = ['思源宋体', '思源黑体', 'Arial', 'Times New Roman', 'Calibri', '微软雅黑'];
-const CHART_TYPES = [['column', '柱形图'], ['bar', '条形图'], ['line', '折线图'], ['pie', '饼图'], ['area', '面积图'], ['scatter', '散点图'], ['doughnut', '圆环图']];
-const LEGENDS = [['right', '右侧'], ['bottom', '底部'], ['top', '顶部'], ['left', '左侧'], ['none', '无图例']];
+const FILLS = [['', $t('无填充')], ['#F3E6C4', $t('暖黄')], ['#DCEBDF', $t('浅绿')], ['#DCE5F0', $t('浅蓝')], ['#F6D9D3', $t('浅红')], ['#EFEFF4', $t('浅灰')], ['#1D1D1F', $t('墨色')]];
+const FMTS = [['general', $t('常规')], ['number', $t('数值')], ['money', $t('货币 ¥')], ['usd', $t('货币 $')], ['acct', $t('会计专用')], ['pct', $t('百分比')], ['thousands', $t('千位分隔')], ['date', $t('日期')], ['time', $t('时间')], ['text', $t('文本')]];
+const FONTS = ['思源宋体', '思源黑体', 'Arial', 'Times New Roman', 'Calibri', '微软雅黑']; // i18n-ok: font family names (CSS font-family values)
+const CHART_TYPES = [['column', $t('柱形图')], ['bar', $t('条形图')], ['line', $t('折线图')], ['pie', $t('饼图')], ['area', $t('面积图')], ['scatter', $t('散点图')], ['doughnut', $t('圆环图')]];
+const LEGENDS = [['right', $t('右侧')], ['bottom', $t('底部')], ['top', $t('顶部')], ['left', $t('左侧')], ['none', $t('无图例')]];
 const BORDER_CSS = { thin: '1px solid', medium: '2px solid', thick: '3px solid', dashed: '1px dashed', dotted: '1px dotted', double: '3px double', hair: '1px solid' };
 const SIDES = ['top', 'right', 'bottom', 'left'];
 const ARROWS = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
@@ -243,10 +243,13 @@ const ARROWS = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowR
 const refRe = E => E.refRe || (E.refRe = new RegExp('("(?:[^"]|"")*")|(' + E.REF_SRC + ')(?![\\w(:])', 'gi'));
 const REF_PAL = ['#0A5BD7', '#D9342B', '#8E44D6', '#1E9E4A', '#E8811A', '#12948E', '#D4309E', '#8C5A2E']; // Excel range-finder order: blue red purple green orange teal magenta brown
 const REF_OPEN = /[=+\-*/^&,(;:<>]\s*$/; // caret right after one of these ⇒ a reference is expected (point mode)
-const SERIES = [['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'], ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+const SERIES = /* i18n-ok: autofill series patterns match cell content, not UI chrome */ [['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'], ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
   ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']];
 const mix = (a, b, t) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
-const short = v => Math.abs(v) >= 1e8 ? (v / 1e8).toFixed(1) + '亿' : Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(Math.abs(v) >= 1e5 ? 0 : 1) + '万' : String(Math.round(v * 100) / 100);
+// Chart axis/data-label abbreviation for large numbers: 万/亿 breaks in Chinese, K/M/B in English (not a literal translation — the breakpoints differ)
+const short = v => { const a = Math.abs(v); return $lang() === 'en'
+  ? a >= 1e9 ? (v / 1e9).toFixed(1) + 'B' : a >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : a >= 1e3 ? (v / 1e3).toFixed(1) + 'K' : String(Math.round(v * 100) / 100)
+  : a >= 1e8 ? (v / 1e8).toFixed(1) + '亿' /* i18n-ok: locale-specific number abbreviation, see $lang() branch above */ : a >= 1e4 ? (v / 1e4).toFixed(a >= 1e5 ? 0 : 1) + '万' /* i18n-ok */ : String(Math.round(v * 100) / 100); };
 const ZMIN = 0.2, ZMAX = 4;
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 
@@ -350,7 +353,7 @@ class Component extends DCLogic {
     const tools = this.P.pictureTools({
       look: () => Object.assign({}, (find(this.doc) || {}).look),
       show: look => this.setState({ picLive: { id, look } }),
-      send: props => this.EN ? this.EN.setPicture(this.doc.path, () => (find(this.doc) || {}).path, props) : Promise.reject(new Error('引擎还没有就绪')),
+      send: props => this.EN ? this.EN.setPicture(this.doc.path, () => (find(this.doc) || {}).path, props) : Promise.reject(new Error($t('引擎还没有就绪'))),
       commit: (r, binary) => {
         const c = this.EN.pictureSaved(this.doc, r.path, r.props), x0 = find(this.doc);
         if (binary && x0) this.P.bumpPic(x0.src);
@@ -446,7 +449,7 @@ class Component extends DCLogic {
   commitEdit(dr, dc) {
     const ed = this.state.edit; if (!ed) return;
     const { v, patch } = this.parseInput(ed.val, (this.sh.cells[this.E.A(ed.r, ed.c)] || {}).s);
-    const bad = this.dvBad(ed.r, ed.c, v); if (bad) { this.toast('数据验证：' + bad); this.wantFocus = true; return; }
+    const bad = this.dvBad(ed.r, ed.c, v); if (bad) { this.toast($t('数据验证：{msg}', { msg: bad })); this.wantFocus = true; return; }
     if (v !== this.raw(ed.r, ed.c) || patch) this.commit(sh => this.setCellRaw(sh, ed.r, ed.c, v, patch));
     // move in the state callback, not a timer: keys typed right after Enter must land in the next cell, not the one just committed
     this.setState({ edit: null, anc: { r: ed.r, c: ed.c }, sel: { r: ed.r, c: ed.c } }, () => { if (dr || dc) this.move(dr, dc); });
@@ -566,11 +569,11 @@ class Component extends DCLogic {
   insDel(axis, at, n) {
     const E = this.E, name = this.sh.name;
     const refs = Object.keys(this.sh.cells), parsed = refs.map(a => E.parseA(a));
-    if (parsed.some(p => !p)) { this.toast('工作表包含当前编辑器无法移动的单元格地址，未执行插入或删除'); return; }
+    if (parsed.some(p => !p)) { this.toast($t('工作表包含当前编辑器无法移动的单元格地址，未执行插入或删除')); return; }
     // The editor only draws 80 × 20 cells. Data outside that viewport must still survive a row/column insertion.
     const limit = axis === 'r' ? 1048576 : 16384;
     if (n > 0 && parsed.some(p => { const i = axis === 'r' ? p.r : p.c; return i >= at && i + n >= limit; })) {
-      this.toast('插入会超出 Excel 工作表的行列上限，未修改文件'); return;
+      this.toast($t('插入会超出 Excel 工作表的行列上限，未修改文件')); return;
     }
     this.commit((sh, d) => {
       const nc = {};
@@ -600,7 +603,7 @@ class Component extends DCLogic {
     const rows = []; for (let r = r1; r <= R.r2; r++) { const k = calc.value(this.si, r, col); rows.push({ r, k, cells: Array.from({ length: R.c2 - R.c1 + 1 }, (_, j) => this.sh.cells[E.A(r, R.c1 + j)]) }); }
     rows.sort((a, b) => { const ea = a.k === '', eb = b.k === ''; if (ea || eb) return ea - eb; const na = typeof a.k === 'number', nb = typeof b.k === 'number'; let d = na && nb ? a.k - b.k : na ? -1 : nb ? 1 : String(a.k).localeCompare(String(b.k), 'zh'); return asc ? d : -d; });
     this.commit(sh => rows.forEach((row, i) => { const tr = r1 + i; row.cells.forEach((x, j) => { const a = E.A(tr, R.c1 + j); if (!x) { delete sh.cells[a]; return; } const n = structuredClone(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), tr - row.r, 0); sh.cells[a] = n; }); }));
-    this.toast(asc ? '已升序排序' : '已降序排序');
+    this.toast(asc ? $t('已升序排序') : $t('已降序排序'));
   }
   // sh.filter is the autofilter range ("A1:D20"); which values are hidden lives only in state.fex[sheet][col].
   fltRect() { const f = this.sh.filter; if (!f) return null; const [a, b] = String(f).split(':'), p = this.E.parseA(a), q = this.E.parseA(b || a); if (!p || !q) return null; return { r: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) }; }
@@ -609,39 +612,39 @@ class Component extends DCLogic {
   toggleFilter() {
     const E = this.E;
     if (this.sh.filter) { this.setFex({}); return this.commit(sh => { sh.filter = null; }); }
-    const R = this.region(); if (!R) return this.toast('先输入一些数据');
+    const R = this.region(); if (!R) return this.toast($t('先输入一些数据'));
     this.commit(sh => { sh.filter = E.A(R.r1, R.c1) + ':' + E.A(R.r2, R.c2); });
   }
   freeze(kind) { const s0 = this.act(); this.commit(s => { s.frR = kind === 'row' ? 1 : kind === 'here' ? s0.r : 0; s.frC = kind === 'col' ? 1 : kind === 'here' ? s0.c : 0; }, true); }
   sortCustom() {
     const E = this.E;
-    this.prompt('自定义排序', [{ key: 'c', label: '排序列（列字母）', value: E.colName(this.act().c), first: true }, { key: 'o', label: '顺序', value: 'asc', options: [['asc', '升序'], ['desc', '降序']] }],
-      v => { const c = E.colIdx(v.c.trim().toUpperCase()); if (isNaN(c) || c < 0 || c >= E.NC) return this.toast('列字母无效'); this.sort(v.o === 'asc', c); });
+    this.prompt($t('自定义排序'), [{ key: 'c', label: $t('排序列（列字母）'), value: E.colName(this.act().c), first: true }, { key: 'o', label: $t('顺序'), value: 'asc', options: [['asc', $t('升序')], ['desc', $t('降序')]] }],
+      v => { const c = E.colIdx(v.c.trim().toUpperCase()); if (isNaN(c) || c < 0 || c >= E.NC) return this.toast($t('列字母无效')); this.sort(v.o === 'asc', c); });
   }
   splitCols() {
     const E = this.E, R = this.rng();
-    this.prompt('分列', [{ key: 'd', label: '分隔符（逗号、分号、空格…）', value: ',', first: true }], v => {
-      const d = v.d === '空格' ? ' ' : v.d || ',';
+    this.prompt($t('分列'), [{ key: 'd', label: $t('分隔符（逗号、分号、空格…）'), value: ',', first: true }], v => {
+      const d = v.d === '空格' /* i18n-ok: recognizes a typed-in word for space */ || v.d.toLowerCase() === 'space' ? ' ' : v.d || ',';
       this.commit(sh => { for (let r = R.r1; r <= R.r2; r++) { const x = sh.cells[E.A(r, R.c1)]; if (!x || x.v == null || String(x.v)[0] === '=') continue; String(x.v).split(d).forEach((part, j) => { if (R.c1 + j < E.NC) this.setCellRaw(sh, r, R.c1 + j, part.trim(), null); }); } });
     });
   }
   dvSet() {
     const cs = this.actStyle(), dv = cs.dv || {};
-    this.prompt('数据验证', [{ key: 't', label: '允许', value: dv.type || 'list', options: [['list', '序列（下拉列表）'], ['number', '数字范围'], ['none', '任何值']] }, { key: 'v', label: '来源：列表项用逗号分隔；数字范围如 1-100', value: dv.type === 'list' ? dv.list.join(',') : dv.type === 'number' ? dv.min + '-' + dv.max : '', first: true }], v => {
-      if (v.t === 'list') { const list = v.v.split(/[,，]/).map(x => x.trim()).filter(Boolean); if (!list.length) return this.toast('请输入列表项'); return this.style({ dv: { type: 'list', list } }); }
-      if (v.t === 'number') { const m = /^\s*(-?[\d.]+)\s*[-~至]\s*(-?[\d.]+)\s*$/.exec(v.v); if (!m) return this.toast('范围格式：最小值-最大值'); return this.style({ dv: { type: 'number', min: +m[1], max: +m[2] } }); }
+    this.prompt($t('数据验证'), [{ key: 't', label: $t('允许'), value: dv.type || 'list', options: [['list', $t('序列（下拉列表）')], ['number', $t('数字范围')], ['none', $t('任何值')]] }, { key: 'v', label: $t('来源：列表项用逗号分隔；数字范围如 1-100'), value: dv.type === 'list' ? dv.list.join(',') : dv.type === 'number' ? dv.min + '-' + dv.max : '', first: true }], v => {
+      if (v.t === 'list') { const list = v.v.split(/[,，]/).map(x => x.trim()).filter(Boolean); if (!list.length) return this.toast($t('请输入列表项')); return this.style({ dv: { type: 'list', list } }); }
+      if (v.t === 'number') { const m = /^\s*(-?[\d.]+)\s*[-~至]\s*(-?[\d.]+)\s*$/.exec(v.v); if (!m) return this.toast($t('范围格式：最小值-最大值')); return this.style({ dv: { type: 'number', min: +m[1], max: +m[2] } }); }
       this.style({ dv: null });
     });
   }
   dvBad(r, c, val) {
     const x = this.sh.cells[this.E.A(r, c)], dv = x && x.s && x.s.dv; if (!dv || val === '' || val[0] === '=') return null;
-    if (dv.type === 'list') return dv.list.includes(val) ? null : '只能输入：' + dv.list.join('、');
-    if (dv.type === 'number') { const n = Number(val); return isNaN(n) || n < dv.min || n > dv.max ? `只能输入 ${dv.min} 到 ${dv.max} 之间的数字` : null; }
+    if (dv.type === 'list') return dv.list.includes(val) ? null : $t('只能输入：{list}', { list: dv.list.join($lang() === 'en' ? ', ' : '、' /* i18n-ok: CJK enumeration comma */) });
+    if (dv.type === 'number') { const n = Number(val); return isNaN(n) || n < dv.min || n > dv.max ? $t('只能输入 {min} 到 {max} 之间的数字', { min: dv.min, max: dv.max }) : null; }
     return null;
   }
   setLink() {
     const E = this.E, cs = this.actStyle();
-    this.prompt('超链接', [{ key: 'u', label: '网址，或本工作簿位置（如 #Sheet1!A1）；留空则删除', value: cs.link || '', first: true }], v => {
+    this.prompt($t('超链接'), [{ key: 'u', label: $t('网址，或本工作簿位置（如 #Sheet1!A1）；留空则删除'), value: cs.link || '', first: true }], v => {
       const u = v.u.trim();
       this.commit(sh => this.eachCell((r, c) => { const a = E.A(r, c), x = sh.cells[a] || { v: '' }, s = Object.assign({}, x.s); if (u) s.link = u; else delete s.link; sh.cells[a] = Object.assign({}, x, { v: x.v || u, s }); }));
     });
@@ -649,14 +652,14 @@ class Component extends DCLogic {
   openLink(link) {
     const E = this.E, d = this.doc;
     if (link[0] !== '#') { window.open(/^[a-z]+:/i.test(link) ? link : 'https://' + link, '_blank', 'noopener'); return; }
-    const bang = link.lastIndexOf('!'), name = bang > 0 ? link.slice(1, bang).replace(/^'|'$/g, '') : null, p = E.parseA(link.slice(bang + 1)); if (!p) return this.toast('位置无效：' + link);
-    const i = name ? d.sheets.findIndex(s => s.name === name) : this.si; if (i < 0) return this.toast('找不到工作表 ' + name);
+    const bang = link.lastIndexOf('!'), name = bang > 0 ? link.slice(1, bang).replace(/^'|'$/g, '') : null, p = E.parseA(link.slice(bang + 1)); if (!p) return this.toast($t('位置无效：{link}', { link }));
+    const i = name ? d.sheets.findIndex(s => s.name === name) : this.si; if (i < 0) return this.toast($t('找不到工作表 {name}', { name }));
     if (i !== this.si) this.props.onChange(Object.assign({}, d, { active: i }), { silent: true });
     this.setSel(p.r, p.c);
   }
   setNote() {
     const cs = this.actStyle();
-    this.prompt('批注', [{ key: 'n', label: '批注内容（留空则删除）', value: cs.note || '', multi: true, first: true }], v => this.style({ note: v.n.trim() || null }));
+    this.prompt($t('批注'), [{ key: 'n', label: $t('批注内容（留空则删除）'), value: cs.note || '', multi: true, first: true }], v => this.style({ note: v.n.trim() || null }));
   }
   mergeKind(kind) {
     const E = this.E, R = this.rng(), keep = sh => (sh.merges || []).filter(x => x.r + x.rs <= R.r1 || x.r > R.r2 || x.c + x.cs <= R.c1 || x.c > R.c2);
@@ -689,7 +692,7 @@ class Component extends DCLogic {
     for (let r = r1; r <= R.r2; r++) { const k = Array.from({ length: R.c2 - R.c1 + 1 }, (_, j) => String(calc.value(this.si, r, R.c1 + j))).join('\u0001'); if (!seen.has(k)) { seen.add(k); keep.push(r); } }
     const removed = R.r2 - r1 + 1 - keep.length;
     this.commit(sh => { const snap = {}; keep.forEach(r => { for (let c = R.c1; c <= R.c2; c++) snap[r + ':' + c] = sh.cells[E.A(r, c)]; }); for (let r = r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) delete sh.cells[E.A(r, c)]; keep.forEach((r, i) => { for (let c = R.c1; c <= R.c2; c++) { const x = snap[r + ':' + c]; if (x) sh.cells[E.A(r1 + i, c)] = x; } }); });
-    this.toast(removed ? `已删除 ${removed} 行重复数据` : '没有发现重复行');
+    this.toast(removed ? $t('已删除 {n} 行重复数据', { n: removed }) : $t('没有发现重复行'));
   }
   autoFn(fn) {
     const E = this.E, R = this.rng(), num = (r, c) => { const x = this.sh.cells[E.A(r, c)]; return x && x.v !== '' && !isNaN(Number(x.v)) || (x && String(x.v).startsWith('=')); };
@@ -715,7 +718,7 @@ class Component extends DCLogic {
   addCF(type, val) { const R = this.rng(); this.commit(sh => { sh.cf = (sh.cf || []).concat([{ type, val, r1: R.r1, c1: R.c1, r2: R.r2, c2: R.c2 }]); }); }
   /** Header row → series names, a text first column → categories; the chart keeps ranges, values come through the calc engine when it renders. */
   insertChart(type, stacked) {
-    const E = this.E, R = this.region(); if (!R) return this.toast('先选择要绘图的数据');
+    const E = this.E, R = this.region(); if (!R) return this.toast($t('先选择要绘图的数据'));
     const calc = new E.Calc(this.doc), hdr = this.hasHeader(R, calc);
     let lab = null; const dr1 = hdr ? R.r1 + 1 : R.r1;
     if (R.c2 > R.c1) { let txt = 0; for (let r = dr1; r <= R.r2; r++) if (typeof calc.value(this.si, r, R.c1) === 'string') txt++; if (txt > 0 || type === 'scatter') lab = R.c1; }
@@ -723,7 +726,7 @@ class Component extends DCLogic {
     const rg = c => E.A(dr1, c) + ':' + E.A(R.r2, c), cat = lab == null ? '' : rg(lab);
     const ser = cols.map(c => Object.assign({ values: rg(c) }, hdr ? { name: E.A(R.r1, c) } : null, type === 'scatter' && cat ? { x: cat } : null));
     const x = this.gridMap((this.xs ? this.xs[Math.min(R.c2 + 1, E.NC)] : 400) + 24, 'x', true), y = this.gridMap(this.ys ? this.ys[R.r1] : 0, 'y', true); // beside the data, in sheet px
-    const title = hdr && cols.length === 1 ? String(calc.value(this.si, R.r1, cols[0])) : this.sh.name + ' 图表';
+    const title = hdr && cols.length === 1 ? String(calc.value(this.si, R.r1, cols[0])) : this.sh.name + ' ' + $t('图表');
     this.commit(sh => { sh.charts = (sh.charts || []).concat([{ id: 'ch' + Date.now().toString(36), type, title, cat, ser, legend: 'right', stacked: !!stacked, x, y, w: 460, h: 300 }]); });
   }
   openPop(id, e, x, y) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && !x ? null : { id, x: x ?? r.left, y: y ?? r.bottom + 4 } }); }
@@ -738,7 +741,7 @@ class Component extends DCLogic {
     const E = this.E, q = this.state.fq; if (!q) return; let n = 0;
     const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     this.commit(sh => Object.entries(sh.cells).forEach(([a, x]) => { if (typeof x.v !== 'string' || x.v[0] === '=') return; const p = E.parseA(a); if (!all && (p.r !== this.act().r || p.c !== this.act().c)) return; if (re.test(x.v)) { re.lastIndex = 0; x.v = x.v.replace(re, this.state.fr); n++; } re.lastIndex = 0; }));
-    if (all) this.toast(`已替换 ${n} 处`); else this.findNext();
+    if (all) this.toast($t('已替换 {n} 处', { n })); else this.findNext();
   }
   onWM = e => {
     const op = this.op; if (!op) return;
@@ -776,7 +779,7 @@ class Component extends DCLogic {
     const text = (si, r, c) => this.fmtV(calc.value(si, r, c), (d.sheets[si].cells[E.A(r, c)] || {}).s);
     const nums = rng => { const l = this.refList(rng); return l.refs.map(([r, c]) => { const v = calc.value(l.si, r, c); return typeof v === 'number' ? v : 0; }); };
     const cat = this.refList(ch.cat);
-    const series = (ch.ser || []).map((s, i) => { const nm = s.name ? this.refList(s.name) : null; return { name: nm && nm.refs.length ? text(nm.si, ...nm.refs[0]) : (s.name || '系列 ' + (i + 1)), fill: PAL[i % PAL.length], vals: nums(s.values), xs: s.x ? nums(s.x) : null }; });
+    const series = (ch.ser || []).map((s, i) => { const nm = s.name ? this.refList(s.name) : null; return { name: nm && nm.refs.length ? text(nm.si, ...nm.refs[0]) : (s.name || $t('系列 {n}', { n: i + 1 })), fill: PAL[i % PAL.length], vals: nums(s.values), xs: s.x ? nums(s.x) : null }; });
     const n = Math.max(1, cat.refs.length, ...series.map(s => s.vals.length));
     const labels = Array.from({ length: n }, (_, i) => cat.refs[i] ? text(cat.si, ...cat.refs[i]) : String(i + 1));
     const type = ch.type || 'column', round = type === 'pie' || type === 'doughnut', horiz = type === 'bar', stacked = !!ch.stacked && (type === 'column' || horiz || type === 'area'), noLg = ch.legend === 'none';
@@ -817,11 +820,11 @@ class Component extends DCLogic {
     }
     return Object.assign(out, {
       x: RHW + pos.x + 'px', y: CHH + pos.y + 'px', w: ch.w + 'px', h: ch.h + 'px', sw, sh: shh, title: ch.title, border: ch.ai ? '#7FB59A' : this.state.chartSel === ch.id ? 'var(--k59, #3F7D5C)' : 'var(--k6, #E5E5EA)',
-      typeLabel: (CHART_TYPES.find(([k]) => k === type) || ['', type])[1] + (stacked ? '·堆积' : ''), lgOrder: ch.legend === 'top' ? -1 : 0, lgDisp: noLg ? 'none' : 'flex',
+      typeLabel: (CHART_TYPES.find(([k]) => k === type) || ['', type])[1] + (stacked ? $t('·堆积') : ''), lgOrder: ch.legend === 'top' ? -1 : 0, lgDisp: noLg ? 'none' : 'flex',
       onMenu: e => this.openPop('cht' + ch.id, e),
       onSel: e => { e.stopPropagation(); this.setState({ chartSel: ch.id }); },
       onDrag: e => { e.preventDefault(); this.op = { kind: 'chart', id: ch.id, x0: e.clientX, y0: e.clientY, cx: pos.x, cy: pos.y }; this.setState({ chartSel: ch.id }); },
-      onRename: () => this.prompt('图表标题', [{ key: 't', label: '标题', value: ch.title, first: true }], v => this.commit(sh => { sh.charts.find(c => c.id === ch.id).title = v.t; })),
+      onRename: () => this.prompt($t('图表标题'), [{ key: 't', label: $t('标题'), value: ch.title, first: true }], v => this.commit(sh => { sh.charts.find(c => c.id === ch.id).title = v.t; })),
       onDelete: () => this.commit(sh => { sh.charts = sh.charts.filter(c => c.id !== ch.id); })
     });
   }
@@ -846,66 +849,66 @@ class Component extends DCLogic {
     const I = (label, onClick, o = {}) => ({ isItem: true, label, check: o.on ? '✓' : '', hint: o.hint || '', onClick: () => { this.setState({ pop: null }); onClick(); } });
     const HD = label => ({ isHead: true, label }), IS = { isSepI: true };
     this.menus = {};
-    const tabsDef = [['home', '开始'], ['insert', '插入'], ['formula', '公式'], ['data', '数据'], ['view', '视图']];
+    const tabsDef = [['home', $t('开始')], ['insert', $t('插入')], ['formula', $t('公式')], ['data', $t('数据')], ['view', $t('视图')]];
     const pic = this.P ? this.pic : null, picLook = pic ? (st.picLive && st.picLive.id === pic.id ? st.picLive.look : pic.look || {}) : null;
-    if (pic) tabsDef.push(['picture', '图片']);
+    if (pic) tabsDef.push(['picture', $t('图片')]);
     const tab = st.tab;
     const tabs = tabsDef.map(([k, l]) => ({ label: l, color: tab === k ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === k ? 600 : 400, line: st.bubble && tab === k ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === k ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(k, e) }));
-    const cfMenu = M('cf', '条件格式', [HD('突出显示单元格'), I('大于…', () => this.prompt('大于', [{ key: 'v', label: '为大于以下值的单元格设置格式', first: true }], v => this.addCF('gt', v.v))), I('小于…', () => this.prompt('小于', [{ key: 'v', label: '为小于以下值的单元格设置格式', first: true }], v => this.addCF('lt', v.v))), I('等于…', () => this.prompt('等于', [{ key: 'v', label: '为等于以下值的单元格设置格式', first: true }], v => this.addCF('eq', v.v))), I('文本包含…', () => this.prompt('文本包含', [{ key: 'v', label: '包含以下文本', first: true }], v => this.addCF('text', v.v))), I('重复值', () => this.addCF('dup')), IS, I('数据条', () => this.addCF('bar')), I('色阶', () => this.addCF('scale')), IS, I('清除所选单元格的规则', () => this.commit(s => { s.cf = (s.cf || []).filter(x => x.r2 < R.r1 || x.r1 > R.r2 || x.c2 < R.c1 || x.c1 > R.c2); })), I('清除整个工作表的规则', () => this.commit(s => { s.cf = []; }))]);
-    const sumMenu = M('sum', 'Σ 求和', [['SUM', '求和'], ['AVERAGE', '平均值'], ['COUNT', '计数'], ['MAX', '最大值'], ['MIN', '最小值']].map(([f, l]) => I(l, () => this.autoFn(f), { hint: f })));
-    const fnMenu = M('fns', '函数库', E.FUNC_GROUPS.flatMap(([g, fs]) => [HD(g)].concat(fs.map(([f, d]) => I(f, () => this.insertFn(f), { hint: d })))));
+    const cfMenu = M('cf', $t('条件格式'), [HD($t('突出显示单元格')), I($t('大于…'), () => this.prompt($t('大于'), [{ key: 'v', label: $t('为大于以下值的单元格设置格式'), first: true }], v => this.addCF('gt', v.v))), I($t('小于…'), () => this.prompt($t('小于'), [{ key: 'v', label: $t('为小于以下值的单元格设置格式'), first: true }], v => this.addCF('lt', v.v))), I($t('等于…'), () => this.prompt($t('等于'), [{ key: 'v', label: $t('为等于以下值的单元格设置格式'), first: true }], v => this.addCF('eq', v.v))), I($t('文本包含…'), () => this.prompt($t('文本包含'), [{ key: 'v', label: $t('包含以下文本'), first: true }], v => this.addCF('text', v.v))), I($t('重复值'), () => this.addCF('dup')), IS, I($t('数据条'), () => this.addCF('bar')), I($t('色阶'), () => this.addCF('scale')), IS, I($t('清除所选单元格的规则'), () => this.commit(s => { s.cf = (s.cf || []).filter(x => x.r2 < R.r1 || x.r1 > R.r2 || x.c2 < R.c1 || x.c1 > R.c2); })), I($t('清除整个工作表的规则'), () => this.commit(s => { s.cf = []; }))]);
+    const sumMenu = M('sum', $t('Σ 求和'), [['SUM', $t('求和@@btn')], ['AVERAGE', $t('平均值@@btn')], ['COUNT', $t('计数')], ['MAX', $t('最大值@@btn')], ['MIN', $t('最小值@@btn')]].map(([f, l]) => I(l, () => this.autoFn(f), { hint: f })));
+    const fnMenu = M('fns', $t('函数库'), E.FUNC_GROUPS.flatMap(([g, fs]) => [HD($t(g))].concat(fs.map(([f, d]) => I(f, () => this.insertFn(f), { hint: $t(d) })))));
     const tb = e => this.style(null, e);
-    const fmtKey = cs.fmt === 'number' && cs.dec === 0 ? 'thousands' : (cs.fmt || 'general'), fmtLabel = (FMTS.find(([k]) => k === fmtKey) || ['', '自定义'])[1];
-    const sortMenu = M('sort', '排序', [I('升序 A→Z', () => this.sort(true)), I('降序 Z→A', () => this.sort(false)), IS, I('自定义排序…', () => this.sortCustom())]);
+    const fmtKey = cs.fmt === 'number' && cs.dec === 0 ? 'thousands' : (cs.fmt || 'general'), fmtLabel = (FMTS.find(([k]) => k === fmtKey) || ['', $t('自定义')])[1];
+    const sortMenu = M('sort', $t('排序@@btn'), [I($t('升序 A→Z'), () => this.sort(true)), I($t('降序 Z→A'), () => this.sort(false)), IS, I($t('自定义排序…'), () => this.sortCustom())]);
     let ribbon = [];
     if (tab === 'home') ribbon = [
-      B('↶', () => this.props.onUndo && this.props.onUndo(), { title: '撤销 Ctrl+Z' }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: '重做 Ctrl+Y' }), SEP,
-      B('粘贴', () => this.paste(null), { dis: !this.clip }), B('剪切', () => this.copy(true)), B('复制', () => this.copy(false)), B('格式刷', () => { const p = structuredClone(cs); delete p.link; delete p.note; delete p.dv; this.setState({ painter: st.painter ? null : p }); }, { on: !!st.painter }), SEP,
-      S(cs.font || '', [['', '默认字体']].concat(FONTS.concat(cs.font && !FONTS.includes(cs.font) ? [cs.font] : []).map(f => [f, f])), e => this.style({ font: e.target.value || null }), '104px', '字体'),
-      S(cs.fs || 11, [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].concat(cs.fs && ![9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].includes(cs.fs) ? [cs.fs] : []).map(n => [n, n + '']), e => this.style({ fs: +e.target.value }), '58px', '字号'),
-      B('B', () => tb('b'), { on: cs.b, fw: 700, title: '加粗 Ctrl+B' }), B('I', () => tb('i'), { on: cs.i, fs: 'italic', title: '斜体 Ctrl+I' }), B('U', () => tb('u'), { on: cs.u, td: 'underline', title: '下划线 Ctrl+U' }), B('S', () => tb('st'), { on: cs.st, td: 'line-through', title: '删除线' }),
-      C('A', cs.color || '#B5563A', e => this.style({ color: e.target.value }), '文字颜色', 600),
-      M('fill', '填充', FILLS.map(([c, n]) => I(n, () => this.style({ fill: c || null }), { on: (cs.fill || '') === c })).concat([I('自定义颜色…', () => this.prompt('填充颜色', [{ key: 'c', label: '十六进制颜色', value: cs.fill || '#', first: true }], v => this.style({ fill: v.c || null })))])),
-      M('bd', '边框', [['none', '无框线'], ['all', '所有框线'], ['out', '外侧框线'], ['bottom', '下框线'], ['top', '上框线'], ['lr', '左右框线'], ['thickOut', '粗外侧框线'], ['dblBottom', '双底框线']].map(([k, l]) => I(l, () => this.borders(k))).concat([IS, HD('线条颜色')], [['#3A3A3C', '黑色'], ['#8E8E93', '灰色'], ['#B5563A', '红色'], ['#2F5D8A', '蓝色'], ['#3F7D5C', '绿色']].map(([c, n]) => I(n, () => this.style({ bdc: c === '#3A3A3C' ? null : c }), { on: (cs.bdc || '#3A3A3C') === c })), [I('自定义颜色…', () => this.prompt('线条颜色', [{ key: 'c', label: '十六进制颜色', value: cs.bdc || '#', first: true }], v => this.style({ bdc: /^#[0-9a-f]{6}$/i.test(v.c) ? v.c : null })))])),
-      B('⇤', () => this.indent(-1), { title: '减少缩进', dis: !cs.indent }), B('⇥', () => this.indent(1), { title: '增加缩进' }), SEP,
-      AL('left', '左对齐'), AL('center', '居中'), AL('right', '右对齐'),
-      M('va', '垂直', [['top', '顶端对齐'], ['middle', '垂直居中'], ['bottom', '底端对齐']].map(([k, l]) => I(l, () => this.style({ va: k }), { on: (cs.va || 'middle') === k }))),
-      B('自动换行', () => tb('wrap'), { on: cs.wrap }),
-      M('merge', '合并', [I('合并居中', () => this.mergeKind('center'), { on: !!this.mergeAt(s0.r, s0.c) }), I('跨越合并', () => this.mergeKind('across')), I('取消合并', () => this.mergeKind('un'))]), SEP,
-      M('fmt', fmtLabel, FMTS.map(([k, l]) => I(l, () => this.style(k === 'general' ? { fmt: null, dec: null } : k === 'thousands' ? { fmt: 'number', dec: 0 } : { fmt: k, dec: null }), { on: fmtKey === k })).concat([IS, I('自定义…', () => this.prompt('自定义数字格式', [{ key: 'c', label: '格式代码（如 0.00、#,##0、yyyy/m/d）', value: cs.code || '', first: true }], v => { const code = v.c.trim(); if (!code || code === 'General') return this.style({ fmt: null, dec: null }); import('./engine.js').then(m => this.style(Object.assign({ fmt: null, dec: null }, m.fmtOf(code)))); }))]), '数字格式'),
-      B('¥', () => this.style({ fmt: 'money' }), { title: '货币格式' }), B('%', () => this.style({ fmt: 'pct', dec: 0 }), { title: '百分比' }), B(',', () => this.style({ fmt: 'number', dec: 0 }), { title: '千位分隔' }),
-      B('.0←', () => this.decimals(1), { title: '增加小数位数' }), B('.00→', () => this.decimals(-1), { title: '减少小数位数' }), SEP,
+      B('↶', () => this.props.onUndo && this.props.onUndo(), { title: $t('撤销 Ctrl+Z') }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: $t('重做 Ctrl+Y') }), SEP,
+      B($t('粘贴'), () => this.paste(null), { dis: !this.clip }), B($t('剪切'), () => this.copy(true)), B($t('复制'), () => this.copy(false)), B($t('格式刷'), () => { const p = structuredClone(cs); delete p.link; delete p.note; delete p.dv; this.setState({ painter: st.painter ? null : p }); }, { on: !!st.painter }), SEP,
+      S(cs.font || '', [['', $t('默认字体')]].concat(FONTS.concat(cs.font && !FONTS.includes(cs.font) ? [cs.font] : []).map(f => [f, f])), e => this.style({ font: e.target.value || null }), '104px', $t('字体')),
+      S(cs.fs || 11, [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].concat(cs.fs && ![9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].includes(cs.fs) ? [cs.fs] : []).map(n => [n, n + '']), e => this.style({ fs: +e.target.value }), '58px', $t('字号')),
+      B('B', () => tb('b'), { on: cs.b, fw: 700, title: $t('加粗 Ctrl+B') }), B('I', () => tb('i'), { on: cs.i, fs: 'italic', title: $t('斜体 Ctrl+I') }), B('U', () => tb('u'), { on: cs.u, td: 'underline', title: $t('下划线 Ctrl+U') }), B('S', () => tb('st'), { on: cs.st, td: 'line-through', title: $t('删除线') }),
+      C('A', cs.color || '#B5563A', e => this.style({ color: e.target.value }), $t('文字颜色'), 600),
+      M('fill', $t('填充'), FILLS.map(([c, n]) => I(n, () => this.style({ fill: c || null }), { on: (cs.fill || '') === c })).concat([I($t('自定义颜色…'), () => this.prompt($t('填充颜色'), [{ key: 'c', label: $t('十六进制颜色'), value: cs.fill || '#', first: true }], v => this.style({ fill: v.c || null })))])),
+      M('bd', $t('边框'), [['none', $t('无框线')], ['all', $t('所有框线')], ['out', $t('外侧框线')], ['bottom', $t('下框线')], ['top', $t('上框线')], ['lr', $t('左右框线')], ['thickOut', $t('粗外侧框线')], ['dblBottom', $t('双底框线')]].map(([k, l]) => I(l, () => this.borders(k))).concat([IS, HD($t('线条颜色'))], [['#3A3A3C', $t('黑色')], ['#8E8E93', $t('灰色')], ['#B5563A', $t('红色')], ['#2F5D8A', $t('蓝色')], ['#3F7D5C', $t('绿色')]].map(([c, n]) => I(n, () => this.style({ bdc: c === '#3A3A3C' ? null : c }), { on: (cs.bdc || '#3A3A3C') === c })), [I($t('自定义颜色…'), () => this.prompt($t('线条颜色'), [{ key: 'c', label: $t('十六进制颜色'), value: cs.bdc || '#', first: true }], v => this.style({ bdc: /^#[0-9a-f]{6}$/i.test(v.c) ? v.c : null })))])),
+      B('⇤', () => this.indent(-1), { title: $t('减少缩进'), dis: !cs.indent }), B('⇥', () => this.indent(1), { title: $t('增加缩进') }), SEP,
+      AL('left', $t('左对齐')), AL('center', $t('居中')), AL('right', $t('右对齐')),
+      M('va', $t('垂直'), [['top', $t('顶端对齐')], ['middle', $t('垂直居中')], ['bottom', $t('底端对齐')]].map(([k, l]) => I(l, () => this.style({ va: k }), { on: (cs.va || 'middle') === k }))),
+      B($t('自动换行'), () => tb('wrap'), { on: cs.wrap }),
+      M('merge', $t('合并'), [I($t('合并居中'), () => this.mergeKind('center'), { on: !!this.mergeAt(s0.r, s0.c) }), I($t('跨越合并'), () => this.mergeKind('across')), I($t('取消合并'), () => this.mergeKind('un'))]), SEP,
+      M('fmt', fmtLabel, FMTS.map(([k, l]) => I(l, () => this.style(k === 'general' ? { fmt: null, dec: null } : k === 'thousands' ? { fmt: 'number', dec: 0 } : { fmt: k, dec: null }), { on: fmtKey === k })).concat([IS, I($t('自定义…'), () => this.prompt($t('自定义数字格式'), [{ key: 'c', label: $t('格式代码（如 0.00、#,##0、yyyy/m/d）'), value: cs.code || '', first: true }], v => { const code = v.c.trim(); if (!code || code === 'General') return this.style({ fmt: null, dec: null }); import('./engine.js').then(m => this.style(Object.assign({ fmt: null, dec: null }, m.fmtOf(code)))); }))]), $t('数字格式')),
+      B('¥', () => this.style({ fmt: 'money' }), { title: $t('货币格式') }), B('%', () => this.style({ fmt: 'pct', dec: 0 }), { title: $t('百分比') }), B(',', () => this.style({ fmt: 'number', dec: 0 }), { title: $t('千位分隔') }),
+      B('.0←', () => this.decimals(1), { title: $t('增加小数位数') }), B('.00→', () => this.decimals(-1), { title: $t('减少小数位数') }), SEP,
       cfMenu,
-      M('ins', '插入', [I('上方插入行', () => this.insDel('r', R.r1, R.r2 - R.r1 + 1)), I('下方插入行', () => this.insDel('r', R.r2 + 1, R.r2 - R.r1 + 1)), I('左侧插入列', () => this.insDel('c', R.c1, R.c2 - R.c1 + 1)), I('右侧插入列', () => this.insDel('c', R.c2 + 1, R.c2 - R.c1 + 1))]),
-      M('del', '删除', [I('删除行', () => this.insDel('r', R.r1, -(R.r2 - R.r1 + 1))), I('删除列', () => this.insDel('c', R.c1, -(R.c2 - R.c1 + 1)))]), SEP,
+      M('ins', $t('插入'), [I($t('上方插入行'), () => this.insDel('r', R.r1, R.r2 - R.r1 + 1)), I($t('下方插入行'), () => this.insDel('r', R.r2 + 1, R.r2 - R.r1 + 1)), I($t('左侧插入列'), () => this.insDel('c', R.c1, R.c2 - R.c1 + 1)), I($t('右侧插入列'), () => this.insDel('c', R.c2 + 1, R.c2 - R.c1 + 1))]),
+      M('del', $t('删除'), [I($t('删除行'), () => this.insDel('r', R.r1, -(R.r2 - R.r1 + 1))), I($t('删除列'), () => this.insDel('c', R.c1, -(R.c2 - R.c1 + 1)))]), SEP,
       sumMenu,
       sortMenu,
-      B('筛选', () => this.toggleFilter(), { on: !!sh.filter }),
-      M('clr', '清除', [I('清除内容', () => this.clear('v'), { hint: 'Delete' }), I('清除格式', () => this.clear('s')), I('清除批注', () => this.clear('note')), I('清除超链接', () => this.clear('link')), I('全部清除', () => this.clear('all'))]),
-      B('查找', () => { this.focusFind = true; this.setState({ showFind: true }); }, { title: 'Ctrl+F' })
+      B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter }),
+      M('clr', $t('清除'), [I($t('清除内容'), () => this.clear('v'), { hint: 'Delete' }), I($t('清除格式'), () => this.clear('s')), I($t('清除批注'), () => this.clear('note')), I($t('清除超链接'), () => this.clear('link')), I($t('全部清除'), () => this.clear('all'))]),
+      B($t('查找'), () => { this.focusFind = true; this.setState({ showFind: true }); }, { title: 'Ctrl+F' })
     ];
     if (tab === 'insert') ribbon = [
-      B('柱形图', () => this.insertChart('column')), B('折线图', () => this.insertChart('line')), B('饼图', () => this.insertChart('pie')),
-      M('chart', '图表', CHART_TYPES.map(([k, l]) => I(l, () => this.insertChart(k))).concat([IS, HD('堆积'), I('堆积柱形图', () => this.insertChart('column', true)), I('堆积条形图', () => this.insertChart('bar', true)), I('堆积面积图', () => this.insertChart('area', true))])), SEP,
-      B('超链接', () => this.setLink(), { on: !!cs.link, title: '超链接（Ctrl+点击打开）' }), B('批注', () => this.setNote(), { on: !!cs.note }), B('图片', () => this.toast('暂不支持插入图片')), SEP,
+      B($t('柱形图'), () => this.insertChart('column')), B($t('折线图'), () => this.insertChart('line')), B($t('饼图'), () => this.insertChart('pie')),
+      M('chart', $t('图表'), CHART_TYPES.map(([k, l]) => I(l, () => this.insertChart(k))).concat([IS, HD($t('堆积')), I($t('堆积柱形图'), () => this.insertChart('column', true)), I($t('堆积条形图'), () => this.insertChart('bar', true)), I($t('堆积面积图'), () => this.insertChart('area', true))])), SEP,
+      B($t('超链接'), () => this.setLink(), { on: !!cs.link, title: $t('超链接（Ctrl+点击打开）') }), B($t('批注'), () => this.setNote(), { on: !!cs.note }), B($t('图片'), () => this.toast($t('暂不支持插入图片'))), SEP,
       fnMenu, SEP,
-      B('插入行', () => this.insDel('r', R.r1, R.r2 - R.r1 + 1)), B('插入列', () => this.insDel('c', R.c1, R.c2 - R.c1 + 1)), SEP,
-      B('新工作表', () => this.addSheet())
+      B($t('插入行'), () => this.insDel('r', R.r1, R.r2 - R.r1 + 1)), B($t('插入列'), () => this.insDel('c', R.c1, R.c2 - R.c1 + 1)), SEP,
+      B($t('新工作表'), () => this.addSheet())
     ];
     if (tab === 'formula') ribbon = [
       sumMenu, fnMenu, SEP,
       ...['SUM', 'AVERAGE', 'IF', 'VLOOKUP', 'COUNTIF', 'SUMIF', 'ROUND', 'CONCAT', 'TODAY'].map(f => B(f, () => this.insertFn(f))), SEP,
-      B('显示公式', () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF })
+      B($t('显示公式'), () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF })
     ];
     if (tab === 'data') ribbon = [
-      B('升序', () => this.sort(true)), B('降序', () => this.sort(false)), sortMenu, SEP,
-      B('筛选', () => this.toggleFilter(), { on: !!sh.filter }), B('清除筛选', () => this.setFex({}), { dis: !sh.filter }), SEP,
-      B('删除重复项', () => this.dedupe()), B('分列', () => this.splitCols(), { title: '按分隔符把所选列拆到右侧各列' }), B('数据验证', () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
-      B('向下填充', () => this.fillDir('down'), { title: 'Ctrl+D' }), B('向右填充', () => this.fillDir('right'), { title: 'Ctrl+R' })
+      B($t('升序'), () => this.sort(true)), B($t('降序'), () => this.sort(false)), sortMenu, SEP,
+      B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter }), B($t('清除筛选'), () => this.setFex({}), { dis: !sh.filter }), SEP,
+      B($t('删除重复项'), () => this.dedupe()), B($t('分列'), () => this.splitCols(), { title: $t('按分隔符把所选列拆到右侧各列') }), B($t('数据验证'), () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
+      B($t('向下填充'), () => this.fillDir('down'), { title: 'Ctrl+D' }), B($t('向右填充'), () => this.fillDir('right'), { title: 'Ctrl+R' })
     ];
     if (tab === 'view') ribbon = [
-      M('frz', '冻结', [I('冻结首行', () => this.freeze('row'), { on: sh.frR === 1 && !sh.frC }), I('冻结首列', () => this.freeze('col'), { on: sh.frC === 1 && !sh.frR }), I('冻结至当前单元格', () => this.freeze('here'), { hint: s0.r || s0.c ? `${s0.r} 行 ${s0.c} 列` : '' }), IS, I('取消冻结', () => this.freeze('none'), { on: !sh.frR && !sh.frC })], '冻结窗格'), SEP,
-      B('网格线', () => this.commit(s => { s.noGrid = !this.noGrid(s); }, true), { on: !this.noGrid(sh) }), B('显示公式', () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF }), SEP,
+      M('frz', $t('冻结'), [I($t('冻结首行'), () => this.freeze('row'), { on: sh.frR === 1 && !sh.frC }), I($t('冻结首列'), () => this.freeze('col'), { on: sh.frC === 1 && !sh.frR }), I($t('冻结至当前单元格'), () => this.freeze('here'), { hint: s0.r || s0.c ? $t('{r} 行 {c} 列', { r: s0.r, c: s0.c }) : '' }), IS, I($t('取消冻结'), () => this.freeze('none'), { on: !sh.frR && !sh.frC })], $t('冻结窗格')), SEP,
+      B($t('网格线'), () => this.commit(s => { s.noGrid = !this.noGrid(s); }, true), { on: !this.noGrid(sh) }), B($t('显示公式'), () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF }), SEP,
       ...[0.75, 1, 1.25, 1.5].map(z => B(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 }))
     ];
     if (tab === 'picture' && pic) ribbon = this.P.pictureRibbon({ B, M, I, C, SEP }, this.picTools(), picLook, st.picBusy);
@@ -985,7 +988,7 @@ class Component extends DCLogic {
           text, bg, color, fw: s.b ? 700 : 400, fst: s.i ? 'italic' : 'normal', td: [s.u || s.link ? 'underline' : '', s.st ? 'line-through' : ''].join(' ').trim() || 'none', fs: (s.fs || 11) * 1.2 + 'px', ff: s.font ? `'${s.font}',sans-serif` : 'inherit',
           justify: al === 'right' ? 'flex-end' : al === 'center' ? 'center' : 'flex-start', ta: al, ai: s.va === 'top' ? 'flex-start' : s.va === 'bottom' ? 'flex-end' : 'center', ws: s.wrap ? 'normal' : 'nowrap', flex: isF ? '1' : '0 1 auto',
           bt: side('top', 'none'), bl: side('left', 'none'), br: side('right', '1px solid ' + gl), bb: side('bottom', '1px solid ' + gl), pad: `0 ${6 + (al === 'right' ? ind : 0)}px 0 ${6 + (al === 'right' ? 0 : ind)}px`,
-          tip: s.link ? s.link + '（Ctrl+点击打开）' : '', hasN: !!s.note, cursor: s.link ? 'pointer' : 'cell',
+          tip: s.link ? s.link + $t('（Ctrl+点击打开）') : '', hasN: !!s.note, cursor: s.link ? 'pointer' : 'cell',
           onML: () => { if (st.noteAt && st.noteAt.r === r && st.noteAt.c === c) this.setState({ noteAt: null }); },
           op, hasF: !!isF, fbg: isF && fex[c] && fex[c].length ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)',
           onF: e => { e.preventDefault(); e.stopPropagation(); const rc = e.currentTarget.getBoundingClientRect(); this.setState({ pop: { id: 'flt' + c, x: rc.left, y: rc.bottom + 4 } }); },
@@ -1033,11 +1036,11 @@ class Component extends DCLogic {
     // stats
     let cnt = 0, ncnt = 0, sum = 0;
     if ((R.r2 - R.r1 + 1) * (R.c2 - R.c1 + 1) <= 4000) for (let r = R.r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) { if (hidden.has(r) || !sh.cells[E.A(r, c)]) continue; const v = calc.value(this.si, r, c); if (v !== '') cnt++; if (typeof v === 'number') { ncnt++; sum += v; } }
-    const statText = (st.painter ? '格式刷：选择目标区域 · ' : '') + (multi && ncnt ? `平均值 ${E.fmt(sum / ncnt, { dec: ncnt && !Number.isInteger(sum / ncnt) ? 2 : null })}　计数 ${cnt}　求和 ${E.fmt(sum, {})}` : multi ? `计数 ${cnt}` : ed ? '编辑' : '就绪');
+    const statText = (st.painter ? $t('格式刷：选择目标区域 · ') : '') + (multi && ncnt ? $t('平均值 {avg}　计数 {cnt}　求和 {sum}', { avg: E.fmt(sum / ncnt, { dec: ncnt && !Number.isInteger(sum / ncnt) ? 2 : null }), cnt, sum: E.fmt(sum, {}) }) : multi ? $t('计数 {cnt}', { cnt }) : ed ? $t('编辑') : $t('就绪'));
     // charts (their menus are registered here, before the popover reads them)
     const charts = (sh.charts || []).map(ch => {
       const set = patch => this.commit(s => Object.assign(s.charts.find(x => x.id === ch.id), patch));
-      this.menus['cht' + ch.id] = [HD('图表类型')].concat(CHART_TYPES.map(([k, l]) => I(l, () => set({ type: k }), { on: (ch.type || 'column') === k })), [IS, I('堆积', () => set({ stacked: !ch.stacked }), { on: !!ch.stacked, hint: '柱形 / 条形 / 面积' }), IS, HD('图例')], LEGENDS.map(([k, l]) => I(l, () => set({ legend: k }), { on: (ch.legend || 'right') === k })), [IS, I('数据区域…', () => this.prompt('图表数据', [{ key: 'c', label: '分类（如 A2:A6）', value: ch.cat || '', first: true }, { key: 's', label: '系列（JSON，如 [{"name":"B1","values":"B2:B6"}]）', value: JSON.stringify(ch.ser || []) }], v => { let ser; try { ser = JSON.parse(v.s || '[]'); } catch (e) { return this.toast('系列格式无效'); } set({ cat: v.c.trim(), ser }); }))]);
+      this.menus['cht' + ch.id] = [HD($t('图表类型'))].concat(CHART_TYPES.map(([k, l]) => I(l, () => set({ type: k }), { on: (ch.type || 'column') === k })), [IS, I($t('堆积'), () => set({ stacked: !ch.stacked }), { on: !!ch.stacked, hint: $t('柱形 / 条形 / 面积') }), IS, HD($t('图例'))], LEGENDS.map(([k, l]) => I(l, () => set({ legend: k }), { on: (ch.legend || 'right') === k })), [IS, I($t('数据区域…'), () => this.prompt($t('图表数据'), [{ key: 'c', label: $t('分类（如 A2:A6）'), value: ch.cat || '', first: true }, { key: 's', label: $t('系列（JSON，如 [{"name":"B1","values":"B2:B6"}]）'), value: JSON.stringify(ch.ser || []) }], v => { let ser; try { ser = JSON.parse(v.s || '[]'); } catch (e) { return this.toast($t('系列格式无效')); } set({ cat: v.c.trim(), ser }); }))]);
       const p = this.chartAt(ch);
       return Object.assign(this.chartVals(ch, calc), objPane(p.x, p.y));
     });
@@ -1058,14 +1061,14 @@ class Component extends DCLogic {
         const ex = fex[c] || [];
         const setEx = list => this.setFex(Object.assign({}, fex, { [c]: list }));
         const keep = fn => ({ isItem: true, ...fn });
-        popItems = [I('升序', () => this.sortCol(true, c, flt)), I('降序', () => this.sortCol(false, c, flt)), IS,
-          keep({ label: '（全选）', check: ex.length ? '' : '✓', hint: '', onClick: () => setEx([]) })].concat(Array.from(vals).sort().map(v => keep({ label: v === '' ? '（空白）' : v, check: ex.includes(v) ? '' : '✓', hint: '', onClick: () => setEx(ex.includes(v) ? ex.filter(x => x !== v) : ex.concat([v])) })));
+        popItems = [I($t('升序'), () => this.sortCol(true, c, flt)), I($t('降序'), () => this.sortCol(false, c, flt)), IS,
+          keep({ label: $t('（全选）'), check: ex.length ? '' : '✓', hint: '', onClick: () => setEx([]) })].concat(Array.from(vals).sort().map(v => keep({ label: v === '' ? $t('（空白）') : v, check: ex.includes(v) ? '' : '✓', hint: '', onClick: () => setEx(ex.includes(v) ? ex.filter(x => x !== v) : ex.concat([v])) })));
       } else if (st.pop.id === 'tabctx') {
         const i = st.pop.i;
-        popItems = [I('重命名', () => this.renameSheet(i)), I('复制工作表', () => this.copySheet(i)),
-          I('左移', () => { if (i > 0) { const ss = d.sheets.slice(); [ss[i - 1], ss[i]] = [ss[i], ss[i - 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i - 1 })); } }),
-          I('右移', () => { if (i < d.sheets.length - 1) { const ss = d.sheets.slice(); [ss[i + 1], ss[i]] = [ss[i], ss[i + 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i + 1 })); } }), IS,
-          I('删除工作表', () => { if (d.sheets.length < 2) return this.toast('至少保留一个工作表'); this.props.onChange(Object.assign({}, d, { sheets: d.sheets.filter((_, j) => j !== i), active: Math.max(0, Math.min(d.active || 0, d.sheets.length - 2)) })); })];
+        popItems = [I($t('重命名'), () => this.renameSheet(i)), I($t('复制工作表'), () => this.copySheet(i)),
+          I($t('左移'), () => { if (i > 0) { const ss = d.sheets.slice(); [ss[i - 1], ss[i]] = [ss[i], ss[i - 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i - 1 })); } }),
+          I($t('右移'), () => { if (i < d.sheets.length - 1) { const ss = d.sheets.slice(); [ss[i + 1], ss[i]] = [ss[i], ss[i + 1]]; this.props.onChange(Object.assign({}, d, { sheets: ss, active: i + 1 })); } }), IS,
+          I($t('删除工作表'), () => { if (d.sheets.length < 2) return this.toast($t('至少保留一个工作表')); this.props.onChange(Object.assign({}, d, { sheets: d.sheets.filter((_, j) => j !== i), active: Math.max(0, Math.min(d.active || 0, d.sheets.length - 2)) })); })];
       } else popItems = this.menus[st.pop.id] || [];
     }
     const lv = st.live;
@@ -1073,7 +1076,7 @@ class Component extends DCLogic {
     return {
       md, loading: false, neverThumbs: false, fxML: '12px', tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), notPure: !this.props.pure,
       showThumbs: !this.props.pure && this.props.showThumbs !== false, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
-      sheetThumbs: d.sheets.map((s, i) => { const u = E.usedRange(s); return { name: s.name, fw: i === this.si ? 600 : 400, bg: i === this.si ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', meta: (u ? `${E.A(u.r1, u.c1)}:${E.A(u.r2, u.c2)} · ${Object.keys(s.cells).length} 个单元格` : '空') + ((s.charts || []).length ? ` · ${s.charts.length} 图表` : ''), onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); } } }; }),
+      sheetThumbs: d.sheets.map((s, i) => { const u = E.usedRange(s); return { name: s.name, fw: i === this.si ? 600 : 400, bg: i === this.si ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', meta: (u ? $t('{range} · {n} 个单元格', { range: `${E.A(u.r1, u.c1)}:${E.A(u.r2, u.c2)}`, n: Object.keys(s.cells).length }) : $t('空')) + ((s.charts || []).length ? $t(' · {n} 图表', { n: s.charts.length }) : ''), onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); } } }; }),
       hasChartList: (sh.charts || []).length > 0,
       chartList: (sh.charts || []).map(ch => ({ label: ch.title, onClick: () => { const w = this.wrapRef.current, p = this.chartAt(ch); if (w) { w.scrollLeft = Math.max(0, (RHW + p.x) * st.zoom - 40); w.scrollTop = Math.max(0, (CHH + p.y) * st.zoom - 40); } this.setState({ chartSel: ch.id }); } })),
       nameBox: st.nameEdit != null ? st.nameEdit : (multi ? `${E.A(R.r1, R.c1)}:${E.A(sr2, sc2)}` : a0),
@@ -1085,7 +1088,7 @@ class Component extends DCLogic {
       onFxFocus: () => { if (!this.state.edit) this.startEdit(null, 'bar'); },
       onFx: e => { this.setState({ edit: Object.assign(Object.assign({ mode: 'bar' }, this.act()), this.state.edit, { val: e.target.value, pt: null }) }); },
       onFxKey: e => { if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const e2 = this.state.edit; if (e2 && ARROWS[e.key] && this.ptArrow(e, e2)) return; if (e.key === 'Enter') { e.preventDefault(); this.commitEdit(1, 0); } if (e.key === 'Escape') { this.setState({ edit: null }); this.wantFocus = true; } },
-      showFind: st.showFind, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? `共 ${st.fcount} 个单元格` : '未找到',
+      showFind: st.showFind, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 个单元格', { n: st.fcount }) : $t('未找到'),
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) this.findNext(); if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replace(false), replaceAll: () => this.replace(true), closeFind: () => { this.setState({ showFind: false }); this.wantFocus = true; },
@@ -1186,8 +1189,8 @@ class Component extends DCLogic {
   addSheet() { const d = this.doc; let n = d.sheets.length + 1; while (d.sheets.some(s => s.name === 'Sheet' + n)) n++; this.props.onChange(Object.assign({}, d, { sheets: d.sheets.concat([{ name: 'Sheet' + n, cells: {} }]), active: d.sheets.length })); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 } }); }
   renameSheet(i) {
     const d = this.doc, old = d.sheets[i].name;
-    this.prompt('重命名工作表', [{ key: 'n', label: '名称', value: old, first: true }], v => {
-      const nn = (v.n || '').trim(); if (!nn || nn === old) return; if (d.sheets.some(s => s.name === nn)) return this.toast('名称已存在');
+    this.prompt($t('重命名工作表'), [{ key: 'n', label: $t('名称'), value: old, first: true }], v => {
+      const nn = (v.n || '').trim(); if (!nn || nn === old) return; if (d.sheets.some(s => s.name === nn)) return this.toast($t('名称已存在'));
       const E = this.E; const nd = structuredClone(d); nd.sheets[i].name = nn;
       const re = new RegExp('(^|[^\\w])' + (/^[\w\u4e00-\u9fa5]+$/.test(old) ? old : "'" + old + "'").replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '!', 'g');
       nd.sheets.forEach(s => Object.values(s.cells).forEach(x => { if (typeof x.v === 'string' && x.v[0] === '=') x.v = x.v.replace(re, (m, p) => p + (/^[\w\u4e00-\u9fa5]+$/.test(nn) ? nn : "'" + nn + "'") + '!'); }));

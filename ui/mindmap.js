@@ -148,20 +148,29 @@ export function plan(orig, root, file) {
   return { steps, ids };
 }
 
+// No $t under node (see ui/tests/mindmap.test.mjs): fall back to the exact Chinese this always produced, context
+// dropped like i18n.js's own $t does in Chinese. '删除@@diff' needs its own English ("Deleted N topics") distinct
+// from the Delete button MindMapEditor.dc.html translates on its own.
+function tr(s, v) {
+  const at = s.indexOf('@@'), bare = at < 0 ? s : s.slice(0, at);
+  if (globalThis.$t) return globalThis.$t(s, v);
+  return v ? bare.replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : bare;
+}
+
 /** Marks nodes of `after` that differ from `before` with ai = true and returns [[kind, label], ...] for the change card. */
 export function markAi(before, after) {
   const items = [];
   if (!before || !after) return items;
   const b = flatten(before), a = flatten(after);
-  const label = n => '主题 · ' + ((n.text || '').slice(0, 24) || '（空）');
+  const label = n => tr('主题 · {text}', { text: (n.text || '').slice(0, 24) || tr('（空）') });
   walk(after, n => {
-    const o = b[n.id]; if (!o) { n.ai = true; items.push(['新增', label(n)]); return; }
+    const o = b[n.id]; if (!o) { n.ai = true; items.push([tr('新增'), label(n)]); return; }
     const c = a[n.id];
-    if (['text', 'note', 'link', 'collapsed', 'color', 'fill', 'icon'].some(k => o[k] !== c[k])) { n.ai = true; items.push(['修改', label(n)]); }
-    else if (o.parentId !== c.parentId) { n.ai = true; items.push(['移动', label(n)]); }
+    if (['text', 'note', 'link', 'collapsed', 'color', 'fill', 'icon'].some(k => o[k] !== c[k])) { n.ai = true; items.push([tr('修改'), label(n)]); }
+    else if (o.parentId !== c.parentId) { n.ai = true; items.push([tr('移动'), label(n)]); }
   });
   const gone = Object.keys(b).filter(id => !a[id] && !(b[id].parentId && !a[b[id].parentId])).length; // topmost removed only
-  if (gone) items.push(['删除', `${gone} 个主题`]);
+  if (gone) items.push([tr('删除@@diff'), tr('{n} 个主题', { n: gone })]);
   return items;
 }
 export function clearAi(root) { walk(root, n => { delete n.ai; }); }

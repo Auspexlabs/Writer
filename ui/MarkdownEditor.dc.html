@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -43,7 +43,7 @@
 .pt-ed th{background:var(--k42, rgba(255,255,255,0.55));font-weight:600}
 .pt-ed hr{border:none;border-top:1px solid var(--k60, rgba(0,0,0,0.14));margin:28px 0}
 .pt-ed img{max-width:100%;border-radius:10px}
-.pt-ed:empty:before{content:'开始书写…';color:var(--k63, #C7C7CC)}
+.pt-ed:empty:before{content:attr(data-empty-hint);color:var(--k63, #C7C7CC)}
 .pt-src::placeholder{color:var(--k63, #C7C7CC)}
 </style>
 </helmet>
@@ -59,7 +59,7 @@
         </div>
         <div style="display:flex;align-items:center;flex:none">
           <span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span>
-          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
+          <button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button>
           <button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button>
         </div>
       </div>
@@ -87,7 +87,7 @@
       </div></div>
     </sc-if>
     <div ref="{{ scRef }}" onMouseDown="{{ onScDown }}" style="grid-column:2;min-width:0;min-height:0;overflow:auto;position:relative">
-      <div ref="{{ edRef }}" class="pt-ed" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
+      <div ref="{{ edRef }}" class="pt-ed" data-empty-hint="{{ emptyHint }}" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
       <sc-if value="{{ isSrc }}" hint-placeholder-val="{{ false }}">
         <textarea ref="{{ taRef }}" class="pt-src" data-pop="center" value="{{ text }}" onChange="{{ onText }}" onKeyDown="{{ onSrcKey }}" onSelect="{{ onSelect }}" spellCheck="false" placeholder="# 标题" style="display:block;width:100%;max-width:760px;margin:0 auto;min-height:100%;border:none;outline:none;resize:none;background:transparent;padding:{{ pad }};box-sizing:border-box;font-family:'IBM Plex Mono','Noto Sans SC',monospace;font-size:14.5px;line-height:1.85;color:var(--k9, #3A3A3C);tab-size:2;field-sizing:content"></textarea>
       </sc-if>
@@ -161,18 +161,18 @@ class Component extends DCLogic {
     const s = window.getSelection(); if (!s.rangeCount) return; const r = s.getRangeAt(0);
     const anc = r.commonAncestorContainer, el = anc.nodeType === 3 ? anc.parentNode : anc, ex = el.closest && el.closest(tag);
     if (ex && this.edRef.current.contains(ex)) { const p = ex.parentNode; while (ex.firstChild) p.insertBefore(ex.firstChild, ex); ex.remove(); this.sync(); return; }
-    const w = document.createElement(tag); if (r.collapsed) { w.textContent = tag === 'code' ? 'code' : '文字'; r.insertNode(w); } else { w.appendChild(r.extractContents()); r.insertNode(w); }
+    const w = document.createElement(tag); if (r.collapsed) { w.textContent = tag === 'code' ? 'code' : $t('文字'); r.insertNode(w); } else { w.appendChild(r.extractContents()); r.insertNode(w); }
     const nr = document.createRange(); nr.selectNodeContents(w); s.removeAllRanges(); s.addRange(nr); this.sync();
   }
   block(tag) { const s = window.getSelection(); const b = s.rangeCount && this.blockOf(s.getRangeAt(0).startContainer); const cur = b && b.tagName.toLowerCase(); this.exec('formatBlock', cur === tag ? '<p>' : '<' + tag + '>'); }
   task() {
     const s = window.getSelection(); if (!s.rangeCount) return; const b = this.blockOf(s.getRangeAt(0).startContainer);
-    const html = `<ul><li class="task"><input type="checkbox" contenteditable="false"> ${b && b.tagName !== 'LI' ? b.innerHTML : '待办事项'}</li></ul>`;
+    const html = `<ul><li class="task"><input type="checkbox" contenteditable="false"> ${b && b.tagName !== 'LI' ? b.innerHTML : $t('待办事项')}</li></ul>`;
     if (b && b.tagName !== 'LI') { const t = document.createElement('div'); t.innerHTML = html; const ul = t.firstChild; b.replaceWith(ul); const r = document.createRange(); r.selectNodeContents(ul.querySelector('li')); r.collapse(false); s.removeAllRanges(); s.addRange(r); this.sync(); }
     else this.exec('insertHTML', html);
   }
   insertBlockHTML(h) { this.exec('insertHTML', h + '<p><br></p>'); }
-  link() { const s = window.getSelection(); const txt = s.toString(); const url = window.prompt ? (() => { try { return window.prompt('链接地址', 'https://'); } catch (e) { return null; } })() : null; if (!url) return; if (txt) this.exec('createLink', url); else this.exec('insertHTML', `<a href="${url}">${url}</a>`); }
+  link() { const s = window.getSelection(); const txt = s.toString(); const url = window.prompt ? (() => { try { return window.prompt($t('链接地址'), 'https://'); } catch (e) { return null; } })() : null; if (!url) return; if (txt) this.exec('createLink', url); else this.exec('insertHTML', `<a href="${url}">${url}</a>`); }
   rules(e) {
     if (this.props.autoFormat === false || !this.M) return;
     if (document.activeElement !== this.edRef.current) return; // a nested control (a math source box) owns this keystroke, not the rich text model
@@ -290,8 +290,8 @@ class Component extends DCLogic {
   lineSrc(fn) { const t = this.ta(); if (!t) return; t.focus(); const v = t.value, s = t.selectionStart, e = t.selectionEnd; const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', e); if (le < 0) le = v.length; const nb = fn(v.slice(ls, le).split('\n')).join('\n'); t.setSelectionRange(ls, le); this.insText(nb); }
   cmd(kind) {
     const rich = this.state.mode === 'rich';
-    const R = { bold: () => this.exec('bold'), italic: () => this.exec('italic'), strike: () => this.exec('strikeThrough'), code: () => this.wrapInline('code'), mark: () => this.wrapInline('mark'), h1: () => this.block('h1'), h2: () => this.block('h2'), h3: () => this.block('h3'), p: () => this.exec('formatBlock', '<p>'), quote: () => this.block('blockquote'), ul: () => this.exec('insertUnorderedList'), ol: () => this.exec('insertOrderedList'), task: () => this.task(), link: () => this.link(), image: () => this.imgRef.current.click(), table: () => this.insertBlockHTML('<table><thead><tr><th>列 1</th><th>列 2</th><th>列 3</th></tr></thead><tbody><tr><td>内容</td><td>内容</td><td>内容</td></tr></tbody></table>'), codeblock: () => this.insertBlockHTML('<pre><code>代码</code></pre>'), hr: () => this.insertBlockHTML('<hr>') };
-    const S = { bold: () => this.wrapSrc('**', '**', '粗体'), italic: () => this.wrapSrc('*', '*', '斜体'), strike: () => this.wrapSrc('~~', '~~', '删除线'), code: () => this.wrapSrc('`', '`', 'code'), mark: () => this.wrapSrc('==', '==', '高亮'), h1: () => this.lineSrc(a => a.map(l => '# ' + l.replace(/^#+\s*/, ''))), h2: () => this.lineSrc(a => a.map(l => '## ' + l.replace(/^#+\s*/, ''))), h3: () => this.lineSrc(a => a.map(l => '### ' + l.replace(/^#+\s*/, ''))), p: () => this.lineSrc(a => a.map(l => l.replace(/^#+\s*/, ''))), quote: () => this.lineSrc(a => a.map(l => '> ' + l)), ul: () => this.lineSrc(a => a.map(l => '- ' + l)), ol: () => this.lineSrc(a => a.map((l, i) => (i + 1) + '. ' + l)), task: () => this.lineSrc(a => a.map(l => '- [ ] ' + l)), link: () => this.wrapSrc('[', '](https://)', '链接文字'), image: () => this.imgRef.current.click(), table: () => this.insText('\n| 列 1 | 列 2 | 列 3 |\n| --- | --- | --- |\n| 内容 | 内容 | 内容 |\n'), codeblock: () => this.insText('\n```\n代码\n```\n'), hr: () => this.insText('\n---\n') };
+    const R = { bold: () => this.exec('bold'), italic: () => this.exec('italic'), strike: () => this.exec('strikeThrough'), code: () => this.wrapInline('code'), mark: () => this.wrapInline('mark'), h1: () => this.block('h1'), h2: () => this.block('h2'), h3: () => this.block('h3'), p: () => this.exec('formatBlock', '<p>'), quote: () => this.block('blockquote'), ul: () => this.exec('insertUnorderedList'), ol: () => this.exec('insertOrderedList'), task: () => this.task(), link: () => this.link(), image: () => this.imgRef.current.click(), table: () => this.insertBlockHTML(`<table><thead><tr><th>${$t('列 1')}</th><th>${$t('列 2')}</th><th>${$t('列 3')}</th></tr></thead><tbody><tr><td>${$t('内容')}</td><td>${$t('内容')}</td><td>${$t('内容')}</td></tr></tbody></table>`), codeblock: () => this.insertBlockHTML(`<pre><code>${$t('代码')}</code></pre>`), hr: () => this.insertBlockHTML('<hr>') };
+    const S = { bold: () => this.wrapSrc('**', '**', $t('粗体')), italic: () => this.wrapSrc('*', '*', $t('斜体')), strike: () => this.wrapSrc('~~', '~~', $t('删除线')), code: () => this.wrapSrc('`', '`', 'code'), mark: () => this.wrapSrc('==', '==', $t('高亮')), h1: () => this.lineSrc(a => a.map(l => '# ' + l.replace(/^#+\s*/, ''))), h2: () => this.lineSrc(a => a.map(l => '## ' + l.replace(/^#+\s*/, ''))), h3: () => this.lineSrc(a => a.map(l => '### ' + l.replace(/^#+\s*/, ''))), p: () => this.lineSrc(a => a.map(l => l.replace(/^#+\s*/, ''))), quote: () => this.lineSrc(a => a.map(l => '> ' + l)), ul: () => this.lineSrc(a => a.map(l => '- ' + l)), ol: () => this.lineSrc(a => a.map((l, i) => (i + 1) + '. ' + l)), task: () => this.lineSrc(a => a.map(l => '- [ ] ' + l)), link: () => this.wrapSrc('[', '](https://)', $t('链接文字')), image: () => this.imgRef.current.click(), table: () => this.insText(`\n| ${$t('列 1')} | ${$t('列 2')} | ${$t('列 3')} |\n| --- | --- | --- |\n| ${$t('内容')} | ${$t('内容')} | ${$t('内容')} |\n`), codeblock: () => this.insText(`\n\`\`\`\n${$t('代码')}\n\`\`\`\n`), hr: () => this.insText('\n---\n') };
     (rich ? R : S)[kind]();
   }
   download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
@@ -307,12 +307,12 @@ class Component extends DCLogic {
     const B = (label, kind, o = {}) => ({ isBtn: true, label, onClick: () => this.cmd(kind), title: o.title || label, fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit' });
     const SEP = { isSep: true };
     const SETS = {
-      format: [B('标题 1', 'h1', { fw: 600 }), B('标题 2', 'h2', { fw: 600 }), B('标题 3', 'h3', { fw: 600 }), B('正文', 'p'), SEP, B('B', 'bold', { fw: 700, title: '粗体 Ctrl+B' }), B('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif", title: '斜体 Ctrl+I' }), B('S', 'strike', { td: 'line-through' }), B('高亮', 'mark'), B('代码', 'code', { font: "'IBM Plex Mono',monospace" }), SEP, B('引用', 'quote'), B('• 列表', 'ul'), B('1. 列表', 'ol'), B('☐ 待办', 'task')],
-      insert: [B('链接', 'link', { title: 'Ctrl+K' }), B('图片', 'image'), B('表格', 'table'), B('代码块', 'codeblock'), B('分割线', 'hr')],
-      export: [{ isBtn: true, label: '下载 .md', onClick: () => this.download(d.title + '.md', text, 'text/markdown'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: '下载 HTML', onClick: () => this.download(d.title + '.html', this.fullHtml(), 'text/html'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: '导出 PDF', onClick: () => this.printPdf(), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, SEP, { isBtn: true, label: '转为 Word 文档', onClick: () => this.props.onConvert && this.props.onConvert('docx', { title: d.title, html: M.wordHtml(M.mdToHtml(text)) }), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }]
+      format: [B($t('标题 1'), 'h1', { fw: 600 }), B($t('标题 2'), 'h2', { fw: 600 }), B($t('标题 3'), 'h3', { fw: 600 }), B($t('正文'), 'p'), SEP, B('B', 'bold', { fw: 700, title: $t('粗体 Ctrl+B') }), B('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif", title: $t('斜体 Ctrl+I') }), B('S', 'strike', { td: 'line-through' }), B($t('高亮'), 'mark'), B($t('代码'), 'code', { font: "'IBM Plex Mono',monospace" }), SEP, B($t('引用'), 'quote'), B($t('• 列表'), 'ul'), B($t('1. 列表'), 'ol'), B($t('☐ 待办'), 'task')],
+      insert: [B($t('链接'), 'link', { title: 'Ctrl+K' }), B($t('图片'), 'image'), B($t('表格'), 'table'), B($t('代码块'), 'codeblock'), B($t('分割线'), 'hr')],
+      export: [{ isBtn: true, label: $t('下载 .md'), onClick: () => this.download(d.title + '.md', text, 'text/markdown'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('下载 HTML'), onClick: () => this.download(d.title + '.html', this.fullHtml(), 'text/html'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('导出 PDF'), onClick: () => this.printPdf(), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, SEP, { isBtn: true, label: $t('转为 Word 文档'), onClick: () => this.props.onConvert && this.props.onConvert('docx', { title: d.title, html: M.wordHtml(M.mdToHtml(text)) }), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }]
     };
     const tab = st.tab;
-    const tabs = [['format', '格式'], ['insert', '插入'], ['export', '导出']].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
+    const tabs = [['format', $t('格式')], ['insert', $t('插入')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
     const showOutline = !pure && this.props.showThumbs !== false;
     const heads = M ? M.headings(text).map((h, i) => Object.assign(h, { idx: i })) : [];
     const stats = M ? M.wordStats(text) : { words: 0, minutes: 1 };
@@ -325,7 +325,7 @@ class Component extends DCLogic {
       aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(),
       cols: showOutline ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)', showOutline, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       outline: heads.map(h => ({ text: h.text, indent: (10 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.jump(h) })), noOutline: !heads.length,
-      scRef: this.scRef, edRef: this.edRef, taRef: this.taRef, imgRef: this.imgRef,
+      scRef: this.scRef, edRef: this.edRef, taRef: this.taRef, imgRef: this.imgRef, emptyHint: $t('开始书写…'),
       isRich: rich, isSrc: !rich, gridPT: showOutline ? '0px' : '0px', richDisp: rich ? 'block' : 'none', richDisp: rich ? 'block' : 'none', text, pad: pure ? '16vh 40px 34vh' : '96px 40px 40vh',
       onScDown: e => { if (e.target === e.currentTarget && rich && this.edRef.current) { e.preventDefault(); const ed = this.edRef.current; ed.focus(); const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } },
       onRichInput: e => { this.userCleared = !!(e.nativeEvent && /^delete/.test(e.nativeEvent.inputType || '')); if (e.nativeEvent && e.nativeEvent.inputType === 'insertText' && e.nativeEvent.data === ' ' || (e.nativeEvent && /[*~=`$]/.test(e.nativeEvent.data || ''))) this.rules(e); this.sync(); },
@@ -335,7 +335,7 @@ class Component extends DCLogic {
         else if (ctrl && k === 'e') { e.preventDefault(); this.wrapInline('code'); }
         else if (ctrl && ['1', '2', '3'].includes(k)) { e.preventDefault(); this.block('h' + k); }
         else if (ctrl && k === '0') { e.preventDefault(); this.exec('formatBlock', '<p>'); }
-        else if (ctrl && k === 's') { e.preventDefault(); this.flush(); this.props.toast && this.props.toast('已保存'); }
+        else if (ctrl && k === 's') { e.preventDefault(); this.flush(); this.props.toast && this.props.toast($t('已保存')); }
         else if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) {
           const s = window.getSelection(); const b = s.rangeCount && this.blockOf(s.getRangeAt(0).startContainer);
           if (b && b.tagName === 'P') {
@@ -369,9 +369,9 @@ class Component extends DCLogic {
       onText: e => this.emit(e.target.value),
       onSrcKey: e => {
         const t = e.currentTarget, ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
-        if (ctrl && k === 'b') { e.preventDefault(); return this.wrapSrc('**', '**', '粗体'); }
-        if (ctrl && k === 'i') { e.preventDefault(); return this.wrapSrc('*', '*', '斜体'); }
-        if (ctrl && k === 'k') { e.preventDefault(); return this.wrapSrc('[', '](https://)', '链接文字'); }
+        if (ctrl && k === 'b') { e.preventDefault(); return this.wrapSrc('**', '**', $t('粗体')); }
+        if (ctrl && k === 'i') { e.preventDefault(); return this.wrapSrc('*', '*', $t('斜体')); }
+        if (ctrl && k === 'k') { e.preventDefault(); return this.wrapSrc('[', '](https://)', $t('链接文字')); }
         if (e.key === 'Tab') { e.preventDefault(); this.insText('  '); return; }
         if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) && t.selectionStart === t.selectionEnd) {
           const v = t.value, s = t.selectionStart, ls = v.lastIndexOf('\n', s - 1) + 1, m = LIST.exec(v.slice(ls, s));
@@ -380,11 +380,11 @@ class Component extends DCLogic {
       },
       onSelect: () => { },
       toggleMode: () => { if (rich) { this.flush(); this.dropMathOutside(); this.setState({ mode: 'src', selBar: null }); setTimeout(() => this.ta() && this.ta().focus(), 30); } else this.setState({ mode: 'rich' }); },
-      modeIcon: rich ? '</>' : 'A', modeTitle: rich ? '查看源代码' : '返回排版视图', modeFs: rich ? '13px' : '18px', modeFont: rich ? "'IBM Plex Mono',monospace" : "'Noto Serif SC',serif",
+      modeIcon: rich ? '</>' : 'A', modeTitle: rich ? $t('查看源代码') : $t('返回排版视图'), modeFs: rich ? '13px' : '18px', modeFont: rich ? "'IBM Plex Mono',monospace" : "'Noto Serif SC',serif",
       hasSelBar: !!sb && rich, sbx: sb ? sb.x + 'px' : 0, sby: sb ? sb.y + 'px' : 0,
-      selBtns: [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), SB('</>', 'code', { font: "'IBM Plex Mono',monospace", title: '行内代码' }), SB('高亮', 'mark'), SB('链接', 'link'), SB('H1', 'h1', { fw: 600 }), SB('H2', 'h2', { fw: 600 }), SB('引用', 'quote')],
+      selBtns: [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), SB('</>', 'code', { font: "'IBM Plex Mono',monospace", title: $t('行内代码') }), SB($t('高亮'), 'mark'), SB($t('链接'), 'link'), SB('H1', 'h1', { fw: 600 }), SB('H2', 'h2', { fw: 600 }), SB($t('引用'), 'quote')],
       onImg: e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const rd = new FileReader(); rd.onload = () => { if (rich) this.exec('insertHTML', `<img alt="${f.name.replace(/\.[^.]+$/, '')}" src="${rd.result}">`); else this.insText(`![${f.name.replace(/\.[^.]+$/, '')}](${rd.result})`); }; rd.readAsDataURL(f); },
-      statWords: `${stats.words} 字`, statMin: stats.minutes
+      statWords: $t('{n} 字', { n: stats.words }), statMin: stats.minutes
     };
   }
 }

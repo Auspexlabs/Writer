@@ -9,6 +9,8 @@ export const COMPRESS = [['print', '打印（220 ppi）'], ['web', '网页（150
 
 const num = (v, d = 0) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
 const pct = v => +(v * 100).toFixed(3) + '%';
+// $t under node (this module is node-tested): falls back to the Chinese, vars filled the same way.
+const T = (s, v) => globalThis.$t ? globalThis.$t(s, v) : v ? String(s).replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : s;
 
 /** The crop as left, top, right, bottom fractions of the whole picture. */
 export function cropOf(look) { const c = String((look && look.crop) || '').split(',').map(v => num(v) / 100); return c.length === 4 ? c : [0, 0, 0, 0]; }
@@ -100,7 +102,7 @@ export function bumpPic(url) { const u = bare(url); versions.set(u, (versions.ge
 
 const size = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
 /** What a compress did, in a sentence. */
-export const savedText = (before, after) => after < before ? `已压缩：${size(before)} → ${size(after)}，节省 ${size(before - after)}` : '这张图片已经不大于显示所需，没有再压缩';
+export const savedText = (before, after) => after < before ? T('已压缩：{before} → {after}，节省 {saved}', { before: size(before), after: size(after), saved: size(before - after) }) : T('这张图片已经不大于显示所需，没有再压缩');
 
 /** A picture file the user picks, as a data URL (null when they cancel). */
 export function pickImage() {
@@ -125,7 +127,7 @@ export function pickImage() {
  */
 export function pictureTools(host) {
   let timer = null, pending = null;
-  const fail = e => { host.show(host.look()); host.toast && host.toast(e && e.message ? e.message + (e.hint ? '（' + e.hint + '）' : '') : '图片没有改成'); };
+  const fail = e => { host.show(host.look()); host.toast && host.toast(e && e.message ? e.message + (e.hint ? '（' + e.hint + '）' : '') : T('图片没有改成')); }; // i18n-ok — parens wrap a dynamic engine message, not translated text
   const send = async props => { try { host.commit(await host.send(props), false); } catch (e) { fail(e); } };
   const tools = {
     set(patch, rest) {
@@ -167,7 +169,7 @@ export function tabAfterSelect(st, key, selected) {
 export function pictureRibbon(k, tools, look, busy) {
   look = look || {};
   const { B, M, I, C, SEP } = k, on = key => look[key] === 'true', rot = num(look.rotation);
-  const R = (label, value, min, max, key) => ({ isRange: true, label, title: label, min, max, value, text: String(value), onChange: e => tools.set({ [key]: String(Math.round(+e.target.value)) }, true) });
+  const R = (label, value, min, max, key) => ({ isRange: true, label: T(label), title: T(label), min, max, value, text: String(value), onChange: e => tools.set({ [key]: String(Math.round(+e.target.value)) }, true) });
   const line = look.line && look.line !== 'none' ? '#' + look.line : '';
   return [
     B(busy === 'cutout' ? '抠图中…' : '抠图', () => { if (!busy) tools.cutout(); }, { title: '移除背景，只留下主体（Apple Vision，macOS 14 以上）', dis: !!busy }),
@@ -229,7 +231,7 @@ export function cropBox({ frame, crop, rotation, flipH, flipV, src }) {
     const bar = document.createElement('div');
     bar.style.cssText = 'position:fixed;left:50%;bottom:64px;transform:translateX(-50%);display:flex;gap:6px;padding:5px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 12px 32px var(--k22, rgba(0,0,0,0.12));font-size:13px';
     const btn = (label, strong) => { const x = document.createElement('button'); x.textContent = label; x.style.cssText = `height:30px;padding:0 16px;border:none;border-radius:999px;cursor:pointer;font:inherit;${strong ? 'background:var(--k7, #1D1D1F);color:var(--kinv, #fff)' : 'background:transparent;color:var(--k1, #1D1D1F)'}`; bar.appendChild(x); return x; };
-    const cancel = btn('取消'), ok = btn('完成', true);
+    const cancel = btn(T('取消')), ok = btn(T('完成'), true);
     layer.append(stage, bar);
     document.body.appendChild(layer);
     layout();

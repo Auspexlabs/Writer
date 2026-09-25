@@ -1,0 +1,42 @@
+# Writer for Windows: builds the NSIS installer on a Windows runner and keeps it as this run's artifact. Nothing here
+# signs or publishes it; the release Mac signs it for the in-app updater (desktop/README.md, "Signing and release").
+name: Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # the sources as committed: the runner's git checks text files out with CRLF, which C# raw strings would keep
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - run: rustup update --no-self-update stable && rustup default stable
+      - name: Build the installer
+        working-directory: desktop
+        run: |
+          npm ci
+          node scripts/prepare-engine.mjs --release
+          npx tauri build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: writer-windows-x64-setup
+          path: desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error

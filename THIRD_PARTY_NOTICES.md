@@ -77,10 +77,11 @@ Rust crates compiled into the app (`desktop/src-tauri/Cargo.toml`, versions from
 | tauri-plugin-dialog | 2.7.3 | Apache-2.0 OR MIT | Copyright (c) 2017 - Present Tauri Apps Contributors |
 | tauri-plugin-shell | 2.3.6 | Apache-2.0 OR MIT | Copyright (c) 2017 - Present Tauri Apps Contributors |
 | serde_json | 1.0.151 | MIT OR Apache-2.0 | Erick Tryzelaar, David Tolnay (authors) |
+| sys-locale | 0.3.2 | MIT OR Apache-2.0 | 1Password (authors) |
 | objc2-app-kit (macOS) | 0.3.2 | Zlib OR Apache-2.0 OR MIT | objc2 project, https://github.com/madsmtm/objc2 |
 | objc2-foundation (macOS) | 0.3.2 | MIT | objc2 project, https://github.com/madsmtm/objc2 |
 
-The macOS build compiles 268 crates in total (build scripts and macros included). Their licenses: MIT and/or
+The macOS build compiles 269 crates in total (build scripts and macros included). Their licenses: MIT and/or
 Apache-2.0 (most), Unicode-3.0 (the ICU4X crates and `unicode-ident`), MPL-2.0 (`cssparser`, `cssparser-macros` and
 `selectors` from the Servo project, `dtoa-short`, `option-ext`; unmodified, sources on crates.io), Zlib,
 BSD-3-Clause, Unlicense OR MIT, CC0-1.0 OR MIT-0 OR Apache-2.0, 0BSD OR MIT OR Apache-2.0. The other 191 crates in
@@ -530,6 +531,7 @@ targets" are used only when building for Windows, Linux, Android or wasm.
 | syn | 3.0.6 | MIT OR Apache-2.0 | macOS build |
 | sync_wrapper | 1.0.2 | Apache-2.0 | other targets |
 | synstructure | 0.14.0 | MIT | macOS build |
+| sys-locale | 0.3.2 | MIT OR Apache-2.0 | macOS build |
 | system-deps | 6.2.2 | MIT OR Apache-2.0 | other targets |
 | tao | 0.35.3 | Apache-2.0 | macOS build |
 | tao-macros | 0.1.4 | MIT OR Apache-2.0 | other targets |

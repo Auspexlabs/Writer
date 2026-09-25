@@ -52,11 +52,12 @@ async function openDoc(path) { // that file, else the first document of the same
   await frame(); results.push({ name: d.type + ' open', ms: Math.round(performance.now() - t0) });
   await sleep(1200); return true;
 }
+const L = s => (globalThis.$t ? globalThis.$t(s) : s); // UI text as the page shows it (English or Chinese)
 const S = {
   async panels(pre) {
-    await measure(pre + ' ai-close', () => click('[title^="AI 助手"]', null, 700)); await measure(pre + ' ai-open', () => click('[title^="AI 助手"]', null, 700));
-    if (visible('[title="显示/隐藏侧边栏"]')) { await measure(pre + ' left-close', () => click('[title="显示/隐藏侧边栏"]', null, 700)); await measure(pre + ' left-open', () => click('[title="显示/隐藏侧边栏"]', null, 900)); }
-    await measure(pre + ' bubble-open', () => click('[data-glass-bar] button', '插入', 600)); await measure(pre + ' bubble-close', () => click('[data-glass-bar] button', '插入', 600));
+    await measure(pre + ' ai-close', () => click('[data-ai-btn]', null, 700)); await measure(pre + ' ai-open', () => click('[data-ai-btn]', null, 700));
+    if (visible(`[title="${L('显示/隐藏侧边栏')}"]`)) { await measure(pre + ' left-close', () => click(`[title="${L('显示/隐藏侧边栏')}"]`, null, 700)); await measure(pre + ' left-open', () => click(`[title="${L('显示/隐藏侧边栏')}"]`, null, 900)); }
+    await measure(pre + ' bubble-open', () => click('[data-glass-bar] button', L('插入'), 600)); await measure(pre + ' bubble-close', () => click('[data-glass-bar] button', L('插入'), 600));
   },
   async type(pre, zoom) {
     const ed = visible('.wd-ed[contenteditable="true"]'); if (!ed) return;
@@ -64,16 +65,16 @@ const S = {
     ed.focus(); const s = getSelection(), r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); s.removeAllRanges(); s.addRange(r);
     await measure(pre + ' type100@' + zoom, async () => {
       let sum = 0, max = 0;
-      for (let i = 0; i < 100; i++) { const k0 = performance.now(); document.execCommand('insertText', false, '测试文字 abcd '[i % 13]); void ed.offsetHeight; const k = performance.now() - k0; sum += k; if (k > max) max = k; await frame(); }
+      for (let i = 0; i < 100; i++) { const k0 = performance.now(); document.execCommand('insertText', false, '测试文字 abcd '[i % 13]); void ed.offsetHeight; const k = performance.now() - k0; sum += k; if (k > max) max = k; await frame(); } // i18n-ok: text typed into the document
       return { keyAvg: Math.round(sum) / 100, keyMax: Math.round(max * 10) / 10 };
     });
     await measure(pre + ' after-typing@' + zoom, () => sleep(1600)); // the debounced flush, thumbnails and autosave land here
     if (range) { setRange(range, 100); await sleep(400); }
   },
   async chat(pre) { // typing into the assistant box re-renders the shell on every character
-    const ta = visible('textarea[placeholder="让助手修改…"]'); if (!ta) return;
+    const ta = visible(`textarea[placeholder="${L('让助手修改…')}"]`); if (!ta) return;
     ta.focus();
-    await measure(pre + ' ai-input30', async () => { for (let i = 0; i < 30; i++) { setValue(ta, ta.value + '把表格按第二列从高到低排序'[i % 13]); await frame(); } });
+    await measure(pre + ' ai-input30', async () => { for (let i = 0; i < 30; i++) { setValue(ta, ta.value + '把表格按第二列从高到低排序'[i % 13]); await frame(); } }); // i18n-ok: text typed into the document
     setValue(ta, ''); ta.blur(); await sleep(300);
   },
   async scroll(pre) {

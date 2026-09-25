@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Writer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "cn.thewriter.app",
   "build": {
     "frontendDist": "../splash"
@@ -49,6 +49,18 @@
         "Resources/mindmap.icns": "icons/doc/mindmap.icns",
         "Resources/pdf.icns": "icons/doc/pdf.icns"
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI1OTkxMTU2M0VCMjIyRDIKUldUU0lySStWaEdaSmV5TGxISjlSQytkV1FGZGFuTnZndUprUDkxa3YyS0wvUFRSOEE3bm4rNkwK",
+      "endpoints": ["https://github.com/Auspexlabs/writer/releases/latest/download/latest.json"],
+      "uiEndpoints": [
+        "https://thewriter.cn/updates/ui/ui.json",
+        "https://github.com/Auspexlabs/writer/releases/latest/download/ui.json"
+      ],
+      "requireSignedVersion": true,
+      "windows": { "installMode": "quiet" }
     }
   }
 }

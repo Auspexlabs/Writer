@@ -1,5 +1,8 @@
 // Shared slide kit + file import/export/print for 素笺 Office.
 import { pictureView, picSrc } from './picture.js';
+// $t under node (this module is node-tested): falls back to the Chinese, vars filled the same way. Only for text a new
+// slide/table is created with — never for existing content, which engine.js reads from the file as it is.
+const T = (s, v) => globalThis.$t ? globalThis.$t(s, v) : v ? String(s).replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : s;
 export const THEMES = {
   ink: { name: '墨色', bg: '#1D1D1F', fg: '#FFFFFF', sub: '#BDB7AA', acc: '#E3B25A', card: '#2C2C2E', hf: 'Noto Serif SC', bf: 'Noto Sans SC' },
   paper: { name: '素白', bg: '#FFFFFF', fg: '#1D1D1F', sub: '#6E6E73', acc: '#1D1D1F', card: '#F5F5F7', hf: 'Noto Serif SC', bf: 'Noto Sans SC' },
@@ -18,21 +21,21 @@ export function txt(o) { return Object.assign({ id: oid(), t: 'text', x: 128, y:
 export function shape(o) { return Object.assign(txt({ t: 'shape', shape: 'rect', fill: null, html: '', align: 'center', va: 'middle', fs: 28 }), o); }
 export function makeSlide(layout, c, ratio) {
   c = c || {}; const H = slideH(ratio), objs = [];
-  const title = (y, h, fs, extra) => txt(Object.assign({ ph: 'title', x: 128, y, w: 1344, h, fs, bold: true, html: P(c.title || '单击添加标题'), va: 'bottom' }, extra || {}));
+  const title = (y, h, fs, extra) => txt(Object.assign({ ph: 'title', x: 128, y, w: 1344, h, fs, bold: true, html: P(c.title || T('单击添加标题')), va: 'bottom' }, extra || {}));
   if (layout === 'title') {
     objs.push(shape({ x: 128, y: H * 0.36 - 20, w: 110, h: 8, fill: null, html: '' }));
     objs.push(title(H * 0.36, 160, 76, { va: 'top' }));
-    objs.push(txt({ ph: 'sub', x: 128, y: H * 0.36 + 180, w: 1344, h: 90, fs: 32, html: P(c.subtitle || '单击添加副标题') }));
+    objs.push(txt({ ph: 'sub', x: 128, y: H * 0.36 + 180, w: 1344, h: 90, fs: 32, html: P(c.subtitle || T('单击添加副标题')) }));
   } else if (layout === 'content') {
     objs.push(title(70, 130, 54));
-    objs.push(txt({ ph: 'body', x: 128, y: 250, w: 1344, h: H - 350, fs: 32, lh: 1.6, html: UL(c.bullets || ['单击添加文本']) }));
+    objs.push(txt({ ph: 'body', x: 128, y: 250, w: 1344, h: H - 350, fs: 32, lh: 1.6, html: UL(c.bullets || [T('单击添加文本')]) }));
   } else if (layout === 'two') {
     objs.push(title(70, 130, 54));
-    objs.push(txt({ ph: 'body', x: 128, y: 250, w: 640, h: H - 350, fs: 30, lh: 1.6, html: UL(c.left || ['左栏要点']) }));
-    objs.push(txt({ ph: 'body', x: 832, y: 250, w: 640, h: H - 350, fs: 30, lh: 1.6, html: UL(c.right || ['右栏要点']) }));
+    objs.push(txt({ ph: 'body', x: 128, y: 250, w: 640, h: H - 350, fs: 30, lh: 1.6, html: UL(c.left || [T('左栏要点')]) }));
+    objs.push(txt({ ph: 'body', x: 832, y: 250, w: 640, h: H - 350, fs: 30, lh: 1.6, html: UL(c.right || [T('右栏要点')]) }));
   } else if (layout === 'stats') {
     objs.push(title(70, 130, 54));
-    (c.stats || [{ v: '0', k: '指标' }, { v: '0', k: '指标' }, { v: '0', k: '指标' }]).slice(0, 3).forEach((s, i) => {
+    (c.stats || [{ v: '0', k: T('指标') }, { v: '0', k: T('指标') }, { v: '0', k: T('指标') }]).slice(0, 3).forEach((s, i) => {
       const x = 128 + i * 459;
       objs.push(shape({ x, y: 280, w: 427, h: 340, fill: 'card', html: '', va: 'top' }));
       objs.push(txt({ x: x + 36, y: 320, w: 355, h: 140, fs: 84, bold: true, color: 'acc', font: 'head', html: P(s.v) }));
@@ -281,7 +284,7 @@ export async function importFile(file) {
   if (ext === 'docx') return { type: 'docx', title, html: await docxHtml(z) };
   if (ext === 'xlsx') return { type: 'xlsx', title, sheets: await xlsxSheets(z) };
   if (ext === 'pptx') return Object.assign({ type: 'pptx', title }, await pptxSlides(z));
-  throw new Error('暂不支持 .' + ext + ' 文件');
+  throw new Error(T('暂不支持 .{ext} 文件', { ext }));
 }
 
 const xe = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

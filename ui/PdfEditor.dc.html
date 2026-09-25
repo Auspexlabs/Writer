@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -15,7 +15,7 @@
       <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
         <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.sh }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
       </sc-for>
-      </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
+      </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
     </div></div>
     <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k72, rgba(255,255,255,0.74)),var(--k32, rgba(255,255,255,0.5)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px">
@@ -142,7 +142,7 @@ class Component extends DCLogic {
   get doc() { return this.props.doc; }
   async loadInfos() {
     const K = this.K; if (!K) return; const d = this.doc;
-    if (!K.store[d.id]) return this.setState({ err: '文件数据已丢失，请重新打开这个 PDF。' });
+    if (!K.store[d.id]) return this.setState({ err: $t('文件数据已丢失，请重新打开这个 PDF。') });
     try {
       const infos = {};
       for (const pg of d.pages) infos[pg.id + ':' + (pg.rot || 0)] = await K.pageInfo(d.id, pg);
@@ -151,7 +151,7 @@ class Component extends DCLogic {
       if (!this.state.cur && d.pages[0]) u.cur = d.pages[0].id;
       this.setState(u);
       if (this.state.tool === 'edit') this.loadItems();
-    } catch (e) { this.setState({ err: '无法读取 PDF：' + (e.message || e) }); }
+    } catch (e) { this.setState({ err: $t('无法读取 PDF：{msg}', { msg: e.message || e }) }); }
   }
   async loadItems() { const K = this.K, d = this.doc; const items = {}; for (const pg of d.pages) items[pg.id + ':' + (pg.rot || 0)] = await K.textItems(d.id, pg); this.setState({ items }); }
   schedule() { if (this.raf) return; this.raf = requestAnimationFrame(() => { this.raf = null; this.renderAll(); }); }
@@ -186,11 +186,11 @@ class Component extends DCLogic {
   }
   movePage(dir) { const pg = this.curPage(); if (!pg) return; this.change(d => { const i = d.pages.findIndex(p => p.id === pg.id), j = i + dir; if (j < 0 || j >= d.pages.length) return; [d.pages[i], d.pages[j]] = [d.pages[j], d.pages[i]]; }); setTimeout(() => this.scrollTo(pg.id), 50); }
   scrollTo(id) { const sc = this.scRef.current; if (this.state.view === 'single') { if (sc) sc.scrollTop = 0; } else { const el = sc && sc.querySelector(`[data-page="${id}"]`); if (el) sc.scrollTop = el.offsetTop - 20; } this.setState({ cur: id }); }
-  async convert() { const K = this.K, d = this.doc; this.props.toast && this.props.toast('正在提取文字…'); const pages = await K.extractText(d.id, d.pages); const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); const html = pages.map((ps, i) => ps.map((p, j) => (i === 0 && j === 0 && p.length < 40 ? `<h1>${esc(p)}</h1>` : `<p>${esc(p)}</p>`)).join('') || '<p><br></p>').join('<hr data-pb="1">'); const text = pages.flat().join('\n\n'); this.props.onConvert && this.props.onConvert('docx', { title: d.title, html, text }); }
+  async convert() { const K = this.K, d = this.doc; this.props.toast && this.props.toast($t('正在提取文字…')); const pages = await K.extractText(d.id, d.pages); const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); const html = pages.map((ps, i) => ps.map((p, j) => (i === 0 && j === 0 && p.length < 40 ? `<h1>${esc(p)}</h1>` : `<p>${esc(p)}</p>`)).join('') || '<p><br></p>').join('<hr data-pb="1">'); const text = pages.flat().join('\n\n'); this.props.onConvert && this.props.onConvert('docx', { title: d.title, html, text }); }
   async save(print) {
-    const K = this.K, d = this.doc; this.props.toast && this.props.toast(print ? '正在准备打印…' : '正在生成 PDF…');
-    try { const bytes = await K.exportPdf(d.id, d); if (!print) { K.download(bytes, d.title + '.pdf'); this.props.toast && this.props.toast('已下载「' + d.title + '.pdf」'); } else { const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0'; f.src = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); document.body.appendChild(f); f.onload = () => { try { f.contentWindow.print(); } catch (e) { K.download(bytes, d.title + '.pdf'); } }; } }
-    catch (e) { this.props.toast && this.props.toast('导出失败：' + (e.message || e)); }
+    const K = this.K, d = this.doc; this.props.toast && this.props.toast(print ? $t('正在准备打印…') : $t('正在生成 PDF…'));
+    try { const bytes = await K.exportPdf(d.id, d); if (!print) { K.download(bytes, d.title + '.pdf'); this.props.toast && this.props.toast($t('已下载「{name}」', { name: d.title + '.pdf' })); } else { const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0'; f.src = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); document.body.appendChild(f); f.onload = () => { try { f.contentWindow.print(); } catch (e) { K.download(bytes, d.title + '.pdf'); } }; } }
+    catch (e) { this.props.toast && this.props.toast($t('导出失败：{msg}', { msg: e.message || e })); }
   }
   onWM = e => {
     const op = this.op; if (!op) return; const s = this.state.scale;
@@ -214,20 +214,20 @@ class Component extends DCLogic {
     const single = st.view === 'single';
     const setTool = t => { this.setState({ tool: t, sel: null, editing: null }); if (t === 'edit' && !Object.keys(st.items).length) this.loadItems(); };
     const selA = (d.annots || []).find(a => a.id === st.sel);
-    const tools = TOOLS.map(([k, l, key]) => B(l, () => setTool(k), { on: st.tool === k, title: `${l}（${key}）` })).concat([
+    const tools = TOOLS.map(([k, l, key]) => { const lbl = $t(l); return B(lbl, () => setTool(k), { on: st.tool === k, title: $t('{label}（{key}）', { label: lbl, key }) }); }).concat([
       { isColor: true, value: st.color, onChange: e => { const c = e.target.value; this.setState({ color: c }); if (selA && selA.t !== 'hl' && selA.t !== 'white') this.change(dd => { dd.annots.find(a => a.id === selA.id).color = c; }); } },
       { isSel: true, value: String(selA && selA.fs ? Math.round(selA.fs) : st.fs), options: ['9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '32', '40', '48'], sref: el => { const v = String(selA && selA.fs ? Math.round(selA.fs) : st.fs); if (el) setTimeout(() => { if (el.value !== v) el.value = v; }, 0); }, onChange: e => { const v = +e.target.value; this.setState({ fs: v }); if (selA && selA.fs) this.change(dd => { dd.annots.find(a => a.id === selA.id).fs = v; }); } },
-      B('删除批注', () => { if (selA) { this.change(dd => { dd.annots = dd.annots.filter(a => a.id !== selA.id); }); this.setState({ sel: null }); } }, { dis: !selA }), SEP,
-      B('连续', () => this.setView('continuous'), { on: !single, title: '连续滚动浏览所有页' }), B('单页', () => this.setView('single'), { on: single, title: '一次只看一页' }),
-      B('↺', () => this.rotatePage(-1), { title: '向左旋转当前页' }), B('↻', () => this.rotatePage(1), { title: '向右旋转当前页' }), B('旋转全部', () => this.rotatePage(1, true), { title: '所有页向右旋转 90°' }),
-      B('上移', () => this.movePage(-1), { title: '当前页上移' }), B('下移', () => this.movePage(1), { title: '当前页下移' }),
-      B('插入空白页', () => { const pg = this.curPage(); this.change(dd => { const i = dd.pages.findIndex(p => p.id === (pg && pg.id)); dd.pages.splice(i + 1, 0, { id: 'p' + Date.now().toString(36), src: -1, rot: 0 }); }); }),
-      B('删除页', () => { const pg = this.curPage(); if (!pg || d.pages.length < 2) return this.props.toast && this.props.toast('至少保留一页'); this.change(dd => { dd.pages = dd.pages.filter(p => p.id !== pg.id); dd.annots = dd.annots.filter(a => a.page !== pg.id); }); this.setState({ cur: null }); }), SEP,
-      B('转为 Word 文档', () => this.convert()), B('打印', () => this.save(true)), B('下载 PDF', () => this.save(false))
+      B($t('删除批注'), () => { if (selA) { this.change(dd => { dd.annots = dd.annots.filter(a => a.id !== selA.id); }); this.setState({ sel: null }); } }, { dis: !selA }), SEP,
+      B($t('连续'), () => this.setView('continuous'), { on: !single, title: $t('连续滚动浏览所有页') }), B($t('单页'), () => this.setView('single'), { on: single, title: $t('一次只看一页') }),
+      B('↺', () => this.rotatePage(-1), { title: $t('向左旋转当前页') }), B('↻', () => this.rotatePage(1), { title: $t('向右旋转当前页') }), B($t('旋转全部'), () => this.rotatePage(1, true), { title: $t('所有页向右旋转 90°') }),
+      B($t('上移'), () => this.movePage(-1), { title: $t('当前页上移') }), B($t('下移'), () => this.movePage(1), { title: $t('当前页下移') }),
+      B($t('插入空白页'), () => { const pg = this.curPage(); this.change(dd => { const i = dd.pages.findIndex(p => p.id === (pg && pg.id)); dd.pages.splice(i + 1, 0, { id: 'p' + Date.now().toString(36), src: -1, rot: 0 }); }); }),
+      B($t('删除页'), () => { const pg = this.curPage(); if (!pg || d.pages.length < 2) return this.props.toast && this.props.toast($t('至少保留一页')); this.change(dd => { dd.pages = dd.pages.filter(p => p.id !== pg.id); dd.annots = dd.annots.filter(a => a.page !== pg.id); }); this.setState({ cur: null }); }), SEP,
+      B($t('转为 Word 文档'), () => this.convert()), B($t('打印'), () => this.save(true)), B($t('下载 PDF'), () => this.save(false))
     ]);
     const parts = [[]]; tools.forEach(t => { if (t.isSep) parts.push([]); else parts[parts.length - 1].push(t); });
     const TL = TOOLS.find(t => t[0] === st.tool);
-    const tabDefs = [['tool', '工具 · ' + (TL ? TL[1] : '')], ['page', '页面'], ['out', '导出']];
+    const tabDefs = [['tool', $t('工具 · {tool}', { tool: TL ? $t(TL[1]) : '' })], ['page', $t('页面')], ['out', $t('导出')]];
     const tab = st.tab || 'tool', shown = tab === 'tool' ? parts[0] : tab === 'page' ? parts[1] : parts[2];
     const tabs = tabDefs.map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', sh: on ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
     const lv = st.live;
@@ -280,9 +280,9 @@ class Component extends DCLogic {
       single, mainPages: single ? pages.filter(p => p.id === (st.cur || (d.pages[0] && d.pages[0].id))) : pages, scJ: single ? 'center' : 'flex-start', scMinH: single ? '100%' : '0',
       prevPage: () => this.go(-1), nextPage: () => this.go(1), barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), pages, showThumbs, cols: showThumbs ? '184px minmax(0,1fr)' : '0px minmax(0,1fr)', closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       scRef: this.scRef, cursor: { select: 'default', edit: 'default', text: 'text', ink: 'crosshair' }[st.tool] || 'crosshair',
-      loading: !K || !Object.keys(st.infos).length || !!st.err, loadText: st.err || '正在加载 PDF…',
+      loading: !K || !Object.keys(st.infos).length || !!st.err, loadText: st.err || $t('正在加载 PDF…'),
       onScroll: e => { if (single) return; const sc2 = e.currentTarget; const els = Array.from(sc2.querySelectorAll('[data-page]')); const mid = sc2.scrollTop + sc2.clientHeight / 3; let cur = els[0]; els.forEach(el => { if (el.offsetTop <= mid) cur = el; }); if (cur && cur.getAttribute('data-page') !== st.cur) this.setState({ cur: cur.getAttribute('data-page') }); },
-      pageText: `第 ${Math.max(1, ci + 1)} / ${d.pages.length} 页`, annotText: `${(d.annots || []).length} 个批注`, hint: HINTS[st.tool],
+      pageText: $t('第 {cur} / {total} 页', { cur: Math.max(1, ci + 1), total: d.pages.length }), annotText: $t('{n} 个批注', { n: (d.annots || []).length }), hint: $t(HINTS[st.tool]),
       zoomPct: Math.round(sc * 100), zoomIn: () => this.setZoom((this.state.scale || 1) + 0.1), zoomOut: () => this.setZoom((this.state.scale || 1) - 0.1), onZoom: e => this.setZoom(+e.target.value / 100),
       zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(sc * 100) + '%',
       onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(Math.round((this.state.scale || 1) * 100)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),

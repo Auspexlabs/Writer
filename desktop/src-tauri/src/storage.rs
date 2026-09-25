@@ -39,7 +39,7 @@ pub fn save_name(title: &str, ext: &str) -> Option<String> {
 #[tauri::command]
 pub async fn save_dialog(app: AppHandle, window: WebviewWindow, name: String, ext: String) -> Option<String> {
     let file_name = save_name(&name, &ext)?;
-    let mut dialog = app.dialog().file().set_title("存储").set_file_name(&file_name).add_filter(&ext, &[ext.as_str()]).set_parent(&window);
+    let mut dialog = app.dialog().file().set_title(crate::t("存储")).set_file_name(&file_name).add_filter(&ext, &[ext.as_str()]).set_parent(&window);
     if let Ok(dir) = app.path().document_dir() {
         dialog = dialog.set_directory(dir);
     }

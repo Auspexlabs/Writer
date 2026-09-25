@@ -15,10 +15,13 @@ import { readFileSync } from 'node:fs';
 const native = readFileSync(new URL('../../desktop/src-tauri/src/native.js', import.meta.url), 'utf8');
 
 test('the close button gets a hit box wider than its 12px drawing', () => {
-  const rule = native.match(/button\[title="关闭"\]::before\s*\{[^}]*inset:\s*(-?\d+)px/);
+  const rule = native.match(/button\[data-close\]::before\s*\{[^}]*inset:\s*(-?\d+)px/);
   assert.ok(rule, 'native.js should widen the close button\'s clickable area past its drawn 12px circle');
   const inset = Number(rule[1]);
   assert.ok(inset <= -8, `inset (${inset}px) should reach well past the button, not just pad it by a pixel or two`);
+  // found by an attribute rather than its title, which the English UI translates
+  for (const page of ['MacSettings', 'MacAbout', 'MacGestures'])
+    assert.match(readFileSync(new URL(`../${page}.dc.html`, import.meta.url), 'utf8'), /<button data-close="1" onClick="\{\{ close \}\}"/, page);
 });
 
 test('the drag mousedown listener still targets only the header background, not the button', () => {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -15,7 +15,7 @@
 <div style="position:relative;width:660px;border-radius:{{ radius }};overflow:hidden;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.74),rgba(246,246,248,0.6)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);color:var(--k1, #1D1D1F);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 28px 80px rgba(0,0,0,0.26),0 2px 8px rgba(0,0,0,0.08);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;font-size:13px">
   <div style="position:relative;height:56px;display:flex;align-items:center;padding:0 16px">
     <div style="display:flex;gap:8px">
-      <sc-if value="{{ notWin }}" hint-placeholder-val="{{ true }}"><button onClick="{{ close }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:#FF5F57;cursor:default"></button>
+      <sc-if value="{{ notWin }}" hint-placeholder-val="{{ true }}"><button data-close="1" onClick="{{ close }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:#FF5F57;cursor:default"></button>
       <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span>
       <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span></sc-if><sc-if value="{{ isWin }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:14px;top:0;height:36px;z-index:2;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--k1, #1D1D1F);pointer-events:none"><img src="./assets/writer-glyph.svg" alt="" style="width:16px;height:16px;display:block;filter:var(--gmark, none)"><span>{{ winTitle }}</span></div><button onClick="{{ close }}" title="关闭" style="position:absolute;right:0;top:0;z-index:2;width:46px;height:36px;padding:0;border:none;background:transparent;color:var(--k1, #1D1D1F);cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:#C42B1C;color:#FFFFFF"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" stroke-width="1"></path></svg></button></sc-if>
     </div>
@@ -109,10 +109,13 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:640},&quot;tab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;general&quot;,&quot;look&quot;,&quot;edit&quot;,&quot;ai&quot;,&quot;file&quot;,&quot;keys&quot;],&quot;default&quot;:&quot;general&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
-const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, lang: '简体中文', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
-const TABS = [['general', '通用', '⚙︎'], ['look', '外观', '◐'], ['edit', '编辑', '✎'], ['ai', 'AI', '✦'], ['file', '存储', '▤'], ['keys', '快捷键', '⌘']];
+const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, autoUpdate: true, lang: '跟随系统', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
+const TABS = [['general', '通用', '⚙︎'], ['look', '外观', '◐'], ['edit', '编辑@@settings', '✎'], ['ai', 'AI', '✦'], ['file', '存储@@settings', '▤'], ['keys', '快捷键', '⌘']];
 const ICONS = ['word', 'excel', 'ppt', 'markdown', 'pdf', 'mindmap'];
-const O = a => a.map(x => Array.isArray(x) ? { v: String(x[0]), l: x[1] } : { v: String(x), l: x });
+const O = a => a.map(x => Array.isArray(x) ? { v: String(x[0]), l: $t(String(x[1])) } : { v: String(x), l: $t(String(x)) });
+// 设置 › 语言 applies after a restart: the pages and the menu bar read it once (ui/i18n.js, desktop/src-tauri/src/main.rs)
+const langOf = l => l === 'English' ? 'en' : l === '简体中文' ? 'zh' : /^zh/i.test(window.__WRITER_SYS_LANG || navigator.language || 'zh') ? 'zh' : 'en';
+const restart = () => { const T = window.__TAURI_INTERNALS__; if (T && T.invoke) T.invoke('restart_app'); else location.reload(); };
 class Component extends DCLogic {
   state = { tab: null, v: this.load(), ws: '', ai: null, aiMsg: '' };
   componentDidMount() {
@@ -120,7 +123,7 @@ class Component extends DCLogic {
     // 设置 › AI talks to the engine (this may be a window of its own): the model settings and the key live there, never in the page.
     Promise.all([import('./engine.js'), import('./prefs.js')]).then(([EN, P]) => { this.EN = EN; this.P = P; return EN.aiConfig(); })
       .then(c => { const ai = this.P.aiForm(c); this.aiSent = this.aiKey(ai); this.setState({ ai }); })
-      .catch(e => this.setState({ ai: this.P ? this.P.aiForm(null) : null, aiMsg: '读不到模型设置：' + e.message }));
+      .catch(e => this.setState({ ai: this.P ? this.P.aiForm(null) : null, aiMsg: $t('读不到模型设置：{error}', { error: e.message }) }));
   }
   aiKey(ai, body) { const b = Object.assign({}, body || this.P.aiRequest(ai)); delete b.apiKey; return JSON.stringify(b); }
   editAi(patch) { this.setState(s => ({ ai: Object.assign({}, s.ai, patch) })); }
@@ -132,7 +135,7 @@ class Component extends DCLogic {
     const body = P.aiRequest(f); if (clear) body.apiKey = '';
     const k = this.aiKey(f, body); if (k === this.aiSent && body.apiKey == null) return; this.aiSent = k;
     return this.aiSaving = EN.saveAiConfig(body).then(c => this.setState(s => ({ aiMsg: '已保存', ai: Object.assign({}, s.ai, { hasKey: c.hasKey, savedUrl: c.baseUrl, source: c.source, key: body.apiKey != null && s.ai.key === f.key ? '' : s.ai.key }) })),
-      e => { this.aiSent = null; this.setState({ aiMsg: e.message + (e.hint ? '（' + e.hint + '）' : '') }); });
+      e => { this.aiSent = null; this.setState({ aiMsg: e.hint ? $t('{error}（{hint}）', { error: e.message, hint: e.hint }) : e.message }); });
   }
   async testAi() {
     const P = this.P, EN = this.EN; if (!P || !EN || !this.state.ai) return;
@@ -145,13 +148,13 @@ class Component extends DCLogic {
   aiRows(base) {
     const P = this.P, f = this.state.ai; if (!P || !f) return [base('正在读取模型设置…', this.state.aiMsg)];
     const p = P.aiPreset(f.provider), stored = P.keyStored(f);
-    const field = (k, label, ph, hint, type) => ({ ...base(label, hint), isInput: true, type: type || 'text', ac: type === 'password' ? 'new-password' : 'off', value: f[k] || '', ph, w: '260px', hasAct: false, onChange: e => this.editAi({ [k]: e.target.value }), onBlur: () => this.saveAi(), onKey: e => { if (e.key === 'Escape' || (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) e.currentTarget.blur(); } }); // Esc closes the window: save what was typed first
+    const field = (k, label, ph, hint, type) => ({ ...base(label, hint), isInput: true, type: type || 'text', ac: type === 'password' ? 'new-password' : 'off', value: f[k] || '', ph: $t(ph), w: '260px', hasAct: false, onChange: e => this.editAi({ [k]: e.target.value }), onBlur: () => this.saveAi(), onKey: e => { if (e.key === 'Escape' || (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) e.currentTarget.blur(); } }); // Esc closes the window: save what was typed first
     return [
-      { ...base('服务商', f.source === 'env' ? '正在使用环境变量里的设置，它优先于这里保存的内容' : ''), isPopup: true, value: f.provider, opts: P.AI_PROVIDERS.map(x => ({ v: x.id, l: x.name })), minW: '170px', onChange: e => this.pickAi(e.target.value) },
+      { ...base('服务商', f.source === 'env' ? '正在使用环境变量里的设置，它优先于这里保存的内容' : ''), isPopup: true, value: f.provider, opts: P.AI_PROVIDERS.map(x => ({ v: x.id, l: $t(x.name) })), minW: '170px', onChange: e => this.pickAi(e.target.value) },
       field('baseUrl', '接口地址', p.url || 'https://…/v1'),
-      { ...field('key', 'API Key', stored ? '已保存' : p.key ? '粘贴 API Key' : '不需要可留空', '只保存在这台电脑上', 'password'), w: stored ? '206px' : '260px', hasAct: stored, act: '清除', onAct: () => this.saveAi(true) },
-      field('model', '模型', p.id === 'anthropic' ? '默认 ' + p.model : p.model ? '例如 ' + p.model : p.id === 'lmstudio' ? 'LM Studio 里加载的模型名' : '服务商文档里的模型名'),
-      { ...base('测试连接', this.state.aiMsg), isButton: true, btn: '测试', onClick: () => this.testAi() }
+      { ...field('key', 'API Key', stored ? '已保存' : p.key ? '粘贴 API Key' : '不需要可留空', '只保存在这台电脑上', 'password'), w: stored ? '206px' : '260px', hasAct: stored, act: $t('清除'), onAct: () => this.saveAi(true) },
+      field('model', '模型', p.id === 'anthropic' ? $t('默认 {model}', { model: p.model }) : p.model ? $t('例如 {model}', { model: p.model }) : p.id === 'lmstudio' ? 'LM Studio 里加载的模型名' : '服务商文档里的模型名'),
+      { ...base('测试连接', this.state.aiMsg), isButton: true, btn: $t('测试'), onClick: () => this.testAi() }
     ];
   }
   load() { try { return { ...DEF, ...JSON.parse(localStorage.getItem('writer-settings') || '{}') }; } catch (e) { return { ...DEF }; } }
@@ -161,22 +164,22 @@ class Component extends DCLogic {
     const off = 'var(--goff, rgba(0,0,0,0.12))';
     // win: the Windows panel (design: WriterWin) shows shortcuts as Ctrl+… (⌃⌘S, the sidebar, is Ctrl+\ there)
     const K = k => { if (!this.props.win) return k; if (k === '⌃⌘S') return 'Ctrl+\\'; const m = []; if (/[⌘⌃]/.test(k)) m.push('Ctrl'); if (k.includes('⇧')) m.push('Shift'); if (k.includes('⌥')) m.push('Alt'); return [...m, k.replace(/[⌘⌃⇧⌥]/g, '')].join('+'); };
-    const base = (label, hint) => ({ label, hasHint: !!hint, hint: hint || '' });
+    const base = (label, hint) => ({ label: $t(label), hasHint: !!hint, hint: hint ? $t(hint) : '' });
     const tg = (k, label, hint) => ({ ...base(label, hint), isToggle: true, tbg: v[k] ? A : off, tx: v[k] ? '16px' : '2px', onClick: () => this.set(k, !v[k]) });
     const pop = (k, label, opts, minW, hint) => ({ ...base(label, hint), isPopup: true, value: String(v[k]), opts: O(opts), minW: (minW || 120) + 'px', onChange: e => this.set(k, typeof DEF[k] === 'number' ? +e.target.value : e.target.value) });
-    const seg = (k, label, list, hint) => ({ ...base(label, hint), isSeg: true, items: list.map(([val, l]) => { const on = v[k] === val; return { label: l, bg: on ? 'var(--gsel, rgba(255,255,255,0.95))' : 'transparent', sh: on ? '0 1px 3px rgba(0,0,0,0.12),0 0 0 0.5px rgba(0,0,0,0.04)' : 'none', fw: on ? 600 : 400, onClick: () => this.set(k, val) }; }) });
-    const G = (name, rows) => ({ name: name || '', hasName: !!name, rows: rows.map((r, i) => ({ isToggle: false, isPopup: false, isSeg: false, isColors: false, isSlider: false, isTheme: false, isIcons: false, isText: false, isInput: false, isButton: false, ...r, bt: i ? '1px solid var(--gline, rgba(0,0,0,0.06))' : 'none' })) });
+    const seg = (k, label, list, hint) => ({ ...base(label, hint), isSeg: true, items: list.map(([val, l]) => { const on = v[k] === val; return { label: $t(l), bg: on ? 'var(--gsel, rgba(255,255,255,0.95))' : 'transparent', sh: on ? '0 1px 3px rgba(0,0,0,0.12),0 0 0 0.5px rgba(0,0,0,0.04)' : 'none', fw: on ? 600 : 400, onClick: () => this.set(k, val) }; }) });
+    const G = (name, rows) => ({ name: name ? $t(name) : '', hasName: !!name, rows: rows.map((r, i) => ({ isToggle: false, isPopup: false, isSeg: false, isColors: false, isSlider: false, isTheme: false, isIcons: false, isText: false, isInput: false, isButton: false, ...r, bt: i ? '1px solid var(--gline, rgba(0,0,0,0.06))' : 'none' })) });
     const R = {
       general: [
-        G('启动', [seg('startup', '打开 Writer 时', [['home', '新建页'], ['last', '上次文档'], ['blank', '空白']]), pop('newType', '新建文稿类型', [['docx', '文字文档'], ['xlsx', '表格'], ['pptx', '演示文稿'], ['md', '纯文本']], 120), tg('restore', '退出时保留窗口', '重新打开时恢复所有窗口与标签页')]),
+        G('启动', [seg('startup', '打开 Writer 时', [['home', '新建页'], ['last', '上次文档'], ['blank', '空白']]), pop('newType', '新建文稿类型', [['docx', '文字文档'], ['xlsx', '表格@@xlsx'], ['pptx', '演示文稿'], ['md', '纯文本']], 120), tg('restore', '退出时保留窗口', '重新打开时恢复所有窗口与标签页')]),
         G('工具栏', [pop('quickTab', '收起后的快捷按钮', ['开始', '插入', '布局', '审阅', '视图', '格式', '公式', '数据', '动画'], 96, '工具气泡收起后，右上角快捷按钮直接打开的面板 · 即将推出')]),
-        G('语言与地区', [pop('lang', '语言', ['简体中文', '繁體中文', 'English', '日本語'], 110, '即将推出'), pop('paper', '纸张大小', ['A4', 'A5', 'B5', 'Letter'], 80, '新建文字文档的纸张')])
-      ],
+        G('语言与地区', [pop('lang', '语言', ['跟随系统', '简体中文', 'English'], 110), ...(langOf(v.lang) === $lang() ? [] : [{ ...base('重启 Writer 后生效'), isButton: true, btn: $t('立即重启'), onClick: restart }]), pop('paper', '纸张大小', ['A4', 'A5', 'B5', 'Letter'], 80, '新建文字文档的纸张')])
+      ].concat((window.__WRITER_NATIVE__ || {}).updater ? [G('更新', [tg('autoUpdate', '自动更新', '在后台下载更新，下次打开 Writer 时生效')])] : []), // only the desktop app updates itself
       look: [
-        G('', [{ ...base('外观'), isTheme: true, items: [['light', '浅色', '#E9EAEC', '#FFFFFF'], ['dark', '深色', '#1C1C1E', '#3A3A3C'], ['auto', '自动', 'linear-gradient(90deg,#E9EAEC 50%,#1C1C1E 50%)', 'linear-gradient(90deg,#FFFFFF 50%,#3A3A3C 50%)']].map(([val, label, bg, win]) => ({ label, bg, win, fw: v.theme === val ? 600 : 400, ring: v.theme === val ? '0 0 0 2px var(--k0, #fff),0 0 0 4px ' + A : '0 0 0 0.5px rgba(0,0,0,0.2)', onClick: () => this.set('theme', val) })) },
-          { ...base('强调色'), isColors: true, items: [['#3F7D5C', '竹青'], ['#2F5D8A', '黛蓝'], ['#B5573A', '赭石'], ['#7A5C9E', '藕紫'], ['#8E8E93', '石墨']].map(([c, name]) => ({ c, name, ring: v.accent === c ? '0 0 0 2px var(--k0, #fff),0 0 0 3.5px ' + c : 'inset 0 0 0 0.5px rgba(0,0,0,0.2)', onClick: () => this.set('accent', c) })) }]),
-        G('文档图标', [{ ...base('图标风格', '用于标签页、文件列表与新建页'), isIcons: true, items: [['b', 'B · 雾彩玻璃'], ['c', 'C · 深色几何']].map(([val, label]) => { const on = v.iconStyle === val; return { label, fw: on ? 600 : 400, icons: ICONS.map(n => `./assets/icons/${val}/${n}.svg`), bg: on ? 'var(--gsel, rgba(255,255,255,0.7))' : 'var(--goff, rgba(0,0,0,0.03))', ring: on ? '0 0 0 2px ' + A : 'inset 0 0 0 0.5px rgba(0,0,0,0.08)', dotBg: on ? A : 'var(--gctl, #fff)', dotSh: on ? 'none' : 'inset 0 0 0 0.5px rgba(0,0,0,0.3)', dotOp: on ? 1 : 0, onClick: () => this.set('iconStyle', val) }; }) }]),
-        G('界面', [seg('density', '界面密度', [['compact', '紧凑'], ['std', '标准'], ['loose', '宽松']]), { ...base('玻璃通透度'), isSlider: true, min: 0, max: 100, value: v.glass, lo: '实', hi: '透', onChange: e => this.set('glass', +e.target.value) }, tg('grid', '表格显示网格线'), tg('motion', '减少动态效果'), tg('darkPages', '深色模式下文稿页面也用深色', '关闭时文字文档的页面保持白色')])
+        G('', [{ ...base('外观'), isTheme: true, items: [['light', '浅色', '#E9EAEC', '#FFFFFF'], ['dark', '深色', '#1C1C1E', '#3A3A3C'], ['auto', '自动', 'linear-gradient(90deg,#E9EAEC 50%,#1C1C1E 50%)', 'linear-gradient(90deg,#FFFFFF 50%,#3A3A3C 50%)']].map(([val, label, bg, win]) => ({ label: $t(label), bg, win, fw: v.theme === val ? 600 : 400, ring: v.theme === val ? '0 0 0 2px var(--k0, #fff),0 0 0 4px ' + A : '0 0 0 0.5px rgba(0,0,0,0.2)', onClick: () => this.set('theme', val) })) },
+          { ...base('强调色'), isColors: true, items: [['#3F7D5C', '竹青'], ['#2F5D8A', '黛蓝'], ['#B5573A', '赭石'], ['#7A5C9E', '藕紫'], ['#8E8E93', '石墨']].map(([c, name]) => ({ c, name: $t(name), ring: v.accent === c ? '0 0 0 2px var(--k0, #fff),0 0 0 3.5px ' + c : 'inset 0 0 0 0.5px rgba(0,0,0,0.2)', onClick: () => this.set('accent', c) })) }]),
+        G('文档图标', [{ ...base('图标风格', '用于标签页、文件列表与新建页'), isIcons: true, items: [['b', 'B · 雾彩玻璃'], ['c', 'C · 深色几何']].map(([val, label]) => { const on = v.iconStyle === val; return { label: $t(label), fw: on ? 600 : 400, icons: ICONS.map(n => `./assets/icons/${val}/${n}.svg`), bg: on ? 'var(--gsel, rgba(255,255,255,0.7))' : 'var(--goff, rgba(0,0,0,0.03))', ring: on ? '0 0 0 2px ' + A : 'inset 0 0 0 0.5px rgba(0,0,0,0.08)', dotBg: on ? A : 'var(--gctl, #fff)', dotSh: on ? 'none' : 'inset 0 0 0 0.5px rgba(0,0,0,0.3)', dotOp: on ? 1 : 0, onClick: () => this.set('iconStyle', val) }; }) }]),
+        G('界面', [seg('density', '界面密度', [['compact', '紧凑'], ['std', '标准'], ['loose', '宽松']]), { ...base('玻璃通透度'), isSlider: true, min: 0, max: 100, value: v.glass, lo: $t('实'), hi: $t('透'), onChange: e => this.set('glass', +e.target.value) }, tg('grid', '表格显示网格线'), tg('motion', '减少动态效果'), tg('darkPages', '深色模式下文稿页面也用深色', '关闭时文字文档的页面保持白色')])
       ],
       edit: [
         G('正文', [pop('font', '默认字体', ['思源宋体', '思源黑体', '霞鹜文楷', 'IBM Plex Sans'], 120, '即将推出'), pop('size', '默认字号', [10, 11, 12, 14, 16, 18].map(n => [n, n + ' pt']), 80, '即将推出')]),
@@ -187,20 +190,20 @@ class Component extends DCLogic {
         G('', [tg('ai', '启用 ✦ AI 助手'), seg('tone', '回复风格', [['brief', '简洁'], ['bal', '均衡'], ['detail', '详细']])]),
         G('模型', this.aiRows(base)),
         G('隐私', [tg('preview', '写入前先预览修改'), tg('ctx', '发送整篇文档作为上下文', '关闭后仅发送选中的内容'), tg('web', '联网搜索', '允许助手搜索和打开网页')]),
-        G('自定义说明', [{ ...base('告诉 AI 你的偏好'), isText: true, value: v.instr, ph: '例如：用正式书面语。', onChange: e => this.set('instr', e.target.value) }])
+        G('自定义说明', [{ ...base('告诉 AI 你的偏好'), isText: true, value: v.instr, ph: $t('例如：用正式书面语。'), onChange: e => this.set('instr', e.target.value) }])
       ],
       file: [
         G('', [base('自动存储', '修改会自动存入文件；新文稿在第一次存储时选择位置'), tg('history', '保留版本历史', '每份文稿最多保留 30 个版本 · 即将推出')]),
-        G('默认格式 · 即将推出', [pop('fmt_docx', '文字文档', ['.docx', '.odt', '.rtf'], 80), pop('fmt_xlsx', '表格', ['.xlsx', '.ods', '.csv'], 80), pop('fmt_pptx', '演示文稿', ['.pptx', '.odp'], 80), pop('fmt_md', '纯文本', ['.md', '.txt'], 80)])
+        G('默认格式 · 即将推出', [pop('fmt_docx', '文字文档', ['.docx', '.odt', '.rtf'], 80), pop('fmt_xlsx', '表格@@xlsx', ['.xlsx', '.ods', '.csv'], 80), pop('fmt_pptx', '演示文稿', ['.pptx', '.odp'], 80), pop('fmt_md', '纯文本', ['.md', '.txt'], 80)])
       ],
       keys: [['通用', [['新建', '⌘N'], ['新建标签页', '⌘T'], ['打开', '⌘O'], ['存储', '⌘S'], ['设置', '⌘,']]], ['显示', [['侧边栏', '⌃⌘S'], ['收起 / 展开工具栏', '⌥⌘T'], ['✦ AI 助手', '⌘J'], ['沉浸书写', '⌘.'], ['深色 / 浅色', '⇧⌘L']]], ['编辑', [['撤销', '⌘Z'], ['重做', '⇧⌘Z'], ['查找', '⌘F'], ['替换', '⌥⌘F']]]].map(([n, rows]) => G(n, rows.map(([l, k]) => ({ ...base(l), isSeg: true, items: [{ label: K(k), bg: 'var(--gsel, rgba(255,255,255,0.9))', sh: '0 1px 2px rgba(0,0,0,0.1)', fw: 500, onClick: () => {} }] }))))
     };
     return {
-      isWin: !!this.props.win, notWin: !this.props.win, radius: this.props.win ? '10px' : '18px', winTitle: 'Writer 设置',
+      isWin: !!this.props.win, notWin: !this.props.win, radius: this.props.win ? '10px' : '18px', winTitle: $t('Writer 设置'),
       iconsReady: true,
       accent: A,
       close: () => this.props.onClose && this.props.onClose(),
-      tabs: TABS.map(([id, label, icon]) => { const on = id === tab; return { label, icon, bg: on ? 'var(--gsel, rgba(255,255,255,0.95))' : 'transparent', sh: on ? '0 1px 4px rgba(0,0,0,0.1),inset 0 1px 0 var(--k18, #fff)' : 'none', fw: on ? 600 : 400, ic: on ? A : 'var(--k8, #8E8E93)', onClick: () => this.setState({ tab: id }) }; }),
+      tabs: TABS.map(([id, label, icon]) => { const on = id === tab; return { label: $t(label), icon, bg: on ? 'var(--gsel, rgba(255,255,255,0.95))' : 'transparent', sh: on ? '0 1px 4px rgba(0,0,0,0.1),inset 0 1px 0 var(--k18, #fff)' : 'none', fw: on ? 600 : 400, ic: on ? A : 'var(--k8, #8E8E93)', onClick: () => this.setState({ tab: id }) }; }),
       groups: R[tab]
     };
   }

@@ -9,6 +9,9 @@ import * as MM from './mindmap.js';
 
 export const state = { workspace: '', chat: false, model: '', version: '', drafts: '' };
 const enc = encodeURIComponent;
+// i18n: this module runs both in the page (window.$t from ui/i18n.js, loaded before it) and under node tests (no $t at
+// all) — _t mirrors i18n.js's own {name} fill for that second case, so a node test sees the same Chinese it always has.
+const _t = (zh, v) => globalThis.$t ? globalThis.$t(zh, v) : (v ? String(zh).replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : zh);
 // unique for the session: a document keeps its id when 存储 or a rename moves its file, and a new draft may then reuse the old name
 let docSeq = 0;
 const idOf = path => 'f' + Array.from(path).reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36) + '.' + (++docSeq).toString(36);
@@ -75,12 +78,12 @@ async function takenIn(dir) {
 /** A fresh name that does not clash with an existing file: title.ext, title 2.ext, … */
 export async function freeName(title, ext, dir) {
   const taken = await takenIn(dir);
-  const clean = (title || '未命名').replace(/[\\/:*?"<>|]/g, ' ').trim().slice(0, 60) || '未命名';
+  const clean = (title || _t('未命名')).replace(/[\\/:*?"<>|]/g, ' ').trim().slice(0, 60) || _t('未命名');
   for (let n = 1; ; n++) { const p = (dir ? norm(dir).replace(/\/+$/, '') + '/' : '') + clean + (n > 1 ? ' ' + n : '') + '.' + ext; if (!taken.has(p.toLowerCase())) return p; }
 }
 
 export async function create(type, title) {
-  const path = await freeName(title || '未命名', type, newDir());
+  const path = await freeName(title || _t('未命名'), type, newDir());
   await run(['create', path]);
   if (type === 'mm') await run(['set', path, '/topic[1]', '--prop', 'text=' + titleOf(path)]);
   return lazy(path, type);
@@ -95,7 +98,7 @@ export async function upload(file) {
 
 export async function copy(doc) {
   const ext = doc.path.split('.').pop();
-  const path = await freeName(doc.title + ' 副本', ext, newDir());
+  const path = await freeName(doc.title + _t(' 副本'), ext, newDir());
   const bytes = await (await http(fileUrl(doc.path))).arrayBuffer();
   await http('/file?file=' + enc(path), { method: 'PUT', body: bytes });
   return lazy(path, doc.type);
@@ -248,7 +251,7 @@ function coverage(m) {
   m.rows.forEach((row, r) => row.cells.forEach(x => { for (let i = 0; i < x.rs && r + i < g.length; i++) for (let j = 0; j < x.cs; j++) g[r + i][x.c + j] = x; }));
   return g;
 }
-function locate(m, id) { for (let r = 0; r < m.rows.length; r++) { const x = m.rows[r].cells.find(x => x.id === id); if (x) return { r, x }; } throw new Error('单元格不在表格中'); }
+function locate(m, id) { for (let r = 0; r < m.rows.length; r++) { const x = m.rows[r].cells.find(x => x.id === id); if (x) return { r, x }; } throw new Error(_t('单元格不在表格中')); }
 const rowOf = (m, x) => m.rows.findIndex(row => row.cells.includes(x));
 const sortCells = row => row.cells.sort((a, b) => a.c - b.c);
 /** Same rows, same cells in the same places: the check that a replay reached what the editor shows. */
@@ -272,7 +275,7 @@ export const tableOps = {
   /** Removes one row. A merged cell that starts in it moves down with its content, as the engine does. */
   deleteRow(m0, rowId) {
     const m = copyModel(m0), r = m.rows.findIndex(row => row.id === rowId);
-    if (r < 0) throw new Error('行不在表格中');
+    if (r < 0) throw new Error(_t('行不在表格中'));
     for (const x of [...new Set(coverage(m)[r].filter(Boolean))]) {
       if (rowOf(m, x) < r) x.rs--;
       else if (x.rs > 1) { x.rs--; m.rows[r + 1].cells.push(x); sortCells(m.rows[r + 1]); }
@@ -293,27 +296,27 @@ export const tableOps = {
     const emptied = m.rows.filter(row => row.cells.length && row.cells.every(x => x.gone)).length;
     for (const row of m.rows) { row.cells = row.cells.filter(x => !x.gone); for (const x of row.cells) if (x.c > c) x.c--; }
     const empty = m.rows.every(row => !row.cells.length);
-    if (emptied && !empty) throw new Error('删除这一列会让某些行没有单元格，请先拆分合并单元格');
+    if (emptied && !empty) throw new Error(_t('删除这一列会让某些行没有单元格，请先拆分合并单元格'));
     return { m, empty };
   },
   /** Joins the cell with its right neighbour, which must cover the same rows. */
   mergeRight(m0, id) {
     const m = copyModel(m0), { r, x } = locate(m, id), y = (coverage(m)[r] || [])[x.c + x.cs];
-    if (!y || rowOf(m, y) !== r || y.rs !== x.rs) throw new Error(y ? '右侧单元格的行数不同，不能合并' : '右侧没有可合并的单元格');
+    if (!y || rowOf(m, y) !== r || y.rs !== x.rs) throw new Error(_t(y ? '右侧单元格的行数不同，不能合并' : '右侧没有可合并的单元格'));
     x.cs += y.cs; m.rows[r].cells.splice(m.rows[r].cells.indexOf(y), 1);
     return { m, into: x.id, from: y.id };
   },
   /** Joins the cell with the one below, which must cover the same columns. */
   mergeDown(m0, id) {
     const m = copyModel(m0), { r, x } = locate(m, id), below = r + x.rs, y = below < m.rows.length ? coverage(m)[below][x.c] : null;
-    if (!y || rowOf(m, y) !== below || y.c !== x.c || y.cs !== x.cs) throw new Error(y ? '下方单元格的列数不同，不能合并' : '下方没有可合并的单元格');
+    if (!y || rowOf(m, y) !== below || y.c !== x.c || y.cs !== x.cs) throw new Error(_t(y ? '下方单元格的列数不同，不能合并' : '下方没有可合并的单元格'));
     x.rs += y.rs; m.rows[below].cells.splice(m.rows[below].cells.indexOf(y), 1);
     return { m, into: x.id, from: y.id };
   },
   /** Splits a merged cell back into one cell per grid position; the new ones are empty and look like it. */
   split(m0, id, newId) {
     const m = copyModel(m0), { r, x } = locate(m, id);
-    if (x.cs === 1 && x.rs === 1) throw new Error('这个单元格没有合并');
+    if (x.cs === 1 && x.rs === 1) throw new Error(_t('这个单元格没有合并'));
     for (let i = 0; i < x.rs; i++) {
       for (let j = 0; j < x.cs; j++) if (i || j) m.rows[r + i].cells.push({ id: newId(), c: x.c + j, cs: 1, rs: 1, from: x.id, fresh: true });
       sortCells(m.rows[r + i]);
@@ -470,7 +473,7 @@ const TOC_STYLE = "border:1px solid #E5E5EA;border-radius:6px;padding:14px 18px;
 export function tocHtml({ path, levels, title, entries }) {
   const head = title ? `<div style="font-weight:600;margin-bottom:4px">${esc(title)}</div>` : '';
   const body = entries.length ? entries.map(e => `<div style="display:flex;gap:12px;padding-left:${(Math.max(1, e.level) - 1) * 18}px"><span style="flex:1">${e.href ? `<a href="#${esc(e.href)}">${esc(e.text)}</a>` : esc(e.text)}</span>${e.page ? `<span style="color:#8E8E93">${esc(e.page)}</span>` : ''}</div>`).join('')
-    : '<div style="color:#8E8E93">添加标题后，目录会在保存时生成</div>';
+    : `<div style="color:#8E8E93">${_t('添加标题后，目录会在保存时生成')}</div>`;
   return `<nav data-toc="1"${path ? ` data-path="${esc(path)}"` : ''} data-levels="${esc(levels || '3')}" data-title="${esc(title || '')}" contenteditable="false" style="${TOC_STYLE}">${head}${body}</nav>`;
 }
 /** Headings of the live editor that a contents of `levels` levels lists, each with an id to jump to. */
@@ -672,7 +675,12 @@ async function openDocx(doc) {
 // ----- docx: tracked changes and comments -----
 /** The engine's <ins>/<del> become the editor's tracked-change markup (ins[data-t] / del[data-t]). */
 export const trackHtml = html => String(html || '').replace(/<(ins|del)\b(?![^>]*\sdata-t=)/gi, '<$1 data-t="1"');
-const fmtTime = iso => { const d = new Date(iso || ''); return isNaN(d) ? '' : `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const fmtTime = iso => {
+  const d = new Date(iso || ''); if (isNaN(d)) return '';
+  const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  if ((globalThis.$lang ? globalThis.$lang() : 'zh') === 'en') return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + hm;
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`; // i18n-ok: Chinese date format; English uses the branch above
+};
 /** Every comment in the tree: its engine id (also the editor id, `cid`), the paragraph path it hangs on, author, initials, time,
  * text, quote, and whether it is mine (written as `me`, the author this app writes comments as). */
 export function commentsOf(nodes, me) {
@@ -1598,7 +1606,7 @@ export function reloadDecision(trackedMtime, diskMtime, pending) {
 }
 
 /** The path for a conflict copy beside `path`: name（冲突副本）.ext, or name（冲突副本 2）.ext if that is taken. */
-export function conflictPath(path, dir) { return freeName(titleOf(path) + '（冲突副本）', path.split('.').pop(), dir); }
+export function conflictPath(path, dir) { return freeName(titleOf(path) + _t('（冲突副本）'), path.split('.').pop(), dir); }
 
 /** A docx html string with every pre-existing image dropped: its src is /binary?file=doc.path&path=..., which only doc.path
  *  (not the blank document a conflict copy replays onto) can resolve. A freshly inserted, still-unsaved image (a data: src)
@@ -1646,34 +1654,34 @@ export function diffMark(before, after) {
     items.push(...diffBlocks(blocksFromHtml(before.html || ''), blocksFromHtml(root)));
     after.html = root.innerHTML;
     const bp = before.page || {}, ap = after.page || {};
-    if (['size', 'orient', 'margin', 'cols'].some(k => String(bp[k] == null ? '' : bp[k]) !== String(ap[k] == null ? '' : ap[k]))) items.push(['修改', '页面设置']);
-    if ((before.header || '') !== (after.header || '')) items.push(['修改', '页眉']);
-    if ((before.footer || '') !== (after.footer || '')) items.push(['修改', '页脚']);
+    if (['size', 'orient', 'margin', 'cols'].some(k => String(bp[k] == null ? '' : bp[k]) !== String(ap[k] == null ? '' : ap[k]))) items.push([_t('修改'), _t('页面设置')]);
+    if ((before.header || '') !== (after.header || '')) items.push([_t('修改'), _t('页眉')]);
+    if ((before.footer || '') !== (after.footer || '')) items.push([_t('修改'), _t('页脚')]);
   } else if (after.type === 'xlsx') {
     const to = pairUp(before.sheets.map(x => x.name), after.sheets.map(x => x.name)); // by name: a sheet added in front moves the others' paths (/sheet[2])
     after.sheets.forEach((s, i) => {
       const o = before.sheets[to[i]];
-      if (!o) { items.push(['新增', '工作表 ' + s.name]); return; }
+      if (!o) { items.push([_t('新增'), _t('工作表 {name}', { name: s.name })]); return; }
       let n = 0;
       for (const ref of new Set([...Object.keys(o.cells), ...Object.keys(s.cells)])) if (!same(o.cells[ref], s.cells[ref])) { if (s.cells[ref]) s.cells[ref].ai = true; n++; }
-      if (n) items.push(['修改', `${s.name} · ${n} 个单元格`]);
+      if (n) items.push([_t('修改'), _t('{name} · {n} 个单元格', { name: s.name, n })]);
       const oc = new Map((o.charts || []).map(ch => [chartKey(ch), ch]));
-      (s.charts || []).forEach(ch => { const x = oc.get(chartKey(ch)); if (!x || !same(chartProps(x), chartProps(ch))) { ch.ai = true; items.push([x ? '修改' : '新增', `${s.name} · 图表 ${ch.title || ch.type}`]); } });
+      (s.charts || []).forEach(ch => { const x = oc.get(chartKey(ch)); if (!x || !same(chartProps(x), chartProps(ch))) { ch.ai = true; items.push([_t(x ? '修改' : '新增'), _t('{name} · 图表 {title}', { name: s.name, title: ch.title || ch.type })]); } });
       const gone = (o.charts || []).filter(ch => !(s.charts || []).some(x => chartKey(x) === chartKey(ch))).length;
-      if (gone) items.push(['删除', `${s.name} · ${gone} 个图表`]);
+      if (gone) items.push([_t('删除'), _t('{name} · {n} 个图表', { name: s.name, n: gone })]);
     });
     const gone = before.sheets.length - to.filter(i => i >= 0).length;
-    if (gone) items.push(['删除', `${gone} 个工作表`]);
+    if (gone) items.push([_t('删除'), _t('{n} 个工作表', { n: gone })]);
   } else if (after.type === 'pptx') {
     after.slides.forEach((s, i) => {
       const o = before.slides.find(x => x.path === s.path);
-      if (!o) { s.ai = true; items.push(['新增', `第 ${i + 1} 页`]); return; }
-      if (!same(o.objs.map(objKey), s.objs.map(objKey)) || o.bg !== s.bg || o.notes !== s.notes || o.trans !== s.trans || o.duration !== s.duration || o.hidden !== s.hidden) { s.ai = true; items.push(['修改', `第 ${i + 1} 页`]); }
+      if (!o) { s.ai = true; items.push([_t('新增'), _t('第 {n} 页', { n: i + 1 })]); return; }
+      if (!same(o.objs.map(objKey), s.objs.map(objKey)) || o.bg !== s.bg || o.notes !== s.notes || o.trans !== s.trans || o.duration !== s.duration || o.hidden !== s.hidden) { s.ai = true; items.push([_t('修改'), _t('第 {n} 页', { n: i + 1 })]); }
     });
     const kept = new Set(after.slides.map(s => s.path)), gone = before.slides.filter(o => !kept.has(o.path)).length; // by the engine's slide id, which the path carries
-    if (gone) items.push(['删除', `${gone} 页`]);
+    if (gone) items.push([_t('删除'), _t('{n} 页', { n: gone })]);
   } else if (after.type === 'mm') { items.push(...MM.markAi(before.map, after.map));
-  } else if (after.type === 'md' && (before.text || '') !== (after.text || '')) items.push(['修改', '文本']);
+  } else if (after.type === 'md' && (before.text || '') !== (after.text || '')) items.push([_t('修改'), _t('文本')]);
   return items;
 }
 /** The Word part of diffMark. Blocks are paired like the lines of a diff, not by path: the engine numbers them by position, so
@@ -1685,10 +1693,10 @@ export function diffBlocks(before, after) {
   after.forEach((b, j) => {
     const o = before[to[j]];
     const differs = !o || ka[to[j]] !== kb[j] || lookOf(o) !== lookOf(b) || (b.kind === 'table' ? !same(o.rows.map(r => r.cells.map(c => runsOf(c.props.html))), b.rows.map(r => r.cells.map(c => runsOf(c.props.html)))) : b.kind === 'code' ? o.props.text !== b.props.text : b.kind === 'image' || b.kind === 'pagebreak' ? false : !sameRuns(o.props.html, b.props.html));
-    if (differs) { b.el?.setAttribute('data-ai', '1'); items.push([o ? '修改' : '新增', labelOf(b)]); }
+    if (differs) { b.el?.setAttribute('data-ai', '1'); items.push([_t(o ? '修改' : '新增'), labelOf(b)]); }
   });
   const gone = before.length - to.filter(i => i >= 0).length;
-  if (gone) items.push(['删除', `${gone} 处内容`]);
+  if (gone) items.push([_t('删除'), _t('{n} 处内容', { n: gone })]);
   return items;
 }
 /** What a block says, without markup or spaces (the editor's markup and the engine's differ there); with its kind, what pairs it. */
@@ -1720,10 +1728,10 @@ function pairUp(a, b, akin = [() => true]) {
 /** A block's entry in the change list: its kind, then what tells it apart (its text, a table's rows), each said once. */
 function labelOf(b) {
   const p = b.props, fixed = { image: '图片', code: '代码块', pagebreak: '分页符' }[b.kind];
-  if (fixed) return fixed;
-  if (b.kind === 'table') return `表格 · ${b.rows.length} 行`;
-  if (b.kind === 'toc') return p.title && p.title !== '目录' ? '目录 · ' + p.title : '目录';
-  return (b.kind === 'heading' ? '标题' : p.list ? '列表项' : '段落') + ' · ' + (plainOf(p.html || '').slice(0, 24) || '（空）');
+  if (fixed) return _t(fixed);
+  if (b.kind === 'table') return _t('表格 · {n} 行', { n: b.rows.length });
+  if (b.kind === 'toc') return p.title && p.title !== '目录' ? _t('目录') + ' · ' + p.title : _t('目录');
+  return _t(b.kind === 'heading' ? '标题' : p.list ? '列表项' : '段落') + ' · ' + (plainOf(p.html || '').slice(0, 24) || _t('（空）'));
 }
 
 // ---------- pictures: the 图片 tab of the Word, slide and sheet editors ----------
@@ -1751,7 +1759,7 @@ export function lookDiff(a, b) {
 export function setPicture(file, path, props) {
   return inLane(file, async () => {
     const at = typeof path === 'function' ? path() : path;
-    if (!at) throw new EngineError('这张图片还没有存进文件，稍等片刻再试', 'NOT_SAVED', '新插入的图片会在自动保存后可用');
+    if (!at) throw new EngineError(_t('这张图片还没有存进文件，稍等片刻再试'), 'NOT_SAVED', _t('新插入的图片会在自动保存后可用'));
     const before = props.compress ? Number(((await run(['get', file, at])).props || {}).bytes) || 0 : undefined;
     const r = await run(['set', file, at, ...propsArgs(props)]);
     return Object.assign({ path: at, props: (r && r.props) || {} }, before != null ? { before } : {});

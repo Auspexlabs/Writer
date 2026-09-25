@@ -78,8 +78,8 @@ html[data-theme="dark"]{--nglass:linear-gradient(180deg,rgba(50,50,54,.46),rgba(
   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
 #dc-root>.sc-host[data-sc-name="MacSettings"]>div:first-child{height:100vh;display:flex;flex-direction:column}
 #dc-root>.sc-host[data-sc-name="MacSettings"]>div:first-child>div:nth-child(2){flex:1;min-height:0;max-height:none!important}
-button[title="关闭"]{position:relative}
-button[title="关闭"]::before{content:'';position:absolute;inset:-14px}`;
+button[data-close]{position:relative}
+button[data-close]::before{content:'';position:absolute;inset:-14px}`;
   document.documentElement.appendChild(css);
 
   // The page's own lights stand in for the hidden native ones (✕ → onClose); its header strip drags the window, Esc closes it.

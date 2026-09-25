@@ -9,7 +9,7 @@
   if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = t; })();
 </script>
 <script src="./memo.js"></script>
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -25,10 +25,10 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 /* The Windows window (design: WriterWin): the 40px title bar replaces the shell's floating pills,
    and the editors' AI / immersive buttons move into it. Collapsing the toolbar works as on the Mac (mac.dc.html). */
 [data-mactest] [data-shell-bar]{display:none!important}
-[data-mactest] [data-glass-bar] > div:has(> button[title="AI 助手"]){display:none!important}
 [data-mactest] [data-glass-bar]{transition:opacity .28s ease,transform .45s cubic-bezier(.2,1.25,.35,1)!important;transform-origin:top right}
 [data-mactest][data-collapsed="1"] [data-glass-bar]{opacity:0!important;transform:translateY(-8px) scale(.6)!important;transform-origin:top center!important;pointer-events:none!important}
 [data-mactest][data-collapsed="1"] div:has(> [data-bubble]){top:2px!important}
+[data-mactest] [data-glass-bar] > div:has(> button[data-ai-btn]){display:none!important} /* the editors' own ✦ button gives way to the title strip's */
 </style>
 </helmet>
 <div data-mactest="1" data-collapsed="{{ collapsedAttr }}" style="position:fixed;inset:0;overflow:hidden;background:var(--k0, #FFFFFF)">
@@ -155,6 +155,8 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 const NATIVE = /[?&]native=1(&|$)/.test(location.search) || !!window.__TAURI_INTERNALS__;
 const EXT = { docx: '.docx', xlsx: '.xlsx', pptx: '.pptx', md: '.md', pdf: '.pdf', mm: '.mm' };
 const ICON = { docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' };
+/** The window title: the file name, marked 未存储 while it is a draft. */
+const docTitle = sh => { const name = sh.title + (EXT[sh.type] || ''); return sh.draft ? $t('{name} — 未存储', { name }) : name; };
 // the design's four snap layouts, zones as fractions of the screen's work area: [x, y, w, h]
 const SNAPS = [
   [[0, 0, .5, 1], [.5, 0, .5, 1]],
@@ -166,7 +168,8 @@ const SNAPS = [
 const MIN_W = 760, MIN_H = 480;
 const fits = zs => zs.every(([, , w, h]) => w * screen.availWidth >= MIN_W && h * screen.availHeight >= MIN_H);
 const settings = () => { try { return JSON.parse(localStorage.getItem('writer-settings') || '{}'); } catch (e) { return {}; } };
-// 'writer-mac' is the key every window shares (Rust keeps it); it only holds the collapsed toolbar
+// 'writer-mac' is the key every window shares (Rust keeps it); this page's own part of it is just the collapsed toolbar
+// (the shell keeps the sidebar/assistant panel there too, see ui/prefs.js)
 const store = { get() { try { return JSON.parse(localStorage.getItem('writer-mac') || '{}'); } catch (e) { return {}; } }, set(o) { try { localStorage.setItem('writer-mac', JSON.stringify(Object.assign(this.get(), o))); } catch (e) { } } };
 const invoke = (cmd, args) => { const t = window.__TAURI_INTERNALS__; return t && t.invoke ? Promise.resolve(t.invoke(cmd, args)).catch(() => null) : Promise.resolve(null); };
 const LABEL = (() => { try { return window.__TAURI_INTERNALS__.metadata.currentWindow.label; } catch (e) { return 'main'; } })();
@@ -218,7 +221,7 @@ class Component extends DCLogic {
     clearTimeout(this.rt);
     this.rt = setTimeout(() => {
       const sh = this.state.sh || {};
-      const s = { title: sh.isDoc ? sh.title + (EXT[sh.type] || '') + (sh.draft ? ' — 未存储' : '') : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
+      const s = { title: sh.isDoc ? docTitle(sh) : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
       const k = JSON.stringify(s); if (k === this._rk) return; this._rk = k; invoke('shell_state', s);
     }, 80);
   }
@@ -233,8 +236,8 @@ class Component extends DCLogic {
   }
   undo(redo) { if (!this.sendKey(redo ? 'Z' : 'z', redo ? { shiftKey: true } : {})) document.execCommand(redo ? 'redo' : 'undo'); }
   barButtons() { const w = this.winRef.current; const b = w && w.querySelector('[data-glass-bar]'); return b ? Array.from(b.querySelectorAll('button')) : []; }
-  press(label) { const b = this.barButtons().find(x => x.textContent.trim() === label); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
-  quickPress() { const q = settings().quickTab || '开始'; if (!this.press(q)) this.press('开始') || this.flash('这个编辑器没有「' + q + '」'); }
+  press(label) { const b = this.barButtons().find(x => x.textContent.trim() === $t(label)); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
+  quickPress() { const q = settings().quickTab || '开始'; if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }
   toggleBar() { const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
   cycle(dir) { const docs = ((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
   current() { const sh = this.state.sh; return sh && sh.docs.find(d => d.on); }
@@ -250,7 +253,7 @@ class Component extends DCLogic {
       case 'print': return this.sendKey('p');
       case 'toggleSidebar': return this.call('toggleThumbs');
       case 'toggleToolbar': return this.toggleBar();
-      case 'toggleAI': return settings().ai === false ? this.flash('AI 助手已在设置中关闭') : this.call('toggleAI');
+      case 'toggleAI': return settings().ai === false ? this.flash($t('AI 助手已在设置中关闭')) : this.call('toggleAI');
       case 'immersive': return this.call('play');
       case 'toggleDark': this.call('toggleDark'); return setTimeout(() => { this.forceUpdate(); this.report(); }, 30);
       case 'prevTab': return this.cycle(-1);
@@ -260,9 +263,10 @@ class Component extends DCLogic {
       case 'settings': return this.showOv('prefs');
       case 'shortcuts': return this.showOv('prefs', 'keys');
       case 'about': return this.showOv('about');
-      case 'help': return this.flash('帮助文档即将推出，先看看「键盘快捷键」');
+      case 'checkUpdate': return invoke('check_update'); // the answer is a native dialog (update.rs)
+      case 'help': return this.flash($t('帮助文档即将推出，先看看「键盘快捷键」'));
       case 'quit': return this.closeWindow();
-      default: return this.flash('未知菜单：' + id);
+      default: return this.flash($t('未知菜单：{id}', { id }));
     }
   }
   /** Settings / About: in-page panels in the design's Windows style (win prop). */
@@ -272,13 +276,14 @@ class Component extends DCLogic {
   /** The W menu (design: WriterWin items()), filtered by the search box. */
   items() {
     const dark = document.documentElement.dataset.theme === 'dark';
-    const I = (icon, label, key, id) => ({ row: true, sep: false, icon, label, key: key || '', id, color: id ? 'var(--k1, #1D1D1F)' : 'var(--k8, #8E8E93)', onClick: () => { if (!id) return; this.setState({ menu: false, q: '' }); this.menu(id); } });
+    const I = (icon, label, key, id) => ({ row: true, sep: false, icon, label: $t(label), key: key || '', id, color: id ? 'var(--k1, #1D1D1F)' : 'var(--k8, #8E8E93)', onClick: () => { if (!id) return; this.setState({ menu: false, q: '' }); this.menu(id); } });
     const S = { sep: true, row: false };
     const all = [
-      I('＋', '新建…', 'Ctrl+N', 'new'), I('⧉', '新建标签页', 'Ctrl+T', 'newTab'), I('↗', '打开…', 'Ctrl+O', 'open'), I('↓', '存储', 'Ctrl+S', 'save'), I('⇪', '另存为…', 'Ctrl+Shift+S', 'saveAs'), I('⎙', '打印…', 'Ctrl+P', 'print'), S,
+      I('＋', '新建…', 'Ctrl+N', 'new'), // i18n-ok: ＋ is the icon
+      I('⧉', '新建标签页', 'Ctrl+T', 'newTab'), I('↗', '打开…', 'Ctrl+O', 'open'), I('↓', '存储', 'Ctrl+S', 'save'), I('⇪', '另存为…', 'Ctrl+Shift+S', 'saveAs'), I('⎙', '打印…', 'Ctrl+P', 'print'), S,
       I('◐', dark ? '浅色模式' : '深色模式', 'Ctrl+Shift+L', 'toggleDark'), I('⌄', this.state.collapsed ? '展开工具栏' : '收起工具栏', 'Ctrl+Alt+T', 'toggleToolbar'), S,
       I('⚙︎', '设置', 'Ctrl+,', 'settings'), I('⌨︎', '键盘快捷键', '', 'shortcuts'), I('?', 'Writer 帮助', 'F1', 'help'), S,
-      I('ⓘ', '关于 Writer', '', 'about'), I('⏻', '退出', 'Alt+F4', 'quit')
+      I('ⓘ', '关于 Writer', '', 'about'), ...((window.__WRITER_NATIVE__ || {}).updater ? [I('↻', '检查更新…', '', 'checkUpdate')] : []), I('⏻', '退出', 'Alt+F4', 'quit')
     ];
     const q = this.state.q.trim(); if (!q) return all;
     const hits = all.filter(x => x.row && x.label.toLowerCase().includes(q.toLowerCase()));
@@ -297,8 +302,8 @@ class Component extends DCLogic {
         if (sh && this.api && this.api.openPath) { if (await this.api.openPath(rel)) return true; break; }
         await new Promise(r => setTimeout(r, 150));
       }
-      this.flash('没有找到 ' + rel);
-    } catch (e) { this.flash('无法打开：' + e.message); }
+      this.flash($t('没有找到 {name}', { name: rel }));
+    } catch (e) { this.flash($t('无法打开：{error}', { error: e.message })); }
     return false;
   }
 
@@ -326,7 +331,7 @@ class Component extends DCLogic {
     const quickTab = set.quickTab || '开始';
     const glass = 'linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))', onBg = 'var(--k41, rgba(255,255,255,0.9))';
     const zoneGeo = ([fx, fy, fw, fh]) => { const P = 3, IW = 70, IH = 44, g = 1.5; const x = P + fx * IW + (fx > 0 ? g : 0), y = P + fy * IH + (fy > 0 ? g : 0); const w = fw * IW - (fx > 0 ? g : 0) - (fx + fw < 0.999 ? g : 0), h = fh * IH - (fy > 0 ? g : 0) - (fy + fh < 0.999 ? g : 0); return { x: x + 'px', y: y + 'px', w: w + 'px', h: h + 'px' }; };
-    const snapTo = ([x, y, w, h]) => { clearTimeout(this.snapT); clearTimeout(this.hideT); this.setState({ snap: false }); if (NATIVE) invoke('snap_window', { x, y, w, h }); else this.flash('贴靠布局在 Windows 应用里生效'); };
+    const snapTo = ([x, y, w, h]) => { clearTimeout(this.snapT); clearTimeout(this.hideT); this.setState({ snap: false }); if (NATIVE) invoke('snap_window', { x, y, w, h }); else this.flash($t('贴靠布局在 Windows 应用里生效')); };
     return {
       winRef: this.winRef, qRef: this.qRef, onShell: this.onShell, openPrefs: this.openPrefs,
       saveDialogProp: NATIVE ? this.saveDialog : null, recentProp: NATIVE ? this.recentFiles : null, openRecentProp: NATIVE ? this.openRecent : null, openDialogProp: NATIVE ? this.openDialog : null,
@@ -340,7 +345,7 @@ class Component extends DCLogic {
       goBack: () => this.undo(false), goFwd: () => this.undo(true),
       single: !multi, multi,
       // the home page shows the app icon: on Windows the dark tile on light themes, the light one on dark (design: WriterWin 2e)
-      fileName: sh ? sh.title + (sh.isDoc ? (EXT[sh.type] || '') + (sh.draft ? ' — 未存储' : '') : '') : 'Writer', fileIcon: sh && sh.isDoc ? ic(sh.type) : dark ? './assets/writer-logo-light.svg' : './assets/writer-logo-dark.svg',
+      fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', fileIcon: sh && sh.isDoc ? ic(sh.type) : dark ? './assets/writer-logo-light.svg' : './assets/writer-logo-dark.svg',
       tabs: openDocs.map((x, i, arr) => {
         const hv = st.hovTab === x.id, prevOn = i > 0 && (arr[i - 1].on || st.hovTab === arr[i - 1].id);
         return {
@@ -353,8 +358,8 @@ class Component extends DCLogic {
         };
       }),
       newTab: () => this.call('create'),
-      quickW: st.collapsed ? '40px' : '0px', quickOp: st.collapsed ? 1 : 0, quickTitle: '快捷打开：' + quickTab + '（可在设置中更改）', quick: () => this.quickPress(),
-      toggleBar: () => this.toggleBar(), barTitle: st.collapsed ? '展开工具栏 Ctrl+Alt+T' : '收起工具栏 Ctrl+Alt+T', chevTf: st.collapsed ? 'translateY(-2px) rotate(45deg)' : 'translateY(2px) rotate(-135deg)',
+      quickW: st.collapsed ? '40px' : '0px', quickOp: st.collapsed ? 1 : 0, quickTitle: $t('快捷打开：{tab}（可在设置中更改）', { tab: $t(quickTab) }), quick: () => this.quickPress(),
+      toggleBar: () => this.toggleBar(), barTitle: $t(st.collapsed ? '展开工具栏 Ctrl+Alt+T' : '收起工具栏 Ctrl+Alt+T'), chevTf: st.collapsed ? 'translateY(-2px) rotate(45deg)' : 'translateY(2px) rotate(-135deg)',
       aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiBg: sh && sh.showAI ? onBg : glass,
       play: () => this.call('play'),
       // caption buttons; like Windows 11, their glyphs fade while the window is in the background
@@ -362,7 +367,7 @@ class Component extends DCLogic {
       doMin: () => { if (NATIVE) win('minimize'); },
       doMax: () => { clearTimeout(this.snapT); this.setState({ snap: false }); if (NATIVE) win('toggle_maximize'); },
       doClose: () => this.menu('quit'),
-      isMax: st.max, notMax: !st.max, maxTitle: st.max ? '向下还原' : '最大化', maxBg: st.snap ? 'var(--k36, rgba(0,0,0,0.05))' : 'transparent',
+      isMax: st.max, notMax: !st.max, maxTitle: $t(st.max ? '向下还原' : '最大化'), maxBg: st.snap ? 'var(--k36, rgba(0,0,0,0.05))' : 'transparent',
       maxEnter: () => { clearTimeout(this.hideT); clearTimeout(this.snapT); this.snapT = setTimeout(() => this.setState({ snap: true }), 420); },
       maxLeave: () => { clearTimeout(this.snapT); this.hideT = setTimeout(() => this.setState({ snap: false }), 260); },
       snapOpen: st.snap, snapKeep: () => clearTimeout(this.hideT), snapLeave: () => { this.hideT = setTimeout(() => this.setState({ snap: false }), 200); },

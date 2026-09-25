@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -14,7 +14,7 @@
 </helmet>
 <div style="position:relative;width:300px;border-radius:{{ radius }};overflow:hidden;background:var(--gwin, linear-gradient(180deg,rgba(255,255,255,0.74),rgba(246,246,248,0.6)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);color:var(--k1, #1D1D1F);box-shadow:inset 0 0 0 1px var(--ghi, rgba(255,255,255,0.75)),0 0 0 0.5px rgba(0,0,0,0.16),0 28px 80px rgba(0,0,0,0.26),0 2px 8px rgba(0,0,0,0.08);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">
   <div style="height:38px;display:flex;align-items:center;gap:8px;padding:0 14px">
-    <sc-if value="{{ notWin }}" hint-placeholder-val="{{ true }}"><button onClick="{{ close }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:#FF5F57;cursor:default"></button>
+    <sc-if value="{{ notWin }}" hint-placeholder-val="{{ true }}"><button data-close="1" onClick="{{ close }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid rgba(0,0,0,0.18);background:#FF5F57;cursor:default"></button>
     <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span>
     <span style="width:12px;height:12px;border-radius:50%;background:var(--goff, rgba(0,0,0,0.1))"></span></sc-if><sc-if value="{{ isWin }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:14px;top:0;height:36px;z-index:2;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--k1, #1D1D1F);pointer-events:none"><img src="./assets/writer-glyph.svg" alt="" style="width:16px;height:16px;display:block;filter:var(--gmark, none)"><span>{{ winTitle }}</span></div><button onClick="{{ close }}" title="关闭" style="position:absolute;right:0;top:0;z-index:2;width:46px;height:36px;padding:0;border:none;background:transparent;color:var(--k1, #1D1D1F);cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:#C42B1C;color:#FFFFFF"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" stroke-width="1"></path></svg></button></sc-if>
   </div>
@@ -27,30 +27,32 @@
     <div style="font-size:11.5px;color:var(--k8, #8E8E93);margin-top:14px;line-height:1.6">文字、表格、演示、纯文本与 PDF，<br>一个安静的地方写完它们。</div>
     <div style="display:flex;gap:8px;margin-top:18px">
       <button onClick="{{ onAck }}" style="height:26px;padding:0 14px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.7)),var(--k16, rgba(255,255,255,0.4)));border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 4px 12px var(--k22, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k1, #1D1D1F);cursor:default;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">致谢</button>
-      <button onClick="{{ onUpd }}" style="height:26px;padding:0 14px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.7)),var(--k16, rgba(255,255,255,0.4)));border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 4px 12px var(--k22, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k1, #1D1D1F);cursor:default;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">{{ updLabel }}</button>
+      <sc-if value="{{ updOn }}" hint-placeholder-val="{{ true }}"><button onClick="{{ onUpd }}" style="height:26px;padding:0 14px;border-radius:999px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.7)),var(--k16, rgba(255,255,255,0.4)));border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 4px 12px var(--k22, rgba(0,0,0,0.08));font-size:12.5px;color:var(--k1, #1D1D1F);cursor:default;transition:transform .3s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">{{ updLabel }}</button></sc-if>
     </div>
     <sc-if value="{{ ack }}" hint-placeholder-val="{{ false }}"><div data-pop="menu" style="font-size:11px;color:var(--k11, #6E6E73);margin-top:14px;line-height:1.6">感谢 OfficeCLI、IBM Plex、思源黑体与思源宋体等开源项目。</div></sc-if>
-    <div style="font-size:10.5px;color:var(--k8, #8E8E93);margin-top:16px;line-height:1.6">Writer by Auspex<br>Copyright © 2026 北京奥斯佩克斯网络科技中心 (Auspex)</div>
+    <div style="font-size:10.5px;color:var(--k8, #8E8E93);margin-top:16px;line-height:1.6">Writer by Auspex<br>Copyright © 2026 北京奥斯佩克斯网络科技中心 (Auspex)</div><!-- i18n-ok: the company's registered name -->
   </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:340,&quot;height&quot;:440},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
 class Component extends DCLogic {
-  state = { upd: 0, ack: false, ver: '' };
+  state = { ack: false, ver: '' };
   // the version comes from the engine (GET /files); the shell passes it as a prop when it already has it
   componentDidMount() { if (!this.props.version) fetch('/files', { credentials: 'same-origin' }).then(r => r.json()).then(j => this.setState({ ver: j.version || '' })).catch(() => { }); }
   renderVals() {
-    const u = this.state.upd;
     const win = !!this.props.win;
+    // the desktop app shows the build of the interface package it runs on, if any: 0.1.2 (3) (desktop/src-tauri/src/update.rs)
+    const ver = this.props.version || this.state.ver, build = (window.__WRITER_NATIVE__ || {}).uiBuild;
     return {
       // win: the Windows panel (design: WriterWin) — its app icon is the dark tile on light themes, the light one on dark
-      isWin: win, notWin: !win, radius: win ? '10px' : '18px', winTitle: '关于 Writer',
+      isWin: win, notWin: !win, radius: win ? '10px' : '18px', winTitle: $t('关于 Writer'),
       logoLight: win ? './assets/writer-logo-dark.svg' : './assets/writer-logo-light.svg', logoDark: win ? './assets/writer-logo-light.svg' : './assets/writer-logo-dark.svg',
       close: () => this.props.onClose && this.props.onClose(),
-      version: this.props.version || this.state.ver || '…', ack: this.state.ack,
+      version: ver ? ver + (build ? ` (${build})` : '') : '…', ack: this.state.ack,
       onAck: () => this.setState(s => ({ ack: !s.ack })),
-      onUpd: () => this.setState({ upd: 1 }),
-      updLabel: u ? '自动更新即将推出' : '检查更新…'
+      // 检查更新… only where the app updates itself; the answer is a native dialog (desktop/src-tauri/src/update.rs)
+      updOn: !!(window.__WRITER_NATIVE__ || {}).updater, onUpd: () => { const T = window.__TAURI_INTERNALS__; if (T && T.invoke) T.invoke('check_update'); },
+      updLabel: $t('检查更新…')
     };
   }
 }

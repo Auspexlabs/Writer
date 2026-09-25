@@ -12,8 +12,9 @@ const html = readFileSync(new URL('../WordEditor.dc.html', import.meta.url), 'ut
 const script = html.match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script, 'word editor script exists');
 const ctx = { React: { createRef: () => ({ current: null }) }, setTimeout, clearTimeout, getComputedStyle: () => ({ marginBottom: '28px' }), // a page break line's margin
+  $t: (s, v) => String(s).replace(/@@.*$/, '').replace(/\{(\w+)\}/g, (m, k) => v && k in v ? v[k] : m), $lang: () => 'zh', // i18n.js stand-in: Chinese passthrough, placeholders filled
   DCLogic: class { setState(u, cb) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); if (cb) cb(); } forceUpdate() {} } };
-vm.runInNewContext(script + '\nglobalThis.WordEditor = Component; globalThis.HF = { hfOut, hfEdit, hfFill };', ctx);
+vm.runInNewContext(script + '\nglobalThis.WordEditor = Component; globalThis.HF = { hfOut, hfEdit, hfFill, hfPreset }; globalThis.HF_PRESETS = HF_PRESETS;', ctx);
 
 function editor(doc) {
   const component = new ctx.WordEditor();
@@ -78,6 +79,36 @@ test('headers and footers: every page shows its own number, the first page its o
   assert.equal(hfOut('<p>A&nbsp;<span data-f="page">1</span>\u200B<p style="text-align: center;">B</p></p>'), '<p style="text-align:left">A {page}</p><p style="text-align:center">B</p>', 'blocks the browser nests are paragraphs of their own');
   assert.equal(hfOut(hfEdit('<img data-keep="0" src="data:,">', 1, 1)), '<p style="text-align:left"><img contenteditable="false" data-keep="0" src="data:,"></p>', 'a logo the editor only shows is kept');
   assert.equal(hfOut('<p><br></p>'), '', 'an emptied header goes, so the engine removes it');
+});
+
+test('样式 / 页码 presets: a template plus an alignment becomes footer html, previewed and round-tripped through the edit box', () => {
+  const { hfPreset, hfOut, hfEdit, hfFill } = ctx.HF;
+  assert.equal(hfPreset('{page} / {pages}', 'left'), '<p style="text-align:left">{page} / {pages}</p>');
+  assert.equal(hfPreset('{page}', ''), '<p style="text-align:center">{page}</p>', 'no alignment given: centered, as Word does for a page number');
+  const html = hfPreset('第 {page} 页 / 共 {pages} 页', 'right');
+  assert.equal(hfFill(html, 1, 5), '<p style="text-align:right">第 1 页 / 共 5 页</p>', 'the menu preview: page 1 of the current document');
+  assert.equal(hfOut(hfEdit(html, 2, 5)), html, 'and it survives the edit box (fields as chips) unchanged');
+});
+
+test('页码 and 样式 offer the same six presets, previewed as page 1 of the current document', () => {
+  const c = editor({ id: 'd', html: '', footer: '' });
+  let saved = null; c.props.onChange = patch => { saved = patch; };
+  pages(c, [[0, 900], [928, 900], [1856, 900]]); // three pages, as the headers/footers test above
+  const n = c.state.info.pages;
+  const previews = plain(ctx.HF_PRESETS.map(tpl => ctx.HF.hfFill(tpl, 1, n)));
+
+  c.setState({ tab: 'insert' });
+  let v = c.renderVals();
+  assert.ok(v.ribbon.some(it => it.isMenu && it.label === '页码'), '插入 tab offers 页码 as a menu of presets, not one fixed insert');
+  assert.deepEqual(plain(c.menus.pagenum.map(i => i.label)), previews);
+  c.menus.pagenum[3].onClick(); // 第 {page} 页 / 共 {pages} 页 — the preset 插入 › 页码 used to hard-code
+  assert.equal(saved.footer, '<p style="text-align:center">第 {page} 页 / 共 {pages} 页</p>', '插入 › 页码 still writes the footer centered');
+
+  // 样式, in the header/footer floating bar, offers the same presets while one is open
+  c.setState({ hf: { kind: 'footer', page: 0, key: 'footer' } });
+  v = c.renderVals();
+  assert.ok(v.hfBtns.some(b => b.label === '样式'), 'the floating bar has a 样式 button');
+  assert.deepEqual(plain(c.menus.hfStyle.map(i => i.label)), previews, 'and its popup lists the same presets');
 });
 
 test('comment avatars: 我 only on my own comments; other authors show their initials in a colour of their own', () => {

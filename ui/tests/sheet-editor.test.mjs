@@ -10,7 +10,8 @@ const html = readFileSync(new URL('../SheetEditor.dc.html', import.meta.url), 'u
 const script = html.match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script, 'sheet editor script exists');
 const ctx = { document: { documentElement: { dataset: {} } }, // renderVals reads the theme (light here)
-  React: { createRef: () => ({ current: null }), createElement: (...a) => a }, DCLogic: class { setState(u, cb) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); if (cb) cb(); } forceUpdate() {} }, structuredClone };
+  React: { createRef: () => ({ current: null }), createElement: (...a) => a }, DCLogic: class { setState(u, cb) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); if (cb) cb(); } forceUpdate() {} }, structuredClone,
+  $t: (s, v) => v ? String(s).replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : s, $lang: () => 'zh' }; // i18n globals: a no-op stub, tests assert against the Chinese source text
 vm.runInNewContext(script + '\nglobalThis.SheetEditor = Component;', ctx);
 
 const plain = x => JSON.parse(JSON.stringify(x)); // the editor runs in another vm realm: compare values, not prototypes

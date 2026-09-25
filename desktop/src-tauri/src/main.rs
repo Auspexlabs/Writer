@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 use serde_json::{json, Map, Value};
@@ -25,13 +26,16 @@ use tauri::{
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
+use tauri_plugin_window_state::{StateFlags, WindowExt};
 
 mod bookmarks;
 mod storage;
+mod update;
 mod win;
 
 const DOC_EXTS: [&str; 7] = ["docx", "xlsx", "pptx", "md", "markdown", "mm", "pdf"];
-/// localStorage keys every window shares (settings, the collapsed toolbar); kept in <app data>/web-storage.json.
+/// localStorage keys every window shares (settings, the collapsed toolbar, the sidebar/assistant panel); kept in
+/// <app data>/web-storage.json.
 const SHARED_KEYS: [&str; 2] = ["writer-settings", "writer-mac"];
 const RECENT_MAX: usize = 10;
 /// The design draws its own traffic lights (12px, 8px apart; ui/mac.dc.html and the Mac panels). macOS 27's are 14px
@@ -126,10 +130,148 @@ fn show_error(window: &WebviewWindow, message: &str) {
     }
 }
 
-/// Every window gets the shared localStorage keys and the native glue (native.js) before its page runs.
+/// Every window gets the shared localStorage keys and the native glue (native.js) before its page runs, plus the
+/// system's preferred language for ui/i18n.js (WKWebView's navigator.language reports the app's own localization);
+/// __WRITER_NATIVE__.lang is the language this launch chose, for the splash page; uiBuild is the build of the interface
+/// package this run serves, for 关于 Writer (update.rs).
 fn init_script(app: &AppHandle, kind: &str) -> String {
     let store = shell(app).store.clone();
-    format!("window.__WRITER_NATIVE__ = {};\n{}", json!({ "kind": kind, "store": store, "opaque": cfg!(feature = "appstore") }), include_str!("native.js"))
+    let lang = sys_locale::get_locale().unwrap_or_default();
+    let native = json!({
+        "kind": kind, "store": store, "opaque": cfg!(feature = "appstore"), "updater": !cfg!(feature = "appstore"),
+        "uiBuild": update::ui_package(app).map(|(_, build)| build), "lang": if ENGLISH.load(Ordering::Relaxed) { "en" } else { "zh" }
+    });
+    format!("window.__WRITER_NATIVE__ = {native};\nwindow.__WRITER_SYS_LANG = {};\n{}", json!(lang), include_str!("native.js"))
+}
+
+// ---------------------------------------------------------------- language
+
+/// The menus, dialogs and window titles here are English when the UI is: decided at launch by the rule ui/i18n.js
+/// uses for the pages (设置 › 语言 简体中文 or English, else the system's language, zh… being Chinese), so a change
+/// applies after a restart (restart_app).
+static ENGLISH: AtomicBool = AtomicBool::new(false);
+
+fn english(lang: &str, system: &str) -> bool {
+    match lang {
+        "English" => true,
+        "简体中文" => false,
+        _ => !system.to_ascii_lowercase().starts_with("zh"),
+    }
+}
+
+/// AppKit's own menu items and panels (服务, 开始听写, the Open and Save panels) follow AppleLanguages in Writer's
+/// defaults, which macOS reads as the app starts: kept in step with 设置 › 语言 (at launch and on every change), so
+/// they match the pages from the next launch, as the pages do. 跟随系统 leaves the system's order. Info.plist lists both.
+#[cfg(target_os = "macos")]
+fn app_languages(lang: &str) {
+    use objc2_foundation::{NSArray, NSString, NSUserDefaults};
+    let (defaults, key) = (NSUserDefaults::standardUserDefaults(), NSString::from_str("AppleLanguages"));
+    match lang {
+        "English" | "简体中文" => {
+            let list = NSArray::from_retained_slice(&[NSString::from_str(if lang == "English" { "en" } else { "zh-Hans" })]);
+            // SAFETY: AppleLanguages holds an array of language codes
+            unsafe { defaults.setObject_forKey(Some(&***list), &key) };
+        }
+        _ => defaults.removeObjectForKey(&key),
+    }
+}
+
+/// 设置 › 语言 from the stored 'writer-settings' ('' when never set: 跟随系统).
+fn lang_setting(store: &Map<String, Value>) -> String {
+    let settings = store.get("writer-settings").and_then(Value::as_str).and_then(|s| serde_json::from_str::<Value>(s).ok());
+    settings.as_ref().and_then(|v| v.get("lang")).and_then(Value::as_str).unwrap_or_default().to_string()
+}
+
+/// Rust-side text in the UI language, keyed by the Chinese as in ui/i18n/en-*.js.
+fn t(zh: &'static str) -> &'static str {
+    if !ENGLISH.load(Ordering::Relaxed) {
+        return zh;
+    }
+    match zh {
+        "关于 Writer" => "About Writer",
+        "设置…" => "Settings…",
+        "设置" => "Settings",
+        "服务" => "Services",
+        "隐藏 Writer" => "Hide Writer",
+        "隐藏其他" => "Hide Others",
+        "全部显示" => "Show All",
+        "退出 Writer" => "Quit Writer",
+        "文件" => "File",
+        "新建…" => "New…",
+        "新建标签页" => "New Tab",
+        "打开…" => "Open…",
+        "打开最近使用" => "Open Recent",
+        "清除菜单" => "Clear Menu",
+        "关闭标签页" => "Close Tab",
+        "关闭窗口" => "Close Window",
+        "存储" => "Save",
+        "另存为…" => "Save As…",
+        "导出为…" => "Export As…",
+        "打印…" => "Print…",
+        "编辑" => "Edit",
+        "撤销" => "Undo",
+        "重做" => "Redo",
+        "剪切" => "Cut",
+        "拷贝" => "Copy",
+        "粘贴" => "Paste",
+        "全选" => "Select All",
+        "查找…" => "Find…",
+        "替换…" => "Replace…",
+        "插入" => "Insert",
+        "表格" => "Table",
+        "图片…" => "Picture…",
+        "链接" => "Link",
+        "批注" => "Comment",
+        "分页符" => "Page Break",
+        "格式" => "Format",
+        "字体" => "Font",
+        "粗体" => "Bold",
+        "斜体" => "Italic",
+        "下划线" => "Underline",
+        "段落样式" => "Paragraph Styles",
+        "清除格式" => "Clear Formatting",
+        "显示" => "View",
+        "显示边栏" => "Show Sidebar",
+        "收起工具栏" => "Collapse Toolbar",
+        "展开工具栏" => "Expand Toolbar",
+        "✦ AI 助手" => "✦ Assistant",
+        "沉浸书写" => "Focus Mode",
+        "深色模式" => "Dark Mode",
+        "浅色模式" => "Light Mode",
+        "进入全屏幕" => "Enter Full Screen",
+        "窗口" => "Window",
+        "最小化" => "Minimize",
+        "缩放" => "Zoom",
+        "显示上一个标签页" => "Show Previous Tab",
+        "显示下一个标签页" => "Show Next Tab",
+        "将所有窗口移到前面" => "Bring All to Front",
+        "帮助" => "Help",
+        "Writer 帮助" => "Writer Help",
+        "新功能" => "What’s New",
+        "触控板手势" => "Trackpad Gestures",
+        "键盘快捷键" => "Keyboard Shortcuts",
+        "反馈问题…" => "Report an Issue…",
+        "打开" => "Open",
+        "Writer 文稿" => "Writer Documents",
+        "缺少 Writer 界面文件，请重新安装。" => "Writer’s interface files are missing. Please reinstall Writer.",
+        "文档引擎未能启动：" => "The document engine couldn’t start: ",
+        "无法打开编辑器：" => "Couldn’t open the editor: ",
+        "文档引擎启动失败，请检查本地日志。" => "The document engine failed to start. Check the local logs.",
+        "文档引擎未能启动。请重新启动 Writer。" => "The document engine couldn’t start. Please restart Writer.",
+        // the updater (src/update.rs)
+        "检查更新…" => "Check for Updates…",
+        "新版本已下载" => "Update Downloaded",
+        "重新打开 Writer 后生效。" => "It takes effect the next time you open Writer.",
+        "立即重启" => "Restart Now",
+        "已是最新版本" => "You’re Up to Date",
+        "Writer {v} 是目前的最新版本。" => "Writer {v} is the latest version.",
+        "无法检查更新" => "Couldn’t Check for Updates",
+        "更新失败" => "Update Failed",
+        "请稍后再试，或前往 https://github.com/Auspexlabs/writer/releases 下载最新版本。" => "Try again later, or download the latest version from https://github.com/Auspexlabs/writer/releases.",
+        "前往下载页" => "Open Download Page",
+        "好" => "OK",
+        _ => zh,
+    }
 }
 
 fn theme_of(store: &Map<String, Value>) -> Option<Theme> {
@@ -194,13 +336,19 @@ fn open_folder(app: &AppHandle, dir: PathBuf, depth: u32) -> Option<String> {
         .ok()?
         .title(dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Writer".into()))
         .initialization_script(init_script(app, "main"));
-    if let Some(prev) = near.and_then(|l| app.get_webview_window(&l)) {
+    let cascaded = near.and_then(|l| app.get_webview_window(&l));
+    if let Some(prev) = &cascaded {
         if let (Ok(pos), Ok(scale)) = (prev.outer_position(), prev.scale_factor()) {
             let pos = pos.to_logical::<f64>(scale);
             builder = builder.position(pos.x + 26.0, pos.y + 26.0);
         }
     }
     let window = builder.build().ok()?;
+    // Opened next to another window: keep the 26px cascade above. Otherwise (the first window this run), come back
+    // where the document windows were last time (tauri-plugin-window-state tracks them as they move and resize).
+    if cascaded.is_none() {
+        let _ = window.restore_state(StateFlags::SIZE | StateFlags::POSITION);
+    }
     hide_lights(&window);
     shell(app).windows.insert(
         label.clone(),
@@ -210,7 +358,12 @@ fn open_folder(app: &AppHandle, dir: PathBuf, depth: u32) -> Option<String> {
     Some(label)
 }
 
+/// The interface every window and panel of this run shows: a downloaded interface package for this version (chosen once,
+/// at launch: update::ui_package), else the bundled ui/.
 fn ui_dir(app: &AppHandle) -> Option<PathBuf> {
+    if let Some((package, _)) = update::ui_package(app) {
+        return Some(package.clone());
+    }
     let bundled = app.path().resource_dir().ok()?.join("ui");
     if bundled.join("mac.dc.html").is_file() {
         Some(bundled)
@@ -237,7 +390,7 @@ fn start_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32
 
 fn spawn_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32, port: Option<u16>) {
     let Some(ui) = ui_dir(app) else {
-        show_error(&window, "缺少 Writer 界面文件，请重新安装。");
+        show_error(&window, t("缺少 Writer 界面文件，请重新安装。"));
         return;
     };
     let depth_arg = depth.to_string();
@@ -255,7 +408,7 @@ fn spawn_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32
     let (mut events, child) = match spawned {
         Ok(started) => started,
         Err(error) => {
-            show_error(&window, &format!("文档引擎未能启动：{error}"));
+            show_error(&window, &format!("{}{error}", t("文档引擎未能启动：")));
             return;
         }
     };
@@ -281,7 +434,19 @@ fn spawn_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32
                             folder.origin = Some(origin);
                         }
                         if let Err(error) = window.navigate(url) {
-                            show_error(&window, &format!("无法打开编辑器：{error}"));
+                            show_error(&window, &format!("{}{error}", t("无法打开编辑器：")));
+                        }
+                        if update::ui_package(&app).is_some() {
+                            // a downloaded interface that does not report in (shell_state) within 20 s is marked bad,
+                            // and Writer restarts on the bundled one
+                            let (app, label) = (app.clone(), window.label().to_string());
+                            std::thread::spawn(move || {
+                                std::thread::sleep(std::time::Duration::from_secs(20));
+                                if shell(&app).windows.get(&label).is_some_and(|f| f.state.is_null()) {
+                                    update::reject_package(&app);
+                                    app.request_restart();
+                                }
+                            });
                         }
                         let panel = shell(&app).panel.take();
                         if let Some((which, tab)) = panel {
@@ -290,7 +455,7 @@ fn spawn_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32
                         continue;
                     }
                     if buffer.len() > 8192 {
-                        show_error(&window, "文档引擎启动失败，请检查本地日志。");
+                        show_error(&window, t("文档引擎启动失败，请检查本地日志。"));
                         buffer.clear();
                     }
                 }
@@ -298,7 +463,7 @@ fn spawn_engine(app: &AppHandle, window: WebviewWindow, dir: PathBuf, depth: u32
                     if port.is_some() {
                         spawn_engine(&app, window, dir, depth, None); // the remembered port is taken: any free one
                     } else {
-                        show_error(&window, "文档引擎未能启动。请重新启动 Writer。");
+                        show_error(&window, t("文档引擎未能启动。请重新启动 Writer。"));
                     }
                     break;
                 }
@@ -344,9 +509,9 @@ fn page_url(line: &str) -> Option<tauri::Url> {
 
 fn open_panel(app: &AppHandle, which: &str, tab: Option<String>) {
     let (page, title, width, height) = match which {
-        "settings" => ("MacSettings", "设置", 660.0, 520.0),
-        "about" => ("MacAbout", "关于 Writer", 300.0, 380.0),
-        "gestures" => ("MacGestures", "触控板手势", 560.0, 560.0),
+        "settings" => ("MacSettings", t("设置"), 660.0, 520.0),
+        "about" => ("MacAbout", t("关于 Writer"), 300.0, 380.0),
+        "gestures" => ("MacGestures", t("触控板手势"), 560.0, 560.0),
         _ => return,
     };
     let tab = tab.filter(|t| !t.is_empty() && t.chars().all(|c| c.is_ascii_alphanumeric()));
@@ -491,24 +656,35 @@ fn settings_set(app: AppHandle, window: WebviewWindow, key: String, json: String
     if !SHARED_KEYS.contains(&key.as_str()) || json.len() > 65536 {
         return;
     }
-    let theme = {
+    let (theme, lang) = {
         let mut s = shell(&app);
         if s.store.get(&key).and_then(Value::as_str) == Some(json.as_str()) {
             return;
         }
         s.store.insert(key.clone(), Value::String(json.clone()));
         write_json(&data_file(&app, "web-storage.json"), &Value::Object(s.store.clone()));
-        theme_of(&s.store)
+        (theme_of(&s.store), lang_setting(&s.store))
     };
     if key == "writer-settings" {
         app.set_theme(theme);
+        #[cfg(target_os = "macos")]
+        app_languages(&lang);
     }
+    #[cfg(not(target_os = "macos"))]
+    let _ = lang;
     let script = format!("window.__writerStore && window.__writerStore({}, {})", json!(key), json!(json));
     for (label, other) in app.webview_windows() {
         if label != window.label() {
             let _ = other.eval(&script);
         }
     }
+}
+
+/// 设置 › 语言 › 立即重启: the menu bar and every page read the language once, at launch. The engines stop on the way
+/// out (RunEvent::Exit), as on quit.
+#[tauri::command]
+fn restart_app(app: AppHandle) {
+    app.request_restart();
 }
 
 #[tauri::command]
@@ -584,7 +760,7 @@ fn refresh_recent(app: &AppHandle) {
             let _ = sub.append(&sep);
         }
     }
-    if let Ok(clear) = MenuItemBuilder::with_id("recentClear", "清除菜单").enabled(!recent.is_empty()).build(app) {
+    if let Ok(clear) = MenuItemBuilder::with_id("recentClear", t("清除菜单")).enabled(!recent.is_empty()).build(app) {
         let _ = sub.append(&clear);
     }
 }
@@ -599,99 +775,102 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, Menus)> {
     let sep = || PredefinedMenuItem::separator(app);
 
     let writer = SubmenuBuilder::new(app, "Writer")
-        .item(&item("about", "关于 Writer", "")?)
+        .item(&item("about", t("关于 Writer"), "")?)
         .item(&sep()?)
-        .item(&item("settings", "设置…", "Cmd+,")?)
+        .item(&item("settings", t("设置…"), "Cmd+,")?)
         .item(&sep()?)
-        .item(&PredefinedMenuItem::services(app, Some("服务"))?)
+        .item(&PredefinedMenuItem::services(app, Some(t("服务")))?)
         .item(&sep()?)
-        .item(&PredefinedMenuItem::hide(app, Some("隐藏 Writer"))?)
-        .item(&PredefinedMenuItem::hide_others(app, Some("隐藏其他"))?)
-        .item(&PredefinedMenuItem::show_all(app, Some("全部显示"))?)
+        .item(&PredefinedMenuItem::hide(app, Some(t("隐藏 Writer")))?)
+        .item(&PredefinedMenuItem::hide_others(app, Some(t("隐藏其他")))?)
+        .item(&PredefinedMenuItem::show_all(app, Some(t("全部显示")))?)
         .item(&sep()?)
-        .item(&PredefinedMenuItem::quit(app, Some("退出 Writer"))?)
+        .item(&PredefinedMenuItem::quit(app, Some(t("退出 Writer")))?)
         .build()?;
+    if !cfg!(feature = "appstore") {
+        writer.insert(&item("checkUpdate", t(update::MENU), "")?, 1)?;
+    }
 
-    let recent = SubmenuBuilder::new(app, "打开最近使用").build()?;
-    let file = SubmenuBuilder::new(app, "文件")
-        .item(&item("new", "新建…", "Cmd+N")?)
-        .item(&item("newTab", "新建标签页", "Cmd+T")?)
-        .item(&item("open", "打开…", "Cmd+O")?)
+    let recent = SubmenuBuilder::new(app, t("打开最近使用")).build()?;
+    let file = SubmenuBuilder::new(app, t("文件"))
+        .item(&item("new", t("新建…"), "Cmd+N")?)
+        .item(&item("newTab", t("新建标签页"), "Cmd+T")?)
+        .item(&item("open", t("打开…"), "Cmd+O")?)
         .item(&recent)
         .item(&sep()?)
-        .item(&item("closeTab", "关闭标签页", "Cmd+W")?)
-        .item(&item("closeWindow", "关闭窗口", "Shift+Cmd+W")?)
-        .item(&item("save", "存储", "Cmd+S")?)
-        .item(&item("saveAs", "另存为…", "Shift+Cmd+S")?)
-        .item(&item("exportAs", "导出为…", "")?)
+        .item(&item("closeTab", t("关闭标签页"), "Cmd+W")?)
+        .item(&item("closeWindow", t("关闭窗口"), "Shift+Cmd+W")?)
+        .item(&item("save", t("存储"), "Cmd+S")?)
+        .item(&item("saveAs", t("另存为…"), "Shift+Cmd+S")?)
+        .item(&item("exportAs", t("导出为…"), "")?)
         .item(&sep()?)
-        .item(&item("print", "打印…", "Cmd+P")?)
+        .item(&item("print", t("打印…"), "Cmd+P")?)
         .build()?;
 
-    let edit = SubmenuBuilder::new(app, "编辑")
-        .item(&PredefinedMenuItem::undo(app, Some("撤销"))?)
-        .item(&PredefinedMenuItem::redo(app, Some("重做"))?)
+    let edit = SubmenuBuilder::new(app, t("编辑"))
+        .item(&PredefinedMenuItem::undo(app, Some(t("撤销")))?)
+        .item(&PredefinedMenuItem::redo(app, Some(t("重做")))?)
         .item(&sep()?)
-        .item(&PredefinedMenuItem::cut(app, Some("剪切"))?)
-        .item(&PredefinedMenuItem::copy(app, Some("拷贝"))?)
-        .item(&PredefinedMenuItem::paste(app, Some("粘贴"))?)
-        .item(&PredefinedMenuItem::select_all(app, Some("全选"))?)
+        .item(&PredefinedMenuItem::cut(app, Some(t("剪切")))?)
+        .item(&PredefinedMenuItem::copy(app, Some(t("拷贝")))?)
+        .item(&PredefinedMenuItem::paste(app, Some(t("粘贴")))?)
+        .item(&PredefinedMenuItem::select_all(app, Some(t("全选")))?)
         .item(&sep()?)
-        .item(&item("find", "查找…", "Cmd+F")?)
-        .item(&item("replace", "替换…", "Alt+Cmd+F")?)
+        .item(&item("find", t("查找…"), "Cmd+F")?)
+        .item(&item("replace", t("替换…"), "Alt+Cmd+F")?)
         .build()?;
 
-    let insert = SubmenuBuilder::new(app, "插入")
-        .item(&item("insertTable", "表格", "")?)
-        .item(&item("insertImage", "图片…", "Shift+Cmd+I")?)
-        .item(&item("insertLink", "链接", "Cmd+K")?)
-        .item(&item("insertComment", "批注", "Alt+Cmd+A")?)
+    let insert = SubmenuBuilder::new(app, t("插入"))
+        .item(&item("insertTable", t("表格"), "")?)
+        .item(&item("insertImage", t("图片…"), "Shift+Cmd+I")?)
+        .item(&item("insertLink", t("链接"), "Cmd+K")?)
+        .item(&item("insertComment", t("批注"), "Alt+Cmd+A")?)
         .item(&sep()?)
-        .item(&item("pageBreak", "分页符", "Cmd+Enter")?)
+        .item(&item("pageBreak", t("分页符"), "Cmd+Enter")?)
         .build()?;
 
-    let format = SubmenuBuilder::new(app, "格式")
-        .item(&SubmenuBuilder::new(app, "字体").enabled(false).build()?)
-        .item(&item("bold", "粗体", "Cmd+B")?)
-        .item(&item("italic", "斜体", "Cmd+I")?)
-        .item(&item("underline", "下划线", "Cmd+U")?)
+    let format = SubmenuBuilder::new(app, t("格式"))
+        .item(&SubmenuBuilder::new(app, t("字体")).enabled(false).build()?)
+        .item(&item("bold", t("粗体"), "Cmd+B")?)
+        .item(&item("italic", t("斜体"), "Cmd+I")?)
+        .item(&item("underline", t("下划线"), "Cmd+U")?)
         .item(&sep()?)
-        .item(&SubmenuBuilder::new(app, "段落样式").enabled(false).build()?)
-        .item(&item("clearFormat", "清除格式", "Alt+Cmd+\\")?)
+        .item(&SubmenuBuilder::new(app, t("段落样式")).enabled(false).build()?)
+        .item(&item("clearFormat", t("清除格式"), "Alt+Cmd+\\")?)
         .build()?;
 
-    let sidebar = CheckMenuItemBuilder::with_id("toggleSidebar", "显示边栏").accelerator("Ctrl+Cmd+S").checked(true).build(app)?;
-    let toolbar = item("toggleToolbar", "收起工具栏", "Alt+Cmd+T")?;
-    let dark = item("toggleDark", "深色模式", "Shift+Cmd+L")?;
-    let view = SubmenuBuilder::new(app, "显示")
+    let sidebar = CheckMenuItemBuilder::with_id("toggleSidebar", t("显示边栏")).accelerator("Ctrl+Cmd+S").checked(true).build(app)?;
+    let toolbar = item("toggleToolbar", t("收起工具栏"), "Alt+Cmd+T")?;
+    let dark = item("toggleDark", t("深色模式"), "Shift+Cmd+L")?;
+    let view = SubmenuBuilder::new(app, t("显示"))
         .item(&sidebar)
         .item(&toolbar)
-        .item(&item("toggleAI", "✦ AI 助手", "Cmd+J")?)
-        .item(&item("immersive", "沉浸书写", "Cmd+.")?)
+        .item(&item("toggleAI", t("✦ AI 助手"), "Cmd+J")?)
+        .item(&item("immersive", t("沉浸书写"), "Cmd+.")?)
         .item(&sep()?)
         .item(&dark)
         .item(&sep()?)
-        .item(&PredefinedMenuItem::fullscreen(app, Some("进入全屏幕"))?)
+        .item(&PredefinedMenuItem::fullscreen(app, Some(t("进入全屏幕")))?)
         .build()?;
 
-    let window = SubmenuBuilder::new(app, "窗口")
-        .item(&PredefinedMenuItem::minimize(app, Some("最小化"))?)
-        .item(&PredefinedMenuItem::maximize(app, Some("缩放"))?)
+    let window = SubmenuBuilder::new(app, t("窗口"))
+        .item(&PredefinedMenuItem::minimize(app, Some(t("最小化")))?)
+        .item(&PredefinedMenuItem::maximize(app, Some(t("缩放")))?)
         .item(&sep()?)
-        .item(&item("prevTab", "显示上一个标签页", "Ctrl+Shift+Tab")?)
-        .item(&item("nextTab", "显示下一个标签页", "Ctrl+Tab")?)
+        .item(&item("prevTab", t("显示上一个标签页"), "Ctrl+Shift+Tab")?)
+        .item(&item("nextTab", t("显示下一个标签页"), "Ctrl+Tab")?)
         .item(&sep()?)
-        .item(&PredefinedMenuItem::bring_all_to_front(app, Some("将所有窗口移到前面"))?)
+        .item(&PredefinedMenuItem::bring_all_to_front(app, Some(t("将所有窗口移到前面")))?)
         .build()?;
 
-    let help = SubmenuBuilder::new(app, "帮助")
-        .item(&item("help", "Writer 帮助", "Shift+Cmd+/")?)
-        .item(&item("whatsNew", "新功能", "")?)
+    let help = SubmenuBuilder::new(app, t("帮助"))
+        .item(&item("help", t("Writer 帮助"), "Shift+Cmd+/")?)
+        .item(&item("whatsNew", t("新功能"), "")?)
         .item(&sep()?)
-        .item(&item("gestures", "触控板手势", "")?)
-        .item(&item("shortcuts", "键盘快捷键", "")?)
+        .item(&item("gestures", t("触控板手势"), "")?)
+        .item(&item("shortcuts", t("键盘快捷键"), "")?)
         .item(&sep()?)
-        .item(&MenuItemBuilder::with_id("feedback", "反馈问题…").enabled(false).build(app)?)
+        .item(&MenuItemBuilder::with_id("feedback", t("反馈问题…")).enabled(false).build(app)?)
         .build()?;
 
     let menu = Menu::with_items(app, &[&writer, &file, &edit, &insert, &format, &view, &window, &help])?;
@@ -707,8 +886,8 @@ fn apply_menu(app: &AppHandle, state: &Value) {
     let Some(menus) = app.try_state::<Menus>() else { return };
     let on = |k: &str| state.get(k).and_then(Value::as_bool).unwrap_or(false);
     let _ = menus.sidebar.set_checked(on("showThumbs"));
-    let _ = menus.toolbar.set_text(if on("collapsed") { "展开工具栏" } else { "收起工具栏" });
-    let _ = menus.dark.set_text(if on("dark") { "浅色模式" } else { "深色模式" });
+    let _ = menus.toolbar.set_text(t(if on("collapsed") { "展开工具栏" } else { "收起工具栏" }));
+    let _ = menus.dark.set_text(t(if on("dark") { "浅色模式" } else { "深色模式" }));
 }
 
 fn on_menu(app: &AppHandle, id: &str) {
@@ -718,9 +897,10 @@ fn on_menu(app: &AppHandle, id: &str) {
         "settings" => open_panel(app, "settings", None),
         "gestures" => open_panel(app, "gestures", None),
         "shortcuts" => open_panel(app, "settings", Some("keys".into())),
+        "checkUpdate" => update::check(app, true),
         "open" => {
             let handle = app.clone();
-            app.dialog().file().set_title("打开").add_filter("Writer 文稿", &DOC_EXTS).pick_files(move |files| {
+            app.dialog().file().set_title(t("打开")).add_filter(t("Writer 文稿"), &DOC_EXTS).pick_files(move |files| {
                 for file in files.unwrap_or_default() {
                     if let Ok(path) = file.into_path() {
                         open_file(&handle, path);
@@ -771,12 +951,17 @@ fn on_menu(app: &AppHandle, id: &str) {
 
 // ---------------------------------------------------------------- app
 
+/// Engines of closed windows that are still running (stop_engine); a Windows update waits for them (update.rs).
+static STOPPING: AtomicUsize = AtomicUsize::new(0);
+
 fn stop_engine(folder: Folder) {
     if let Some(engine) = folder.engine {
+        STOPPING.fetch_add(1, Ordering::SeqCst);
         // a moment for the page's last autosave to land before the engine goes away
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(1500));
             let _ = engine.kill();
+            STOPPING.fetch_sub(1, Ordering::SeqCst);
         });
     }
 }
@@ -807,6 +992,10 @@ fn launch(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     }
     let theme = theme_of(&shell(app).store);
     app.set_theme(theme);
+    let lang = lang_setting(&shell(app).store);
+    ENGLISH.store(english(&lang, &sys_locale::get_locale().unwrap_or_else(|| "zh".into())), Ordering::Relaxed);
+    #[cfg(target_os = "macos")]
+    app_languages(&lang);
     // Windows has no menu bar: an app menu would become a bar inside every window; win.dc.html has the W menu instead.
     if cfg!(target_os = "macos") {
         let (menu, menus) = build_menu(app)?;
@@ -814,6 +1003,7 @@ fn launch(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         app.manage(menus);
         refresh_recent(app);
     }
+    update::start(app)?;
 
     let mut files = std::mem::take(&mut shell(app).launch_files);
     files.extend(std::env::args_os().skip(1).map(PathBuf::from).filter(|p| is_doc(p) && p.is_file()));
@@ -884,10 +1074,20 @@ fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_denylist(&["settings", "about", "gestures"])
+                .with_state_flags(StateFlags::SIZE | StateFlags::POSITION)
+                // Document windows (main-1, main-2, …) share one saved frame, tracked as they move and written on quit.
+                // It is restored in open_folder, only for a window not cascaded next to another, so no restore here.
+                .map_label(|label| if label.starts_with("main-") { "main" } else { label })
+                .skip_initial_state("main")
+                .build(),
+        )
         .manage(Writer(Mutex::new(Shell::default())))
         .invoke_handler(tauri::generate_handler![
-            shell_state, open_window, toggle_zoom, settings_set, aux_close, win::open_files, win::snap_window,
-            storage::save_dialog, storage::recent_files, storage::open_recent
+            shell_state, open_window, toggle_zoom, settings_set, aux_close, restart_app, win::open_files, win::snap_window,
+            storage::save_dialog, storage::recent_files, storage::open_recent, update::check_update
         ])
         .on_menu_event(|app, event| on_menu(app, event.id().as_ref()))
         .on_window_event(|window, event| {
@@ -934,7 +1134,8 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("failed to build Writer desktop app");
 
-    app.run(|app, event| match event {
+    let mut restarting = false;
+    app.run(move |app, event| match event {
         RunEvent::Opened { urls } => {
             let files: Vec<PathBuf> = urls.iter().filter_map(|u| u.to_file_path().ok()).collect();
             if shell(app).launched {
@@ -957,6 +1158,8 @@ fn main() {
         }
         // Like other Mac document apps, Writer stays in the Dock when its last window closes; ⌘Q quits. Windows quits.
         RunEvent::ExitRequested { code: None, api, .. } if cfg!(target_os = "macos") => api.prevent_exit(),
+        // 立即重启 (an update, a language change): a version installed on the way out opens again
+        RunEvent::ExitRequested { code: Some(tauri::RESTART_EXIT_CODE), .. } => restarting = true,
         RunEvent::Exit => {
             let engines: Vec<Folder> = shell(app).windows.drain().map(|(_, f)| f).collect();
             for folder in engines {
@@ -964,7 +1167,23 @@ fn main() {
                     let _ = engine.kill();
                 }
             }
+            update::install_on_exit(restarting); // a downloaded version
         }
         _ => {}
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::english;
+
+    #[test]
+    fn the_language_follows_the_setting_then_the_system() {
+        assert!(english("English", "zh-Hans-CN"));
+        assert!(!english("简体中文", "en-US"));
+        assert!(!english("跟随系统", "zh-Hans-CN"));
+        assert!(!english("", "ZH-TW"));
+        assert!(english("跟随系统", "en-GB"));
+        assert!(english("", "fr-FR"));
+    }
 }

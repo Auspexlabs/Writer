@@ -1,6 +1,6 @@
 [package]
 name = "writer-desktop"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [build-dependencies]
@@ -10,11 +10,21 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-window-state = "2"
+# in-app updates (src/update.rs); interface packages use the updater's HTTP client, signature check and archive format
+tauri-plugin-updater = "2"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+minisign-verify = "0.2"
+base64 = "0.22"
+tar = "0.4"
+flate2 = "1"
 serde_json = "1"
+sys-locale = "0.3"
 
 [target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSButton", "NSControl", "NSResponder", "NSView", "NSWindow"] }
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSError", "NSString", "NSURL"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSError", "NSString", "NSURL", "NSUserDefaults"] }
 
 [features]
 # UI checks without Accessibility access, see test_plan() in src/main.rs

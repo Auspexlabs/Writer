@@ -1,11 +1,10 @@
-// The current build next to the download buttons, from download/latest.json ({"version","size","date"}, size in bytes).
+// The current version next to the download buttons, from download/latest.json ({"version","size","date"}; size is the dmg's, not shown).
 // When the file cannot be read the line stays hidden; the buttons work either way.
 fetch('download/latest.json', { cache: 'no-cache' })
   .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
   .then(({ version, size, date }) => {
     if (typeof version !== 'string' || !version) return;
     let text = '版本 ' + version;
-    if (Number(size) > 0) text += '（' + Math.round(size / 1048576) + ' MB）';
     if (typeof date === 'string' && date) text += '，' + date + ' 更新';
     document.querySelectorAll('[data-latest]').forEach((el) => { el.textContent = text; el.hidden = false; });
   })

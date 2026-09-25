@@ -26,5 +26,13 @@
         "languages": ["SimpChinese", "English"]
       }
     }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://thewriter.cn/updates/windows/latest.json",
+        "https://github.com/Auspexlabs/writer/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

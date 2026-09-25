@@ -1,7 +1,9 @@
 #!/bin/bash
 # Mac release builds. Run from desktop/:
 #
-#   scripts/release-mac.sh web            Developer ID: signed, notarized and stapled .app and .dmg for the website
+#   scripts/release-mac.sh web            Developer ID: signed, notarized and stapled .app and .dmg, and the in-app
+#                                         updater's .app.tar.gz (+ .sig) with latest.json for the GitHub release and,
+#                                         in updates/mac/, for the website
 #   scripts/release-mac.sh appstore       Mac App Store: sandboxed .app signed for the store, packaged as a signed .pkg
 #   scripts/release-mac.sh sandbox-test   the store's sandbox signed with this Mac's Apple Development certificate, for
 #                                         trying the sandboxed app locally; its own bundle id (cn.thewriter.sandboxtest),
@@ -9,11 +11,13 @@
 #
 # Needs (all in the login keychain, created once by the account holder in Xcode › Settings › Accounts › Manage Certificates):
 #   web       "Developer ID Application: …" certificate, and a notarytool profile made once with
-#             xcrun notarytool store-credentials writer-notary --key AuthKey_XXXX.p8 --key-id XXXX --issuer <issuer id>
+#             xcrun notarytool store-credentials writer-notary --key AuthKey_XXXX.p8 --key-id XXXX --issuer <issuer id>;
+#             the updater's signing key ../.signing/writer-updater.key, its password in the keychain item writer-updater
 #   appstore  "Apple Distribution: …" and "3rd Party Mac Developer Installer: …" certificates, and the App Store
 #             provisioning profile for cn.thewriter.app saved as ../.signing/Writer_Mac_App_Store.provisionprofile
 # Overrides: SIGN_ID, INSTALLER_ID, TEAM_ID, NOTARY_PROFILE (default writer-notary), EXTRA_FEATURES (e.g. test-hooks),
-# BUILD_NUMBER (the store's CFBundleVersion, which must grow with every upload; default: the commit count).
+# BUILD_NUMBER (the store's CFBundleVersion, which must grow with every upload; default: the commit count), UPDATER_KEY,
+# NOTES or NOTES_FILE (the release notes the update dialog shows).
 set -euo pipefail
 mode=${1:-}
 cd "$(dirname "$0")/.."
@@ -50,6 +54,19 @@ installer_identity() { pick "3rd Party Mac Developer Installer"; }
 team_of() { security find-identity -v | awk -v h="$1" '$2 == h' | sed -n 's/.*(\([A-Z0-9]\{10\}\))".*/\1/p' | head -1; }
 need() { [ -n "$2" ] || { echo "缺少 $1。$3" >&2; exit 1; }; }
 
+updater_files() { # the in-app updater's files, from the stapled app: a signed archive, and its entry in latest.json
+  local tgz="Writer-$VERSION-mac.app.tar.gz"
+  COPYFILE_DISABLE=1 tar -czf "$OUT/$tgz" -C "$(dirname "$APP")" "$(basename "$APP")" # no ._ files in the archive
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD="$UPDATER_PW" npx tauri signer sign -f "$UPDATER_KEY" --app-version "$VERSION" "$OUT/$tgz" >/dev/null
+  # keeps a windows-x86_64 entry of this version (scripts/release-win.sh)
+  node scripts/latest-json.mjs "$OUT/latest.json" darwin-aarch64 "$VERSION" "$OUT/$tgz.sig" \
+    "https://github.com/Auspexlabs/writer/releases/download/v$VERSION/$tgz" "$NOTES"
+  # the website's feed, which installed copies read first (website/deploy.sh --updates dist/updates)
+  mkdir -p "$OUT/updates/mac" && cp "$OUT/$tgz" "$OUT/$tgz.sig" "$OUT/updates/mac/"
+  node scripts/latest-json.mjs "$OUT/updates/mac/latest.json" darwin-aarch64 "$VERSION" "$OUT/$tgz.sig" \
+    "https://thewriter.cn/updates/mac/$tgz" "$NOTES"
+}
+
 notarize() { # notarize a zip/dmg/pkg and staple the ticket to what was submitted (or to the app for a zip)
   local file=$1 staple=${2:-$1}
   xcrun notarytool submit "$file" --keychain-profile "${NOTARY_PROFILE:-writer-notary}" --wait
@@ -70,6 +87,10 @@ case "$mode" in
 web)
   SIGN_ID=${SIGN_ID:-$(identity "Developer ID Application")}
   need "Developer ID Application 证书" "$SIGN_ID" "请账号持有人在开发者网站 Certificates 里创建（node scripts/asc.mjs fetch DEVELOPER_ID_APPLICATION_G2 导入）。"
+  UPDATER_KEY=${UPDATER_KEY:-../.signing/writer-updater.key}
+  [ -f "$UPDATER_KEY" ] || { echo "缺少更新签名私钥 $UPDATER_KEY（见 SIGNING.local.md）。" >&2; exit 1; }
+  UPDATER_PW=$(security find-generic-password -s writer-updater -w) || { echo "钥匙串里缺少 writer-updater（更新签名私钥的密码）。" >&2; exit 1; }
+  NOTES=${NOTES:-$(cat "${NOTES_FILE:-/dev/null}")}
   node scripts/prepare-engine.mjs --release
   APPLE_SIGNING_IDENTITY="$SIGN_ID" npx tauri build --bundles app --target "$TARGET"
   codesign --verify --strict --deep --verbose=1 "$APP"
@@ -86,6 +107,7 @@ web)
   (cd "$OUT" && shasum -a 256 "Writer-$VERSION-mac.dmg" | tee "Writer-$VERSION-mac.dmg.sha256")
   spctl --assess --type execute --verbose "$APP"
   spctl --assess --type open --context context:primary-signature --verbose "$DMG"
+  updater_files
   ;;
 appstore|sandbox-test)
   if [ "$mode" = appstore ]; then
@@ -126,5 +148,5 @@ appstore|sandbox-test)
   fi
   ;;
 *)
-  sed -n '2,14p' "$0"; exit 1 ;;
+  sed -n '2,17p' "$0"; exit 1 ;;
 esac

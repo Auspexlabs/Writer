@@ -4,12 +4,13 @@
      so the document types are declared here; the .icns files are copied by bundle.macOS.files in tauri.conf.json. -->
 <plist version="1.0">
 <dict>
-	<!-- The app's own strings are Chinese; this makes AppKit's (服务、搜索、进入全屏幕、打开面板) Chinese too. -->
+	<!-- The app is Chinese or English (设置 › 语言); listing both lets AppKit's own items (服务、搜索、进入全屏幕、打开面板) follow it: main.rs sets AppleLanguages to match. -->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh_CN</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>zh-Hans</string>
+		<string>en</string>
 	</array>
 	<!-- Only the system's HTTPS (to the AI provider the user configures): exempt, so TestFlight and the store ask nothing. -->
 	<key>ITSAppUsesNonExemptEncryption</key>

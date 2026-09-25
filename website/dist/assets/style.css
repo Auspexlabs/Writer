@@ -243,9 +243,8 @@ section[id] { scroll-margin-top: 64px; }
 .app-icon { width: 88px; height: 88px; margin: 0 auto 22px; border-radius: 22.5%; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .14), 0 16px 32px -12px rgba(16, 20, 28, .5); }
 .section .cta-card h2 { font-size: clamp(30px, 3.4vw, 44px); }
 .cta-card p { margin: 12px 0 0; color: var(--ink-2); }
-.cta-card .btn { margin-top: 28px; }
+.cta-card .dl { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 28px; }
 .cta-card .small { margin-top: 12px; color: var(--ink-2); font-size: 14px; line-height: 1.6; }
-.soon { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 26px !important; padding-top: 22px; border-top: 1px solid var(--line); font-size: 14px; }
 
 @media (prefers-color-scheme: dark) {
   .hero::after { opacity: .45; }

@@ -1,13 +1,13 @@
 # /etc/caddy/Caddyfile on the website server, installed by deploy.sh.
-# Until the ICP filing is approved the site answers plain HTTP on the server's IP.
-# Once it is approved, replace ":80" with "thewriter.cn, www.thewriter.cn" and redeploy:
-# Caddy then obtains and renews the HTTPS certificates by itself.
-:80 {
+# Caddy obtains and renews the HTTPS certificates by itself; HTTP redirects to HTTPS.
+thewriter.cn, www.thewriter.cn {
 	root * /srv/writer/site
 	encode zstd gzip
-	# /download/mac → the current Writer-<version>-mac.dmg, written by deploy.sh --dmg
+	# /download/mac and /download/windows → the current installers, written by deploy.sh --dmg and --exe
 	import /srv/writer/redirects.caddy
 	header /download/latest.json Cache-Control no-cache
+	# The app asks /updates/<platform>/latest.json before GitHub and falls back only on an error or non-2xx:
+	# a missing file must stay a plain 404 (file_server does that). Never add a fallback page or 204 here.
 	header /updates/* Cache-Control no-cache
 	file_server
 }

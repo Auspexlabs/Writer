@@ -3,9 +3,10 @@
 // motion, AI, dark pages) happens in the inline script at the top of index.dc.html so it runs before first paint.
 export const KEY = 'writer-settings';
 export const SESSION = 'writer-session';
+export const MAC = 'writer-mac';
 
 /** The same keys and defaults as DEF in MacSettings.dc.html (tests/prefs.test.mjs keeps the two in step). */
-export const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, lang: '简体中文', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
+export const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, autoUpdate: true, lang: '跟随系统', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
 
 /** Puts the appearance settings on <html> (el) as attributes the stylesheets key on; the defaults add nothing, so the
  *  designed look is untouched: data-theme, data-density (compact|loose), data-motion=reduce (also when the system asks),
@@ -28,6 +29,13 @@ const read = (storage, key) => { try { return JSON.parse(storage.getItem(key) ||
 export function load(storage = globalThis.localStorage) { return { ...DEF, ...(storage && read(storage, KEY)) }; }
 export function loadSession(storage = globalThis.localStorage) { return (storage && read(storage, SESSION)) || {}; }
 export function saveSession(s, storage = globalThis.localStorage) { try { storage.setItem(SESSION, JSON.stringify(s)); } catch (e) { } }
+
+/** The left sidebar and assistant panel, the shell's own part of 'writer-mac' (mac.dc.html/win.dc.html keep the
+ *  collapsed toolbar in the same key; this merges rather than replaces). Shared by every window and kept across
+ *  launches (desktop/src-tauri), so Writer reopens showing what the last window left on screen. Presentation mode
+ *  is never saved here. */
+export function loadLayout(storage = globalThis.localStorage) { const m = (storage && read(storage, MAC)) || {}; return { showThumbs: m.thumbs !== false, showAI: !!m.ai }; }
+export function saveLayout(showThumbs, showAI, storage = globalThis.localStorage) { try { const m = (storage && read(storage, MAC)) || {}; storage.setItem(MAC, JSON.stringify({ ...m, thumbs: showThumbs, ai: showAI })); } catch (e) { } }
 
 const TONE = { brief: 'Keep every reply to one or two short sentences.', detail: 'Reply in more detail: say what you changed, where, and why.' };
 /** Extra system-prompt text for POST /chat: the reply style (回复风格) plus the user's own instructions (自定义说明). */
@@ -92,7 +100,7 @@ export function aiMissing(form) {
   return !httpUrl(b.baseUrl) ? '请填写接口地址（http:// 或 https:// 开头）' : !b.model ? '请填写模型' : '';
 }
 
-export const PAIRS = { '「': '」', '『': '』', '《': '》', '“': '”', '‘': '’', '（': '）', '【': '】' };
+export const PAIRS = { '「': '」', '『': '』', '《': '》', '“': '”', '‘': '’', '（': '）', '【': '】' }; // i18n-ok
 const CLOSERS = new Set(Object.values(PAIRS));
 /** Smart CJK punctuation for text about to be typed (`data`) with `next` the character after the caret:
  *  { skip: true } — a closing mark typed over the same closing mark just moves the caret;

@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "writer-mac-shell",
-  "description": "The Mac window pages that the bundled engine serves on 127.0.0.1 may call Writer's own shell commands (report the window title and menu state, open or close the settings / about / gestures windows, zoom on a title-strip double-click, keep the shared settings, show the Save and open dialogs, list and open recent files) and drive their own window from the design's traffic lights (close, minimize, full screen, zoom). Nothing else: no file system, shell or other windows.",
+  "description": "The Mac window pages that the bundled engine serves on 127.0.0.1 may call Writer's own shell commands (report the window title and menu state, open or close the settings / about / gestures windows, zoom on a title-strip double-click, keep the shared settings, show the Save and open dialogs, list and open recent files, restart after a language change, check for updates) and drive their own window from the design's traffic lights (close, minimize, full screen, zoom). Nothing else: no file system, shell or other windows.",
   "windows": ["main-*", "settings", "about", "gestures"],
   "platforms": ["macOS"],
   "remote": {
@@ -17,6 +17,8 @@
     "allow-recent-files",
     "allow-open-recent",
     "allow-open-files",
+    "allow-restart-app",
+    "allow-check-update",
     "core:window:allow-close",
     "core:window:allow-minimize",
     "core:window:allow-is-fullscreen",

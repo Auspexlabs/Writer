@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -23,7 +23,7 @@
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
       <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.line }};font-weight:{{ t.weight }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
     </sc-for>
-    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playFromStart }}" title="放映 F5" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:transparent;display:flex;align-items:center;gap:7px;flex:none;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)"><span style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--k7, #1D1D1F)"></span>放映</button></div>
+    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playFromStart }}" title="放映 F5" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);background:transparent;display:flex;align-items:center;gap:7px;flex:none;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)"><span style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--k7, #1D1D1F)"></span>放映</button></div>
   </div></div>
   <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;transform-origin:top left">
@@ -269,9 +269,9 @@ class Component extends DCLogic {
     this.commit((d, cs) => { cs.objs = ns.objs.concat(keep.filter(o => o.t !== 'text' || !o.ph)); });
   }
   insertObj(o) { this.endEdit(); this.commit((d, s) => s.objs.push(o)); this.setState({ sel: o.id }); return o; }
-  insertText() { const K = this.K, H = this.H; const o = this.insertObj(K.txt({ x: 500, y: H / 2 - 50, w: 600, h: 100, html: '<p>单击输入文本</p>', fs: 36 })); this.setState({ editing: o.id }); this.focusEdit = o.id; this.selectAll = true; }
+  insertText() { const K = this.K, H = this.H; const o = this.insertObj(K.txt({ x: 500, y: H / 2 - 50, w: 600, h: 100, html: `<p>${$t('单击输入文本')}</p>`, fs: 36 })); this.setState({ editing: o.id }); this.focusEdit = o.id; this.selectAll = true; }
   insertShape(kind) { const K = this.K, H = this.H; if (kind === 'line') return this.insertObj(K.shape({ shape: 'rect', x: 500, y: H / 2, w: 600, h: 6, html: '' })); this.insertObj(K.shape({ shape: kind, x: 600, y: H / 2 - 150, w: kind === 'pill' ? 480 : 400, h: kind === 'pill' ? 120 : 300, html: '' })); }
-  insertTable(r, c) { const K = this.K, H = this.H; const rows = Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => i === 0 ? '标题 ' + (j + 1) : '')); this.insertObj(K.txt({ t: 'table', x: 160, y: Math.max(60, H / 2 - r * 40), w: 1280, h: r * 80, fs: 26, rows, html: '' })); this.setState({ pop: null }); }
+  insertTable(r, c) { const K = this.K, H = this.H; const rows = Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => i === 0 ? $t('标题 {n}', { n: j + 1 }) : '')); this.insertObj(K.txt({ t: 'table', x: 160, y: Math.max(60, H / 2 - r * 40), w: 1280, h: r * 80, fs: 26, rows, html: '' })); this.setState({ pop: null }); }
   arrange(kind) { const o = this.obj; if (!o) return; this.commit((d, s) => { const i = s.objs.findIndex(x => x.id === o.id); const [x] = s.objs.splice(i, 1); const j = kind === 'front' ? s.objs.length : kind === 'back' ? 0 : kind === 'up' ? Math.min(s.objs.length, i + 1) : Math.max(0, i - 1); s.objs.splice(j, 0, x); }); }
   alignObj(kind) { const o = this.obj; if (!o) return; const H = this.H; const p = { left: { x: 0 }, hc: { x: (1600 - o.w) / 2 }, right: { x: 1600 - o.w }, top: { y: 0 }, vc: { y: (H - o.h) / 2 }, bottom: { y: H - o.h } }[kind]; this.patchSel(p); }
   /** A copy of object o: its own id and no engine path, and from: where o is in the file, which a save copies exactly (engine.js). */
@@ -291,7 +291,7 @@ class Component extends DCLogic {
   }
   txtCmd(cmd, key) { if (this.state.editing) { document.execCommand(cmd); return; } const o = this.obj; if (o) this.patchSel({ [key]: !o[key] }); }
   startShow(from) {
-    const vis = this.doc.slides.map((s, i) => [s, i]).filter(([s]) => !s.hidden).map(([, i]) => i); if (!vis.length) return this.toast('没有可放映的幻灯片');
+    const vis = this.doc.slides.map((s, i) => [s, i]).filter(([s]) => !s.hidden).map(([, i]) => i); if (!vis.length) return this.toast($t('没有可放映的幻灯片'));
     const i = vis.find(x => x >= from) ?? vis[0];
     this.endEdit(); this.setState({ show: { i, step: 0 }, pop: null }); this.pendAnim = { kind: this.doc.slides[i].trans === 'push' ? 'push' : 'fade' };
     setTimeout(() => { const el = this.showRef.current; if (el && el.requestFullscreen) el.requestFullscreen().then(() => { this.wasFs = true; }).catch(() => { }); }, 30);
@@ -349,7 +349,7 @@ class Component extends DCLogic {
     const tools = this.P.pictureTools({
       look: () => { const x = find(this.doc); return x ? Object.assign({}, x.look, x.rot ? { rotation: String(Math.round(x.rot)) } : {}) : {}; },
       show: look => this.setState({ picLive: { id, look } }),
-      send: props => this.EN ? this.EN.setPicture(this.doc.path, () => (find(this.doc) || {}).path, props) : Promise.reject(new Error('引擎还没有就绪')),
+      send: props => this.EN ? this.EN.setPicture(this.doc.path, () => (find(this.doc) || {}).path, props) : Promise.reject(new Error($t('引擎还没有就绪'))),
       commit: (r, binary) => {
         const c = this.EN.pictureSaved(this.doc, r.path, r.props), x0 = find(this.doc);
         if (binary && x0) this.P.bumpPic(x0.src);
@@ -368,19 +368,19 @@ class Component extends DCLogic {
     const K = this.K, st = this.state, d = this.doc;
     if (!K) return { md, tabs: [], ribbon: [], thumbs: [], objs: [], handles: [], stW: '0', stH: '0', H: '900px', scale: 'none', sBg: 'var(--k51, #fff)', noSlides: false, popItems: [], gridCells: [] };
     const th = K.THEMES[d.theme] || K.THEMES.paper, H = this.H, k = this.k, s = this.slide, o = this.obj;
-    const B = (label, onClick, op = {}) => ({ isBtn: true, label, onClick, title: op.title || label, bg: op.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: op.fw || 400, fs: op.fs || 'normal', td: op.td || 'none', color: op.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)', hasSw: !!op.sw, sw: op.sw || '' });
-    const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value: String(value), options: options.map(([v, l]) => ({ v: String(v), l })), onChange, w, title });
-    const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label, swatch: swatch || 'transparent', value: /^#[0-9a-f]{6}$/i.test(swatch || '') ? swatch : '#000000', onChange, title, fw: fw || 400 });
-    const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label, title: title || label, bg: st.pop && st.pop.id === id ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
-    const AL = (a, title) => ({ isAlign: true, title, bg: o && (o.align || 'left') === a ? 'rgba(255,255,255,0.9)' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => { if (st.editing) document.execCommand(a === 'center' ? 'justifyCenter' : a === 'right' ? 'justifyRight' : 'justifyLeft'); else this.patchSel({ align: a }); } });
+    const B = (label, onClick, op = {}) => ({ isBtn: true, label: $t(label), onClick, title: $t(op.title || label), bg: op.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: op.fw || 400, fs: op.fs || 'normal', td: op.td || 'none', color: op.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)', hasSw: !!op.sw, sw: op.sw || '' });
+    const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value: String(value), options: options.map(([v, l]) => ({ v: String(v), l: $t(l) })), onChange, w, title: title ? $t(title) : title });
+    const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label: $t(label), swatch: swatch || 'transparent', value: /^#[0-9a-f]{6}$/i.test(swatch || '') ? swatch : '#000000', onChange, title: title ? $t(title) : title, fw: fw || 400 });
+    const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label: $t(label), title: $t(title || label), bg: st.pop && st.pop.id === id ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
+    const AL = (a, title) => ({ isAlign: true, title: title ? $t(title) : title, bg: o && (o.align || 'left') === a ? 'rgba(255,255,255,0.9)' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => { if (st.editing) document.execCommand(a === 'center' ? 'justifyCenter' : a === 'right' ? 'justifyRight' : 'justifyLeft'); else this.patchSel({ align: a }); } });
     const SEP = { isSep: true };
-    const I = (label, onClick, op = {}) => ({ isItem: true, label, check: op.on ? '✓' : '', hint: op.hint || '', onClick: () => { this.setState({ pop: null }); onClick(); } });
-    const HD = label => ({ isHead: true, label }), IS = { isSepI: true };
+    const I = (label, onClick, op = {}) => ({ isItem: true, label: $t(label), check: op.on ? '✓' : '', hint: op.hint ? $t(op.hint) : '', onClick: () => { this.setState({ pop: null }); onClick(); } });
+    const HD = label => ({ isHead: true, label: $t(label) }), IS = { isSepI: true };
     this.menus = {};
-    const tabsDef = [['home', '开始'], ['insert', '插入'], ['design', '设计'], ['trans', '切换'], ['anim', '动画'], ['show', '放映']];
+    const tabsDef = [['home', '开始'], ['insert', '插入'], ['design', '设计'], ['trans', '切换'], ['anim', '动画'], ['show', '放映@@tab']];
     if (o) tabsDef.push(o.t === 'image' && this.P ? ['picture', '图片'] : ['format', '形状格式']);
     let tab = st.tab; if (!tabsDef.some(t => t[0] === tab)) tab = 'home';
-    const tabs = tabsDef.map(([key, l]) => ({ label: l, color: tab === key ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === key ? 600 : 400, line: st.bubble && tab === key ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === key ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(key, e) }));
+    const tabs = tabsDef.map(([key, l]) => ({ label: $t(l), color: tab === key ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === key ? 600 : 400, line: st.bubble && tab === key ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === key ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(key, e) }));
     const layoutItems = fn => K.LAYOUTS.map(([key, l]) => I(l, () => fn(key)));
     const textGroup = [
       S(o && o.font && o.font !== 'head' ? o.font : '', FONTS, e => this.patchSel({ font: e.target.value || null }), '92px', '字体'),
@@ -397,14 +397,14 @@ class Component extends DCLogic {
     if (tab === 'home') ribbon = [
       B('↶', () => this.props.onUndo && this.props.onUndo(), { title: '撤销 Ctrl+Z' }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: '重做 Ctrl+Y' }), SEP,
       M('newslide', '新建幻灯片', layoutItems(key => this.addSlide(key))), M('relayout', '版式', layoutItems(key => this.relayout(key))),
-      B('复制', () => { if (s) this.dupSlide(this.ci); }, { title: '复制幻灯片' }),
-      B('删除', () => { if (d.slides.length < 2) return this.toast('至少保留一页'); this.commit(dd => dd.slides.splice(this.ci, 1)); this.setState({ cur: Math.max(0, this.ci - 1), sel: null }); }, { title: '删除幻灯片' }), SEP,
+      B('复制@@dup', () => { if (s) this.dupSlide(this.ci); }, { title: '复制幻灯片' }),
+      B('删除', () => { if (d.slides.length < 2) return this.toast($t('至少保留一页')); this.commit(dd => dd.slides.splice(this.ci, 1)); this.setState({ cur: Math.max(0, this.ci - 1), sel: null }); }, { title: '删除幻灯片' }), SEP,
       ...textGroup
     ];
     if (tab === 'insert') ribbon = [
       M('newslide2', '新建幻灯片', layoutItems(key => this.addSlide(key))), SEP,
       B('文本框', () => this.insertText()), M('shape', '形状', SHAPES.map(([key, l]) => I(l, () => this.insertShape(key)))), B('图片', () => this.imgRef.current.click()), M('table', '表格', []), SEP,
-      B('日期', () => this.insertObj(K.txt({ x: 1100, y: H - 90, w: 400, h: 50, fs: 20, align: 'right', color: 'sub', html: `<p>${new Date().toLocaleDateString('zh-CN')}</p>` }))),
+      B('日期', () => this.insertObj(K.txt({ x: 1100, y: H - 90, w: 400, h: 50, fs: 20, align: 'right', color: 'sub', html: `<p>${new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN')}</p>` }))),
       B('页码', () => this.commit(dd => dd.slides.forEach((sl, i) => { sl.objs = sl.objs.filter(x => x.ph !== 'num'); sl.objs.push(K.txt({ ph: 'num', x: 1400, y: H - 80, w: 120, h: 44, fs: 20, align: 'right', color: 'sub', html: `<p>${i + 1}</p>` })); })), { title: '为所有幻灯片添加页码' })
     ];
     if (tab === 'design') ribbon = [
@@ -416,10 +416,10 @@ class Component extends DCLogic {
     if (tab === 'trans') ribbon = [
       ...TRANS.map(([key, l]) => B(l, () => { this.commit((dd, cs) => { cs.trans = key; if (key === 'none') cs.duration = null; }); if (key !== 'none') this.previewTrans = key === 'zoom' ? 'tzoom' : key; }, { on: s && (s.trans || 'none') === key })), SEP,
       B('预览', () => { const t = s && s.trans; if (t && t !== 'none') { this.previewTrans = t === 'zoom' ? 'tzoom' : t; this.forceUpdate(); } }),
-      B('应用到全部', () => { const t = s && s.trans; this.commit(dd => dd.slides.forEach(x => x.trans = t)); this.toast('已应用到全部幻灯片'); })
+      B('应用到全部', () => { const t = s && s.trans; this.commit(dd => dd.slides.forEach(x => x.trans = t)); this.toast($t('已应用到全部幻灯片')); })
     ];
     if (tab === 'anim') ribbon = [
-      ...ANIMS.map(([key, l]) => B(l, () => { if (!o) return this.toast('先选中一个对象'); this.patchSel({ anim: key }); }, { on: o && (o.anim || 'none') === key, dis: !o })), SEP,
+      ...ANIMS.map(([key, l]) => B(l, () => { if (!o) return this.toast($t('先选中一个对象')); this.patchSel({ anim: key }); }, { on: o && (o.anim || 'none') === key, dis: !o })), SEP,
       B('预览', () => { if (!s) return; const an = this.animsOf(s); const root = this.slideRef.current; an.forEach((x, i) => { const el = root && root.querySelector(`[data-soid="${x.id}"]`); if (el) setTimeout(() => el.animate(KF[x.anim], { duration: 550, easing: 'cubic-bezier(.2,.7,.2,1)' }), i * 450); }); }),
       B('清除本页动画', () => this.commit((dd, cs) => cs.objs.forEach(x => x.anim = 'none')))
     ];
@@ -427,7 +427,7 @@ class Component extends DCLogic {
     const placeTools = () => [
       M('arr', '排列', [I('置于顶层', () => this.arrange('front')), I('上移一层', () => this.arrange('up')), I('下移一层', () => this.arrange('down')), I('置于底层', () => this.arrange('back'))]),
       M('aln', '对齐', [I('左对齐', () => this.alignObj('left')), I('水平居中', () => this.alignObj('hc')), I('右对齐', () => this.alignObj('right')), IS, I('顶端对齐', () => this.alignObj('top')), I('垂直居中', () => this.alignObj('vc')), I('底端对齐', () => this.alignObj('bottom'))])];
-    const copyTools = () => [B('复制', () => this.dup(o), { title: 'Ctrl+D' }), B('删除', () => { this.commit((dd, cs) => { cs.objs = cs.objs.filter(x => x.id !== o.id); }); this.setState({ sel: null }); })];
+    const copyTools = () => [B('复制@@dup', () => this.dup(o), { title: 'Ctrl+D' }), B('删除', () => { this.commit((dd, cs) => { cs.objs = cs.objs.filter(x => x.id !== o.id); }); this.setState({ sel: null }); })];
     if (tab === 'format' && o) ribbon = [
       C('填充', K.resolveColor(o.fill, th, o.t === 'shape' ? th.acc : '') || 'var(--k0, #FFFFFF)', e => this.patchSel({ fill: e.target.value }), '填充颜色'),
       M('fillq', '主题色', [['acc', '强调色'], ['card', '卡片色'], ['fg', '文字色'], ['', '无填充']].map(([v, l]) => I(l, () => this.patchSel({ fill: v === '' ? '' : v })))),
@@ -442,8 +442,8 @@ class Component extends DCLogic {
     if (tab === 'picture' && o && o.t === 'image') ribbon = this.P.pictureRibbon({ B, M, I, C, SEP }, this.picTools(), this.picLook(o), st.picBusy).concat([SEP, ...placeTools(), SEP, ...copyTools()]);
     let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
     if (st.pop) {
-      if (st.pop.id === 'table') { popIsGrid = true; const h = st.gridHover || { r: 0, c: 0 }; gridLabel = st.gridHover ? `${h.r} × ${h.c} 表格` : '插入表格'; for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) { const on = r <= h.r && c <= h.c; gridCells.push({ border: on ? 'var(--k59, #3F7D5C)' : 'var(--k10, #D1D1D6)', bg: on ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)', onEnter: () => this.setState({ gridHover: { r, c } }), onClick: () => this.insertTable(r, c) }); } }
-      else if (st.pop.id === 'thumb') { const i = st.pop.i, sl = d.slides[i]; popItems = [HD('新建幻灯片')].concat(layoutItems(key => this.addSlide(key, i + 1))).concat([IS, I('复制幻灯片', () => this.dupSlide(i)), I(sl.hidden ? '取消隐藏' : '隐藏幻灯片', () => this.commit(dd => { dd.slides[i].hidden = !dd.slides[i].hidden; })), I('从此页放映', () => this.startShow(i)), IS, I('删除幻灯片', () => { if (d.slides.length < 2) return this.toast('至少保留一页'); this.commit(dd => dd.slides.splice(i, 1)); this.setState({ cur: Math.max(0, Math.min(this.ci, d.slides.length - 2)) }); })]); }
+      if (st.pop.id === 'table') { popIsGrid = true; const h = st.gridHover || { r: 0, c: 0 }; gridLabel = st.gridHover ? $t('{r} × {c} 表格', { r: h.r, c: h.c }) : $t('插入表格'); for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) { const on = r <= h.r && c <= h.c; gridCells.push({ border: on ? 'var(--k59, #3F7D5C)' : 'var(--k10, #D1D1D6)', bg: on ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)', onEnter: () => this.setState({ gridHover: { r, c } }), onClick: () => this.insertTable(r, c) }); } }
+      else if (st.pop.id === 'thumb') { const i = st.pop.i, sl = d.slides[i]; popItems = [HD('新建幻灯片')].concat(layoutItems(key => this.addSlide(key, i + 1))).concat([IS, I('复制幻灯片', () => this.dupSlide(i)), I(sl.hidden ? '取消隐藏' : '隐藏幻灯片', () => this.commit(dd => { dd.slides[i].hidden = !dd.slides[i].hidden; })), I('从此页放映', () => this.startShow(i)), IS, I('删除幻灯片', () => { if (d.slides.length < 2) return this.toast($t('至少保留一页')); this.commit(dd => dd.slides.splice(i, 1)); this.setState({ cur: Math.max(0, Math.min(this.ci, d.slides.length - 2)) }); })]); }
       else popItems = this.menus[st.pop.id] || [];
     }
     const lv = st.live;
@@ -459,11 +459,11 @@ class Component extends DCLogic {
       return Object.assign(v, {
         id: x.id, ce: editing, us: editing ? 'text' : 'none', tcur: editing ? 'text' : 'inherit', cursor: editing ? 'text' : 'move', pe: 'auto', ovf: editing ? 'visible' : 'hidden',
         op: st.picBusy && isSel ? 0.5 : v.op,
-        phLine: x.ph && !isSel && /单击添加/.test(x.html || '') ? `${1 / k}px dashed rgba(128,128,128,0.5)` : 'none',
+        phLine: x.ph && !isSel && /单击添加|Click to add/.test(x.html || '') ? `${1 / k}px dashed rgba(128,128,128,0.5)` : 'none',
         hasBadge: tab === 'anim' && ai >= 0, badge: ai + 1,
         trows: v.rows.map((r, ri) => ({ cells: r.cells.map((c, ci) => Object.assign({}, c, { key: x.id + ':' + ri + ':' + ci, onBlur: e => { const t = e.currentTarget.innerText.trim(); if (t !== (x.rows[ri][ci] || '')) this.commit((dd, cs) => { const oo = cs.objs.find(z => z.id === x.id); if (oo) oo.rows[ri][ci] = t; }); const rt = e.relatedTarget; if (!rt || !String(rt.getAttribute && rt.getAttribute('data-edit') || '').startsWith(x.id)) this.setState({ editing: null }); } })) })),
         onMD: e => { if (editing) { e.stopPropagation(); return; } e.stopPropagation(); e.preventDefault(); this.endEdit(); this.setState({ sel: x.id, editing: null, pop: null }); this.op = { kind: 'move', o: x, sx: e.clientX, sy: e.clientY, moved: false }; e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true }); },
-        onDbl: e => { e.stopPropagation(); if (x.t === 'image') return; this.setState({ editing: x.id, sel: x.id }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = /单击/.test(x.html || ''); },
+        onDbl: e => { e.stopPropagation(); if (x.t === 'image') return; this.setState({ editing: x.id, sel: x.id }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = /单击|Click/.test(x.html || ''); },
         onBlur: e => { const h = e.currentTarget.innerHTML; if (h !== x.html) this.patchObj(x.id, { html: h }); this.setState({ editing: null }); }
       });
     })) : [];
@@ -495,12 +495,18 @@ class Component extends DCLogic {
       hasSel: !!fo, fr: fo ? { left: fo.x + 'px', top: fo.y + 'px', width: fo.w + 'px', height: fo.h + 'px', tf: `rotate(${fo.rot || 0}deg)`, line: `${1.5 / k}px solid var(--k59, #3F7D5C)` } : {},
       handles, hs: hs + 'px', hb: 1.5 / k + 'px', badge: 26 / k + 'px', badgeFs: 13 / k + 'px',
       showNotes: st.showNotes && !this.props.pure, notes: s ? s.notes || '' : '', onNotes: e => this.commit((dd, cs) => { cs.notes = e.target.value; }, true),
-      toggleNotes: () => this.setState({ showNotes: !st.showNotes }), notesLabel: st.showNotes ? '隐藏备注' : '显示备注',
+      toggleNotes: () => this.setState({ showNotes: !st.showNotes }), notesLabel: st.showNotes ? $t('隐藏备注') : $t('显示备注'),
       zoomPct: Math.round(st.zoom * 100), onZoom: e => this.setZoom(+e.target.value / 100), zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1), fitZoom: () => this.setZoom(1),
       zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
       onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(Math.round(this.state.zoom * 100)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
       onZoomKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { const el = e.target; this.setState({ zoomEdit: null }, () => el.blur()); } },
-      statusText: `幻灯片 ${this.ci + 1} / ${d.slides.length}` + (o ? `　·　${o.t === 'text' ? '文本框' : o.t === 'shape' ? '形状' : o.t === 'image' ? '图片' : '表格'}  X ${Math.round(o.x)}  Y ${Math.round(o.y)}  宽 ${Math.round(o.w)}  高 ${Math.round(o.h)}${o.rot ? '  旋转 ' + o.rot + '°' : ''}` : '') + `　·　主题「${th.name}」`,
+      statusText: $t('幻灯片 {i} / {n}', { i: this.ci + 1, n: d.slides.length })
+        + (o ? '　·　' + $t('{type}  X {x}  Y {y}  宽 {w}  高 {h}{rot}', { // i18n-ok — a plain separator, not text
+          type: $t(o.t === 'text' ? '文本框' : o.t === 'shape' ? '形状' : o.t === 'image' ? '图片' : '表格'),
+          x: Math.round(o.x), y: Math.round(o.y), w: Math.round(o.w), h: Math.round(o.h),
+          rot: o.rot ? '  ' + $t('旋转 {deg}°', { deg: o.rot }) : ''
+        }) : '')
+        + '　·　' + $t('主题「{name}」', { name: $t(th.name) }), // i18n-ok — a plain separator, not text
       onImgFile: e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const rd = new FileReader(); rd.onload = () => { const img = new Image(); img.onload = () => { let w = img.naturalWidth, h = img.naturalHeight; const sc = Math.min(1, 1000 / w, (H * 0.7) / h); w = Math.round(w * sc); h = Math.round(h * sc); this.insertObj(K.txt({ t: 'image', src: rd.result, x: Math.round((1600 - w) / 2), y: Math.round((H - h) / 2), w, h, html: '' })); }; img.src = rd.result; }; rd.readAsDataURL(f); },
       onRootKey: e => {
         const t = e.target; if (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName)) { if (e.key === 'Escape' && t.isContentEditable) t.blur(); return; }

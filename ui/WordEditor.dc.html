@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./vendor/offline.js"></script><script src="./support.js"></script>
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -39,6 +39,7 @@
 .wd-hf p{margin:0}
 .wd-hf img{vertical-align:middle;max-width:100%}
 .wd-fld{background:var(--k12, #F2F2F7);box-shadow:inset 0 0 0 1px var(--k6, #E5E5EA);border-radius:3px;padding:0 3px}
+.wd-hfbox:empty::before,.wd-hfbox:has(>br:only-child)::before,.wd-hfbox>p:only-child:has(>br:only-child)::before{content:var(--wd-hf-hint);color:var(--k8, #8E8E93);pointer-events:none}
 </style>
 </helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:{{ rootBg }};position:relative;outline:none">
@@ -49,7 +50,7 @@
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
       <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:34px;padding:0 13px;border:none;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--k1, #1D1D1F);transition:background .25s ease,box-shadow .25s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};box-shadow:{{ t.line }};font-weight:{{ t.weight }}" style-hover="background:var(--k30, rgba(255,255,255,0.6))" style-active="transform:scale(0.94)">{{ t.label }}</button>
     </sc-for>
-    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
+    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--k60, rgba(0,0,0,0.14));margin:0 4px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:34px;padding:0 13px 0 11px;border:none;border-radius:999px;background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--k1, #1D1D1F);white-space:nowrap;flex:none;transition:background .25s,box-shadow .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.95)"><span style="font-size:13px;line-height:1">✦</span>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:40px;height:34px;flex:none;border:none;border-radius:999px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k20, rgba(255,255,255,0.7))" style-active="transform:scale(0.9)"><span style="width:19px;height:19px;border:1.7px solid var(--k7, #1D1D1F);border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6.5px solid var(--k7, #1D1D1F);margin-left:1.5px"></span></span></button></div>
   </div></div>
   <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:8px 10px;border-radius:22px;background:linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k21, rgba(255,255,255,0.3)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;transform-origin:top left">
@@ -116,6 +117,7 @@
               <span style="font-size:11px;color:var(--k11, #6E6E73)">{{ pt.n }}</span>
             </div>
           </sc-for>
+          <button onClick="{{ addPageQuick }}" style="flex:none;width:140px;height:34px;border:1px dashed var(--k78, rgba(0,0,0,0.2));border-radius:12px;background:transparent;font-size:12.5px;color:var(--k11, #6E6E73);cursor:pointer" style-hover="background:#EFEFF4">＋ 新页面</button>
         </div>
         <div style="flex:none;font-size:12px;color:var(--k8, #8E8E93);padding:0 8px 8px">标题</div>
         <sc-for list="{{ heads }}" as="h" hint-placeholder-count="4">
@@ -240,7 +242,7 @@ const SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 6
 const PAGES = { A4: [794, 1123], Letter: [816, 1056], A5: [559, 794] };
 const MARG = { narrow: [48, 48], normal: [96, 96], wide: [96, 144] };
 const BLOCKS = [['p', '正文'], ['h1', '标题 1'], ['h2', '标题 2'], ['h3', '标题 3'], ['blockquote', '引用'], ['pre', '代码']];
-const SYMBOLS = ['©', '®', '™', '°', '±', '×', '÷', '≈', '≠', '≤', '≥', '∞', '√', '→', '←', '↑', '↓', '★', '☆', '✓', '✗', '※', '§', '¶', '…', '—', '·', '《》', '「」', '【】', '①', '②', '③', '€', '£', '¥'];
+const SYMBOLS = ['©', '®', '™', '°', '±', '×', '÷', '≈', '≠', '≤', '≥', '∞', '√', '→', '←', '↑', '↓', '★', '☆', '✓', '✗', '※', '§', '¶', '…', '—', '·', '《》', '「」', '【】', '①', '②', '③', '€', '£', '¥']; // i18n-ok — a symbol picker: the glyphs themselves, not language
 const HILITES = [['#FFF2A8', '黄色'], ['#D8EFD9', '绿色'], ['#D9E6F5', '蓝色'], ['#F6D9D3', '红色'], ['transparent', '无']];
 const md = e => e.preventDefault();
 const CV_PAD = [76, 24]; // canvas padding top / left: the scroll anchor when zooming
@@ -251,13 +253,15 @@ const AV_ME = 'oklch(0.56 0.1 45)', AV_HUES = [225, 345, 165, 285, 105]; // comm
 const initialsOf = name => { const w = String(name || '').trim().split(/\s+/).filter(Boolean), first = s => Array.from(s)[0]; return !w.length ? '?' : /^[\p{Lu}\p{Ll}]/u.test(w[0]) ? (first(w[0]) + (w.length > 1 ? first(w[w.length - 1]) : '')).toUpperCase() : first(w[0]); };
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 const GAP = 20; // px between the pages of the page view
-const PAGE_NUM = '<p style="text-align:center">第 {page} 页 / 共 {pages} 页</p>'; // 插入 › 页码
+const HF_PRESETS = ['{page}', '第 {page} 页', '{page} / {pages}', '第 {page} 页 / 共 {pages} 页', '- {page} -', 'Page {page} of {pages}']; // 样式 button, 插入 › 页码 — i18n-ok: written into headers/footers as-is, never translated
+/** A preset ({page}/{pages} tokens) as header/footer html at an alignment (center when none is given). */
+const hfPreset = (tpl, align) => `<p style="text-align:${align || 'center'}">${tpl}</p>`;
 // Headers and footers are html as the engine reads and writes them: <p style="text-align:…"> paragraphs (or br lines), {page} and
 // {pages} for the page fields, <img|span data-keep> for what the editor only shows (a logo, another field), which the engine keeps.
 /** A header or footer as page n of total shows it. */
 const hfFill = (html, n, total) => String(html || '').replace(/\{page\}/g, n).replace(/\{pages\}/g, total);
 /** A page field in the edit box: its value on a chip the caret steps over. */
-const chipOf = (f, n, total) => `<span class="wd-fld" data-f="${f}" contenteditable="false" title="${f === 'page' ? '页码' : '总页数'}">${f === 'page' ? n : total}</span>`;
+const chipOf = (f, n, total) => `<span class="wd-fld" data-f="${f}" contenteditable="false" title="${f === 'page' ? $t('页码') : $t('总页数')}">${f === 'page' ? n : total}</span>`;
 /** What the edit box holds for a header: paragraphs, fields as chips, placeholders read-only. */
 const hfEdit = (html, n, total) => { html = String(html || ''); return (/<(p|div)\b/i.test(html) ? html : `<p>${html || '<br>'}</p>`).replace(/\{(pages?)\}/g, (_, f) => chipOf(f, n, total)).replace(/<(img|span)\b(?=[^>]*\bdata-keep=)/gi, '<$1 contenteditable="false"'); };
 /** The edit box's html back to header html: a p per paragraph with its alignment (blocks the browser nests become paragraphs of their
@@ -283,6 +287,8 @@ class Component extends DCLogic {
   pgId = 'pg' + Math.random().toString(36).slice(2, 8); // scopes the page view's rules (pgCss) to this editor's text
   componentDidMount() {
     this.pgCss = document.head.appendChild(document.createElement('style'));
+    // the empty header/footer box's hint, for the stylesheet's content: (CSS can't call $t)
+    document.documentElement.style.setProperty('--wd-hf-hint', JSON.stringify($t('输入文字，点「页码」插入自动变化的页码')));
     import('./glass.js');
     import('./engine.js').then(m => { this.EN = m; }); // the table and contents commands share their model with the save
     import('./picture.js').then(m => { this.P = m; }); // the 图片 tab
@@ -428,7 +434,7 @@ class Component extends DCLogic {
     if (this.pgCss) this.pgCss.textContent = ''; // measured as the text flows without page gaps
     const { at, push } = this.pagesOf(ed, H - 2 * m[0], H + GAP);
     if (this.pgCss && this.paged) this.pgCss.textContent = push.map(([el, css, px]) => `${this.cssPath(el)}{${css}:${Math.round(px)}px!important}`).join('\n');
-    const heads = Array.from(ed.querySelectorAll('h1,h2,h3')).map((h, i) => ({ lvl: +h.tagName[1], text: h.innerText.trim() || '（空标题）', i }));
+    const heads = Array.from(ed.querySelectorAll('h1,h2,h3')).map((h, i) => ({ lvl: +h.tagName[1], text: h.innerText.trim() || $t('（空标题）'), i }));
     const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
     if (JSON.stringify(next) !== JSON.stringify({ info: this.state.info, heads: this.state.heads })) this.setState(next); // an unchanged count re-renders nothing
   }
@@ -481,6 +487,19 @@ class Component extends DCLogic {
   lineHeight(v) { this.blocks().forEach(b => b.style.lineHeight = v); this.after(); }
   spacing(k, v) { this.blocks().forEach(b => b.style[k] = v); this.after(); }
   insertHTML(h) { this.restore(); document.execCommand('insertHTML', false, h); this.after(); }
+  /** The thumbnail panel's "＋ 新页面": a page break at the very end of the text, not at the caret, through the normal
+   *  insertHTML path so it autosaves and undoes like any edit; the caret ends up in the new empty paragraph, scrolled into view. */
+  addPage() {
+    const ed = this.edRef.current; if (!ed) return;
+    const last = ed.lastElementChild, r = document.createRange();
+    if (last) r.selectNodeContents(last); else r.selectNodeContents(ed);
+    r.collapse(false); this.range = r;
+    this.insertHTML('<hr data-pb="1"><p><br></p>');
+    this.refreshInfo();
+    const p = ed.lastElementChild; if (!p) return;
+    const c = document.createRange(); c.selectNodeContents(p); c.collapse(true);
+    this.range = c; this.restore(); this.focusEl(p);
+  }
   insertTable(r, c) {
     // a Table Grid table whose first row is shaded: all of it is in the file, so the editor shows what Word will
     const td = head => `<td${head ? ' data-w-fill="F5F5F7"' : ''} style="padding:6px 8px;border:1px solid #C7C7CC${head ? ';background:#F5F5F7' : ''}"><br></td>`; // theme: keep (document colours, as engine.js draws them)
@@ -512,11 +531,11 @@ class Component extends DCLogic {
   }
   addComment() {
     this.restore(); const s = window.getSelection(), r = s.getRangeAt(0);
-    if (r.collapsed) return this.props.toast && this.props.toast('先选中要批注的文字');
+    if (r.collapsed) return this.props.toast && this.props.toast($t('先选中要批注的文字'));
     const id = 'c' + Date.now().toString(36); const sp = document.createElement('span'); sp.setAttribute('data-cid', id);
     sp.appendChild(r.extractContents()); r.insertNode(sp); s.removeAllRanges();
     const now = new Date();
-    const cm = (this.doc.comments || []).concat([{ id, mine: true, text: '', quote: sp.innerText.slice(0, 40), time: `${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` }]);
+    const cm = (this.doc.comments || []).concat([{ id, mine: true, text: '', quote: sp.innerText.slice(0, 40), time: `${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` }]); // i18n-ok — matches engine.js fmtTime (shared, unconverted)
     this.change({ html: this.edRef.current.innerHTML, comments: cm }); this.setState({ activeCid: id });
   }
   delComment(id) {
@@ -563,7 +582,7 @@ class Component extends DCLogic {
     const ed = this.edRef.current;
     ed.querySelectorAll('ins[data-t]').forEach(n => { if (accept) { n.innerHTML = n.innerHTML.replace(/\u200B/g, ''); while (n.firstChild) n.parentNode.insertBefore(n.firstChild, n); } n.remove(); });
     ed.querySelectorAll('del[data-t]').forEach(n => { if (!accept) while (n.firstChild) n.parentNode.insertBefore(n.firstChild, n); n.remove(); });
-    this.change({ html: ed.innerHTML }); this.props.toast && this.props.toast(accept ? '已接受所有修订' : '已拒绝所有修订');
+    this.change({ html: ed.innerHTML }); this.props.toast && this.props.toast(accept ? $t('已接受所有修订') : $t('已拒绝所有修订'));
   }
   textOffset(node, off) { const r = document.createRange(); r.setStart(this.edRef.current, 0); r.setEnd(node, off); return r.toString().length; }
   hits() { const q = this.state.fq; if (!q) return []; const ed = this.edRef.current, w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT); const out = []; let n; while ((n = w.nextNode())) { let i = -1; const t = n.nodeValue; while ((i = t.indexOf(q, i + 1)) >= 0) out.push([n, i]); } return out; }
@@ -581,18 +600,18 @@ class Component extends DCLogic {
   replaceAll() {
     const q = this.state.fq; if (!q) return; const ed = this.edRef.current, w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT); let n, c = 0; const list = []; while ((n = w.nextNode())) list.push(n);
     list.forEach(t => { if (t.nodeValue.includes(q)) { c += t.nodeValue.split(q).length - 1; t.nodeValue = t.nodeValue.split(q).join(this.state.fr); } });
-    this.change({ html: ed.innerHTML }); this.setState({ fcount: 0 }); this.props.toast && this.props.toast(`已替换 ${c} 处`);
+    this.change({ html: ed.innerHTML }); this.setState({ fcount: 0 }); this.props.toast && this.props.toast($t('已替换 {n} 处', { n: c }));
   }
   /** 目录: a real Word table of contents (a toc block the engine builds from the headings and Word updates on open), shown
    * read-only; it is drawn again from the headings on every save that changes them. Clicking it on an existing one refreshes it. */
   insertToc() {
     const ed = this.edRef.current, EN = this.EN; if (!EN) return;
-    const old = ed.querySelector('[data-toc]'), levels = old ? old.getAttribute('data-levels') || '3' : '3', title = old ? old.getAttribute('data-title') || '' : '目录';
+    const old = ed.querySelector('[data-toc]'), levels = old ? old.getAttribute('data-levels') || '3' : '3', title = old ? old.getAttribute('data-title') || '' : $t('目录');
     const html = EN.tocHtml({ path: old && old.getAttribute('data-path'), levels, title, entries: EN.editorHeadings(ed, levels) });
     if (!old) return this.insertHTML(html + '<p><br></p>');
     const box = document.createElement('div'); box.innerHTML = html; const nav = box.firstChild;
     if (old.getAttribute('data-path')) nav.setAttribute('data-refresh', '1');
-    old.replaceWith(nav); this.change({ html: ed.innerHTML }); this.props.toast && this.props.toast('目录已更新');
+    old.replaceWith(nav); this.change({ html: ed.innerHTML }); this.props.toast && this.props.toast($t('目录已更新'));
   }
   paint() {
     const f = this.state.painter; if (!f) return; this.setState({ painter: null });
@@ -613,10 +632,11 @@ class Component extends DCLogic {
     this.setState({ hf: { kind, page: i, key }, hfLive: null }, () => {
       const box = this.hfRef.current; if (!box) return;
       box.innerHTML = hfEdit(html, i + 1, this.state.info.pages); this.hfBase = hfOut(box.innerHTML);
-      const r = document.createRange(), s = window.getSelection(); r.selectNodeContents(box.lastElementChild || box); r.collapse(false);
-      box.focus({ preventScroll: true }); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); this.onSel();
+      this.hfFocusEnd(box); this.onSel();
     });
   }
+  /** Focuses a header/footer edit box with the caret at its end (after opening it, or after 样式 replaces its content). */
+  hfFocusEnd(box) { const r = document.createRange(), s = window.getSelection(); r.selectNodeContents(box.lastElementChild || box); r.collapse(false); box.focus({ preventScroll: true }); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); }
   /** The edit as a doc patch, or null when the box says what it said when opened. */
   hfPatch() { clearTimeout(this.hfT); const hf = this.state.hf, box = this.hfRef.current; if (!hf || !box) return null; const html = hfOut(box.innerHTML); if (html === this.hfBase) return null; this.hfBase = html; return { [hf.key]: html }; }
   commitHF() { const p = this.hfPatch(); if (p) this.change(p, true); }
@@ -636,7 +656,14 @@ class Component extends DCLogic {
     ps.forEach(p => { p.style.textAlign = a; }); this.after();
   }
   toggleTitlePg() { const hf = this.state.hf, on = !this.doc.titlePg, p = this.hfPatch(); this.change(Object.assign({}, p, { titlePg: on })); if (hf) this.enterHF(hf.kind, hf.page, on, p); }
-  insertPageNum() { const p = Object.assign(this.hfPatch() || {}, { footer: PAGE_NUM }); this.setState({ hf: null, hfLive: null }); this.change(p); this.props.toast && this.props.toast('已在页脚插入页码'); }
+  /** 样式 in the header/footer floating bar: swaps a preset in for whatever the box holds, keeping its alignment (center once it had none). */
+  applyHfPreset(tpl) {
+    const hf = this.state.hf, box = this.hfRef.current; if (!hf || !box) return;
+    const p = box.querySelector('p,div'), align = (p && p.style.textAlign) || 'center';
+    box.innerHTML = hfEdit(hfPreset(tpl, align), hf.page + 1, this.state.info.pages);
+    this.hfFocusEnd(box); this.after();
+  }
+  insertPageNum(tpl) { const p = Object.assign(this.hfPatch() || {}, { footer: hfPreset(tpl, 'center') }); this.setState({ hf: null, hfLive: null }); this.change(p); this.props.toast && this.props.toast($t('已在页脚插入页码')); }
   /** The page the caret is on (0 when it is not in the text). */
   caretPage() {
     const ed = this.edRef.current, r = this.range; if (!ed || !r || !ed.contains(r.startContainer) || !this.paged) return 0;
@@ -644,12 +671,12 @@ class Component extends DCLogic {
     return Math.max(0, Math.min(this.state.info.pages - 1, Math.floor((r.getBoundingClientRect().top - ed.getBoundingClientRect().top) / this.state.zoom / (H + GAP))));
   }
   openPop(id, e) { const r = e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id ? null : { id, x: r.left, y: r.bottom + 4 }, gridHover: null }); }
-  prompt(title, fields, ok) { this.setState({ dlg: { title, fields: fields.map(f => Object.assign({ value: '' }, f)), ok } }); }
+  prompt(title, fields, ok) { this.setState({ dlg: { title: $t(title), fields: fields.map(f => Object.assign({ value: '' }, f, { label: $t(f.label), ph: f.ph ? $t(f.ph) : f.ph })), ok } }); }
   onKey = e => {
     const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
     if (ctrl && k === 'f') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
     else if (ctrl && k === 'h') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
-    else if (ctrl && k === 's') { e.preventDefault(); this.flush(); this.props.toast && this.props.toast('已保存'); }
+    else if (ctrl && k === 's') { e.preventDefault(); this.flush(); this.props.toast && this.props.toast($t('已保存')); }
     else if (ctrl && k === 'k') { e.preventDefault(); this.linkDlg(); }
     else if (ctrl && e.shiftKey && (e.key === '>' || e.key === '.')) { e.preventDefault(); this.bump(1); }
     else if (ctrl && e.shiftKey && (e.key === '<' || e.key === ',')) { e.preventDefault(); this.bump(-1); }
@@ -676,21 +703,22 @@ class Component extends DCLogic {
   }
   vals() {
     const st = this.state, f = st.fmt, pg = this.page, d = this.doc;
-    const B = (label, onClick, o = {}) => ({ isBtn: true, label, onClick, title: o.title || label, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' });
-    const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value, options: options.map(([v, l]) => ({ v: String(v), l })), onChange, w, title });
-    const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label, swatch, value: /^#[0-9a-f]{6}$/i.test(swatch) ? swatch : '#000000', onChange, title, fw: fw || 400, onPre: () => { } });
-    const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label, title: title || label, bg: st.pop && st.pop.id === id ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
-    const AL = (a, title) => ({ isAlign: true, title, bg: f.align === a ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', b1: '14px', b2: a === 'justify' ? '14px' : '10px', b3: '14px', b4: a === 'justify' ? '14px' : '8px', onClick: () => this.exec({ left: 'justifyLeft', center: 'justifyCenter', right: 'justifyRight', justify: 'justifyFull' }[a]) });
+    const B = (label, onClick, o = {}) => { const l = $t(label); return { isBtn: true, label: l, onClick, title: o.title ? $t(o.title) : l, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' }; };
+    const S = (value, options, onChange, w, title) => ({ isSel: true, sref: el => { if (el) setTimeout(() => { if (el.value !== String(value)) el.value = String(value); }, 0); }, value, options: options.map(([v, l]) => ({ v: String(v), l: $t(String(l)) })), onChange, w, title: title ? $t(title) : title });
+    const C = (label, swatch, onChange, title, fw) => ({ isColor: true, label: $t(label), swatch, value: /^#[0-9a-f]{6}$/i.test(swatch) ? swatch : '#000000', onChange, title: title ? $t(title) : title, fw: fw || 400, onPre: () => { } });
+    const M = (id, label, items, title) => { this.menus[id] = items; const l = $t(label); return { isMenu: true, label: l, title: title ? $t(title) : l, bg: st.pop && st.pop.id === id ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
+    const AL = (a, title) => ({ isAlign: true, title: $t(title), bg: f.align === a ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', b1: '14px', b2: a === 'justify' ? '14px' : '10px', b3: '14px', b4: a === 'justify' ? '14px' : '8px', onClick: () => this.exec({ left: 'justifyLeft', center: 'justifyCenter', right: 'justifyRight', justify: 'justifyFull' }[a]) });
     const SEP = { isSep: true };
-    const I = (label, onClick, o = {}) => ({ isItem: true, label, onClick: () => { this.setState({ pop: null }); onClick(); }, font: o.font || 'inherit', hint: o.hint || '', bg: o.on ? 'var(--k12, #F2F2F7)' : 'transparent' });
+    const I = (label, onClick, o = {}) => ({ isItem: true, label: $t(label), onClick: () => { this.setState({ pop: null }); onClick(); }, font: o.font || 'inherit', hint: o.hint || '', bg: o.on ? 'var(--k12, #F2F2F7)' : 'transparent' });
     const HD = label => ({ isHead: true, label });
+    const presetPick = onPick => HF_PRESETS.map(tpl => I(hfFill(tpl, 1, st.info.pages), () => onPick(tpl)));
     this.menus = {};
     const setPage = patch => this.change({ page: Object.assign({}, pg, patch) });
     const tabsDef = [['home', '开始'], ['insert', '插入'], ['layout', '布局'], ['review', '审阅'], ['view', '视图']];
     if (f.inTable) tabsDef.push(['table', '表格']);
     if (st.imgSel) tabsDef.push(['image', '图片']);
     let tab = st.tab; if (!tabsDef.some(t => t[0] === tab)) tab = 'home';
-    const tabs = tabsDef.map(([k, l]) => ({ label: l, color: tab === k ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === k ? 600 : 400, line: st.bubble && tab === k ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === k ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(k, e) }));
+    const tabs = tabsDef.map(([k, l]) => ({ label: $t(l), color: tab === k ? 'var(--k1, #1D1D1F)' : '#6E6E73', weight: tab === k ? 600 : 400, line: st.bubble && tab === k ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k73, rgba(255,255,255,1))' : 'none', bg: st.bubble && tab === k ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', onClick: e => this.openTab(k, e) }));
     let ribbon = [];
     if (tab === 'home') ribbon = [
       B('↶', () => this.exec('undo'), { title: '撤销 Ctrl+Z' }), B('↷', () => this.exec('redo'), { title: '重做 Ctrl+Y' }), SEP,
@@ -714,16 +742,16 @@ class Component extends DCLogic {
       M('table', '表格', []), B('图片', () => { this.restore(); this.imgRef.current.click(); }), B('链接', () => this.linkDlg(), { title: 'Ctrl+K' }), SEP,
       B('分隔线', () => this.insertHTML('<hr><p><br></p>')), B('分页符', () => this.insertHTML('<hr data-pb="1"><p><br></p>')), SEP,
       B('页眉', () => this.enterHF('header', this.caretPage()), { title: '编辑页眉（也可双击页面顶部）' }), B('页脚', () => this.enterHF('footer', this.caretPage()), { title: '编辑页脚（也可双击页面底部）' }),
-      B('页码', () => this.insertPageNum(), { title: '在页脚居中插入「第 X 页 / 共 Y 页」' }), SEP,
-      B('日期', () => { this.restore(); document.execCommand('insertText', false, new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })); this.after(); }),
+      M('pagenum', '页码', presetPick(tpl => this.insertPageNum(tpl)), '在页脚插入页码'), SEP,
+      B('日期', () => { this.restore(); document.execCommand('insertText', false, new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })); this.after(); }),
       M('sym', '符号', SYMBOLS.map(s => I(s, () => { this.restore(); document.execCommand('insertText', false, s); this.after(); }))), SEP,
       B('目录', () => this.insertToc(), { title: '根据标题生成/更新目录' }), B('批注', () => this.addComment())
     ];
     if (tab === 'layout') ribbon = [
-      M('size', '纸张：' + pg.size, ['A4', 'Letter', 'A5'].map(s => I(s, () => setPage({ size: s }), { on: pg.size === s }))),
+      M('size', $t('纸张：{size}', { size: pg.size }), ['A4', 'Letter', 'A5'].map(s => I(s, () => setPage({ size: s }), { on: pg.size === s }))),
       M('orient', pg.orient === 'landscape' ? '横向' : '纵向', [['portrait', '纵向'], ['landscape', '横向']].map(([k, l]) => I(l, () => setPage({ orient: k }), { on: pg.orient === k }))),
       M('margin', '页边距', [['narrow', '窄', '1.27 cm'], ['normal', '普通', '2.54 cm'], ['wide', '宽', '3.18 cm']].map(([k, l, h]) => I(l, () => setPage({ margin: k }), { on: pg.margin === k, hint: h }))),
-      M('cols', '分栏：' + pg.cols, [1, 2, 3].map(n => I(n + ' 栏', () => setPage({ cols: n }), { on: pg.cols === n }))), SEP,
+      M('cols', $t('分栏：{n}', { n: pg.cols }), [1, 2, 3].map(n => I($t('{n} 栏', { n }), () => setPage({ cols: n }), { on: pg.cols === n }))), SEP,
       C('页面颜色', pg.color || 'var(--k0, #FFFFFF)', e => setPage({ color: e.target.value }), '页面颜色'),
       M('wm', '水印', [['', '无'], ['机密', '机密'], ['草稿', '草稿'], ['严禁复制', '严禁复制']].map(([v, l]) => I(l, () => setPage({ wm: v }), { on: pg.wm === v })).concat([I('自定义…', () => this.prompt('自定义水印', [{ key: 'wm', label: '水印文字', value: pg.wm, first: true }], v => setPage({ wm: v.wm })))])), SEP,
       M('before', '段前', ['0', '6pt', '12pt', '18pt', '24pt'].map(v => I(v, () => this.spacing('marginTop', v)))),
@@ -731,7 +759,7 @@ class Component extends DCLogic {
       M('ind', '首行缩进', [['无', '0'], ['2 字符', '2em']].map(([l, v]) => I(l, () => this.spacing('textIndent', v))))
     ];
     if (tab === 'review') ribbon = [
-      B('字数统计', () => this.setState({ dlg: { title: '字数统计', info: true, fields: [], ok: null } })), SEP,
+      B('字数统计', () => this.setState({ dlg: { title: $t('字数统计'), info: true, fields: [], ok: null } })), SEP,
       B('新建批注', () => this.addComment()), B('删除所有批注', () => { (d.comments || []).forEach(c => this.delComment(c.id)); }, { dis: !(d.comments || []).length }), SEP,
       B(d.track ? '修订：开' : '修订：关', () => this.change({ track: !d.track }), { on: !!d.track, title: '开启后，插入与删除会被标记' }),
       B('接受所有修订', () => this.resolveTrack(true)), B('拒绝所有修订', () => this.resolveTrack(false)), SEP,
@@ -761,7 +789,7 @@ class Component extends DCLogic {
       const [pa, pb] = PAGES[pg.size], textW = (pg.orient === 'landscape' ? pb : pa) - 2 * MARG[pg.margin][1];
       const size = f => { const w = Math.round(textW * f), fw = +img.getAttribute('data-fw') || img.naturalWidth || 1, fh = +img.getAttribute('data-fh') || img.naturalHeight || 1; tools.set({ width: w + 'px', height: Math.round(w * fh / fw) + 'px' }); };
       ribbon = tools ? this.P.pictureRibbon({ B, M, I, C, SEP }, tools, this.picLook(img), st.picBusy).concat([SEP,
-        M('pic-size', '大小', [['25%', 0.25], ['50%', 0.5], ['75%', 0.75], ['100%', 1]].map(([l, f]) => I('版心宽度的 ' + l, () => size(f)))),
+        M('pic-size', '大小', [['25%', 0.25], ['50%', 0.5], ['75%', 0.75], ['100%', 1]].map(([l, f]) => I($t('版心宽度的 {pct}', { pct: l }), () => size(f)))),
         M('pic-place', '位置', [
           I('靠左', () => setBox(i => { i.style.display = 'block'; i.style.margin = '8px auto 8px 0'; i.style.float = ''; })),
           I('居中', () => setBox(i => { i.style.display = 'block'; i.style.margin = '8px auto'; i.style.float = ''; })),
@@ -771,11 +799,12 @@ class Component extends DCLogic {
       ]) : [];
     }
     // popover
+    if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
     let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
     if (st.pop) {
       if (st.pop.id === 'table') {
         popIsGrid = true; const h = st.gridHover || { r: 0, c: 0 };
-        gridLabel = st.gridHover ? `${h.r} × ${h.c} 表格` : '插入表格';
+        gridLabel = st.gridHover ? $t('{r} × {c} 表格', { r: h.r, c: h.c }) : $t('插入表格');
         for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) { const on = r <= h.r && c <= h.c; gridCells.push({ border: on ? 'var(--k59, #3F7D5C)' : 'var(--k10, #D1D1D6)', bg: on ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)', onEnter: () => this.setState({ gridHover: { r, c } }), onClick: () => this.insertTable(r, c) }); }
         popItems = [I('自定义行列…', () => this.prompt('插入表格', [{ key: 'r', label: '行数', value: '3', first: true }, { key: 'c', label: '列数', value: '3' }], v => this.insertTable(Math.max(1, Math.min(50, +v.r || 3)), Math.max(1, Math.min(12, +v.c || 3)))))];
       } else popItems = this.menus[st.pop.id] || [];
@@ -783,7 +812,7 @@ class Component extends DCLogic {
     const [pw0, ph0] = PAGES[pg.size], [PW, PH] = pg.orient === 'landscape' ? [ph0, pw0] : [pw0, ph0], m = MARG[pg.margin];
     const hue = a => AV_HUES[Array.from(a || '').reduce((h, ch) => (h * 31 + ch.codePointAt(0)) >>> 0, 7) % AV_HUES.length]; // by name: the same in every document
     const comments = (d.comments || []).map(c => ({ quote: c.quote || '', text: c.text, time: c.time || '', border: st.activeCid === c.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
-      av: c.mine ? '我' : Array.from(c.initials || initialsOf(c.author)).slice(0, 2).join(''), avBg: c.mine ? AV_ME : `oklch(0.56 0.1 ${hue(c.author)})`,
+      av: c.mine ? $t('我') : Array.from(c.initials || initialsOf(c.author)).slice(0, 2).join(''), avBg: c.mine ? AV_ME : `oklch(0.56 0.1 ${hue(c.author)})`,
       onText: e => this.change({ comments: d.comments.map(x => x.id === c.id ? Object.assign({}, x, { text: e.target.value }) : x) }, true),
       onDelete: e => { e.stopPropagation(); this.delComment(c.id); },
       onFocus: () => { this.setState({ activeCid: c.id }); const el = this.edRef.current.querySelector(`[data-cid="${c.id}"]`); this.focusEl(el); } }));
@@ -803,24 +832,25 @@ class Component extends DCLogic {
       return { editing, showing: !editing, html: { __html: hfFill(hf && hf.key === key && st.hfLive != null ? st.hfLive : d[key], i + 1, n) },
         top: head ? s.top : paged ? i * (PH + GAP) + PH - m[0] + 'px' : 'auto', bottom: head || paged ? 'auto' : '0px', h: m[0] + 'px',
         bt: head ? hfTop : 'auto', bb: head ? 'auto' : hfTop, lineB: head ? line : 'none', lineT: head ? 'none' : line, lt: head ? 'auto' : '-19px', lb: head ? '-19px' : 'auto',
-        label: (key.startsWith('first') ? '首页' : '') + (head ? '页眉' : '页脚'), title: '双击编辑' + (head ? '页眉' : '页脚'),
+        label: key.startsWith('first') ? (head ? $t('首页页眉') : $t('首页页脚')) : (head ? $t('页眉') : $t('页脚')), title: head ? $t('双击编辑页眉') : $t('双击编辑页脚'),
         onDbl: e => { e.stopPropagation(); if (!editing) this.enterHF(kind, i); } };
     }));
-    const HB = (label, onClick, on, title) => ({ btn: true, label, onClick, title: title || label, bg: on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent' });
+    const HB = (label, onClick, on, title) => { const l = $t(label); return { btn: true, label: l, onClick, title: title ? $t(title) : l, bg: on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent' }; };
     const hfBtns = hf ? [HB('页码', () => this.hfField('page'), false, '插入页码'), HB('总页数', () => this.hfField('pages'), false, '插入总页数'), { sep: true },
       HB('左', () => this.exec('justifyLeft'), f.align === 'left', '左对齐'), HB('中', () => this.exec('justifyCenter'), f.align === 'center', '居中'), HB('右', () => this.exec('justifyRight'), f.align === 'right', '右对齐'), { sep: true },
+      HB('样式@@hf', e => this.openPop('hfStyle', e), st.pop && st.pop.id === 'hfStyle', '快速选择页码格式，或直接输入自己想要的形式'), { sep: true },
       HB('首页不同', () => this.toggleTitlePg(), !!d.titlePg, '首页使用单独的页眉页脚'), HB('关闭', () => this.exitHF(), false, '退出页眉页脚 Esc')] : [];
     const zoneTop = hf ? (paged ? hf.page * (PH + GAP) : 0) : 0;
     const pageInk = /^#[0-9a-f]{6}$/i.test(pg.color) && this.EN ? { dark: '#1D1D1F', light: '#FFFFFF' }[this.EN.inkOn(pg.color.slice(1))] : 'var(--k1, #1D1D1F)'; // theme: keep — on a page colour, Word's automatic text colour for it
-    const bb = (label, fn, o = {}) => ({ label, onClick: fn, bg: o.on ? 'var(--k13, #3A3A3C)' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal' });
+    const bb = (label, fn, o = {}) => ({ label: $t(label), onClick: fn, bg: o.on ? 'var(--k13, #3A3A3C)' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal' });
     const bubbleBtns = [bb('B', () => this.exec('bold'), { on: f.b, fw: 700 }), bb('I', () => this.exec('italic'), { on: f.i, fs: 'italic' }), bb('U', () => this.exec('underline'), { on: f.u }), bb('高亮', () => this.exec('hiliteColor', '#FFF2A8')),
       bb('标题 1', () => this.exec('formatBlock', '<h1>'), { on: f.block === 'h1' }), bb('标题 2', () => this.exec('formatBlock', '<h2>'), { on: f.block === 'h2' }), bb('正文', () => this.exec('formatBlock', '<p>'), { on: f.block === 'p' }),
       bb('• 列表', () => this.exec('insertUnorderedList'), { on: f.ul }), bb('引用', () => this.exec('formatBlock', '<blockquote>'), { on: f.block === 'blockquote' }), bb('链接', () => this.linkDlg())];
     return {
       md, stop: e => e.stopPropagation(), tabs, ribbon, bubbleOpen: !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--k74, rgba(255,255,255,0.92))' : 'transparent', aiSh: this.props.aiOn ? '0 1px 4px var(--k22, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k25, #fff)' : 'none', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
-      notPure: !pure, rootBg: pure ? 'var(--k0, #FFFFFF)' : 'transparent', pageThumbs, thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      notPure: !pure, rootBg: pure ? 'var(--k0, #FFFFFF)' : 'transparent', pageThumbs, addPageQuick: () => this.addPage(), thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       hasBubble: pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? Math.max(50, st.selBub.y - 8) + 'px' : 0, bubbleBtns,
-      showFind: st.showFind && !pure, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? `共 ${st.fcount} 处` : '未找到',
+      showFind: st.showFind && !pure, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'),
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replaceOne(), replaceAll: () => this.replaceAll(), closeFind: () => this.setState({ showFind: false }),
@@ -830,7 +860,7 @@ class Component extends DCLogic {
       onCanvasDown: e => { if (e.target === this.cvRef.current) { e.preventDefault(); this.restore(); } },
       zoomV: st.zoom, pageW: web ? '100%' : PW + 'px', sheetH: web ? 'auto' : n * PH + (n - 1) * GAP + 'px', pad: web ? '16px 56px 48px' : `${m[0]}px ${m[1]}px`, padH: m[1] + 'px', pageBg: pg.color || 'var(--kpage, #FFFFFF)', pageInk, cols: pg.cols,
       cvPad: web ? `${CV_PAD[0]}px 0 72px` : `${CV_PAD[0]}px ${CV_PAD[1]}px 72px`, cvBg: web ? pg.color || 'var(--kpage, #FFFFFF)' : 'transparent', cvLight: web ? '1' : undefined, sheetBg: 'transparent', pageSh: '0 0 0 1px var(--kpageb, rgba(0,0,0,0.06)),0 2px 6px var(--k67, rgba(0,0,0,0.04)),0 16px 40px var(--k65, rgba(0,0,0,0.07))',
-      hasWm: !web && !!pg.wm, wm: pg.wm, sheets, pgId: this.pgId, hfZones, hfRef: this.hfRef, hfOp: hf ? 1 : 0.6, edOp: hf ? 0.4 : 1, edPe: hf ? 'none' : 'auto',
+      hasWm: !web && !!pg.wm, wm: $t(pg.wm), sheets, pgId: this.pgId, hfZones, hfRef: this.hfRef, hfOp: hf ? 1 : 0.6, edOp: hf ? 0.4 : 1, edPe: hf ? 'none' : 'auto',
       hfOn: !!hf, hfBtns, hfBarTop: !hf ? 'auto' : hf.kind === 'header' ? zoneTop + m[0] + 26 + 'px' : paged ? zoneTop + PH - m[0] - 64 + 'px' : 'auto', hfBarBottom: hf && hf.kind === 'footer' && !paged ? m[0] + 26 + 'px' : 'auto', // clear of the 页眉 / 页脚 label
       onHfInput: () => this.hfInput(), onHfKey: e => { if (e.key === 'Escape') { e.preventDefault(); this.exitHF(); } },
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
@@ -851,7 +881,7 @@ class Component extends DCLogic {
       onEdUp: () => { if (st.painter) setTimeout(() => this.paint(), 0); },
       onImgFile: e => { const file = e.target.files[0]; e.target.value = ''; if (!file) return; const rd = new FileReader(); rd.onload = () => this.insertHTML(`<img src="${rd.result}" style="max-width:100%;display:block;margin:8px auto">`); rd.readAsDataURL(file); },
       hasComments: !pure && (d.comments || []).length > 0, comments, commentCount: (d.comments || []).length,
-      pagesText: web ? '连续' : `共 ${info.pages} 页`, wordsText: `${info.count || 0} 字`, trackOn: !!d.track,
+      pagesText: web ? $t('连续') : $t('共 {n} 页', { n: info.pages }), wordsText: $t('{n} 字', { n: info.count || 0 }), trackOn: !!d.track,
       zoomPct: Math.round(st.zoom * 100), onZoom: e => this.setZoom(+e.target.value / 100),
       zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1),
       zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
@@ -866,7 +896,7 @@ class Component extends DCLogic {
       hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : '0', popY: st.pop ? st.pop.y + 'px' : '0', popItems, popIsGrid, gridCells, gridLabel, gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null }),
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
       dlgFields: dlg ? (dlg.info ? [] : dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, ph: fl.ph || '', first: !!fl.first, onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } }))).concat(dlg.info ? [
-        { label: '字数', value: String(info.count), onChange: () => { } }, { label: '字符数（不计空格）', value: String(info.chars), onChange: () => { } }, { label: '段落数', value: String(info.paras), onChange: () => { } }, { label: '页数', value: String(info.pages), onChange: () => { } }] : []) : [],
+        { label: $t('字数'), value: String(info.count), onChange: () => { } }, { label: $t('字符数（不计空格）'), value: String(info.chars), onChange: () => { } }, { label: $t('段落数'), value: String(info.paras), onChange: () => { } }, { label: $t('页数'), value: String(info.pages), onChange: () => { } }] : []) : [],
       dlgKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); const dd = this.state.dlg; this.setState({ dlg: null }); if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } } if (e.key === 'Escape') this.setState({ dlg: null }); },
       dlgCancel: () => this.setState({ dlg: null }),
       dlgOk: () => { const dd = this.state.dlg; this.setState({ dlg: null }); if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } }

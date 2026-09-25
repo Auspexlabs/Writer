@@ -66,6 +66,7 @@ test('saveAs moves or copies through PUT /file; discard deletes; relOf keeps wor
 function shell(props, docs, cur) {
   const code = readFileSync(new URL('../index.dc.html', import.meta.url), 'utf8').match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
   const ctx = { location: { search: '' }, URLSearchParams, structuredClone, setTimeout: () => 0, clearTimeout: () => { }, document: { querySelector: () => null },
+    $t: (s, v) => v ? String(s).replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s, // i18n.js's $t, always in Chinese here (no dictionary loaded)
     React: { createRef: () => ({ current: null }) }, DCLogic: class { setState(u) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); } } };
   vm.runInNewContext(code + '\nglobalThis.Shell = Component;', ctx);
   const c = new ctx.Shell();

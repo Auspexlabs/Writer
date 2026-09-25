@@ -20,8 +20,9 @@ python3 -m http.server 8765 --directory website/dist
 
 服务器那边由部署脚本实现，页面只依赖下面两个相对地址：
 
-- 下载按钮链接到 `download/mac`，服务器把它重定向到当前的 `Writer-<version>-mac.dmg`。
-- `download/latest.json` 形如 `{"version":"0.1.0","size":20971520,"date":"2026-09-23"}`，`size` 是字节数。`assets/site.js` 读取它，在两个下载按钮旁显示「版本 0.1.0 · 20 MB · 2026-09-23」；读不到时这一行保持隐藏，按钮照常可用。
+- 下载按钮链接到 `download/mac` 和 `download/windows`，服务器把它们重定向到当前的 `Writer-<version>-mac.dmg` 和 `Writer-<version>-windows-x64-setup.exe`。
+- `download/latest.json` 形如 `{"version":"0.1.0","size":20971520,"date":"2026-09-23"}`，`size` 是 dmg 的字节数。`assets/site.js` 读取它，在下载按钮下显示「版本 0.1.0，2026-09-23 更新」；读不到时这一行保持隐藏，按钮照常可用。
+- 应用自己的更新器先读 `updates/mac/latest.json` 和 `updates/windows/latest.json`，读不到（连接错误或非 2xx）才退回 GitHub。所以 `updates/` 下缺文件时必须是普通 404，不能配成返回 200 页面或 204，否则更新检查会失效。
 
 仓库里不放 `download/` 目录。本地想看版本行，就临时建一个 `dist/download/latest.json`，看完删掉。
 
@@ -40,7 +41,12 @@ python3 -m http.server 8765 --directory website/dist
 
 ```bash
 website/deploy.sh                                   # 只更新网站
-website/deploy.sh --dmg desktop/dist/Writer-<版本>-mac.dmg [--updates desktop/dist/updates]
+website/deploy.sh --dmg desktop/dist/Writer-<版本>-mac.dmg --exe desktop/dist/Writer-<版本>-windows-x64-setup.exe --updates desktop/dist/updates
+```
+
+每次发版都要和 GitHub Releases 同时跑一遍上面第二条：`--dmg`、`--exe` 把安装包放进 `download/` 并更新 `download/mac`、`download/windows` 的重定向，`--updates` 把 `desktop/dist/updates/mac/` 和 `windows/` 镜像到 `updates/`（manifest 最后传）。网站落后于 GitHub 时，用户会被告知「已是最新版」。
+
+```bash
 ```
 
 服务器地址和 SSH 私钥写在 `website/.deploy.local`（不提交到仓库）：
