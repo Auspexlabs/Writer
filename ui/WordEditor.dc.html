@@ -83,7 +83,10 @@
 .wd-format-items button,.wd-format-items select,.wd-format-items label{box-sizing:border-box;height:29px;min-width:29px;border:0;border-radius:8px;background:var(--format-control);box-shadow:var(--format-control-sh);color:var(--ink);font:12px var(--font-ui);cursor:pointer}
 .wd-format-items button{padding:0 9px}.wd-format-items button:hover{background:var(--fill)}.wd-format-items button[data-on="1"]{background:var(--format-selected)}
 .wd-format[data-tab="insert"] .wd-format-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
-.wd-format[data-tab="insert"] .wd-format-items button{width:100%;min-height:52px;height:auto;padding:6px;white-space:normal;line-height:1.35}
+.wd-format[data-tab="insert"] .wd-format-items button{width:100%;min-height:64px;height:auto;padding:6px;white-space:normal;line-height:1.35;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:12px}
+.wd-insert-icon{width:20px;height:20px;flex:none;object-fit:contain}
+.wd-format[data-tab="insert"] .wd-menu-chevron{display:none}
+html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
 .wd-format-items select{padding:0 7px;max-width:100%;min-width:65px;flex:1}.wd-format-items label{display:flex;align-items:center;gap:6px;padding:0 8px}
 .wd-format-items input[type=color]{width:20px;height:20px;border:0;padding:0;background:transparent;cursor:pointer}
 .wd-format-items input[type=range]{width:90px;accent-color:var(--format-accent)}
@@ -157,11 +160,11 @@
             <div class="wd-format-group-title">{{ g.title }}</div>
             <div class="wd-format-items">
               <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="6">
-                <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}"><button title="{{ it.title }}" data-on="{{ it.on }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }}">{{ it.label }}</button></sc-if>
+                <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}"><button title="{{ it.title }}" data-on="{{ it.on }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }}"><sc-if value="{{ it.icon }}" hint-placeholder-val="{{ false }}"><img class="wd-insert-icon" src="{{ it.icon }}" alt=""></sc-if>{{ it.label }}</button></sc-if>
                 <sc-if value="{{ it.isAlign }}" hint-placeholder-val="{{ false }}"><button title="{{ it.title }}" data-on="{{ it.on }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}">{{ it.label }}</button></sc-if>
                 <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}"><select title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}"><sc-for list="{{ it.options }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
                 <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}"><label title="{{ it.title }}"><span style="width:16px;height:16px;border-radius:4px;background:{{ it.swatch }};box-shadow:0 0 0 .5px var(--line)"></span><span>{{ it.title }}</span><input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;opacity:0;width:1px;height:1px"></label></sc-if>
-                <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}"><button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}">{{ it.label }} ⌄</button></sc-if>
+                <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}"><button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}"><sc-if value="{{ it.icon }}" hint-placeholder-val="{{ false }}"><img class="wd-insert-icon" src="{{ it.icon }}" alt=""></sc-if>{{ it.label }}<span class="wd-menu-chevron"> ⌄</span></button></sc-if>
                 <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}"><label title="{{ it.title }}">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}"><span>{{ it.text }}</span></label></sc-if>
               </sc-for>
             </div>
@@ -404,6 +407,7 @@ const CASES = { // 更改大小写, as Word's dialog has them; the last two swit
 const SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 60, 72];
 const PAGES = { A4: [794, 1123], Letter: [816, 1056], A5: [559, 794] };
 const MARG = { narrow: [48, 48], normal: [96, 96], wide: [96, 144] };
+const INSERT_ICONS = { '表格': 'table', '图片': 'picture', '形状': 'shape', '图表': 'chart', '文本框': 'textbox', '链接': 'link', '页眉': 'header', '页脚': 'footer', '页码': 'page-number', '分页符': 'page-break', '封面': 'cover', '分隔线': 'rule', '公式@@word': 'equation', '符号': 'symbol', '日期': 'date', '首字下沉': 'drop-cap', '书签': 'bookmark', '批注': 'comment' };
 const BLOCKS = [['p', '正文'], ['h1', '标题 1'], ['h2', '标题 2'], ['h3', '标题 3'], ['blockquote', '引用'], ['pre', '代码']];
 // Word's quick styles: id, the name styles.xml gives it (documents from a localized Word keep the English name), its type; and the
 // labels the gallery shows for the names Word ships (a document's own styles show their names)
@@ -1203,6 +1207,21 @@ class Component extends DCLogic {
     for (let i = 0; i < r; i++) h += '<tr>' + td(i === 0).repeat(c) + '</tr>';
     this.insertHTML(h + '</tbody></table><p><br></p>'); this.setState({ pop: null });
   }
+  insertChart() {
+    this.prompt('插入图表', [{ key: 'title', label: '图表标题', value: '', first: true }, { key: 'labels', label: '数据标签（逗号分隔）', value: 'A,B,C' }, { key: 'values', label: '数值（逗号分隔）', value: '12,18,15' }], v => {
+      const labels = v.labels.split(/[,，]/).map(s => s.trim()).filter(Boolean).slice(0, 12);
+      const values = v.values.split(/[,，]/).map(s => Number(s.trim())).slice(0, 12);
+      if (!labels.length || labels.length !== values.length || values.some(n => !Number.isFinite(n) || n < 0)) return this.props.toast && this.props.toast($t('请为每个标签输入一个非负数值'));
+      const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360;
+      const ctx = canvas.getContext('2d'); if (!ctx) return;
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = '#1D1D1F'; ctx.font = '600 20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(v.title.trim().slice(0, 40) || $t('图表'), 320, 36);
+      const max = Math.max(1, ...values), left = 54, top = 67, bottom = 300, width = 560, barW = width / labels.length;
+      ctx.strokeStyle = '#D1D1D6'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(left, bottom + .5); ctx.lineTo(left + width, bottom + .5); ctx.stroke();
+      values.forEach((n, i) => { const h = n / max * (bottom - top), x = left + i * barW + barW * .18; ctx.fillStyle = '#2F6BD1'; ctx.fillRect(x, bottom - h, barW * .64, h); ctx.fillStyle = '#1D1D1F'; ctx.font = '12px sans-serif'; ctx.fillText(String(n), x + barW * .32, Math.max(top + 8, bottom - h - 8)); ctx.fillStyle = '#6E6E73'; ctx.fillText(labels[i].slice(0, 9), x + barW * .32, bottom + 22); });
+      this.insertHTML(`<p><img src="${canvas.toDataURL('image/png')}" style="max-width:100%;display:block;margin:8px auto" alt="${(v.title || $t('图表')).replace(/[&<>"']/g, '')}"></p>`);
+    });
+  }
   cell() { let n = this.range && this.range.startContainer; if (!n) return null; n = n.nodeType === 3 ? n.parentNode : n; const td = n.closest && n.closest('td,th'); return td && this.edRef.current.contains(td) ? td : null; }
   /** The column edge under the pointer: a cell whose right border is within 5px, as the grid column it ends. */
   colEdge(e) {
@@ -1514,7 +1533,7 @@ class Component extends DCLogic {
     const bookmarks = tab === 'insert' || tab === 'refs' ? this.refTargets() : [];
     if (tab === 'insert') ribbon = [
       M('table', '表格', []), B('图片', () => { this.restore(); this.imgRef.current.click(); }), B('链接', () => this.linkDlg(), { title: 'Ctrl+K' }), SEP,
-      B('文本框', () => this.insertShape('textbox'), { title: '插入文本框，可拖到页面任意位置' }), M('shapes', '形状', SHAPE_KINDS.map(([k, l]) => I(l, () => this.insertShape(k)))),
+      B('文本框', () => this.insertShape('textbox'), { title: '插入文本框，可拖到页面任意位置' }), M('shapes', '形状', SHAPE_KINDS.map(([k, l]) => I(l, () => this.insertShape(k)))), B('图表', () => this.insertChart(), { title: '插入柱状图图片' }),
       B('公式@@word', () => this.eqDialog(), { title: '用 LaTeX 输入公式，保存为 Word 公式' }), SEP,
       B('分隔线', () => this.insertHTML('<hr><p><br></p>')), B('分页符', () => this.insertHTML('<hr data-pb="1"><p><br></p>')), SEP,
       B('页眉', () => this.enterHF('header', this.caretPage()), { title: '编辑页眉（也可双击页面顶部）' }), B('页脚', () => this.enterHF('footer', this.caretPage()), { title: '编辑页脚（也可双击页面底部）' }),
@@ -1639,6 +1658,17 @@ class Component extends DCLogic {
         const style = this.gallery().find(s => s.id === id); return style ? B(label, () => this.applyStyle(style), { on: f.ps === id }) : null;
       }).filter(Boolean);
       panelGroups[0].items = panelGroups[0].items.concat(shortcuts);
+    }
+    if (tab === 'insert') {
+      const group = (title, items) => ({ title: $t(title), items });
+      panelGroups.splice(0, panelGroups.length,
+        group('常用', [chunks[0][0], chunks[0][1], chunks[1][1], chunks[1][2], chunks[1][0], chunks[0][2]]),
+        group('页面', [chunks[3][0], chunks[3][1], chunks[3][2], chunks[2][1], chunks[5][0], chunks[2][0]]),
+        group('符号与批注', [chunks[1][3], chunks[4][1], chunks[4][0], chunks[5][1], chunks[5][2], chunks[6][1], chunks[6][0]]));
+      for (const g of panelGroups) for (const item of g.items) {
+        const name = Object.keys(INSERT_ICONS).find(key => $t(key) === item.label);
+        if (name) item.icon = `./assets/doc/insert-${INSERT_ICONS[name]}.svg`;
+      }
     }
     // popover
     if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));

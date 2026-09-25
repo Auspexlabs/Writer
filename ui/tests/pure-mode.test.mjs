@@ -57,7 +57,9 @@ test('the Word editor: in pure mode the toolbar shows only for the shell\'s 格�
   assert.deepEqual([v.showBar, v.showNav, v.formatOpen, v.bodyCols], [false, true, true, '248px minmax(0,1fr) 320px']);
   assert.ok(v.panelGroups.some(g => g.items.some(it => it.title === '加粗 Ctrl+B')), 'existing formatting actions remain in the panel');
   v = ed({ pure: false, formatOpen: true }, { tab: 'insert' });
-  assert.deepEqual(Array.from(v.panelGroups, g => g.title), ['常用', '形状与文本', '分隔', '页眉页脚', '符号与日期', '封面与书签', '目录与批注']);
+  assert.deepEqual(Array.from(v.panelGroups, g => g.title), ['常用', '页面', '符号与批注']);
+  assert.deepEqual(Array.from(v.panelGroups[0].items, item => item.label), ['表格', '图片', '形状', '图表', '文本框', '链接']);
+  assert.ok(v.panelGroups[0].items.every(item => item.icon), 'the design icons appear on all common insert cards');
   v = ed({ pure: false, formatOpen: true, doc: { id: 'd', html: '', comments: [{ id: 'c1', quote: '摘录', text: '批注内容', mine: true }] } }, { tab: 'review' });
   assert.equal(v.panelCommentsOpen, true); assert.equal(v.comments[0].text, '批注内容');
 });
