@@ -47,6 +47,8 @@ const OPEN: &str = "前往下载页";
 const RELEASES: &str = "https://github.com/Auspexlabs/writer/releases";
 /// In <app data>: the notes of the update last downloaded, for the launch that runs it (downloaded, applied).
 const NOTES: &str = "update.json";
+/// In <app data>: the version the last launch ran ({"version"}), so that the first launch of another shows What's New.
+const LAST: &str = "version.json";
 
 type Error = Box<dyn std::error::Error>;
 
@@ -79,8 +81,17 @@ pub fn start(app: &AppHandle) -> tauri::Result<()> {
     }
     app.plugin(tauri_plugin_updater::Builder::new().build())?;
     let version = app.package_info().version.to_string();
+    let first = first_run(&crate::data_file(app, LAST), &version, crate::data_file(app, "web-storage.json").exists());
     if let Some(notes) = applied(&crate::data_file(app, NOTES), &version, build) {
         lock(&WAITING).push(json!({ "kind": "new", "version": label(&version, build), "notes": notes }));
+    } else if first {
+        // a version this updater did not download (0.1.2's kept no notes; a copy installed by hand): the feed's notes
+        let app = app.clone();
+        std::thread::spawn(move || {
+            if let Some(notes) = feed_notes(&app) {
+                show(&app, json!({ "kind": "new", "version": version, "notes": notes }));
+            }
+        });
     }
     let app = app.clone();
     std::thread::spawn(move || loop {
@@ -233,6 +244,24 @@ fn applied(file: &Path, version: &str, build: Option<u64>) -> Option<String> {
     }
     let _ = fs::remove_file(file);
     Some(saved["notes"].as_str().unwrap_or_default().to_string())
+}
+
+/// Whether this launch is the first of `version`: another ran last or, before launches kept a record (0.1.2 and older),
+/// Writer had run (`ran_before`: it kept state). Records this one.
+fn first_run(file: &Path, version: &str, ran_before: bool) -> bool {
+    let last = crate::read_json(file)["version"].as_str().map(str::to_string);
+    if last.as_deref() == Some(version) {
+        return false;
+    }
+    crate::write_json(file, &json!({ "version": version }));
+    last.is_some() || ran_before
+}
+
+/// This version's notes from the feed (plugins.updater.endpoints, read as a check reads them), when it lists this version.
+fn feed_notes(app: &AppHandle) -> Option<String> {
+    let updater = app.updater_builder().version_comparator(|current, remote| remote.version == current).build().ok()?;
+    let release = tauri::async_runtime::block_on(updater.check()).ok()??;
+    release.body.filter(|notes| !notes.trim().is_empty())
 }
 
 /// A version as 关于 Writer shows it: 0.1.2, or 0.1.2 (3) on build 3 of its interface.
@@ -489,6 +518,18 @@ mod tests {
         assert_eq!(applied(&file, "0.1.2", Some(3)), None);
         assert_eq!(applied(&file, "0.1.2", Some(4)).as_deref(), Some(""), "without notes it still says so");
         assert!(!file.exists());
+    }
+
+    #[test]
+    fn the_first_launch_of_a_version_is_known_without_notes() {
+        let file = std::env::temp_dir().join(format!("writer-version-test-{}.json", std::process::id()));
+        let _ = fs::remove_file(&file);
+        assert!(!first_run(&file, "0.1.4", false), "a new install: nothing to announce");
+        assert!(!first_run(&file, "0.1.4", true), "the same version again");
+        assert!(first_run(&file, "0.1.5", true), "updated, however it got here");
+        let _ = fs::remove_file(&file);
+        assert!(first_run(&file, "0.1.4", true), "from 0.1.2, which kept no record but had run");
+        let _ = fs::remove_file(&file);
     }
 
     #[test]
