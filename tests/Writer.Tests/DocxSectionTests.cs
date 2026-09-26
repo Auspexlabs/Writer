@@ -235,6 +235,37 @@ public class DocxSectionTests
     }
 
     [Fact]
+    public void Note_numbering_is_set_for_both_kinds_in_schema_order_and_none_takes_it_out()
+    {
+        using var doc = new DocxAdapter().Create();
+        Mutations.Set(doc.Root, Props(("noteFormat", "lowerRoman"), ("columns", "2")));
+        AssertValidSection(doc);
+        using var reopened = Reopen(doc);
+        Assert.Equal("lowerRoman", reopened.Root.GetProps()["noteFormat"]);
+        var section = Section(reopened);
+        Assert.Equal(new[] { "footnotePr", "endnotePr", "pgSz", "pgMar", "cols" }, section.ChildElements.Select(e => e.LocalName));
+        Mutations.Set(reopened.Root, Props(("noteFormat", "decimalEnclosedCircleChinese")));
+        Assert.Equal("decimalEnclosedCircleChinese", reopened.Root.GetProps()["noteFormat"]);
+        Assert.Single(Section(reopened).Elements<W.EndnoteProperties>());
+        Mutations.Set(reopened.Root, Props(("noteFormat", "none")));
+        Assert.False(reopened.Root.GetProps().ContainsKey("noteFormat"));
+        Assert.Null(Section(reopened).GetFirstChild<W.FootnoteProperties>());
+        Assert.Throws<WriterException>(() => Mutations.Set(reopened.Root, Props(("noteFormat", "hebrew1"))));
+    }
+
+    [Fact]
+    public void Custom_margins_on_four_sides_read_back_as_the_editor_writes_them()
+    {
+        using var doc = new DocxAdapter().Create();
+        Mutations.Set(doc.Root, Props(("margin", "2.54cm 3.18cm 2.54cm 3.18cm")));
+        Assert.Equal("2.54cm 3.18cm 2.54cm 3.18cm", doc.Root.GetProps()["margin"]);
+        Mutations.Set(doc.Root, Props(("margin", "moderate")));
+        Assert.Equal("moderate", doc.Root.GetProps()["margin"]);
+        Mutations.Set(doc.Root, Props(("page", "B5")));
+        Assert.Equal("B5", doc.Root.GetProps()["page"]);
+    }
+
+    [Fact]
     public void Footnotes_and_endnotes_round_trip_at_their_offsets()
     {
         using var doc = new DocxAdapter().Create();

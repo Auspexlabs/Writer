@@ -44,6 +44,7 @@ sealed class DocxTable(DocxDocument doc, W.Table table) : Node, IDocxContainer
         if (pr?.TableWidth is { } tw && WidthOf(tw) is { } width) props["width"] = width;
         if (WidthsOf(table) is { } widths) props["widths"] = widths;
         if (AlignOf(pr?.TableJustification?.Val?.InnerText) is { } align) props["align"] = align;
+        if (pr?.TableLook is { } look && FirstRowOf(look) is { } first) props["header"] = first ? "true" : "false";
         return props;
     }
 
@@ -74,6 +75,17 @@ sealed class DocxTable(DocxDocument doc, W.Table table) : Node, IDocxContainer
             t.Append(new W.TableRow(Enumerable.Range(0, cols).Select(_ => (OpenXmlElement)NewCell(width))));
         if (data is not null) Fill(doc, t, data);
         return (t, ["rows", "cols", "data"]);
+    }
+
+    /// <summary>Whether the style's first-row look applies (标题行): tblLook's firstRow, or its bit in the older val.</summary>
+    static bool? FirstRowOf(W.TableLook look) =>
+        look.FirstRow?.Value is { } first ? first
+        : look.Val?.Value is { } hex && int.TryParse(hex, NumberStyles.HexNumber, Inv, out var bits) ? (bits & 0x20) != 0 : null;
+
+    static void SetFirstRow(W.TableLook look, bool on)
+    {
+        look.FirstRow = on;
+        if (look.Val?.Value is { } hex && int.TryParse(hex, NumberStyles.HexNumber, Inv, out var bits)) look.Val = (on ? bits | 0x20 : bits & ~0x20).ToString("X4", Inv);
     }
 
     internal static W.TableCell NewCell(int widthTwips) => new(
@@ -126,6 +138,7 @@ sealed class DocxTable(DocxDocument doc, W.Table table) : Node, IDocxContainer
                 break;
             case "borderColor": Recolor(pr.TableBorders ??= StyleBorders(doc, pr) ?? MakeBorders<W.TableBorders>("all", null), value); break;
             case "width": pr.TableWidth = ParseWidth(value); break;
+            case "header": SetFirstRow(pr.TableLook ??= new W.TableLook { Val = "04A0" }, value == "true"); break;
             case "widths": SetWidths(value); break;
             case "align":
                 pr.TableJustification = new W.TableJustification

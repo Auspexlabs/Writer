@@ -53,6 +53,7 @@ sealed class DocxRoot(DocxDocument doc) : Node
             case "firstFooter": DocxSection.SetHeaderFooter(doc, header: false, first: true, value); break;
             case "titlePg": DocxSection.SetTitlePage(doc, value == "true"); break;
             case "lineNumbers": DocxSection.SetLineNumbers(doc, value == "true"); break;
+            case "noteFormat": DocxSection.SetNoteFormat(doc, value); break;
             case "hyphenation":
                 var settings = (doc.Main.DocumentSettingsPart ?? doc.Main.AddNewPart<DocumentSettingsPart>()).Settings ??= new W.Settings();
                 settings.RemoveAllChildren<W.AutoHyphenation>();
@@ -120,7 +121,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         return props;
     }
 
-    /// <summary>What the paragraph's style gives where the paragraph itself is silent: a page break before it, its shading, and the
+    /// <summary>What the paragraph's style gives where the paragraph itself is silent: a page break before it, widow control turned off, its shading, and the
     /// spacing, indents, font, size and colour it has beyond the document's own look (the root's computed); for a paragraph that ends a
     /// section, that section's page as lengths.</summary>
     public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props)
@@ -128,6 +129,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         if (Kind == "code") return null;
         var computed = new Dictionary<string, string>();
         if (!props.ContainsKey("pageBreakBefore") && DocxRun.On(doc.Styles.Inherited(p, s => s.PageBreakBefore))) computed["pageBreakBefore"] = "true";
+        if (!props.ContainsKey("widowControl") && doc.Styles.Inherited(p, s => s.WidowControl) is { } widow && !DocxRun.On(widow)) computed["widowControl"] = "false";
         if (p.ParagraphProperties?.Shading is null && FillOf(doc.Styles.Inherited(p, s => s.Shading)) is { } fill) computed["fill"] = fill;
         foreach (var (key, value) in DocxLook.Differences(doc, p.ParagraphProperties?.ParagraphStyleId?.Val?.Value, props)) computed[key] = value;
         if (p.ParagraphProperties?.SectionProperties is { } section) DocxSection.ReadGeometry(section, computed);
@@ -201,7 +203,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
                 Properties().Shading = value != "none" ? new W.Shading { Val = W.ShadingPatternValues.Clear, Color = "auto", Fill = value }
                     : doc.Styles.Inherited(p, s => s.Shading) is not null ? new W.Shading { Val = W.ShadingPatternValues.Clear, Color = "auto", Fill = "auto" } : null;
                 break;
-            case "lineSpacing" or "spaceBefore" or "spaceAfter" or "indentLeft" or "indentRight" or "indentFirst" or "border" or "keepNext" or "keepLines" or "tabs":
+            case "lineSpacing" or "spaceBefore" or "spaceAfter" or "indentLeft" or "indentRight" or "indentFirst" or "border" or "keepNext" or "keepLines" or "widowControl" or "tabs":
                 DocxParaFormat.Write(Properties(), name, value);
                 if (!p.ParagraphProperties!.HasChildren) p.ParagraphProperties.Remove();
                 break;

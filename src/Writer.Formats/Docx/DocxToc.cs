@@ -81,8 +81,8 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
     public static (OpenXmlElement Element, string[] Consumed) New(DocxDocument doc, IReadOnlyDictionary<string, string> props)
     {
         var sdt = NewSdt();
-        Fill(doc, sdt, props.TryGetValue("levels", out var l) ? int.Parse(l, Inv) : 3, props.GetValueOrDefault("title") ?? "");
-        return (sdt, ["levels", "title"]);
+        Fill(doc, sdt, props.TryGetValue("levels", out var l) ? int.Parse(l, Inv) : 3, props.GetValueOrDefault("title") ?? "", props.GetValueOrDefault("style") ?? "classic");
+        return (sdt, ["levels", "title", "style"]);
     }
 
     static W.SdtBlock NewSdt() => new(
@@ -94,11 +94,20 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
         var paragraphs = Paragraphs.ToList();
         var field = paragraphs.FirstOrDefault(HasTocField);
         var at = field is null ? 0 : paragraphs.IndexOf(field);
-        var props = new Dictionary<string, string> { ["levels"] = LevelsOf(field).ToString(Inv) };
+        var props = new Dictionary<string, string> { ["levels"] = LevelsOf(field).ToString(Inv), ["style"] = StyleOf(field, paragraphs.Skip(at)) };
         var title = string.Join("\n", paragraphs.Take(at).Select(DocxRuns.ParagraphText).Where(t => t.Length > 0));
         if (title.Length > 0) props["title"] = title;
         props["text"] = string.Join("\n", paragraphs.Skip(at).Select(p => DocxRuns.ParagraphText(p).TrimEnd('\t')).Where(t => t.Length > 0));
         return props;
+    }
+
+    /// <summary>plain when the field leaves page numbers out (\n), simple when its entries' tab has no leader, else classic (dots).</summary>
+    static string StyleOf(W.Paragraph? field, IEnumerable<W.Paragraph> entries)
+    {
+        var code = field?.Descendants<W.FieldCode>().Select(c => c.Text).FirstOrDefault(IsTocCode) ?? "";
+        if (Regex.IsMatch(code, @"\\n(\s|$)")) return "plain";
+        var leader = entries.Select(p => p.ParagraphProperties?.Tabs?.Elements<W.TabStop>().FirstOrDefault(t => t.Val?.Value == W.TabStopValues.Right)).FirstOrDefault(t => t is not null)?.Leader?.Value;
+        return leader == W.TabStopLeaderCharValues.None ? "simple" : "classic";
     }
 
     static int LevelsOf(W.Paragraph? field)
@@ -115,6 +124,7 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
         var props = GetProps();
         var levels = name == "levels" ? int.Parse(value, Inv) : int.Parse(props["levels"], Inv);
         var title = name == "title" ? value : props.GetValueOrDefault("title") ?? "";
+        var style = name == "style" ? value : props.GetValueOrDefault("style") ?? "classic";
         var sdt = Sdt;
         if (sdt is null)
         {
@@ -123,10 +133,11 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
             foreach (var e in _elements) e.Remove();
             _elements = [sdt];
         }
-        Fill(doc, sdt, levels, title);
+        Fill(doc, sdt, levels, title, style);
     }
 
-    static void Fill(DocxDocument doc, W.SdtBlock sdt, int levels, string title)
+    /// <summary>The entries of the headings up to `levels`, under the title; style says how an entry ends (see StyleOf).</summary>
+    static void Fill(DocxDocument doc, W.SdtBlock sdt, int levels, string title, string style)
     {
         var content = sdt.SdtContentBlock ??= new W.SdtContentBlock();
         content.RemoveAllChildren();
@@ -140,13 +151,13 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
         {
             var p = new W.Paragraph(new W.ParagraphProperties(
                 new W.ParagraphStyleId { Val = doc.Styles.ResolveStyle($"TOC{level}", "paragraph") },
-                new W.Tabs(new W.TabStop { Val = W.TabStopValues.Right, Leader = W.TabStopLeaderCharValues.Dot, Position = pos })));
+                new W.Tabs(new W.TabStop { Val = W.TabStopValues.Right, Leader = style == "simple" ? W.TabStopLeaderCharValues.None : W.TabStopLeaderCharValues.Dot, Position = pos })));
             if (first)
             {
-                p.Append(FieldChar(W.FieldCharValues.Begin), Code($" TOC \\o \"1-{levels}\" \\h \\z \\u "), FieldChar(W.FieldCharValues.Separate));
+                p.Append(FieldChar(W.FieldCharValues.Begin), Code($" TOC \\o \"1-{levels}\" \\h \\z \\u {(style == "plain" ? "\\n " : "")}"), FieldChar(W.FieldCharValues.Separate));
                 first = false;
             }
-            p.Append(anchor is null ? new W.Run(DocxRuns.TextElements(text)) : Entry(text, anchor));
+            p.Append(anchor is null ? new W.Run(DocxRuns.TextElements(text)) : Entry(text, anchor, style != "plain"));
             content.Append(p);
         }
         content.Append(new W.Paragraph(FieldChar(W.FieldCharValues.End)));
@@ -157,12 +168,11 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
 
     static W.Run Code(string instruction) => new(new W.FieldCode(instruction) { Space = SpaceProcessingModeValues.Preserve });
 
-    /// <summary>heading text, a dotted tab, and a PAGEREF field Word fills with the page number; the whole entry links to the heading.</summary>
-    static W.Hyperlink Entry(string text, string anchor) => new(
-        new W.Run(DocxRuns.TextElements(text)),
-        new W.Run(new W.TabChar()),
-        FieldChar(W.FieldCharValues.Begin), Code($" PAGEREF {anchor} \\h "), FieldChar(W.FieldCharValues.Separate), FieldChar(W.FieldCharValues.End))
-    { Anchor = anchor, History = true };
+    /// <summary>heading text, then (with page) the tab to the number and a PAGEREF field Word fills with it; the whole entry links to the heading.</summary>
+    static W.Hyperlink Entry(string text, string anchor, bool page) => page
+        ? new(new W.Run(DocxRuns.TextElements(text)), new W.Run(new W.TabChar()),
+            FieldChar(W.FieldCharValues.Begin), Code($" PAGEREF {anchor} \\h "), FieldChar(W.FieldCharValues.Separate), FieldChar(W.FieldCharValues.End)) { Anchor = anchor, History = true }
+        : new(new W.Run(DocxRuns.TextElements(text))) { Anchor = anchor, History = true };
 
     /// <summary>Headings of the wanted levels with a _Toc bookmark on each (added when missing); the placeholder when there are none.</summary>
     static IEnumerable<(string Text, int Level, string? Anchor)> Headings(DocxDocument doc, W.SdtBlock self, int levels)

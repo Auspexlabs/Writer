@@ -1,11 +1,14 @@
 using System.Xml.Linq;
+using DocumentFormat.OpenXml.Packaging;
 using Writer.Core;
 using Writer.Formats.Docx;
+using W = DocumentFormat.OpenXml.Wordprocessing;
+using static Writer.Tests.TestDocs;
 
 namespace Writer.Tests;
 
-/// <summary>Word's 段落 dialog on a paragraph: line spacing, spacing before and after, indents in lengths or characters, borders,
-/// keep with next, tab stops and distributed alignment, written and read back in the same words.</summary>
+/// <summary>Word's 段落 dialog on a paragraph: line spacing, spacing before and after (points or lines), indents in lengths or
+/// characters, borders, keep with next, widow control, tab stops and distributed alignment, written and read back in the same words.</summary>
 public class DocxParagraphFormatTests
 {
     static Dictionary<string, string> Props(params (string Name, string Value)[] pairs) => pairs.ToDictionary(p => p.Name, p => p.Value);
@@ -43,5 +46,41 @@ public class DocxParagraphFormatTests
         Assert.Equal("24pt", heading.GetProps()["spaceBefore"]);
         Assert.Throws<WriterException>(() => Mutations.Set(heading, Props(("border", "sideways"))));
         Assert.Throws<WriterException>(() => Mutations.Set(heading, Props(("tabs", "somewhere 2cm"))));
+    }
+
+    [Fact]
+    public void Spacing_in_lines_is_written_as_word_counts_it_and_widow_control_turns_off_and_back()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        var p = Mutations.Add(body, "paragraph", Props(("text", "正文"), ("spaceBefore", "0.5lines"), ("spaceAfter", "1 行"), ("widowControl", "false")), null);
+        var got = p.GetProps();
+        Assert.Equal(("0.5lines", "1lines", "false"), (got["spaceBefore"], got["spaceAfter"], got["widowControl"]));
+        var raw = XElement.Parse(p.GetRaw());
+        var spacing = raw.Descendants().Single(e => e.Name.LocalName == "spacing");
+        string? Attr(string name) => spacing.Attributes().FirstOrDefault(a => a.Name.LocalName == name)?.Value;
+        Assert.Equal(("50", "120", "100", "240"), (Attr("beforeLines"), Attr("before"), Attr("afterLines"), Attr("after")));
+        Assert.Contains(raw.Descendants(), e => e.Name.LocalName == "widowControl" && e.Attributes().Any(a => a.Name.LocalName == "val" && a.Value is "false" or "0"));
+
+        p = Mutations.Set(p, Props(("spaceBefore", "6pt"), ("widowControl", "true")));
+        got = p.GetProps();
+        Assert.Equal(("6pt", "1lines", "true"), (got["spaceBefore"], got["spaceAfter"], got["widowControl"]));
+        Assert.DoesNotContain(XElement.Parse(p.GetRaw()).Descendants(), e => e.Attributes().Any(a => a.Name.LocalName == "beforeLines"));
+        Assert.False(Mutations.Set(p, Props(("widowControl", "none"))).GetProps().ContainsKey("widowControl"));
+    }
+
+    [Fact]
+    public void Widow_control_a_style_turns_off_is_computed_not_the_paragraphs_own()
+    {
+        static void Off(MainDocumentPart main) => main.StyleDefinitionsPart!.Styles!.Append(new W.Style(
+            new W.StyleName { Val = "Loose" }, new W.StyleParagraphProperties(new W.WidowControl { Val = false })) { Type = W.StyleValues.Paragraph, StyleId = "Loose" });
+        using var doc = OpenDocx(Docx([P("By its style", "Loose"), P("Plain")], Off));
+        var (styled, plain) = (PathResolver.Single(doc.Root, "/body/paragraph[1]"), PathResolver.Single(doc.Root, "/body/paragraph[2]"));
+        Assert.False(styled.GetProps().ContainsKey("widowControl"));
+        Assert.Equal("false", styled.GetComputed(styled.GetProps())?.GetValueOrDefault("widowControl"));
+        Assert.Null(plain.GetComputed(plain.GetProps())?.GetValueOrDefault("widowControl"));
+        var own = Mutations.Set(styled, Props(("widowControl", "true")));
+        Assert.Equal("true", own.GetProps()["widowControl"]);
+        Assert.Null(own.GetComputed(own.GetProps())?.GetValueOrDefault("widowControl"));
     }
 }

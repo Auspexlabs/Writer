@@ -41,6 +41,34 @@ public class DocxTocTests
     }
 
     [Fact]
+    public void Style_says_how_entries_end_and_is_read_back_from_the_field_and_its_tab()
+    {
+        using var doc = WithHeadings();
+        var body = doc.Root.Children.Single();
+        var toc = Mutations.Add(body, "toc", Props(("title", "目录")), 1);
+        Assert.Equal("classic", toc.GetProps()["style"]);
+        Assert.Contains("w:leader=\"dot\"", toc.GetRaw());
+
+        toc = Mutations.Set(toc, Props(("style", "simple")));
+        Assert.Equal(("simple", "Intro\nScope"), (toc.GetProps()["style"], toc.GetProps()["text"]));
+        Assert.Contains("w:leader=\"none\"", toc.GetRaw());
+        Assert.Contains("PAGEREF", toc.GetRaw());
+
+        toc = Mutations.Set(toc, Props(("style", "plain")));
+        var raw = toc.GetRaw();
+        Assert.Equal("plain", toc.GetProps()["style"]);
+        Assert.Contains(" TOC \\o \"1-3\" \\h \\z \\u \\n ", raw);
+        Assert.DoesNotContain("PAGEREF", raw);
+        AssertValid(doc);
+
+        using var reopened = OpenDocx(Save(doc));
+        var again = PathResolver.Single(reopened.Root, "/body/toc[1]");
+        Assert.Equal("plain", again.GetProps()["style"]);
+        again = Mutations.Set(again, Props(("levels", "2")));
+        Assert.Equal("plain", again.GetProps()["style"]); // a new level count keeps the style
+    }
+
+    [Fact]
     public void Add_builds_a_word_table_of_contents_with_linked_entries()
     {
         using var doc = WithHeadings();
@@ -197,6 +225,6 @@ public class DocxTocTests
         Assert.Equal(names.IndexOf("pagebreak") + 1, names.IndexOf("toc"));
         var toc = Registry.Get("docx", "toc");
         Assert.Equal(["body"], toc.Parents);
-        Assert.Equal(["levels", "title", "text"], toc.Props.Select(p => p.Name));
+        Assert.Equal(["levels", "title", "style", "text"], toc.Props.Select(p => p.Name));
     }
 }

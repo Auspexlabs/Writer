@@ -32,6 +32,8 @@ static partial class DocxSection
             if (Part(doc, section, header, first) is { } part && Html(doc, part) is { Length: > 0 } html) props[name] = html;
         if (DocxRun.On(section.GetFirstChild<W.TitlePage>())) props["titlePg"] = "true";
         if (section.GetFirstChild<W.LineNumberType>() is not null) props["lineNumbers"] = "true";
+        if ((section.GetFirstChild<W.FootnoteProperties>() ?? (OpenXmlElement?)section.GetFirstChild<W.EndnoteProperties>())?.GetFirstChild<W.NumberingFormat>()?.Val?.InnerText is { Length: > 0 } notes)
+            props["noteFormat"] = notes;
     }
 
     /// <summary>Paper, orientation, margins and columns of one section: the document's last (the body's sectPr) or one a paragraph ends.</summary>
@@ -69,6 +71,23 @@ static partial class DocxSection
         }
         if (section.GetFirstChild<W.Columns>() is { } columns && columns.ColumnCount?.Value > 1)
             props["columnGap"] = Cm(long.TryParse(columns.Space?.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var space) ? space : 720);
+    }
+
+    /// <summary>How footnotes and endnotes are numbered, as Word's numFmt names it: decimal (1, 2, 3), lowerRoman, upperRoman,
+    /// lowerLetter, upperLetter, decimalEnclosedCircleChinese (①②③), chineseCounting (一二三). Both kinds alike, in the last section;
+    /// none takes it out (Word then numbers footnotes 1, 2, 3 and endnotes i, ii, iii).</summary>
+    public static readonly string[] NoteFormats = ["decimal", "lowerRoman", "upperRoman", "lowerLetter", "upperLetter", "decimalEnclosedCircleChinese", "chineseCounting"];
+
+    public static void SetNoteFormat(DocxDocument doc, string value)
+    {
+        var section = Section(doc);
+        section.RemoveAllChildren<W.FootnoteProperties>();
+        section.RemoveAllChildren<W.EndnoteProperties>();
+        if (value is "" or "none") return;
+        if (!NoteFormats.Contains(value))
+            throw new WriterException(ErrorCode.Validation, $"Unknown note numbering '{value}'", "Use " + string.Join(", ", NoteFormats) + ", or none.");
+        section.AddChild(new W.FootnoteProperties(new W.NumberingFormat { Val = new W.NumberFormatValues(value) }));
+        section.AddChild(new W.EndnoteProperties(new W.NumberingFormat { Val = new W.NumberFormatValues(value) }));
     }
 
     /// <summary>Line numbers in the margin, every line, counted through the document (Word's 行号 › 连续).</summary>

@@ -5,15 +5,15 @@ using W = DocumentFormat.OpenXml.Wordprocessing;
 
 namespace Writer.Formats.Docx;
 
-/// <summary>Word's 段落 dialog on a paragraph's own properties: line spacing, space before and after, indents (lengths or
-/// characters, as CJK Word counts them), borders, keep with next / keep lines together, and tab stops. Values are read and
-/// written in the same words: 1.5 or 18pt or min 18pt; 6pt; 2ch or 0.74cm, negative for a hanging indent; top bottom left right
-/// or box; left 2cm, center 8cm, right 15cm, decimal 10cm.</summary>
+/// <summary>Word's 段落 dialog on a paragraph's own properties: line spacing, space before and after (points, or lines as CJK
+/// Word counts them), indents (lengths or characters), borders, keep with next / keep lines together, widow control, and tab
+/// stops. Values are read and written in the same words: 1.5 or 18pt or min 18pt; 6pt or 0.5lines; 2ch or 0.74cm, negative for a
+/// hanging indent; top bottom left right or box; true / false; left 2cm, center 8cm, right 15cm, decimal 10cm.</summary>
 static class DocxParaFormat
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     const long EmuPerTwip = 635;
-    public static readonly string[] Names = ["lineSpacing", "spaceBefore", "spaceAfter", "indentLeft", "indentRight", "indentFirst", "border", "keepNext", "keepLines", "tabs"];
+    public static readonly string[] Names = ["lineSpacing", "spaceBefore", "spaceAfter", "indentLeft", "indentRight", "indentFirst", "border", "keepNext", "keepLines", "widowControl", "tabs"];
 
     /// <summary>Reads the settings of a paragraph's pPr, or of a style's (the same children under another parent).</summary>
     public static void Read(OpenXmlElement? pp, Dictionary<string, string> props)
@@ -22,8 +22,11 @@ static class DocxParaFormat
         if (pp.GetFirstChild<W.SpacingBetweenLines>() is { } sp)
         {
             if (LineSpacingOf(sp) is { } line) props["lineSpacing"] = line;
-            if (sp.Before?.Value is { } before) props["spaceBefore"] = Pt(before);
-            if (sp.After?.Value is { } after) props["spaceAfter"] = Pt(after);
+            // lines win where Word wrote both, as it reads them (段前 0.5 行 is beforeLines 50, with before as its size on one grid)
+            if (sp.BeforeLines?.Value is { } beforeLines) props["spaceBefore"] = Lines(beforeLines);
+            else if (sp.Before?.Value is { } before) props["spaceBefore"] = Pt(before);
+            if (sp.AfterLines?.Value is { } afterLines) props["spaceAfter"] = Lines(afterLines);
+            else if (sp.After?.Value is { } after) props["spaceAfter"] = Pt(after);
         }
         if (pp.GetFirstChild<W.Indentation>() is { } ind)
         {
@@ -35,6 +38,7 @@ static class DocxParaFormat
         if (pp.GetFirstChild<W.ParagraphBorders>() is { } borders && Sides(borders) is { } sides) props["border"] = sides;
         if (DocxRun.On(pp.GetFirstChild<W.KeepNext>())) props["keepNext"] = "true";
         if (DocxRun.On(pp.GetFirstChild<W.KeepLines>())) props["keepLines"] = "true";
+        if (pp.GetFirstChild<W.WidowControl>() is { } widow) props["widowControl"] = DocxRun.On(widow) ? "true" : "false";
         if (pp.GetFirstChild<W.Tabs>() is { } tabs)
         {
             var stops = tabs.Elements<W.TabStop>().Where(t => t.Val?.Value is { } v && v != W.TabStopValues.Clear && v != W.TabStopValues.Number && t.Position?.Value is not null)
@@ -58,8 +62,11 @@ static class DocxParaFormat
                 break;
             case "spaceBefore" or "spaceAfter":
                 var sb = pp.SpacingBetweenLines ??= new W.SpacingBetweenLines();
-                StringValue? twips = off ? null : Twips(value).ToString(Inv);
-                if (name == "spaceBefore") { sb.Before = twips; sb.BeforeLines = null; sb.BeforeAutoSpacing = null; } else { sb.After = twips; sb.AfterLines = null; sb.AfterAutoSpacing = null; }
+                // in lines: beforeLines in hundredths, and before as those lines at 12pt each for readers that only know points
+                var lines = off ? null : LinesOf(value);
+                StringValue? twips = off ? null : (lines is { } l ? (int)Math.Round(l * 2.4) : Twips(value)).ToString(Inv);
+                Int32Value? hundredths = lines is { } h ? h : null;
+                if (name == "spaceBefore") { sb.Before = twips; sb.BeforeLines = hundredths; sb.BeforeAutoSpacing = null; } else { sb.After = twips; sb.AfterLines = hundredths; sb.AfterAutoSpacing = null; }
                 Trim(sb);
                 break;
             case "indentLeft" or "indentRight" or "indentFirst":
@@ -87,6 +94,8 @@ static class DocxParaFormat
                 break;
             case "keepNext": pp.KeepNext = value == "true" ? new W.KeepNext() : null; break;
             case "keepLines": pp.KeepLines = value == "true" ? new W.KeepLines() : null; break;
+            // on by default in Word's styles: false turns it off here, true says so, none leaves it to the style
+            case "widowControl": pp.WidowControl = value == "true" ? new W.WidowControl() : value == "false" ? new W.WidowControl { Val = false } : null; break;
             case "tabs":
                 pp.Tabs?.Remove();
                 if (off) break;
@@ -110,6 +119,15 @@ static class DocxParaFormat
     static T Line<T>() where T : W.BorderType, new() => new() { Val = W.BorderValues.Single, Size = 4U, Space = 1U, Color = "auto" };
 
     static void Trim(W.SpacingBetweenLines spacing) { if (!spacing.HasAttributes) spacing.Remove(); }
+
+    /// <summary>Hundredths of a line from "0.5lines", "0.5 lines" or "0.5行"; null for any other length.</summary>
+    static int? LinesOf(string value)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(value.Trim(), @"^(\d+(?:\.\d+)?)\s*(lines?|行)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return m.Success ? (int)Math.Round(double.Parse(m.Groups[1].Value, Inv) * 100) : null;
+    }
+
+    static string Lines(int hundredths) => (hundredths / 100.0).ToString("0.##", Inv) + "lines";
 
     static string? LineSpacingOf(W.SpacingBetweenLines sp)
     {
