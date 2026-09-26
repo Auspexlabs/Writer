@@ -48,3 +48,28 @@ test('the drag mousedown listener still targets only the header background, not 
   assert.ok(dragHandler, 'native.js should still install the header-drag mousedown listener');
   assert.match(dragHandler[0], /#dc-root>\.sc-host>div>div:first-child/, 'the drag region must stay scoped to the header div, not the whole panel');
 });
+
+test('a Mac panel keeps the onClose that native.js hands it, however the timing falls (the × closed nothing when it came between the first render and the subscription)', () => {
+  const src = readFileSync(new URL('../support.js', import.meta.url), 'utf8');
+  const at = src.indexOf('function StandaloneRoot() {'), end = src.indexOf('const ReactDOM = getReactDOM();', at);
+  assert.ok(at > 0 && end > at, 'support.js mounts the page root with StandaloneRoot');
+  // StandaloneRoot on a fake React: one state, effects run when we say so
+  const run = order => {
+    const entry = { ver: 0, subs: new Set(), propOverrides: null, propsMeta: null }, effects = [], renders = [];
+    let tick = 0;
+    const React = { useState: v => [tick, f => { tick = typeof f === 'function' ? f(tick) : f; renders.push('again'); }], useEffect: fn => effects.push(fn), useMemo: fn => fn() };
+    const h = (C, props) => ({ props });
+    const Root = () => null;
+    const StandaloneRoot = new Function('React', 'h', 'entry', 'Root', src.slice(at, end) + '\nreturn StandaloneRoot;')(React, h, entry, Root);
+    const setProps = () => { entry.propOverrides = { onClose: () => 'closed' }; entry.ver++; for (const fn of entry.subs) fn(); };
+    if (order === 'before') setProps();
+    const first = StandaloneRoot();
+    if (order === 'between') setProps();
+    effects.forEach(fn => fn());
+    if (order === 'after') setProps();
+    return { firstHasClose: !!first.props.onClose, renderedAgain: renders.length > 0 };
+  };
+  assert.deepEqual(run('before'), { firstHasClose: true, renderedAgain: false });
+  assert.deepEqual(run('between'), { firstHasClose: false, renderedAgain: true }, 'props that arrive before the root subscribes still reach it');
+  assert.deepEqual(run('after'), { firstHasClose: false, renderedAgain: true });
+});

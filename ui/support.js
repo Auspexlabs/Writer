@@ -177,9 +177,13 @@
     const entry = runtime.registry.get(rootName);
     function StandaloneRoot() {
       const [, setTick] = React.useState(0);
+      const seen = entry.ver; // Writer fix: the version this render read
       React.useEffect(() => {
         const sub = () => setTick((n) => n + 1);
         entry.subs.add(sub);
+        // A bump between that render and this effect (a host's __dcSetProps, e.g. native.js giving a Mac panel its onClose)
+        // found no subscriber: render again, or the page keeps the props it had before and its × does nothing.
+        if (entry.ver !== seen) sub();
         return () => {
           entry.subs.delete(sub);
         };
