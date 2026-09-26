@@ -11,6 +11,8 @@
     "allow-shell-state",
     "allow-open-window",
     "allow-tear-off",
+    "allow-tab-drag",
+    "allow-dock-tab",
     "allow-toggle-zoom",
     "allow-settings-set",
     "allow-aux-close",

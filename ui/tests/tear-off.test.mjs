@@ -57,3 +57,29 @@ test('dragging a tab selects no text: the press is cancelled and selectstart / d
   assert.deepEqual([doc.m.has('selectstart'), doc.m.has('dragstart'), win.m.has('pointermove')], [false, false, false], 'all taken off when it is let go');
   for (const page of ['mac.dc.html', 'win.dc.html']) assert.match(readFileSync(new URL('../' + page, import.meta.url), 'utf8'), /<img src="\{\{ t\.icon \}\}" alt="" draggable="false"/, page + ': the tab icon is no image drag');
 });
+
+test('with the desktop bridge: a window\'s only tab carries its window and moves into the window whose tab strip it is let go on; elsewhere a tab tears off as before', async () => {
+  const { dragTab } = await import('../tabs.js');
+  const L = () => { const m = new Map(); return { m, addEventListener: (t, f) => m.set(t, f), removeEventListener: (t, f) => { if (m.get(t) === f) m.delete(t); } }; };
+  const win = L(), doc = L(); Object.assign(globalThis, { window: win, document: doc, innerWidth: 1280, innerHeight: 800, requestAnimationFrame: f => { f(); return 1; } });
+  const el = { parentElement: { getBoundingClientRect: () => ({ bottom: 40 }) }, setPointerCapture() { }, addEventListener() { }, removeEventListener() { } };
+  const press = () => ({ button: 0, target: { closest: () => null }, currentTarget: el, clientX: 10, clientY: 10, pointerId: 1, preventDefault() { } });
+  const calls = [], dock = target => ({ start: carry => calls.push('start ' + carry), move: () => calls.push('move'), end: async () => { calls.push('end'); return target; }, to: t => calls.push('to ' + t) });
+  const moves = [];
+  dragTab(press(), 1, (dx, dy) => moves.push([dx, dy]), () => calls.push('tear'), dock('main-2'));
+  win.m.get('pointermove')({ clientX: 60, clientY: 40 });
+  await win.m.get('pointerup')({ type: 'pointerup', clientX: 60, clientY: 40 });
+  assert.deepEqual(calls, ['start true', 'move', 'end', 'to main-2'], 'the window went along and its tab went into main-2');
+  assert.deepEqual(moves, [[0, 0]], 'a carried window moves, not its tab');
+  calls.length = 0; dragTab(press(), 2, () => { }, () => calls.push('tear'), dock(null));
+  await win.m.get('pointerup')({ type: 'pointerup', clientX: 600, clientY: 900 });
+  assert.deepEqual(calls, ['start false', 'end', 'tear'], 'no strip under the pointer: a window of its own');
+  calls.length = 0; dragTab(press(), 2, () => { }, () => calls.push('tear'), dock('main-3'));
+  await win.m.get('pointerup')({ type: 'pointerup', clientX: 600, clientY: 900 });
+  assert.deepEqual(calls, ['start false', 'end', 'to main-3'], 'over another window\'s strip: into it, not a new window');
+  for (const page of ['mac.dc.html', 'win.dc.html']) {
+    const src = readFileSync(new URL('../' + page, import.meta.url), 'utf8');
+    assert.match(src, /this\.tearOff\(x\.id\), this\.dockBridge\(x\.id\)\)/, page + ': the tabs use the bridge');
+    assert.match(src, /window\.__writerDockHint = on =>/, page + ': the strip lights up for a tab from another window');
+  }
+});

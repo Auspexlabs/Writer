@@ -10,6 +10,8 @@
   "permissions": [
     "allow-shell-state",
     "allow-tear-off",
+    "allow-tab-drag",
+    "allow-dock-tab",
     "allow-settings-set",
     "allow-open-files",
     "allow-save-dialog",

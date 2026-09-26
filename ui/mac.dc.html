@@ -46,7 +46,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
   <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:52px">
     <dc-import name="index" mac="{{ true }}" mac-full="{{ isFull }}" on-shell="{{ onShell }}" on-prefs="{{ openPrefs }}" on-save-dialog="{{ saveDialogProp }}" recent-files="{{ recentProp }}" on-open-recent="{{ openRecentProp }}" on-open-dialog="{{ openDialogProp }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
   </div>
-          <div data-tauri-drag-region onDoubleClick="{{ zoomWin }}" style="position:absolute;left:0;right:0;top:0;height:52px;z-index:59;background:{{ titleBg }};display:flex;align-items:center;gap:6px;padding:0 16px 0 20px">
+          <div data-tauri-drag-region data-dock="{{ dockA }}" onDoubleClick="{{ zoomWin }}" style="position:absolute;left:0;right:0;top:0;height:52px;z-index:59;background:{{ titleBg }};display:flex;align-items:center;gap:6px;padding:0 16px 0 20px">
             <div onMouseEnter="{{ lightsOn }}" onMouseLeave="{{ lightsOff }}" style="display:flex;align-items:center;gap:8px;margin-right:8px;height:100%">
               <button data-light="1" onClick="{{ doClose }}" title="关闭" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c1 }};cursor:default;display:flex;align-items:center;justify-content:center" style-active="filter:brightness(0.8)"><svg width="12" height="12" viewBox="0 0 12 12" style="display:block;flex:none;opacity:{{ gOp }}"><path d="M3.5 3.5L8.5 8.5M8.5 3.5L3.5 8.5" stroke="#4D0000" stroke-width="1.2" stroke-linecap="round"></path></svg></button>
               <button data-light="1" onClick="{{ doMin }}" title="最小化" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c2 }};cursor:default;display:flex;align-items:center;justify-content:center" style-active="filter:brightness(0.8)"><svg width="12" height="12" viewBox="0 0 12 12" style="display:block;flex:none;opacity:{{ gOp }}"><path d="M3 6H9" stroke="#995700" stroke-width="1.2" stroke-linecap="round"></path></svg></button>
@@ -147,6 +147,7 @@ class Component extends DCLogic {
     window.addEventListener('writer-settings', this.onSet); window.addEventListener('storage', this.onSet);
     window.__writerMenu = id => this.menu(id);
     window.__writerOpen = path => this.openPath(path);
+window.__writerDockHint = on => this.setState({ dockHint: !!on }); // a tab from another window is over this strip (main.rs tab_drag)
     this.onKey = e => this.key(e); window.addEventListener('keydown', this.onKey, true);
     this.onFocus = () => this.setState({ active: true }); this.onBlur = () => this.setState({ active: false, lh: false });
     window.addEventListener('focus', this.onFocus); window.addEventListener('blur', this.onBlur);
@@ -250,6 +251,19 @@ class Component extends DCLogic {
     this.setState({ tearing: id });
     if (!(await this.call('detach', id, path => invoke('tear_off', { path })))) this.setState({ tearing: null });
   }
+  /** tabs.js's bridge to the native tab drag (main.rs tab_drag / dock_tab): the window follows its only tab, another
+   *  window's tab strip under the pointer lights up, and a tab let go there moves into that window. */
+  dockBridge(id) {
+    if (!NATIVE) return null;
+    return { start: carry => invoke('tab_drag', { phase: 'start', carry }), move: () => invoke('tab_drag', { phase: 'move', carry: false }), end: () => invoke('tab_drag', { phase: 'end', carry: false }), to: target => this.dockTo(id, target) };
+  }
+  /** Moves the tab's document into the window `target` (saved first, as tearOff does); a window left with no document closes. */
+  async dockTo(id, target) {
+    const sh = this.state.sh, last = !sh || sh.docs.filter(d => d.open || d.on).length <= 1;
+    this.setState({ tearing: id });
+    if (!(await this.call('detach', id, path => invoke('dock_tab', { path, target })))) { this.setState({ tearing: null }); return; }
+    if (last) invoke('plugin:window|close');
+  }
 
   /** Opens a document of this window's folder by absolute path. Resolves true when it is open. */
   async openPath(path) {
@@ -336,7 +350,7 @@ class Component extends DCLogic {
       // one document: its file icon and name; the start page: just 新建
       fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', sqDisp: sh && sh.isDoc ? 'inline-flex' : 'none',
       fileIcon: sh && sh.isDoc ? DOC_ICON(sh.type) : '',
-      docBar: !!(sh && sh.isDoc), // the 新建 page has no document: no sidebar, undo / redo or Aa / 沉浸 / AI
+      docBar: !!(sh && sh.isDoc), dockA: st.dockHint ? '1' : '0', // the 新建 page has no document: no sidebar, undo / redo or Aa / 沉浸 / AI
       tabs: openDocs.map((x, i, arr) => {
         const hv = st.hovTab === x.id, dr = st.drag && st.drag.id === x.id ? st.drag : null;
         return {
@@ -346,7 +360,7 @@ class Component extends DCLogic {
           bg: dr || x.on ? on : hv ? 'var(--pill-on)' : 'transparent',
           // dragged, the tab lifts off the strip and follows the pointer (tabs.js); torn off, it waits hidden (tearOff)
           sh: dr ? '0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 0 0 1px var(--k17, rgba(0,0,0,0.07))' : x.on ? onSh : 'none', tf: dr ? `translate(${dr.dx}px,${dr.dy}px)` : 'none', op: st.tearing === x.id ? 0 : 1,
-          onDown: e => { if (NATIVE && this.T) this.T.dragTab(e, arr.length, (dx, dy) => this.setState({ drag: dx || dy ? { id: x.id, dx, dy } : null }), () => this.tearOff(x.id)); },
+          onDown: e => { if (NATIVE && this.T) this.T.dragTab(e, arr.length, (dx, dy) => this.setState({ drag: dx || dy ? { id: x.id, dx, dy } : null }), () => this.tearOff(x.id), this.dockBridge(x.id)); },
           xOp: x.on || hv ? 1 : 0,
           onClick: () => this.call('open', x.id), onEnter: () => this.setState({ hovTab: x.id }), onLeave: () => this.setState({ hovTab: null }),
           onClose: e => { e.stopPropagation(); this.call('close', x.id); }

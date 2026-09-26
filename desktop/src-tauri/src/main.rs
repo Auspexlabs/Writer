@@ -20,7 +20,7 @@ use tauri::utils::config::WindowEffectsConfig;
 #[cfg(not(feature = "appstore"))]
 use tauri::window::{Effect, EffectState};
 use tauri::{
-    AppHandle, DragDropEvent, Manager, RunEvent, Theme, WebviewUrl, WebviewWindow,
+    AppHandle, DragDropEvent, Manager, PhysicalPosition, RunEvent, Theme, WebviewUrl, WebviewWindow,
     WebviewWindowBuilder, WindowEvent, Wry,
 };
 use tauri_plugin_dialog::DialogExt;
@@ -93,6 +93,19 @@ struct Shell {
     panel: Option<(String, Option<String>)>,
     store: Map<String, Value>,
     recent: Vec<PathBuf>,
+    /// A document tab being dragged out of its title strip (tab_drag).
+    drag: Option<TabDrag>,
+}
+
+/// A tab being dragged (tabs.js dragTab through tab_drag): the window it started in; for a window's only tab, which carries
+/// the window along, where that window was then (physical px); where the pointer was; and the other document window
+/// whose tab strip is under the pointer, showing where the tab would go.
+#[derive(Default)]
+struct TabDrag {
+    label: String,
+    carry: Option<(i32, i32)>,
+    from: (f64, f64),
+    over: Option<String>,
 }
 
 struct Writer(Mutex<Shell>);
@@ -682,6 +695,102 @@ async fn tear_off(app: AppHandle, window: WebviewWindow, path: String) -> bool {
     true
 }
 
+/// A document tab dragged in its title strip (tabs.js dragTab), as in a browser. "start" notes where the drag began; with
+/// `carry` (the window's only tab) the window then follows the pointer on every "move". Each move marks the tab strip of
+/// another document window under the pointer (__writerDockHint in its page) and answers that window; "end" answers it
+/// once more: the page then moves the tab there (dock_tab) instead of tearing it off into a window of its own.
+#[tauri::command]
+fn tab_drag(app: AppHandle, window: WebviewWindow, phase: String, carry: bool) -> Option<String> {
+    let label = window.label().to_string();
+    match phase.as_str() {
+        "start" => {
+            let from = app.cursor_position().ok().map(|p| (p.x, p.y)).unwrap_or_default();
+            let carry = if carry { window.outer_position().ok().map(|p| (p.x, p.y)) } else { None };
+            shell(&app).drag = Some(TabDrag { label, carry, from, over: None });
+            None
+        }
+        "move" => {
+            let (carry, from, was) = {
+                let s = shell(&app);
+                let d = s.drag.as_ref().filter(|d| d.label == label)?;
+                (d.carry, d.from, d.over.clone())
+            };
+            if let (Some((x, y)), Ok(p)) = (carry, app.cursor_position()) {
+                let at = PhysicalPosition::new(x + (p.x - from.0).round() as i32, y + (p.y - from.1).round() as i32);
+                let _ = window.set_position(at);
+            }
+            let over = strip_under(&app, &window, carry.is_some());
+            if over != was {
+                dock_hint(&app, was.as_deref(), false);
+                dock_hint(&app, over.as_deref(), true);
+                if let Some(d) = shell(&app).drag.as_mut() {
+                    d.over = over.clone();
+                }
+            }
+            over
+        }
+        _ => {
+            let drag = shell(&app).drag.take().filter(|d| d.label == label)?;
+            dock_hint(&app, drag.over.as_deref(), false);
+            strip_under(&app, &window, drag.carry.is_some())
+        }
+    }
+}
+
+/// The other document window whose title strip (its top 52 px, where its tabs are) is under the pointer; the front one
+/// first where windows overlap. A tab that moves alone (not carrying its window) over its own window is not over another.
+fn strip_under(app: &AppHandle, window: &WebviewWindow, carrying: bool) -> Option<String> {
+    let p = app.cursor_position().ok()?;
+    let inside = |w: &WebviewWindow, strip_only: bool| -> bool {
+        let (Ok(pos), Ok(size), Ok(scale)) = (w.outer_position(), w.outer_size(), w.scale_factor()) else { return false };
+        let (x, y) = (pos.x as f64, pos.y as f64);
+        let h = if strip_only { 52.0 * scale } else { size.height as f64 };
+        p.x >= x && p.x < x + size.width as f64 && p.y >= y && p.y < y + h
+    };
+    if !carrying && inside(window, false) {
+        return None;
+    }
+    let labels: Vec<String> = {
+        let s = shell(app);
+        let mut v: Vec<String> = s.windows.keys().filter(|l| l.as_str() != window.label()).cloned().collect();
+        v.sort_by_key(|l| s.front.as_deref() != Some(l.as_str()));
+        v
+    };
+    labels.into_iter().find(|label| {
+        let Some(w) = app.get_webview_window(label) else { return false };
+        w.is_visible().unwrap_or(false) && !w.is_minimized().unwrap_or(false) && inside(&w, true)
+    })
+}
+
+/// Shows or hides, in the window `label`, where a dragged tab would go (its page lights its tab strip).
+fn dock_hint(app: &AppHandle, label: Option<&str>, on: bool) {
+    if let Some(w) = label.and_then(|l| app.get_webview_window(l)) {
+        let _ = w.eval(format!("window.__writerDockHint && window.__writerDockHint({on})"));
+    }
+}
+
+/// The document of a tab let go on another window's tab strip (tab_drag's answer) opens there as a tab of its own, as a
+/// file opened from the Finder would; the page closes its tab when this answers true. `path` is the page's: relative to
+/// the window's folder, or absolute.
+#[tauri::command]
+async fn dock_tab(app: AppHandle, window: WebviewWindow, path: String, target: String) -> bool {
+    if target == window.label() {
+        return false;
+    }
+    let Some(dir) = shell(&app).windows.get(window.label()).map(|f| f.dir.clone()) else { return false };
+    let file = dir.join(path);
+    if !is_doc(&file) || !file.is_file() || !shell(&app).windows.contains_key(&target) {
+        return false;
+    }
+    let Some(to) = app.get_webview_window(&target) else { return false };
+    let file = file.canonicalize().map(win::plain_path).unwrap_or(file);
+    grant(&app, &target, "list", &file);
+    let _ = to.unminimize();
+    let _ = to.set_focus();
+    send_open(&app, &to, file);
+    true
+}
+
 /// The pointer on the screen in the logical pixels WebviewWindowBuilder::position takes (a WKWebView page does not know
 /// where its window is): tao scales it by the primary monitor on macOS, and places a window by the monitor under the
 /// point on Windows.
@@ -1191,7 +1300,7 @@ fn main() {
         )
         .manage(Writer(Mutex::new(Shell::default())))
         .invoke_handler(tauri::generate_handler![
-            shell_state, open_window, tear_off, toggle_zoom, settings_set, aux_close, restart_app, open_with, win::open_files, win::snap_window,
+            shell_state, open_window, tear_off, tab_drag, dock_tab, toggle_zoom, settings_set, aux_close, restart_app, open_with, win::open_files, win::snap_window,
             storage::save_dialog, storage::recent_files, storage::open_recent, update::check_update, default_app::default_app
         ])
         .on_menu_event(|app, event| on_menu(app, event.id().as_ref()))

@@ -41,7 +41,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
   <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:52px">
     <dc-import name="index" mac="{{ true }}" on-shell="{{ onShell }}" on-prefs="{{ openPrefs }}" on-save-dialog="{{ saveDialogProp }}" recent-files="{{ recentProp }}" on-open-recent="{{ openRecentProp }}" on-open-dialog="{{ openDialogProp }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
   </div>
-  <div data-tauri-drag-region="deep" style="position:absolute;left:0;right:0;top:0;height:52px;z-index:59;background:var(--bg, #FFFFFF);display:flex;align-items:center;gap:6px;padding-left:12px">
+  <div data-tauri-drag-region="deep" data-dock="{{ dockA }}" style="position:absolute;left:0;right:0;top:0;height:52px;z-index:59;background:var(--bg, #FFFFFF);display:flex;align-items:center;gap:6px;padding-left:12px">
     <button data-ctl="1" data-on="{{ menuOn }}" onClick="{{ appMenuToggle }}" title="Writer 菜单 (F1)" style="margin-right:2px"><img src="./assets/writer-glyph.svg" alt="Writer" style="width:18px;height:18px;display:block;filter:var(--gmark, none)"></button>
     <sc-if value="{{ docBar }}" hint-placeholder-val="{{ true }}">
     <button class="tb-btn tb-side" data-on="{{ sideOn }}" onClick="{{ sideToggle }}" title="显示/隐藏侧边栏 Ctrl+\" aria-label="显示/隐藏侧边栏"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.8" y="2.8" width="12.4" height="10.4" rx="2"></rect><path d="M6 2.8v10.4"></path><path d="M3.4 5.2h1.2M3.4 7.2h1.2M3.4 9.2h1.2"></path></svg></button>
@@ -197,6 +197,7 @@ class Component extends DCLogic {
     window.addEventListener('writer-settings', this.onSet); window.addEventListener('storage', this.onSet);
     window.__writerMenu = id => this.menu(id);
     window.__writerOpen = path => this.openPath(path);
+window.__writerDockHint = on => this.setState({ dockHint: !!on }); // a tab from another window is over this strip (main.rs tab_drag)
     this.onKey = e => this.key(e); window.addEventListener('keydown', this.onKey, true);
     // F5 / Ctrl+R would reload the whole window: keep them for the editors that use them (放映 F5), drop them otherwise
     this.onReload = e => { if (NATIVE && !e.defaultPrevented && (e.key === 'F5' || (e.ctrlKey && e.key.toLowerCase() === 'r'))) e.preventDefault(); };
@@ -302,6 +303,19 @@ class Component extends DCLogic {
     this.setState({ tearing: id });
     if (!(await this.call('detach', id, path => invoke('tear_off', { path })))) this.setState({ tearing: null });
   }
+  /** tabs.js's bridge to the native tab drag (main.rs tab_drag / dock_tab): the window follows its only tab, another
+   *  window's tab strip under the pointer lights up, and a tab let go there moves into that window. */
+  dockBridge(id) {
+    if (!NATIVE) return null;
+    return { start: carry => invoke('tab_drag', { phase: 'start', carry }), move: () => invoke('tab_drag', { phase: 'move', carry: false }), end: () => invoke('tab_drag', { phase: 'end', carry: false }), to: target => this.dockTo(id, target) };
+  }
+  /** Moves the tab's document into the window `target` (saved first, as tearOff does); a window left with no document closes. */
+  async dockTo(id, target) {
+    const sh = this.state.sh, last = !sh || sh.docs.filter(d => d.open || d.on).length <= 1;
+    this.setState({ tearing: id });
+    if (!(await this.call('detach', id, path => invoke('dock_tab', { path, target })))) { this.setState({ tearing: null }); return; }
+    if (last) invoke('plugin:window|close');
+  }
 
   /** Opens a document of this window's folder by absolute path (Explorer, a drop). Resolves true when it is open. */
   async openPath(path) {
@@ -357,7 +371,7 @@ class Component extends DCLogic {
       // one document: its file icon and name; the start page: just 新建
       fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', sqDisp: sh && sh.isDoc ? 'inline-flex' : 'none',
       fileIcon: sh && sh.isDoc ? DOC_ICON(sh.type) : '',
-      docBar: !!(sh && sh.isDoc), // the 新建 page has no document: no sidebar, undo / redo or Aa / 沉浸 / AI
+      docBar: !!(sh && sh.isDoc), dockA: st.dockHint ? '1' : '0', // the 新建 page has no document: no sidebar, undo / redo or Aa / 沉浸 / AI
       tabs: openDocs.map((x, i, arr) => {
         const hv = st.hovTab === x.id, dr = st.drag && st.drag.id === x.id ? st.drag : null;
         return {
@@ -367,7 +381,7 @@ class Component extends DCLogic {
           bg: dr || x.on ? on : hv ? 'var(--pill-on)' : 'transparent',
           // dragged, the tab lifts off the bar and follows the pointer (tabs.js); torn off, it waits hidden (tearOff)
           sh: dr ? '0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 0 0 1px var(--k17, rgba(0,0,0,0.07))' : x.on ? onSh : 'none', tf: dr ? `translate(${dr.dx}px,${dr.dy}px)` : 'none', op: st.tearing === x.id ? 0 : 1,
-          onDown: e => { if (NATIVE && this.T) this.T.dragTab(e, arr.length, (dx, dy) => this.setState({ drag: dx || dy ? { id: x.id, dx, dy } : null }), () => this.tearOff(x.id)); },
+          onDown: e => { if (NATIVE && this.T) this.T.dragTab(e, arr.length, (dx, dy) => this.setState({ drag: dx || dy ? { id: x.id, dx, dy } : null }), () => this.tearOff(x.id), this.dockBridge(x.id)); },
           xOp: x.on || hv ? 1 : 0,
           onClick: () => this.call('open', x.id), onEnter: () => this.setState({ hovTab: x.id }), onLeave: () => this.setState({ hovTab: null }),
           onClose: e => { e.stopPropagation(); this.call('close', x.id); }
