@@ -4,7 +4,7 @@
 // /binary, /events; the shells' own /files) from that engine, so the editors do not change. Images and downloads, which the
 // page loads without fetch, get blob: URLs instead (engine.js asks globalThis.__writerUrl for them).
 
-const ROUTE = /^\/(run|files|file|stat|binary|json|html|outline|text|chat|ai|ai\/test)$/;
+const ROUTE = /^\/(run|files|file|stat|binary|json|html|outline|text|chat|complete|ai|ai\/test|ai\/models)$/;
 const TYPES = { docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', pdf: 'application/pdf', md: 'text/markdown; charset=utf-8', txt: 'text/plain; charset=utf-8',
   csv: 'text/csv; charset=utf-8', mm: 'application/xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml' };
@@ -83,8 +83,14 @@ export async function answer(url, init = {}) {
       case '/outline': case '/text': return new Response(E.View(file, url.pathname.slice(1)), { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
       case '/chat': return chat ? chat(JSON.parse(typeof init.body === 'string' ? init.body : new TextDecoder().decode(await bodyBytes(init))), init.signal)
         : fail(503, 'NO_MODEL', 'No model is set up', 'The site embedding Writer connects its assistant (docs/embed.md).');
+      case '/complete': { // AI 自动补全, answered by the site's model like the assistant (ai.js)
+        if (!completer) return fail(503, 'NO_MODEL', 'No model is set up', 'The site embedding Writer connects its assistant (docs/embed.md).');
+        const b = JSON.parse(typeof init.body === 'string' ? init.body : new TextDecoder().decode(await bodyBytes(init)));
+        return json(200, JSON.stringify({ text: await completer(b, init.signal) }));
+      }
       case '/ai': return method === 'GET' ? json(200, JSON.stringify({ provider: '', baseUrl: '', model: chatModel || '', hasKey: false, source: chat ? 'host' : 'none' }))
         : fail(403, 'HOST_MANAGED', 'The site embedding Writer sets up its assistant');
+      case '/ai/models': return fail(403, 'HOST_MANAGED', 'The site embedding Writer sets up its assistant');
       case '/ai/test': return json(200, JSON.stringify({ ok: !!chat, error: chat ? '' : 'No model is set up' }));
     }
     return fail(404, 'NOT_FOUND', 'No such endpoint');
@@ -95,9 +101,10 @@ export async function answer(url, init = {}) {
 }
 
 // ---- the assistant: the embedding site supplies it (setChat), see ai.js ----
-let chat = null, chatModel = '';
-/** handler(body, signal) → Response (server-sent events, as POST /chat answers); model: the name the settings show. */
-export function setChat(handler, model) { chat = handler || null; chatModel = model || ''; }
+let chat = null, chatModel = '', completer = null;
+/** handler(body, signal) → Response (server-sent events, as POST /chat answers); model: the name the settings show; complete(body,
+ *  signal) → the autocomplete's text for POST /complete ({ before, after, hint }). */
+export function setChat(handler, model, complete) { chat = handler || null; chatModel = model || ''; completer = handler ? complete || null : null; }
 
 // ---- for the embedding site (host.js): the same engine, called directly ----
 export const engine = {
@@ -117,7 +124,10 @@ export const engine = {
   async system(file, outline = true) { await boot(); await gate; return E.ChatSystem(file || '', !!outline); },
   async tools() { await boot(); return JSON.parse(E.ChatTools()); },
   /** { display, code, output, wrote }; from: who asked ('assistant' in the editor, 'api' for the site). */
-  async callTool(name, input, from = 'api') { await boot(); await gate; const r = JSON.parse(E.ChatTool(String(name), JSON.stringify(input || {}))); announce(from); return r; }
+  async callTool(name, input, from = 'api') { await boot(); await gate; const r = JSON.parse(E.ChatTool(String(name), JSON.stringify(input || {}))); announce(from); return r; },
+  /** The autocomplete's request for the site's model ({ system, user }) and its reply as the editor shows it (Assistant.cs). */
+  async completePrompt(before, after, hint) { await boot(); return JSON.parse(E.CompletePrompt(String(before || ''), String(after || ''), String(hint || ''))); },
+  async completeClean(text, before) { await boot(); return E.CompleteClean(String(text || ''), String(before || '')); }
 };
 
 // ---- blob: URLs for what the page loads by itself (an <img>, a download link) ----

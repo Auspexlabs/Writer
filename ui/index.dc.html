@@ -276,6 +276,9 @@ button,input,select,textarea{font-family:inherit;color:inherit}
     <div data-ai-panel="1" data-enter="{{ panelEnter }}" style="position:absolute;top:6px;right:8px;bottom:8px;width:304px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:18px;overflow:hidden;background:var(--format-panel-bg);box-shadow:var(--format-panel-sh)">
       <div style="height:46px;flex:none;display:flex;align-items:center;padding:0 10px 0 18px;gap:8px;font-size:13px">
         <span style="font-size:12px">✦</span><span style="font-size:14px;font-weight:600">AI</span>
+        <sc-if value="{{ hasModelChip }}" hint-placeholder-val="{{ false }}">
+          <button data-model-chip="1" onClick="{{ openModelMenu }}" title="{{ modelChipTitle }}" style="min-width:0;max-width:176px;height:26px;padding:0 9px 0 10px;border:none;border-radius:999px;background:var(--k37, rgba(0,0,0,0.05));display:flex;align-items:center;gap:5px;font-size:12px;color:var(--k11, #6E6E73);cursor:pointer;transition:background .2s,color .2s" style-hover="background:var(--k36, rgba(0,0,0,0.1));color:var(--k1, #1D1D1F)"><span style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ modelChip }}</span><span aria-hidden="true" style="flex:none;width:5px;height:5px;margin-top:-3px;border-right:1.3px solid currentColor;border-bottom:1.3px solid currentColor;transform:rotate(45deg)"></span></button>
+        </sc-if>
         <div style="flex:1"></div>
         <button onClick="{{ toggleAI }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:999px;background:transparent;font-size:11px;color:var(--k11, #6E6E73);cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--k31, rgba(255,255,255,0.95))" style-active="transform:scale(0.88)">✕</button>
       </div>
@@ -285,7 +288,32 @@ button,input,select,textarea{font-family:inherit;color:inherit}
             <span style="font-family:'Noto Serif SC',serif;font-size:18px;font-weight:600;color:var(--k1, #1D1D1F)">有什么需要帮忙？</span>
             <span>{{ welcome }}</span>
             <sc-if value="{{ needsModel }}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{ openAiSettings }}" style="align-self:flex-start;margin-top:4px;height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">打开设置</button>
+              <div data-ai-setup="1" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                  <sc-for list="{{ setupProviders }}" as="sp" hint-placeholder-count="4">
+                    <button onClick="{{ sp.onClick }}" style="height:28px;padding:0 11px;border:none;border-radius:999px;background:{{ sp.bg }};color:{{ sp.fg }};box-shadow:{{ sp.sh }};font-size:12.5px;cursor:pointer;transition:background .2s,color .2s">{{ sp.name }}</button>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ setupOn }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-if value="{{ setupNeedsKey }}" hint-placeholder-val="{{ true }}">
+                      <input type="password" value="{{ setupKey }}" onChange="{{ onSetupKey }}" onKeyDown="{{ onSetupEnter }}" placeholder="{{ setupKeyPh }}" autoComplete="new-password" spellCheck="false" style="height:32px;padding:0 12px;border:1px solid var(--k29, rgba(0,0,0,0.1));border-radius:10px;background:var(--k0, #FFFFFF);font-size:13px;outline:none;color:var(--k1, #1D1D1F)">
+                    </sc-if>
+                    <div style="position:relative">
+                      <select value="{{ setupModel }}" onChange="{{ onSetupModel }}" style="appearance:none;-webkit-appearance:none;width:100%;height:32px;padding:0 30px 0 12px;border:1px solid var(--k29, rgba(0,0,0,0.1));border-radius:10px;background:var(--k0, #FFFFFF);font-size:13px;outline:none;color:var(--k1, #1D1D1F)">
+                        <sc-for list="{{ setupModels }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for>
+                      </select>
+                      <span aria-hidden="true" style="position:absolute;right:13px;top:12px;width:5px;height:5px;border-right:1.4px solid var(--k11, #6E6E73);border-bottom:1.4px solid var(--k11, #6E6E73);transform:rotate(45deg);pointer-events:none"></span>
+                    </div>
+                    <span style="font-size:12px;line-height:1.5;color:var(--k8, #8E8E93)">{{ setupNote }}</span>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <button onClick="{{ setupConnect }}" style="flex:none;height:30px;padding:0 16px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.94)">{{ setupBtn }}</button>
+                      <span style="min-width:0;font-size:12px;line-height:1.45;color:{{ setupMsgColor }}">{{ setupMsg }}</span>
+                    </div>
+                  </div>
+                </sc-if>
+                <button onClick="{{ openAiSettings }}" style="align-self:flex-start;height:22px;padding:0;border:none;background:transparent;font-size:12px;color:var(--k8, #8E8E93);cursor:pointer;text-decoration:underline;text-underline-offset:2px">自定义接口和更多设置</button>
+              </div>
             </sc-if>
           </div>
         </sc-if>
@@ -417,6 +445,10 @@ const CHIPS = {
 };
 const WELCOME = { docx: '我可以帮你改写、精简、插入表格，或把这份文档做成演示文稿。修改会直接写入文件，并在这里列出。', xlsx: '我可以帮你汇总、排序、标记数据，或者填充表格。', pptx: '我可以帮你加页、改标题、调整每页内容。', md: '直接在正文里写就好，# 空格变标题，- 空格变列表。我可以帮你生成目录，或转成 Word 文档、演示文稿。', pdf: '我可以帮你总结这份 PDF，或把其中的文字提取成可编辑的 Word 文档。', mm: '我可以帮你展开分支、补充要点、重排结构，或把导图转成大纲、文档和演示。Tab 加子主题，Enter 加同级，拖动主题可以换父级。' };
 const NO_CHAT = '在「设置 › AI」里填写你自己的模型 API：选服务商，填上 API Key 和模型，就能开始。';
+const CONNECT = '选一家 AI 服务，粘贴 API Key，选好模型，助手就能直接修改文档。';
+// the AI panel's services to connect in place (设置 › AI has every one, custom addresses too), by their short names
+const SETUP_IDS = ['anthropic', 'openai', 'deepseek', 'qwen', 'kimi', 'glm', 'doubao', 'ollama', 'lmstudio'];
+const SHORT = { anthropic: 'Claude', glm: '智谱', ollama: 'Ollama', lmstudio: 'LM Studio' };
 const STARTERS = { docx: ['写一份新员工入职指南', '起草一份合作意向书', '整理本周例会纪要'], xlsx: ['做一个家庭月度记账表', '做一个项目进度跟踪表'], pptx: ['做一份产品发布会演示', '做一份季度工作汇报'], md: ['写一篇产品更新日志', '整理读书笔记', '写一份技术方案'], mm: ['做一份产品发布计划的思维导图', '整理一本书的读书笔记', '拆解一个季度目标'] };
 const EXT_TYPE = { docx: 'docx', xlsx: 'xlsx', pptx: 'pptx', md: 'md', markdown: 'md', txt: 'md', mm: 'mm', xmind: 'mm', pdf: 'pdf' };
 const TPL_RATIO = { docx: '1 / 1.3', md: '3 / 4', xlsx: '4 / 3', pptx: '16 / 9', mm: '16 / 10' }; // the thumbnail box of a template card, the shape of that type's page, grid, slide or map
@@ -441,7 +473,7 @@ const EMBED = !!globalThis.__WRITER_EMBED__; // embedded in a site (ui/embed.dc.
 const LIVE_PROPS = ['formatOpen', 'panelOpen', 'panelEnter', 'aiOn', 'pure', 'showThumbs', 'barLeft', 'barRight', 'merged', 'leadW', 'gridOn', 'mdAuto'];
 class Component extends DCLogic {
   openSeqN = 0; // the order documents were opened in: the title bar's tabs follow it
-  state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null };
+  state = { ready: false, aiCfg: null, setup: null, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null };
   liveIds = []; // the documents whose editors are kept alive, used last first (vals)
   prefs = {}; closed = new Set(); lastSel = '';
   chatRef = React.createRef(); rootRef = React.createRef(); leftPillRef = React.createRef(); rightPillRef = React.createRef(); fileRef = React.createRef(); hist = {}; sv = {}; _len = 0; _cards = 0; _h = 0;
@@ -449,7 +481,12 @@ class Component extends DCLogic {
     import('./select-sync.js'); import('./glass.js').then(m => { this.G = m; });
     if (PERF) { window.__shell = this; import('./perf.js'); }
     Promise.all([import('./office-io.js'), import('./sheet-engine.js'), import('./md.js'), import('./pdf-kit.js'), import('./engine.js'), import('./prefs.js')]).then(async ([K, E, MD, PK, EN, P]) => {
-      this.K = K; this.E = E; this.MD = MD; this.PK = PK; this.EN = EN; this.P = P; this.applyTheme();
+      this.K = K; this.E = E; this.MD = MD; this.PK = PK; this.EN = EN; this.P = P; this.applyTheme(); this.loadAiCfg();
+      // AI 自动补全, in every editor of this page (complete.js; the editors mark where documents are typed with data-complete)
+      import('./complete.js').then(C => { if (this.gone) return; this.ac = C.install(document, {
+        enabled: () => !!this.state.chatOn && this.prefs.ai !== false && this.prefs.complete !== false,
+        request: (before, after, hint, signal) => EN.complete(before, after, hint, signal),
+        onError: e => this.toastMsg($t('自动补全暂时用不了：{msg}', { msg: $t(e.message) })) }); });
       let files = [];
       try { files = await EN.files(); } catch (e) { this.toastMsg($t('无法连接引擎：{msg}', { msg: $t(e.message) })); }
       // a tab torn off another window: the host sends the one document it shows. Embedded in a site (ui/embed/host.js) too: the
@@ -480,6 +517,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('keydown', this.onKey); window.removeEventListener('writer-settings', this.applyTheme); window.removeEventListener('storage', this.onStorage); window.removeEventListener('writer-ai', this.onAi); window.removeEventListener('focus', this.onAi);
     this.mqDark && this.mqDark.removeEventListener('change', this.applyTheme); this.mqMotion && this.mqMotion.removeEventListener('change', this.applyTheme);
+    this.gone = true; this.ac && this.ac.remove();
     document.removeEventListener('focusin', this.onFocusIn, true); document.removeEventListener('beforeinput', this.onBeforeInput, true); document.removeEventListener('compositionend', this.onCompEnd, true);
     document.removeEventListener('selectionchange', this.onSelChange); document.removeEventListener('select', this.onSelChange, true);
     window.removeEventListener('focus', this.onExternalPoll); document.removeEventListener('visibilitychange', this.onExternalPoll); clearInterval(this.pollT);
@@ -497,7 +535,49 @@ class Component extends DCLogic {
   onStorage = e => { if (!e.key || e.key === 'writer-settings') this.applyTheme(); if (!e.key || e.key === 'writer-ai') this.onAi(); };
   /** 设置 › AI saved a model (here, or in the settings window), or this window comes to the front: the Mac app's other folder windows
    *  run engines of their own, which pick up the shared settings file when asked. So ask this window's engine which model is on now. */
-  onAi = () => { if (this.EN) this.refreshFiles(); };
+  onAi = () => { if (this.EN) { this.refreshFiles(); this.loadAiCfg(); } };
+  /** The model settings (GET /ai): the AI panel's model menu works on them. */
+  loadAiCfg() { if (this.EN) this.EN.aiConfig().then(c => this.setState({ aiCfg: c }), () => { }); }
+  /** The AI panel's model menu: another model of the same service, the key and address staying as they are. */
+  async switchModel(id) {
+    const c = this.state.aiCfg, P = this.P; if (!c || !this.EN || !P) return;
+    try {
+      const r = await this.EN.saveAiConfig({ provider: c.provider, baseUrl: c.baseUrl, model: id, completeModel: c.completeModel || '' });
+      this.setState({ aiCfg: r });
+      this.toastMsg(r.source === 'env' ? $t('正在使用环境变量里的设置，这里换不了模型') : $t('已切换到 {model}', { model: P.modelName(c.provider, id) }));
+    } catch (e) { this.toastMsg($t('切换失败：{msg}', { msg: $t(e.message) })); }
+  }
+  /** What the service lists now (POST /ai/models with the saved key), kept for the menus. */
+  async refreshModels() {
+    const c = this.state.aiCfg, P = this.P; if (!c || !this.EN || !P) return;
+    try { const list = await this.EN.aiModels({}); P.keepListed(c.provider, c.baseUrl, list); this.toastMsg($t('这家服务商列出了 {n} 个模型', { n: list.length })); }
+    catch (e) { this.toastMsg($t('读不到模型列表：{error}', { error: $t(e.message) })); }
+  }
+  /** Connecting a service in the AI panel: its recommended model picked; a local server's models read from it. */
+  pickSetup(id) {
+    const P = this.P; if (!P) return;
+    const p = P.aiPreset(id), su = this.state.setup;
+    if (su && su.provider === id) return;
+    this.setState({ setup: { provider: id, key: '', model: p.model || '', msg: '', bad: false, models: null } });
+    if (!p.key) this.EN.aiModels({ provider: id, baseUrl: p.url }).then(list => this.setState(s => s.setup && s.setup.provider === id ? { setup: Object.assign({}, s.setup, { models: list, model: s.setup.model || (list[0] && list[0].id) || '', msg: list.length ? '' : $t('{name} 里还没有模型，先下载一个', { name: SHORT[id] || p.name }), bad: !list.length }) } : null),
+      () => this.setState(s => s.setup && s.setup.provider === id ? { setup: Object.assign({}, s.setup, { msg: $t('连不上 {name}：请先打开它', { name: SHORT[id] || p.name }), bad: true }) } : null));
+  }
+  /** 连接: the settings tried first (POST /ai/test), saved once they answer; the panel then turns into the assistant. */
+  async connectSetup() {
+    const su = this.state.setup, P = this.P, EN = this.EN; if (!su || !P || !EN || su.busy) return;
+    const p = P.aiPreset(su.provider), key = String(su.key || '').trim(), say = (msg, bad) => this.setState(s => ({ setup: Object.assign({}, s.setup, { busy: false, msg, bad }) }));
+    if (p.key && !key) return say($t('先粘贴 API Key'), true);
+    if (!su.model) return say($t('先选一个模型'), true);
+    const body = Object.assign({ provider: p.id, baseUrl: p.url, model: su.model, completeModel: P.fastModel(p.id) }, p.key ? { apiKey: key } : {});
+    this.setState({ setup: Object.assign({}, su, { busy: true, msg: $t('正在测试连接…'), bad: false }) });
+    try {
+      const t = await EN.testAi(body);
+      if (!t.ok) return say($t(t.error || '连接失败'), true);
+      await EN.saveAiConfig(body); // → writer-ai → onAi: chatOn, and the panel is the assistant
+      this.setState({ setup: null });
+      this.toastMsg($t('已连接 {model}', { model: P.modelName(p.id, su.model) }));
+    } catch (e) { say($t(e.message), true); }
+  }
   // ---- typing settings: spell check on document text, smart CJK punctuation in Word and Markdown ----
   applySpell() { const on = this.prefs.spell !== false; document.querySelectorAll(SPELL).forEach(el => { el.spellcheck = on; }); }
   onFocusIn = e => { const t = e.target; if (t && t.matches && t.matches(SPELL)) t.spellcheck = this.prefs.spell !== false; };
@@ -997,6 +1077,22 @@ class Component extends DCLogic {
     v.live = v.live.map(L => { const P = L.onA === '1' || !was[L.id] ? now : was[L.id]; this.frozen[L.id] = P; return Object.assign({}, L, P); });
     return v;
   }
+  /** The AI panel with no model yet: the services as buttons, then the chosen one's key, model and 连接. */
+  setupVals() {
+    const P = this.P, su = this.state.setup, sp = P && su ? P.aiPreset(su.provider) : null, name = id => $t(SHORT[id] || P.aiPreset(id).name);
+    const models = sp ? P.modelMenu(sp.id, su.models || P.listedModels(sp.id, sp.url), su.model) : [];
+    return {
+      setupProviders: P ? SETUP_IDS.map(id => { const on = !!su && su.provider === id; return { name: name(id), bg: on ? 'var(--k7, #1D1D1F)' : 'var(--k37, rgba(0,0,0,0.05))', fg: on ? 'var(--kinv, #fff)' : 'var(--k1, #1D1D1F)', sh: 'none', onClick: () => this.pickSetup(id) }; }) : [],
+      setupOn: !!sp, setupNeedsKey: !!(sp && sp.key), setupKey: su ? su.key : '', setupKeyPh: sp ? $t('粘贴 {name} 的 API Key', { name: name(sp.id) }) : '',
+      setupModels: (su && !su.model ? [{ v: '', l: $t('请选择模型') }] : []).concat(models.map(x => ({ v: x.id, l: x.name + (x.note ? ' · ' + $t(x.note) : '') }))), setupModel: su ? su.model : '',
+      setupNote: sp ? (sp.key ? $t('Key 只保存在这台电脑上，只发给 {name}。', { name: name(sp.id) }) : $t('本机的模型：先打开 {name}，再点「连接」。', { name: name(sp.id) })) : '',
+      setupBtn: $t(su && su.busy ? '正在连接…' : '连接'), setupMsg: su ? su.msg : '', setupMsgColor: su && su.bad ? '#B5563A' : 'var(--k8, #8E8E93)',
+      onSetupKey: e => { const key = e.target.value; this.setState(s => ({ setup: Object.assign({}, s.setup, { key, msg: '', bad: false }) })); },
+      onSetupEnter: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) this.connectSetup(); },
+      onSetupModel: e => { const model = e.target.value; this.setState(s => ({ setup: Object.assign({}, s.setup, { model, msg: '', bad: false }) })); },
+      setupConnect: () => this.connectSetup()
+    };
+  }
   vals() {
     const st = this.state;
     if (!st.ready) return { ...this.macVals(), lpLeft: MAC_DESKTOP ? '84px' : '12px', lpTop: '10px', lpMaxW: '320px', ttlMax: '160px', ttlOp: 1, ttlPad: '0 13px 0 11px', ttlDelay: '0s', lpOp: 1, lpBg: "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: "blur(10px) saturate(190%)", lpBd: "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", merged: true, leadW: 170, loading: true, notPure: true, rightPillDisp: 'flex', barTitle: '', leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, barLeft: '200px', aiOn: false, aiBtnBd: 'transparent', panelW: '304px', pillRight: '12px', panelOpen: false, panelEnter: 'open', live: [], showRightPill: true, thumbBtnBg: 'transparent', docsBtnBg: 'transparent', aiBtnBg: 'transparent', aiBtnSh: 'none', neverShow: false, hasDocs: false, cols: 'minmax(0,1fr)', docRows: [], isCreate: false, isDoc: false, showPanel: false, typeTabs: [], starters: [], genSteps: [], msgs: [], chips: [], menuItems: [], fileRef: this.fileRef, chatRef: this.chatRef, desktopMac: MAC_DESKTOP };
@@ -1019,7 +1115,13 @@ class Component extends DCLogic {
     const menuItems = [];
     const MI = (label, fn, hint, color) => menuItems.push({ isItem: true, label: $t(label), hint: hint || '', color: color || 'var(--k1, #1D1D1F)', onClick: () => { this.setState({ menu: null }); fn(); } });
     const MS = () => menuItems.push({ isSep: true });
-    if (st.menu && d) {
+    const cfg = st.aiCfg, PP = this.P;
+    if (st.menu && st.menu.kind === 'model' && cfg && PP) { // the AI panel's model menu
+      const done = this.prefs.complete !== false;
+      PP.modelMenu(cfg.provider, PP.listedModels(cfg.provider, cfg.baseUrl), cfg.model).forEach(x => MI((x.id === cfg.model ? '✓ ' : '\u2003 ') + x.name, () => this.switchModel(x.id), x.fast ? $t('快速') : ''));
+      MS(); MI(done ? '关闭自动补全' : '打开自动补全', () => PP.set('complete', !done), $t('打字时的灰色建议'));
+      MI('刷新模型列表', () => this.refreshModels()); MI('模型和服务商设置…', () => this.openSettings('ai'));
+    } else if (st.menu && d) {
       MI('新建空白文档', () => this.createBlank('docx')); MI('新建空白表格', () => this.createBlank('xlsx')); MI('新建空白演示', () => this.createBlank('pptx')); MI('新建 Markdown', () => this.createBlank('md')); MI('新建思维导图', () => this.createBlank('mm')); if (ai) MI('用 AI 新建…', () => this.setState({ view: 'create' })); MS();
       MI('切换文档…', () => this.setState({ docsOpen: true })); MI('打开…', () => this.openDialog(), 'Ctrl+O'); MI('创建副本', () => this.duplicate()); MS();
       if (d.type === 'docx') MI('下载 Word 文件 (.docx)', () => this.download('file'));
@@ -1078,8 +1180,11 @@ class Component extends DCLogic {
       isDocx: isDoc && d.type === 'docx', formatOpen: fmtOn, isXlsx: isDoc && d.type === 'xlsx', isPptx: isDoc && d.type === 'pptx',
       onDocChange: (nd, opts) => this.setDoc(nd, !(opts && opts.silent)), onUndo: () => this.undo(false), onRedo: () => this.undo(true), onRevise: accept => this.revise(accept), toastFn: m => this.toastMsg(m),
       askAI: text => { this.panelTo({ showAI: true, showFormat: false }); this.send(text); }, // an editor's own AI button (幻灯片 ✦ 美化): the panel opens and the request goes as a message
-      showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? $t(WELCOME[d.type]) + (st.model ? $t('（') + st.model + $t('）') : '') : $t(NO_CHAT)) : '', thinking: st.thinking,
+      showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? $t(WELCOME[d.type]) + (st.model ? $t('（') + (cfg && PP ? PP.modelName(cfg.provider, st.model) : st.model) + $t('）') : '') : $t(CONNECT)) : '', thinking: st.thinking,
       needsModel: !st.chatOn, openAiSettings: () => this.openSettings('ai'),
+      hasModelChip: !!(st.chatOn && cfg && PP && cfg.source !== 'host'), modelChip: cfg && PP ? PP.modelName(cfg.provider, st.model || cfg.model) : st.model || '', modelChipTitle: $t('切换模型'),
+      openModelMenu: e => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ menu: { kind: 'model', x: Math.round(Math.max(8, Math.min(window.innerWidth - 268, r.left))), y: Math.round(r.bottom + 6) }, docsOpen: false }); },
+      ...this.setupVals(),
       msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', html: { __html: m.text ? (this.MD ? this.MD.mdToHtml(m.text, { safe: true }) : escHtml(m.text)) : '' }, setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: $t('执行了 {n} 条命令', { n: (m.steps || []).length }), stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? $t('{n} 处修改', { n: ch.items.length }) : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: $t(ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复'), onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
       chips: d && !msgs.length ? CHIPS[d.type].map(t => { const label = $t(t); return { text: label, onClick: () => this.send(label) }; }) : [],
       input: st.input, onInput: e => this.setState({ input: e.target.value }),

@@ -3,7 +3,8 @@
 // Writer answers each model call (writer-embed.js: options.ai). POST /chat answers with the server's events: delta {text} as the
 // reply streams, text {text} once whole, tool {command, code, output, wrote}, done {steps}, error {message, hint}.
 //
-// The site sees one call as { system, messages, tools } and answers { text, toolCalls: [{ id, name, input }] }. messages is the
+// The site sees one call as { system, messages, tools, purpose } and answers { text, toolCalls: [{ id, name, input }] }; purpose is
+// 'chat' for the assistant and 'complete' for AI 自动补全 (no tools, a few words: a fast model does). messages is the
 // turn so far, provider-neutral: { role: 'user', content } | { role: 'assistant', content, toolCalls } | { role: 'tool',
 // toolCallId, name, content, isError } (writer-embed.js has adapters for the Anthropic and OpenAI-compatible APIs).
 export const MAX_STEPS = 24;
@@ -33,7 +34,7 @@ async function turn(body, signal, ask, engine, send) {
   let steps = 0;
   for (; steps < MAX_STEPS; steps++) {
     if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    const reply = await ask({ system, messages: messages.map(m => Object.assign({}, m)), tools }, text => send('delta', { text }), signal) || {};
+    const reply = await ask({ system, messages: messages.map(m => Object.assign({}, m)), tools, purpose: 'chat' }, text => send('delta', { text }), signal) || {};
     const text = String(reply.text || ''), calls = (reply.toolCalls || []).filter(c => c && c.name);
     if (text) send('text', { text });
     messages.push({ role: 'assistant', content: text, toolCalls: calls });
@@ -47,4 +48,14 @@ async function turn(body, signal, ask, engine, send) {
     if (steps === MAX_STEPS - 1) send('text', { text: '已达到本轮的步数上限，先停在这里；回复「继续」可以接着做。' }); // i18n-ok: the model's own words to the user, as the desktop assistant says them
   }
   send('done', { steps: Math.min(steps + 1, MAX_STEPS) });
+}
+
+/** One autocomplete request (POST /complete: { before, after, hint }): the engine's prompt, one model call through the site with no
+ *  tools (purpose 'complete', so the site can send it to a faster model), the reply cleaned as the desktop engine does. */
+export async function completeTurn(body, signal, { ask, engine }) {
+  const before = String(body.before || '');
+  if (!before.trim()) return '';
+  const { system, user } = await engine.completePrompt(before, body.after || '', body.hint || '');
+  const reply = await ask({ system, messages: [{ role: 'user', content: user }], tools: [], purpose: 'complete' }, null, signal) || {};
+  return engine.completeClean(reply.text || '', before);
 }

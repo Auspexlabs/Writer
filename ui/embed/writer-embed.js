@@ -177,7 +177,8 @@
   };
 
   // ---------- the assistant: options.ai(request, { onDelta, signal }) → { text, toolCalls: [{ id, name, input }] } ----------
-  // request: { system, messages, tools }. messages is provider-neutral (ui/embed/ai.js): { role: 'user', content } |
+  // request: { system, messages, tools, purpose }: purpose 'chat' (the assistant) or 'complete' (AI 自动补全: no tools, a few
+  // words; the adapters take completeModel for it). messages is provider-neutral (ui/embed/ai.js): { role: 'user', content } |
   // { role: 'assistant', content, toolCalls } | { role: 'tool', toolCallId, name, content, isError }. The adapters below speak
   // the Anthropic Messages API and OpenAI-compatible /chat/completions; point url at the site's own endpoint, which adds the key.
 
@@ -200,6 +201,10 @@
     }
     return pump();
   }
+  /** The model for a call: completeModel for the autocomplete (purpose 'complete') when given, else model, else the default. */
+  function pickModel(o, request, fallback) { return (request.purpose === 'complete' && o.completeModel) || o.model || fallback; }
+  /** tools only when there are any: an empty list is refused by some APIs (the autocomplete has none). */
+  function withTools(body, tools) { if (tools && tools.length) body.tools = tools; return body; }
   function failed(res) { return res.text().then(function (t) { var msg = t; try { var j = JSON.parse(t); msg = (j.error && (j.error.message || j.error)) || j.message || t; } catch (e) { } throw new Error(res.status + ' ' + String(msg).slice(0, 300)); }); }
 
   function anthropic(o) {
@@ -225,7 +230,7 @@
       headers = Object.assign(headers, o.headers || {});
       return fetch(url, {
         method: 'POST', headers: headers, signal: ctx.signal, credentials: o.credentials || 'same-origin',
-        body: JSON.stringify({ model: o.model || 'claude-sonnet-5', max_tokens: o.maxTokens || 8192, system: request.system, tools: request.tools, messages: messages, stream: true })
+        body: JSON.stringify(withTools({ model: pickModel(o, request, 'claude-sonnet-5'), max_tokens: request.purpose === 'complete' ? 400 : o.maxTokens || 8192, system: request.system, messages: messages, stream: true }, request.tools))
       }).then(function (res) {
         if (!res.ok) return failed(res);
         var blocks = {}, text = '';
@@ -257,7 +262,7 @@
       var tools = request.tools.map(function (t) { return { type: 'function', function: { name: t.name, description: t.description, parameters: t.input_schema } }; });
       return fetch(o.url || 'https://api.openai.com/v1/chat/completions', {
         method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, o.headers || {}), signal: ctx.signal, credentials: o.credentials || 'same-origin',
-        body: JSON.stringify({ model: o.model || 'gpt-4o', messages: messages, tools: tools, stream: true })
+        body: JSON.stringify(withTools({ model: pickModel(o, request, 'gpt-6-sol'), messages: messages, stream: true }, tools))
       }).then(function (res) {
         if (!res.ok) return failed(res);
         var text = '', calls = [];

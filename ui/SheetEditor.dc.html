@@ -22,7 +22,7 @@
     <button onMouseDown="{{ md }}" onClick="{{ openFx }}" title="插入函数" style="height:100%;border:none;background:transparent;color:var(--ink-3, rgba(29,29,31,0.36));font-family:Georgia,serif;font-style:italic;cursor:pointer;font-size:13px">fx</button>
     <div style="position:relative;height:100%;min-width:0">
       <div ref="{{ fxMirRef }}" style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:13px;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;white-space:pre;overflow:hidden;pointer-events:none;color:var(--k1, #1D1D1F)">{{ fxMirror }}</div>
-      <input ref="{{ fxRef }}" value="{{ fxValue }}" onChange="{{ onFx }}" onFocus="{{ onFxFocus }}" onKeyDown="{{ onFxKey }}" onKeyUp="{{ syncMirror }}" onScroll="{{ syncMirror }}" onCompositionStart="{{ onCompS }}" onCompositionEnd="{{ onCompE }}" onMouseDown="{{ onInMD }}" spellCheck="false" style="position:absolute;inset:0;width:100%;height:100%;border:none;padding:0 10px;font-size:13px;outline:none;background:transparent;color:{{ fxColor }};caret-color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">
+      <input ref="{{ fxRef }}" data-complete="a spreadsheet cell" value="{{ fxValue }}" onChange="{{ onFx }}" onFocus="{{ onFxFocus }}" onKeyDown="{{ onFxKey }}" onKeyUp="{{ syncMirror }}" onScroll="{{ syncMirror }}" onCompositionStart="{{ onCompS }}" onCompositionEnd="{{ onCompE }}" onMouseDown="{{ onInMD }}" spellCheck="false" style="position:absolute;inset:0;width:100%;height:100%;border:none;padding:0 10px;font-size:13px;outline:none;background:transparent;color:{{ fxColor }};caret-color:var(--k1, #1D1D1F);font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">
     </div>
   </div>
 
@@ -74,7 +74,7 @@
       </sc-if>
       <div style="position:sticky;top:{{ selST }};left:{{ selSL }};width:0;height:0;z-index:{{ fhZ }}"><div onMouseDown="{{ onFillDown }}" onDoubleClick="{{ onFillDbl }}" style="position:absolute;left:{{ fhL }};top:{{ fhT }};width:8px;height:8px;background:var(--k59, #3F7D5C);border:1.5px solid var(--k0, #FFFFFF);cursor:crosshair;box-sizing:content-box"></div></div>
       <div ref="{{ inMirRef }}" style="position:absolute;left:{{ inL }};top:{{ inT }};width:{{ inW }};height:{{ inH }};display:{{ inMirD }};align-items:center;padding:0 6px;box-sizing:border-box;font-size:13px;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;white-space:pre;overflow:hidden;background:var(--k0, #FFFFFF);color:var(--k1, #1D1D1F);pointer-events:none;z-index:{{ z.mirror }}">{{ inMirror }}</div>
-      <input ref="{{ inRef }}" value="{{ inVal }}" onChange="{{ onInChange }}" onKeyDown="{{ onInKey }}" onKeyUp="{{ syncMirror }}" onScroll="{{ syncMirror }}" onCompositionStart="{{ onCompS }}" onCompositionEnd="{{ onCompE }}" onMouseDown="{{ onInMD }}" onCopy="{{ onCopy }}" onCut="{{ onCut }}" onPaste="{{ onPaste }}" onBlur="{{ onInBlur }}" spellCheck="false" autoComplete="off" style="position:absolute;left:{{ inL }};top:{{ inT }};width:{{ inW }};height:{{ inH }};opacity:{{ inOp }};pointer-events:{{ inPe }};z-index:{{ z.editor }};border:none;outline:2px solid var(--k59, #3F7D5C);padding:0 6px;font-size:13px;background:{{ inBg }};color:{{ inColor }};caret-color:{{ inCaret }};font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;box-shadow:0 2px 8px var(--k22, rgba(0,0,0,0.12))">
+      <input ref="{{ inRef }}" data-complete="a spreadsheet cell" value="{{ inVal }}" onChange="{{ onInChange }}" onKeyDown="{{ onInKey }}" onKeyUp="{{ syncMirror }}" onScroll="{{ syncMirror }}" onCompositionStart="{{ onCompS }}" onCompositionEnd="{{ onCompE }}" onMouseDown="{{ onInMD }}" onCopy="{{ onCopy }}" onCut="{{ onCut }}" onPaste="{{ onPaste }}" onBlur="{{ onInBlur }}" spellCheck="false" autoComplete="off" style="position:absolute;left:{{ inL }};top:{{ inT }};width:{{ inW }};height:{{ inH }};opacity:{{ inOp }};pointer-events:{{ inPe }};z-index:{{ z.editor }};border:none;outline:2px solid var(--k59, #3F7D5C);padding:0 6px;font-size:13px;background:{{ inBg }};color:{{ inColor }};caret-color:{{ inCaret }};font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;box-shadow:0 2px 8px var(--k22, rgba(0,0,0,0.12))">
       <sc-for list="{{ pics }}" as="pc" hint-placeholder-count="0">
         <div style="position:sticky;top:{{ pc.st }};left:{{ pc.sl }};width:0;height:0;z-index:{{ pc.z }}"><div data-pic="{{ pc.id }}" onMouseDown="{{ pc.onSel }}" title="{{ pc.alt }}" style="position:absolute;left:{{ pc.x }};top:{{ pc.y }};width:{{ pc.w }};height:{{ pc.h }};transform:{{ pc.tf }};opacity:{{ pc.op }};outline:{{ pc.line }};outline-offset:1px;cursor:pointer">
           <div style="position:absolute;inset:0;{{ pc.frame }}"><img src="{{ pc.src }}" alt="" draggable="false" style="{{ pc.image }}"></div>
@@ -242,6 +242,7 @@ class Component extends DCLogic {
   /** A sheet shows grid lines unless the user turned them off for it, or off by default in the settings (grid prop). */
   noGrid(sh) { return sh.noGrid != null ? !!sh.noGrid : this.props.grid === false; }
   componentDidMount() {
+    for (const r of [this.inRef, this.fxRef]) if (r.current) r.current.__complete = this.aiCell; // AI 自动补全's context (aiCell)
     import('./glass.js');
     import('./sheet-engine.js').then(m => { this.E = m; this.forceUpdate(); this.wantFocus = true; });
     import('./picture.js').then(m => { this.P = m; this.forceUpdate(); }); // the 图片 tab
@@ -262,7 +263,21 @@ class Component extends DCLogic {
   }
   onWheel = e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom(this.state.zoom * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
   applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
+  /** AI 自动补全 in a cell or the formula bar (complete.js): the cell's text so far, told which column it is in (its heading) and
+   *  what the cells above it and beside it hold. A formula (=, +, -, @) gets no suggestion. */
+  aiCell = (el, at) => {
+    const v = el.value; if (/^[=+\-@]/.test(v) || !this.E) return null;
+    const ed = this.state.edit, a = ed || this.act(), E = this.E, calc = new E.Calc(this.doc), val = (r, c) => String(calc.value(this.si, r, c) ?? '').slice(0, 40);
+    const q = s => '"' + s + '"', col = [], row = [];
+    for (let r = a.r - 1; r >= 0 && col.length < 8 && a.r - r < 40; r--) { const x = val(r, a.c); if (x) col.unshift(q(x)); }
+    for (let c = Math.max(0, a.c - 4); c <= a.c + 4 && c < E.NC; c++) if (c !== a.c) { const x = val(a.r, c); if (x) row.push(E.colName(c) + ' ' + q(x)); }
+    const head = a.r > 0 ? val(0, a.c) : '';
+    const hint = 'cell ' + E.A(a.r, a.c) + ' of the sheet "' + (this.sh.name || '') + '" in a spreadsheet' + (head ? ', in the column headed "' + head + '"' : '')
+      + (col.length ? '; the cells above it hold ' + col.join(', ') : '') + (row.length ? '; its row holds ' + row.join(', ') : '') + '. Suggest only what completes this one cell.';
+    return { before: v.slice(0, at.at), after: '', hint };
+  };
   componentDidUpdate(pp) {
+    for (const r of [this.inRef, this.fxRef]) if (r.current && r.current.__complete !== this.aiCell) r.current.__complete = this.aiCell;
     this.attachWheel();
     if (pp.doc && pp.doc.id !== this.props.doc.id) { this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); this.clip = null; }
     // a selected picture or chart belongs to its sheet: another sheet (tab, link, undo, a move or delete) starts with none

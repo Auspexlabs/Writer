@@ -124,7 +124,8 @@ window.addEventListener('message', async e => {
 // ---- the assistant: the site answers chat turns (writer-embed.js: options.ai); ai.js runs the tool loop here ----
 const chatStreams = new Map(); let chatSeq = 0;
 // registered at once (the editors ask /files whether there is an assistant before anything else); the loop loads on first use
-if (opts.ai) setChat(async (body, signal) => (await import('./ai.js')).chatTurn(body, signal, { ask: askSite, engine }), opts.aiModel || '');
+if (opts.ai) setChat(async (body, signal) => (await import('./ai.js')).chatTurn(body, signal, { ask: askSite, engine }), opts.aiModel || '',
+  async (body, signal) => (await import('./ai.js')).completeTurn(body, signal, { ask: askSite, engine }));
 /** One model call through the site: request { system, messages, tools } → { text, toolCalls }; onDelta gets the text as it streams. */
 function askSite(request, onDelta, signal) {
   return new Promise((resolve, reject) => {

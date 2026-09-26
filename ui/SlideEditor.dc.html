@@ -99,13 +99,13 @@
                 </sc-if>
                 <sc-if value="{{ o.hasText }}" hint-placeholder-val="{{ false }}">
                   <div data-tbox="{{ o.id }}" style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:{{ o.ovf }};word-break:break-word;outline:{{ o.phLine }};{{ o.tx }}">
-                    <div class="sv-t se-ed" data-edit="{{ o.id }}" data-hint="{{ o.hint }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ o.onBlur }}" dangerouslySetInnerHTML="{{ o.inner }}" style="min-height:1em;cursor:{{ o.tcur }};user-select:{{ o.us }};outline:none"></div>
+                    <div class="sv-t se-ed" data-edit="{{ o.id }}" data-hint="{{ o.hint }}" data-complete="{{ aiHint }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ o.onBlur }}" dangerouslySetInnerHTML="{{ o.inner }}" style="min-height:1em;cursor:{{ o.tcur }};user-select:{{ o.us }};outline:none"></div>
                   </div>
                 </sc-if>
                 <sc-if value="{{ o.isTable }}" hint-placeholder-val="{{ false }}">
                   <div style="position:absolute;inset:0;display:grid;grid-template-columns:{{ o.gtc }};grid-template-rows:{{ o.gtr }};font-size:{{ o.fs }};font-family:{{ o.font }}">
                     <sc-for list="{{ o.tcells }}" as="c" hint-placeholder-count="0">
-                      <div data-edit="{{ c.key }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ c.onBlur }}" onMouseDown="{{ c.onMD }}" onFocus="{{ c.onFocus }}" style="grid-column:{{ c.gc }};grid-row:{{ c.gr }};display:flex;align-items:center;justify-content:{{ c.jc }};padding:0 16px;background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};border:{{ c.border }};border-bottom:{{ c.bb }};overflow:hidden;outline:{{ c.outline }};cursor:{{ o.tcur }};box-sizing:border-box">{{ c.text }}</div>
+                      <div data-edit="{{ c.key }}" data-complete="{{ aiCellHint }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ c.onBlur }}" onMouseDown="{{ c.onMD }}" onFocus="{{ c.onFocus }}" style="grid-column:{{ c.gc }};grid-row:{{ c.gr }};display:flex;align-items:center;justify-content:{{ c.jc }};padding:0 16px;background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};border:{{ c.border }};border-bottom:{{ c.bb }};overflow:hidden;outline:{{ c.outline }};cursor:{{ o.tcur }};box-sizing:border-box">{{ c.text }}</div>
                     </sc-for>
                   </div>
                 </sc-if>
@@ -143,7 +143,7 @@
       <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
         <div onMouseDown="{{ notesGrab }}" title="拖动以调整备注窗格的高度" style="flex:none;height:8px;margin:0 16px;cursor:ns-resize"></div>
         <div data-notes="1" style="flex:none;height:{{ notesH }};margin:0 16px 36px;border-top:1px solid var(--line, rgba(0,0,0,0.1));display:flex;flex-direction:column">
-          <textarea value="{{ notes }}" onChange="{{ onNotes }}" placeholder="单击此处添加备注" style="flex:1;border:none;background:transparent;resize:none;padding:10px 4px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px;line-height:1.6;outline:none;color:var(--ink, #1D1D1F)"></textarea>
+          <textarea data-complete="{{ aiNotesHint }}" value="{{ notes }}" onChange="{{ onNotes }}" placeholder="单击此处添加备注" style="flex:1;border:none;background:transparent;resize:none;padding:10px 4px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px;line-height:1.6;outline:none;color:var(--ink, #1D1D1F)"></textarea>
         </div>
       </sc-if>
       <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
@@ -887,6 +887,9 @@ class Component extends DCLogic {
     // a picture tool's result shows at once, before the engine has answered
     const livePic = x => { const pl = st.picLive; if (!pl || pl.id !== x.id) return x; const look = Object.assign({}, pl.look); delete look.rotation; return Object.assign({}, x, { look, rot: Number(pl.look.rotation) || 0 }); };
     const decor = s ? (s.decor || []).map(x => Object.assign(K.objView(x, th, ptPx), { id: x.id, ce: false, cursor: 'default', pe: 'none', phLine: 'none', onMD: null, onDbl: null, onBlur: null })) : [];
+    // AI 自动补全 (complete.js): what the model is told about the text being typed
+    const titled = s && s.objs.find(x => /^(title|ctrTitle)$/.test(x.ph || '')), slideTitle = titled ? K.textOf(titled.html).trim().slice(0, 80) : '';
+    const onSlide = s ? ' on slide ' + (this.ci + 1) + ' of a presentation' + (slideTitle ? ' titled "' + slideTitle + '"' : '') : '';
     const objs = s ? decor.concat(s.objs.map(x => {
       const y = livePic(live(x));
       const v = K.objView(y, th, ptPx), editing = st.editing === x.id, isSel = st.sel === x.id;
@@ -963,6 +966,7 @@ class Component extends DCLogic {
       hasSel: !!fo, fr: fo ? { left: fo.x + 'px', top: fo.y + 'px', width: fo.w + 'px', height: fo.h + 'px', tf: `rotate(${fo.rot || 0}deg)`, line: fo.t === 'line' ? 'none' : `${1.5 / k}px solid var(--k59, #3F7D5C)` } : {}, frames, colHandles,
       handles, hs: hs + 'px', hb: 1.5 / k + 'px', badge: 26 / k + 'px', badgeFs: 13 / k + 'px',
       showNotes: st.showNotes && !this.props.pure, notes: s ? s.notes || '' : '', notesH: (st.notesH || 84) + 'px',
+      aiHint: 'a text box' + onSlide, aiCellHint: 'a table cell' + onSlide, aiNotesHint: 'the speaker notes' + onSlide,
       notesGrab: e => { e.preventDefault(); this.op = { kind: 'notes', sy: e.clientY, h: st.notesH || 84 }; }, onNotes: e => this.commit((dd, cs) => { cs.notes = e.target.value; }, true),
       toggleNotes: () => this.setState({ showNotes: !st.showNotes }), notesLabel: st.showNotes ? $t('隐藏备注') : $t('显示备注'),
       sorter: !!st.sorter, toggleSorter: () => this.setState({ sorter: !st.sorter, sel: null, sels: [], editing: null }), sorterLabel: st.sorter ? $t('普通视图') : $t('幻灯片浏览'),

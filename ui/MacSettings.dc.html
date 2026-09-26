@@ -49,6 +49,7 @@
                     </select>
                     <span style="position:absolute;right:9px;top:7px;width:5px;height:5px;border-right:1.4px solid var(--ink-2, rgba(29,29,31,0.62));border-bottom:1.4px solid var(--ink-2, rgba(29,29,31,0.62));transform:rotate(45deg);pointer-events:none"></span>
                   </div>
+                  <sc-if value="{{ r.popAct }}" hint-placeholder-val="{{ false }}"><button onClick="{{ r.onAct }}" style="flex:none;height:24px;padding:0 10px;border:none;border-radius:7px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px var(--k22, rgba(0,0,0,0.12)),0 1px 2px var(--k66, rgba(0,0,0,0.06));font-size:12.5px;color:var(--ink, #1D1D1F);cursor:default;white-space:nowrap">{{ r.act }}</button></sc-if>
                 </sc-if>
                 <sc-if value="{{ r.isSeg }}" hint-placeholder-val="{{ false }}">
                   <div style="flex:none;display:flex;gap:1px;padding:2px;border-radius:var(--tab-r, 9px);background:var(--fill, rgba(0,0,0,0.07))">
@@ -109,7 +110,7 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:640},&quot;tab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;general&quot;,&quot;look&quot;,&quot;edit&quot;,&quot;ai&quot;,&quot;file&quot;,&quot;keys&quot;],&quot;default&quot;:&quot;general&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
-const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, autoUpdate: true, lang: '跟随系统', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
+const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, autoUpdate: true, lang: '跟随系统', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, complete: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
 const TABS = [['general', '通用', '⚙︎'], ['look', '外观', '◐'], ['edit', '编辑@@settings', '✎'], ['ai', 'AI', '✦'], ['file', '存储@@settings', '▤'], ['keys', '快捷键', '⌘']];
 const ICONS = ['word', 'excel', 'ppt', 'markdown', 'pdf', 'mindmap'];
 const O = a => a.map(x => Array.isArray(x) ? { v: String(x[0]), l: $t(String(x[1])) } : { v: String(x), l: $t(String(x)) });
@@ -126,19 +127,39 @@ class Component extends DCLogic {
     if (NATIVE.kind) invoke('default_app', { action: 'state' }).then(def => this.setState({ def })).catch(() => { });
     // 设置 › AI talks to the engine (this may be a window of its own): the model settings and the key live there, never in the page.
     Promise.all([import('./engine.js'), import('./prefs.js')]).then(([EN, P]) => { this.EN = EN; this.P = P; return EN.aiConfig(); })
-      .then(c => { const ai = this.P.aiForm(c); this.aiSent = this.aiKey(ai); this.setState({ ai }); })
+      .then(c => { const ai = this.P.aiForm(c); this.aiSent = this.aiKey(ai); this.setState({ ai }, () => this.loadModels(false)); })
       .catch(e => this.setState({ ai: this.P ? this.P.aiForm(null) : null, aiMsg: $t('读不到模型设置：{error}', { error: e.message }) }));
   }
   aiKey(ai, body) { const b = Object.assign({}, body || this.P.aiRequest(ai)); delete b.apiKey; return JSON.stringify(b); }
   editAi(patch) { this.setState(s => ({ ai: Object.assign({}, s.ai, patch) })); }
-  pickAi(id) { this.setState(s => ({ ai: this.P.pickProvider(s.ai, id), aiMsg: '' }), () => this.saveAi()); }
+  pickAi(id) { this.setState(s => ({ ai: this.P.pickProvider(s.ai, id), aiMsg: '', otherModel: false, modelsMsg: '' }), () => { this.saveAi(); this.loadModels(false); }); }
+  /** 模型: a model of the menu, or 其他模型… to type a name the menu does not have. */
+  pickModel(v) {
+    if (v === '__other') { this.setState({ otherModel: true }); return; }
+    this.setState(s => ({ otherModel: false, modelsMsg: '', ai: Object.assign({}, s.ai, { model: v }) }), () => this.saveAi());
+  }
+  /** What the service lists for this key (POST /ai/models), kept for the menus here and in the AI panel. Quietly, unless asked
+   *  (刷新列表): then it says what it found or why it could not. A local server's list gives a model when none is chosen yet. */
+  async loadModels(asked) {
+    const P = this.P, EN = this.EN, f = this.state.ai; if (!P || !EN || !f || !EN.aiModels) return;
+    const b = P.aiRequest(f), p = P.aiPreset(f.provider);
+    if (!/^https?:\/\//.test(b.baseUrl) || (p.key && !P.keyStored(f) && !b.apiKey)) { if (asked) this.setState({ modelsMsg: $t('先填写 API Key，才能读取这家的模型列表') }); return; }
+    this.setState({ modelsBusy: true, modelsMsg: '' });
+    try {
+      const list = await EN.aiModels(Object.assign({ provider: b.provider, baseUrl: b.baseUrl }, b.apiKey ? { apiKey: b.apiKey } : {}));
+      P.keepListed(b.provider, b.baseUrl, list);
+      this.setState(s => ({ modelsBusy: false, modelsMsg: asked ? $t('这家服务商列出了 {n} 个模型', { n: list.length }) : '' }), () => {
+        const g = this.state.ai; if (g && !g.model && list.length && g.provider === b.provider) this.pickModel(list[0].id);
+      });
+    } catch (e) { this.setState({ modelsBusy: false, modelsMsg: asked ? $t('读不到模型列表：{error}', { error: $t(e.message) }) : '' }); }
+  }
   /** Saves the model settings once they are complete: on leaving a field, picking a service, or 清除 (clear). Unchanged settings are not sent again. */
   saveAi(clear) {
     const P = this.P, EN = this.EN, f = this.state.ai; if (!P || !EN || !f) return;
     const missing = P.aiMissing(f); if (missing) { this.setState({ aiMsg: missing }); return; }
     const body = P.aiRequest(f); if (clear) body.apiKey = '';
     const k = this.aiKey(f, body); if (k === this.aiSent && body.apiKey == null) return; this.aiSent = k;
-    return this.aiSaving = EN.saveAiConfig(body).then(c => this.setState(s => ({ aiMsg: '已保存', ai: Object.assign({}, s.ai, { hasKey: c.hasKey, savedUrl: c.baseUrl, source: c.source, key: body.apiKey != null && s.ai.key === f.key ? '' : s.ai.key }) })),
+    return this.aiSaving = EN.saveAiConfig(body).then(c => this.setState(s => ({ aiMsg: '已保存', ai: Object.assign({}, s.ai, { hasKey: c.hasKey, savedUrl: c.baseUrl, source: c.source, key: body.apiKey != null && s.ai.key === f.key ? '' : s.ai.key }) }), () => { if (body.apiKey) this.loadModels(false); }),
       e => { this.aiSent = null; this.setState({ aiMsg: e.hint ? $t('{error}（{hint}）', { error: e.message, hint: e.hint }) : e.message }); });
   }
   async testAi() {
@@ -148,17 +169,35 @@ class Component extends DCLogic {
     this.setState({ aiMsg: '正在测试…' });
     try { const r = await EN.testAi(P.aiRequest(f)); this.setState({ aiMsg: r.ok ? '✓ 连接成功' : '✕ ' + r.error }); } catch (e) { this.setState({ aiMsg: '✕ ' + e.message }); }
   }
-  /** 服务商 · 接口地址 · API Key · 模型 · 测试连接. The key field is write-only: a stored key shows as 已保存 with 清除, never its value. */
+  /** 服务商 · 接口地址 · API Key · 模型 · 测试连接. The key field is write-only: a stored key shows as 已保存 with 清除, never its value.
+   *  模型 is a menu: the service's own models, what it lists for the key (刷新列表), and 其他模型… for a name typed in. */
   aiRows(base) {
     const P = this.P, f = this.state.ai; if (!P || !f) return [base('正在读取模型设置…', this.state.aiMsg)];
     const p = P.aiPreset(f.provider), stored = P.keyStored(f);
     const field = (k, label, ph, hint, type) => ({ ...base(label, hint), isInput: true, type: type || 'text', ac: type === 'password' ? 'new-password' : 'off', value: f[k] || '', ph: $t(ph), w: '260px', hasAct: false, onChange: e => this.editAi({ [k]: e.target.value }), onBlur: () => this.saveAi(), onKey: e => { if (e.key === 'Escape' || (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) e.currentTarget.blur(); } }); // Esc closes the window: save what was typed first
+    const menu = this.modelMenu(), cur = menu.find(x => x.id === f.model), other = !!this.state.otherModel;
+    const note = this.state.modelsMsg || (other ? '' : cur ? (cur.note ? $t(cur.note) : cur.listed ? $t('这家服务商列出的模型') : '') : p.models.length ? '' : $t('点「刷新列表」读取可用的模型'));
     return [
       { ...base('服务商', f.source === 'env' ? '正在使用环境变量里的设置，它优先于这里保存的内容' : ''), isPopup: true, value: f.provider, opts: P.AI_PROVIDERS.map(x => ({ v: x.id, l: $t(x.name) })), minW: '170px', onChange: e => this.pickAi(e.target.value) },
       field('baseUrl', '接口地址', p.url || 'https://…/v1'),
       { ...field('key', 'API Key', stored ? '已保存' : p.key ? '粘贴 API Key' : '不需要可留空', '只保存在这台电脑上', 'password'), w: stored ? '206px' : '260px', hasAct: stored, act: $t('清除'), onAct: () => this.saveAi(true) },
-      field('model', '模型', p.id === 'anthropic' ? $t('默认 {model}', { model: p.model }) : p.model ? $t('例如 {model}', { model: p.model }) : p.id === 'lmstudio' ? 'LM Studio 里加载的模型名' : '服务商文档里的模型名'),
+      { ...base('模型', note), isPopup: true, value: other ? '__other' : f.model || '', minW: '200px',
+        opts: (f.model || other ? [] : [{ v: '', l: $t('请选择') }]).concat(menu.map(x => ({ v: x.id, l: x.name })), [{ v: '__other', l: $t('其他模型…') }]),
+        onChange: e => this.pickModel(e.target.value), popAct: true, act: $t(this.state.modelsBusy ? '读取中…' : '刷新列表'), onAct: () => this.loadModels(true) },
+      ...(other ? [{ ...field('model', '模型名称', '服务商文档里的模型名'), onBlur: () => { this.setState({ otherModel: !this.state.ai.model }); this.saveAi(); } }] : []),
       { ...base('测试连接', this.state.aiMsg), isButton: true, btn: $t('测试'), onClick: () => this.testAi() }
+    ];
+  }
+  /** The model menu for the service in the form: its own models, then what it listed last time (prefs.js modelMenu). */
+  modelMenu() { const P = this.P, f = this.state.ai; if (!P || !f) return []; return P.modelMenu(f.provider, P.listedModels(f.provider, P.aiRequest(f).baseUrl), f.model); }
+  /** 自动补全: the switch (a setting of this window's pages) and the model it asks (the engine's settings, with the service). */
+  completeRows(base, tg) {
+    const f = this.state.ai, menu = this.modelMenu(), cm = f && menu.find(x => x.id === f.completeModel);
+    return [
+      tg('complete', '打字时显示 AI 建议', '停顿片刻后，光标后面会出现灰色的建议文字：按 Tab 接受，按 Esc 或继续打字忽略。光标前后的一段文字会发给所选的模型'),
+      ...(f ? [{ ...base('建议用的模型', cm && cm.note ? $t(cm.note) : '越快越好：选标着「适合自动补全」的模型'), isPopup: true, value: f.completeModel || '', minW: '200px',
+        opts: [{ v: '', l: $t('与助手相同') }].concat(menu.map(x => ({ v: x.id, l: x.name }))),
+        onChange: e => { const v = e.target.value; this.setState(s => ({ ai: Object.assign({}, s.ai, { completeModel: v }) }), () => this.saveAi()); } }] : [])
     ];
   }
   /** 通用 › 默认打开方式: the state from the app (default_app.rs) with 设为默认 (macOS sets it) or 打开系统设置 (Windows: 设置 › 默认应用 at Writer). */
@@ -202,6 +241,7 @@ class Component extends DCLogic {
       ai: [
         G('', [tg('ai', '启用 ✦ AI 助手'), seg('tone', '回复风格', [['brief', '简洁'], ['bal', '均衡'], ['detail', '详细']])]),
         G('模型', this.aiRows(base)),
+        G('自动补全', this.completeRows(base, tg)),
         G('隐私', [tg('preview', '写入前先预览修改'), tg('ctx', '发送整篇文档作为上下文', '关闭后仅发送选中的内容'), tg('web', '联网搜索', '允许助手搜索和打开网页')]),
         G('自定义说明', [{ ...base('告诉 AI 你的偏好'), isText: true, value: v.instr, ph: $t('例如：用正式书面语。'), onChange: e => this.set('instr', e.target.value) }])
       ],

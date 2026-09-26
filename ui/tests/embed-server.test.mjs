@@ -126,3 +126,15 @@ test('while the site\'s first documents go in, the editors wait for them; the co
   open();
   assert.ok((await list).files.some(f => f.path === 'blank.docx'));
 });
+
+test('AI 自动补全 in the page: /complete goes to the site\'s completer with where it is typed; none set up is a 503', async () => {
+  let got = null;
+  S.setChat(async () => new Response(''), 'm', async (b, signal) => { got = [b, !!signal]; return ' rest'; });
+  const ok = await ask('/complete', { method: 'POST', body: JSON.stringify({ before: 'Dear', after: '', hint: 'a spreadsheet cell' }), signal: new AbortController().signal });
+  assert.deepEqual([ok.status, await ok.json(), got], [200, { text: ' rest' }, [{ before: 'Dear', after: '', hint: 'a spreadsheet cell' }, true]]);
+  assert.equal((await ask('/ai/models', { method: 'POST', body: '{}' })).status, 403, 'the site manages the models');
+  S.setChat(async () => new Response(''), 'm');
+  assert.equal((await ask('/complete', { method: 'POST', body: '{}' })).status, 503, 'an assistant without a completer');
+  S.setChat(null, '', async () => 'x');
+  assert.equal((await ask('/complete', { method: 'POST', body: '{}' })).status, 503, 'no assistant: no completer either');
+});

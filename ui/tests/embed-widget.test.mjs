@@ -284,3 +284,18 @@ test('OpenAI-compatible: servers that leave out the tool call index; an error an
   respond = () => new Response(JSON.stringify({ error: { message: 'model not found' } }), { status: 404 });
   await assert.rejects(Writer.ai.openai({ url: '/v1/chat/completions' })(request, { onDelta() { }, signal: null }), /^Error: 404 model not found$/);
 });
+
+test('the adapters on an autocomplete call (purpose complete): its own model when given, no tools, a short answer', async () => {
+  const bodies = [];
+  respond = (url, init) => { bodies.push(JSON.parse(init.body)); return url.includes('anthropic')
+    ? stream(anthropicEvents([{ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }, { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: ' rest' } }]))
+    : stream(openaiChunks([{ choices: [{ delta: { content: ' rest' } }] }])); };
+  const call = { system: 'SYS', messages: [{ role: 'user', content: 'Dear' }], tools: [], purpose: 'complete' };
+  const a = await Writer.ai.anthropic({ url: '/api/anthropic', model: 'claude-sonnet-5', completeModel: 'claude-haiku-4-5' })(call, { onDelta() { }, signal: null });
+  const o = await Writer.ai.openai({ url: '/v1/chat/completions', model: 'gpt-6-sol', completeModel: 'gpt-6-luna' })(call, { onDelta() { }, signal: null });
+  assert.deepEqual([a.text, o.text], [' rest', ' rest']);
+  assert.deepEqual([bodies[0].model, bodies[0].max_tokens, 'tools' in bodies[0]], ['claude-haiku-4-5', 400, false]);
+  assert.deepEqual([bodies[1].model, 'tools' in bodies[1]], ['gpt-6-luna', false]);
+  await Writer.ai.openai({ url: '/v1/chat/completions' })({ ...call, purpose: 'chat' }, { onDelta() { }, signal: null });
+  assert.equal(bodies[2].model, 'gpt-6-sol', 'the assistant\'s calls keep model (the default when none is given)');
+});

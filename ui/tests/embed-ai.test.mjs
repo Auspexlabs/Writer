@@ -2,7 +2,7 @@
 // giving the prompt and the tools and running them, the site answering each model call; POST /chat's events as the desktop's.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chatTurn, MAX_STEPS } from '../embed/ai.js';
+import { chatTurn, completeTurn, MAX_STEPS } from '../embed/ai.js';
 
 /** The server-sent events of a /chat answer, as [event, data]. */
 async function events(res) {
@@ -94,4 +94,17 @@ test('stopped by the user: the model call is cancelled, no tool runs after it, a
   assert.deepEqual(await events(res), [['delta', { text: '半' }]]);
   assert.equal(signalled, ac.signal, 'the site gets the editor\'s signal');
   assert.deepEqual(E.calls.filter(c => c[0] === 'tool'), []);
+});
+
+test('AI 自动补全: the engine\'s prompt, one model call with no tools and purpose complete, the reply cleaned by the engine', async () => {
+  const asked = [], engine = {
+    completePrompt: async (before, after, hint) => ({ system: 'SYS', user: [hint, before, after].join('|') }),
+    completeClean: async (text, before) => 'clean(' + text + ',' + before + ')'
+  };
+  const ask = async (request, onDelta, signal) => { asked.push([request, onDelta, !!signal]); return { text: 'raw' }; };
+  const text = await completeTurn({ before: 'Dear team', after: 'Regards', hint: 'the body of a Word document' }, new AbortController().signal, { ask, engine });
+  assert.equal(text, 'clean(raw,Dear team)');
+  assert.deepEqual(asked, [[{ system: 'SYS', messages: [{ role: 'user', content: 'the body of a Word document|Dear team|Regards' }], tools: [], purpose: 'complete' }, null, true]]);
+  assert.equal(await completeTurn({ before: '  ' }, null, { ask, engine }), '', 'nothing typed: no call');
+  assert.equal(asked.length, 1);
 });

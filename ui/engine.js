@@ -205,6 +205,19 @@ export async function testAi(settings) {
   return (await http('/ai/test', { method: 'POST', headers: JSON_BODY, body: JSON.stringify(settings || {}) })).json();
 }
 
+/** The models the service lists for { provider, baseUrl, apiKey? } (the saved settings when left out): [{ id, name? }]. Rejects with
+ *  the service's error (请填写 API Key, Key 无效, 连不上 …); a service without a list answers with its own error. */
+export async function aiModels(settings) {
+  return (await (await http('/ai/models', { method: 'POST', headers: JSON_BODY, body: JSON.stringify(settings || {}) })).json()).models || [];
+}
+
+/** AI 自动补全: what the user is likely to type next after `before` (the text up to the caret; `after` follows it), one line, or ''.
+ *  hint tells the model where this is typed ("a spreadsheet cell …"); signal cancels it when the user types on. */
+export async function complete(before, after, hint, signal) {
+  const r = await http('/complete', { method: 'POST', headers: JSON_BODY, body: JSON.stringify({ before, after, hint: hint || '' }), signal });
+  return (await r.json()).text || '';
+}
+
 // ---------- units ----------
 const UNIT = { cm: 1, mm: 0.1, in: 2.54, pt: 2.54 / 72, px: 2.54 / 96, emu: 2.54 / 914400 };
 export function cmOf(s) { const m = /^(-?[\d.]+)\s*([a-z]+)?$/i.exec(String(s || '').trim()); if (!m) return 0; return +m[1] * (UNIT[(m[2] || 'cm').toLowerCase()] || 1); }
