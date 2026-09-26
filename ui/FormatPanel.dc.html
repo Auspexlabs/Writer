@@ -207,12 +207,12 @@
                   <div>
                     <div class="fp-cmt-h"><span>{{ it.head }}</span><button onClick="{{ it.onResolve }}" title="{{ it.resolveTitle }}">{{ it.resolveLabel }}</button><button onClick="{{ it.onDelete }}">删除</button></div>
                     <sc-if value="{{ it.quote }}" hint-placeholder-val="{{ false }}"><div class="fp-cmt-q">{{ it.quote }}</div></sc-if>
-                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea value="{{ it.text }}" onChange="{{ it.onText }}" placeholder="输入批注…" rows="2"></textarea></sc-if>
+                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea data-complete="a comment in the margin of a document" value="{{ it.text }}" onChange="{{ it.onText }}" placeholder="输入批注…" rows="2"></textarea></sc-if>
                     <sc-if value="{{ it.reading }}" hint-placeholder-val="{{ true }}"><div class="fp-cmt-t">{{ it.text }}</div></sc-if>
                     <sc-for list="{{ it.replies }}" as="rp" hint-placeholder-count="0">
-                      <div class="fp-rep"><span class="fp-av" style="background:{{ rp.avBg }}">{{ rp.av }}</span><div style="flex:1;min-width:0"><div class="fp-cmt-h"><span>{{ rp.head }}</span><button onClick="{{ rp.onDelete }}">删除</button></div><sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea value="{{ rp.text }}" onChange="{{ rp.onText }}" rows="1"></textarea></sc-if><sc-if value="{{ it.reading }}" hint-placeholder-val="{{ true }}"><div class="fp-cmt-t">{{ rp.text }}</div></sc-if></div></div>
+                      <div class="fp-rep"><span class="fp-av" style="background:{{ rp.avBg }}">{{ rp.av }}</span><div style="flex:1;min-width:0"><div class="fp-cmt-h"><span>{{ rp.head }}</span><button onClick="{{ rp.onDelete }}">删除</button></div><sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea data-complete="a reply to a comment in a document" value="{{ rp.text }}" onChange="{{ rp.onText }}" rows="1"></textarea></sc-if><sc-if value="{{ it.reading }}" hint-placeholder-val="{{ true }}"><div class="fp-cmt-t">{{ rp.text }}</div></sc-if></div></div>
                     </sc-for>
-                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><input value="{{ it.draft }}" onChange="{{ it.onDraft }}" onKeyDown="{{ it.onReplyKey }}" placeholder="回复…（回车发送）"></sc-if>
+                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><input data-complete="a reply to a comment in a document" value="{{ it.draft }}" onChange="{{ it.onDraft }}" onKeyDown="{{ it.onReplyKey }}" placeholder="回复…（回车发送）"></sc-if>
                   </div>
                 </div>
               </sc-if>

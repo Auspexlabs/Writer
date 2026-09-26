@@ -26,7 +26,7 @@
       <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="4">
         <sc-if value="{{ t.hasSec }}" hint-placeholder-val="{{ false }}">
           <div style="flex:none;display:flex;align-items:center;gap:4px;margin:2px 0 -8px 2px;font-size:12px;font-weight:600;color:var(--k11, #6E6E73)">
-            <input data-sec="{{ t.n }}" value="{{ t.secName }}" onChange="{{ t.onSec }}" onKeyDown="{{ t.onSecKey }}" title="节名" style="flex:1;min-width:0;height:22px;padding:0 4px;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;outline:none">
+            <input data-sec="{{ t.n }}" data-complete="the name of a section of slides in a presentation" value="{{ t.secName }}" onChange="{{ t.onSec }}" onKeyDown="{{ t.onSecKey }}" title="节名" style="flex:1;min-width:0;height:22px;padding:0 4px;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;outline:none">
             <span style="font-weight:400;color:var(--k8, #8E8E93);white-space:nowrap">{{ t.secCount }}</span>
             <button onClick="{{ t.onSecDel }}" title="删除节" style="width:20px;height:20px;border:none;border-radius:5px;background:transparent;font-size:10px;color:var(--k8, #8E8E93);cursor:pointer">✕</button>
           </div>

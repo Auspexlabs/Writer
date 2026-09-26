@@ -173,8 +173,8 @@
         <div style="font-size:15px;font-weight:600">{{ dlgTitle }}</div>
         <sc-for list="{{ dlgFields }}" as="f" hint-placeholder-count="1">
           <label style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--k11, #6E6E73)">{{ f.label }}
-            <sc-if value="{{ f.single }}" hint-placeholder-val="{{ true }}"><input value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ dlgKey }}" autoFocus="{{ f.first }}" style="height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"></sc-if>
-            <sc-if value="{{ f.multi }}" hint-placeholder-val="{{ false }}"><textarea value="{{ f.value }}" onChange="{{ f.onChange }}" autoFocus="{{ f.first }}" rows="4" style="padding:8px 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);resize:vertical;font-family:inherit"></textarea></sc-if>
+            <sc-if value="{{ f.single }}" hint-placeholder-val="{{ true }}"><input data-complete="{{ f.ai }}" value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ dlgKey }}" autoFocus="{{ f.first }}" style="height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"></sc-if>
+            <sc-if value="{{ f.multi }}" hint-placeholder-val="{{ false }}"><textarea data-complete="{{ f.ai }}" value="{{ f.value }}" onChange="{{ f.onChange }}" autoFocus="{{ f.first }}" rows="4" style="padding:8px 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);resize:vertical;font-family:inherit"></textarea></sc-if>
             <sc-if value="{{ f.isSel }}" hint-placeholder-val="{{ false }}"><select value="{{ f.value }}" onChange="{{ f.onChange }}" style="height:34px;padding:0 8px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"><sc-for list="{{ f.options }}" as="o" hint-placeholder-count="2"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
           </label>
         </sc-for>
@@ -701,7 +701,7 @@ class Component extends DCLogic {
       { key: 'o', label: $t('数据'), value: cur.operator || 'between', options: Object.entries(CF_OPS) },
       { key: 'v', label: $t('来源（序列：项目用逗号分隔，或一个区域如 H2:H5）/ 最小值'), value: cur.values ? cur.values.join(',') : cur.source || cur.value || '', first: true },
       { key: 'v2', label: $t('最大值'), value: cur.value2 || '' },
-      { key: 'e', label: $t('出错警告（留空用默认提示）'), value: cur.error || '' }],
+      { key: 'e', label: $t('出错警告（留空用默认提示）'), value: cur.error || '', ai: 'the message a spreadsheet shows when a value typed in a cell is not allowed' }],
       v => {
         const keep = sh => (sh.dv || []).filter(x => !this.boxes(x.range).every(b => b.r1 >= R.r1 && b.r2 <= R.r2 && b.c1 >= R.c1 && b.c2 <= R.c2)); // a rule the selection covers whole goes
         if (v.t === 'any') return this.commit(sh => { sh.dv = keep(sh); });
@@ -749,7 +749,7 @@ class Component extends DCLogic {
   }
   setNote() {
     const cs = this.actStyle();
-    this.prompt($t('批注'), [{ key: 'n', label: $t('批注内容（留空则删除）'), value: cs.note || '', multi: true, first: true }], v => this.style({ note: v.n.trim() || null }));
+    this.prompt($t('批注'), [{ key: 'n', label: $t('批注内容（留空则删除）'), value: cs.note || '', multi: true, first: true, ai: 'a note on a cell of a spreadsheet' }], v => this.style({ note: v.n.trim() || null }));
   }
   mergeKind(kind) {
     const E = this.E, R = this.rng(), keep = sh => (sh.merges || []).filter(x => x.r + x.rs <= R.r1 || x.r > R.r2 || x.c + x.cs <= R.c1 || x.c > R.c2);
@@ -960,7 +960,7 @@ class Component extends DCLogic {
       onSel: e => { e.stopPropagation(); this.setState({ chartSel: ch.id }); },
       onDrag: e => { e.preventDefault(); this.op = { kind: 'chart', id: ch.id, x0: e.clientX, y0: e.clientY, cx: pos.x, cy: pos.y }; this.setState({ chartSel: ch.id }); },
       onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'chartsz', id: ch.id, x0: e.clientX, y0: e.clientY, w0: ch.w, h0: ch.h }; this.setState({ chartSel: ch.id }); },
-      onRename: () => this.prompt($t('图表标题'), [{ key: 't', label: $t('标题'), value: ch.title, first: true }], v => this.commit(sh => { sh.charts.find(c => c.id === ch.id).title = v.t; })),
+      onRename: () => this.prompt($t('图表标题'), [{ key: 't', label: $t('标题'), value: ch.title, first: true, ai: 'the title of a chart in a spreadsheet' }], v => this.commit(sh => { sh.charts.find(c => c.id === ch.id).title = v.t; })),
       onDelete: () => this.commit(sh => { sh.charts = sh.charts.filter(c => c.id !== ch.id); })
     });
   }
@@ -1443,7 +1443,7 @@ class Component extends DCLogic {
       },
       hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) 0px` : 'none', popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popMaxH: Math.max(160, Math.min(440, (globalThis.innerHeight || 900) - Math.max(8, st.pop ? st.pop.y : 0) - 12)) + 'px', /* a menu never runs off the bottom of the window */ popItems, closePop: () => { this.setState({ pop: null }); this.wantFocus = true; },
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
-      dlgFields: dlg ? dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, first: !!fl.first, multi: !!fl.multi, isSel: !!fl.options, single: !fl.multi && !fl.options, options: (fl.options || []).map(([v, l]) => ({ v, l })), onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } })) : [],
+      dlgFields: dlg ? dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, ai: fl.ai, first: !!fl.first, multi: !!fl.multi, isSel: !!fl.options, single: !fl.multi && !fl.options, options: (fl.options || []).map(([v, l]) => ({ v, l })), onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } })) : [],
       dlgKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.dlgOk(); } if (e.key === 'Escape') this.setState({ dlg: null }); },
       dlgCancel: () => { this.setState({ dlg: null }); this.wantFocus = true; }, dlgOk: () => this.dlgOk()
     };
@@ -1465,7 +1465,7 @@ class Component extends DCLogic {
   addSheet() { const d = this.doc; let n = d.sheets.length + 1; while (d.sheets.some(s => s.name === 'Sheet' + n)) n++; this.props.onChange(Object.assign({}, d, { sheets: d.sheets.concat([{ name: 'Sheet' + n, cells: {} }]), active: d.sheets.length })); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 } }); }
   renameSheet(i) {
     const d = this.doc, old = d.sheets[i].name;
-    this.prompt($t('重命名工作表'), [{ key: 'n', label: $t('名称'), value: old, first: true }], v => {
+    this.prompt($t('重命名工作表'), [{ key: 'n', label: $t('名称'), value: old, first: true, ai: 'the name of a sheet in a spreadsheet' }], v => {
       const nn = (v.n || '').trim(); if (!nn || nn === old) return; if (d.sheets.some(s => s.name === nn)) return this.toast($t('名称已存在'));
       const E = this.E; const nd = structuredClone(d); nd.sheets[i].name = nn;
       const re = new RegExp('(^|[^\\w])' + (/^[\w\u4e00-\u9fa5]+$/.test(old) ? old : "'" + old + "'").replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '!', 'g');

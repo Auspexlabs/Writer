@@ -374,6 +374,7 @@ class Component extends DCLogic {
     if (!this.M) return;
     const wrap = document.createElement('div'); wrap.className = { front: 'md-front md-src-editing', mermaid: 'md-mermaid md-src-editing' }[kind] || 'md-math-block md-math-editing'; wrap.setAttribute('contenteditable', 'false');
     const ta = document.createElement('textarea'); ta.className = 'md-math-src'; ta.value = initialSrc; ta.spellcheck = false; ta.rows = 1;
+    ta.setAttribute('data-complete', { mermaid: 'a Mermaid diagram definition in a Markdown document', front: 'the YAML front matter of a Markdown document' }[kind] || 'a LaTeX math formula in a Markdown document'); // AI 自动补全 (complete.js)
     const prev = document.createElement('div'); prev.className = 'md-math-preview'; if (kind === 'front') prev.style.display = 'none';
     const err = document.createElement('div'); err.className = 'md-src-err'; // the formula's parse error as it is typed; empty (hidden) while it renders
     wrap.append(ta, prev, err);

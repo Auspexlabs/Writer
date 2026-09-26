@@ -65,6 +65,8 @@ export function surfaceOf(t) {
 /** Installs the autocomplete on a page. enabled() is asked before each request (the setting, a model set up); request(before,
  *  after, hint, signal) → the suggestion; onError(error) hears a failed request once per message. Returns { clear, state, remove }. */
 export function install(doc, { enabled, request, onError, delay = DELAY }) {
+  // once per page: 设置 shown inside the shell's page finds the shell's already there (its own window installs its own)
+  if (doc.__writerComplete) { const h = doc.__writerComplete; return { clear: h.clear, state: h.state, remove() { } }; }
   const win = doc.defaultView;
   const style = doc.head.appendChild(doc.createElement('style'));
   let mirror = null, timer = 0, ctl = null, ghost = null, composing = false, quietUntil = 0, failures = 0, told = '', seq = 0;
@@ -205,7 +207,7 @@ export function install(doc, { enabled, request, onError, delay = DELAY }) {
     ['focusout', onOut, true], ['selectionchange', check, false], ['keyup', check, true], ['pointerup', check, true], ['scroll', onScroll, true]];
   for (const [t, f, c] of on) doc.addEventListener(t, f, c);
   win.addEventListener('resize', clear);
-  return {
+  return doc.__writerComplete = {
     clear,
     state: () => ghost ? { text: ghost.text, surface: ghost.surface, block: ghost.block || null, at: ghost.field ? ghost.at : null } : null,
     remove() {
@@ -213,6 +215,7 @@ export function install(doc, { enabled, request, onError, delay = DELAY }) {
       for (const [t, f, c] of on) doc.removeEventListener(t, f, c);
       win.removeEventListener('resize', clear);
       style.remove(); if (mirror) mirror.remove();
+      delete doc.__writerComplete;
     }
   };
 }

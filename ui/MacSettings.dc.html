@@ -99,7 +99,7 @@
                 </div>
               </sc-if>
               <sc-if value="{{ r.isText }}" hint-placeholder-val="{{ false }}">
-                <textarea value="{{ r.value }}" onChange="{{ r.onChange }}" placeholder="{{ r.ph }}" rows="3" style="resize:none;width:100%;padding:8px 10px;border:none;border-radius:9px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px rgba(0,0,0,0.12),inset 0 1px 2px rgba(0,0,0,0.04);font-size:12.5px;line-height:1.5;color:var(--ink, #1D1D1F);outline:none"></textarea>
+                <textarea data-complete="{{ r.ai }}" value="{{ r.value }}" onChange="{{ r.onChange }}" placeholder="{{ r.ph }}" rows="3" style="resize:none;width:100%;padding:8px 10px;border:none;border-radius:9px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px rgba(0,0,0,0.12),inset 0 1px 2px rgba(0,0,0,0.04);font-size:12.5px;line-height:1.5;color:var(--ink, #1D1D1F);outline:none"></textarea>
               </sc-if>
             </div>
           </sc-for>
@@ -126,10 +126,18 @@ class Component extends DCLogic {
     if (!this.props.workspace) fetch('/files', { credentials: 'same-origin' }).then(r => r.json()).then(j => this.setState({ ws: j.workspace || '' })).catch(() => { });
     if (NATIVE.kind) invoke('default_app', { action: 'state' }).then(def => this.setState({ def })).catch(() => { });
     // 设置 › AI talks to the engine (this may be a window of its own): the model settings and the key live there, never in the page.
-    Promise.all([import('./engine.js'), import('./prefs.js')]).then(([EN, P]) => { this.EN = EN; this.P = P; return EN.aiConfig(); })
+    Promise.all([import('./engine.js'), import('./prefs.js')]).then(([EN, P]) => {
+      this.EN = EN; this.P = P;
+      // AI 自动补全 in 自定义说明 when 设置 is a window of its own (inside the shell's page the shell's is already there)
+      import('./complete.js').then(C => { if (!this.gone) this.ac = C.install(document, { enabled: () => this.aiReady(), request: (before, after, hint, signal) => EN.complete(before, after, hint, signal) }); });
+      return EN.aiConfig();
+    })
       .then(c => { const ai = this.P.aiForm(c); this.aiSent = this.aiKey(ai); this.setState({ ai }, () => this.loadModels(false)); })
       .catch(e => this.setState({ ai: this.P ? this.P.aiForm(null) : null, aiMsg: $t('读不到模型设置：{error}', { error: e.message }) }));
   }
+  /** A model is set up (as the engine sees it: a model, and a key unless the service runs without one) and 自动补全 is on. */
+  aiReady() { const P = this.P, f = this.state.ai; return !!(P && f && this.state.v.complete !== false && !P.aiMissing(f) && (P.keyStored(f) || !P.aiPreset(f.provider).key)); }
+  componentWillUnmount() { this.gone = true; this.ac && this.ac.remove(); }
   aiKey(ai, body) { const b = Object.assign({}, body || this.P.aiRequest(ai)); delete b.apiKey; return JSON.stringify(b); }
   editAi(patch) { this.setState(s => ({ ai: Object.assign({}, s.ai, patch) })); }
   pickAi(id) { this.setState(s => ({ ai: this.P.pickProvider(s.ai, id), aiMsg: '', otherModel: false, modelsMsg: '' }), () => { this.saveAi(); this.loadModels(false); }); }
@@ -243,7 +251,7 @@ class Component extends DCLogic {
         G('模型', this.aiRows(base)),
         G('自动补全', this.completeRows(base, tg)),
         G('隐私', [tg('preview', '写入前先预览修改'), tg('ctx', '发送整篇文档作为上下文', '关闭后仅发送选中的内容'), tg('web', '联网搜索', '允许助手搜索和打开网页')]),
-        G('自定义说明', [{ ...base('告诉 AI 你的偏好'), isText: true, value: v.instr, ph: $t('例如：用正式书面语。'), onChange: e => this.set('instr', e.target.value) }])
+        G('自定义说明', [{ ...base('告诉 AI 你的偏好'), isText: true, ai: 'standing instructions a user gives the AI assistant about how to write and answer', value: v.instr, ph: $t('例如：用正式书面语。'), onChange: e => this.set('instr', e.target.value) }])
       ],
       file: [
         G('', [base('自动存储', '修改会自动存入文件；新文稿在第一次存储时选择位置'), tg('history', '保留版本历史', '每份文稿最多保留 30 个版本 · 即将推出')]),

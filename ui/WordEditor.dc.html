@@ -310,7 +310,7 @@
         <div style="font-size:15px;font-weight:600">{{ dlgTitle }}</div>
         <sc-for list="{{ dlgFields }}" as="f" hint-placeholder-count="1">
           <label style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--k11, #6E6E73)">{{ f.label }}
-            <input value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ dlgKey }}" autoFocus="{{ f.first }}" placeholder="{{ f.ph }}" style="height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)">
+            <input data-complete="{{ f.ai }}" value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ dlgKey }}" autoFocus="{{ f.first }}" placeholder="{{ f.ph }}" style="height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)">
           </label>
         </sc-for>
         <div style="display:flex;justify-content:flex-end;gap:8px">
@@ -327,7 +327,7 @@
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           <sc-for list="{{ eqPresets }}" as="q" hint-placeholder-count="0"><button onClick="{{ q.onClick }}" title="{{ q.title }}" style="height:28px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;background:transparent;font-size:12.5px;cursor:pointer;color:var(--k1, #1D1D1F)">{{ q.label }}</button></sc-for>
         </div>
-        <textarea value="{{ eqLatex }}" onChange="{{ onEqLatex }}" onKeyDown="{{ onEqKey }}" autoFocus="{{ true }}" placeholder="输入 LaTeX，例如 x^{2}+\frac{1}{2}" rows="3" spellCheck="false" style="border:1px solid var(--k10, #D1D1D6);border-radius:8px;padding:8px 10px;font:13px/1.5 'IBM Plex Mono',monospace;resize:vertical;background:var(--k51, #fff);color:var(--k1, #1D1D1F);outline:none"></textarea>
+        <textarea data-complete="a LaTeX math formula in a Word document" value="{{ eqLatex }}" onChange="{{ onEqLatex }}" onKeyDown="{{ onEqKey }}" autoFocus="{{ true }}" placeholder="输入 LaTeX，例如 x^{2}+\frac{1}{2}" rows="3" spellCheck="false" style="border:1px solid var(--k10, #D1D1D6);border-radius:8px;padding:8px 10px;font:13px/1.5 'IBM Plex Mono',monospace;resize:vertical;background:var(--k51, #fff);color:var(--k1, #1D1D1F);outline:none"></textarea>
         <div data-light="1" dangerouslySetInnerHTML="{{ eqPreview }}" style="min-height:60px;padding:10px;border-radius:10px;background:var(--kpage, #FFFFFF);color:#1D1D1F;overflow:auto;display:flex;align-items:center;justify-content:center"></div>
         <div style="font-size:12px;color:var(--k62, #B5563A);min-height:16px">{{ eqError }}</div>
         <div style="display:flex;justify-content:flex-end;gap:8px">
@@ -596,7 +596,7 @@ class Component extends DCLogic {
   updateStyle() { const id = this.state.fmt.ps || 'Normal'; this.defineStyle(Object.assign({ id }, this.styleLook())); this.props.toast && this.props.toast($t('样式「{name}」已更新', { name: this.styleLabel(id) })); }
   /** 新建样式: a paragraph style named by the user, based on the caret paragraph's, with the selection's look, applied to the paragraph. */
   newStyle() {
-    this.prompt('新建样式', [{ key: 'name', label: '样式名称', first: true }], v => {
+    this.prompt('新建样式', [{ key: 'name', label: '样式名称', first: true, ai: 'the name of a new paragraph style in a Word document' }], v => {
       const name = String(v.name || '').trim(); if (!name) return;
       const taken = new Set((this.doc.styles || []).map(s => s.id)); let id = name.replace(/[^\p{L}\p{N}]/gu, '') || 'Style'; while (taken.has(id)) id += '1';
       const s = this.defineStyle(Object.assign({ id, name, type: 'paragraph', basedOn: this.state.fmt.ps || 'Normal' }, this.styleLook()));
@@ -1241,7 +1241,7 @@ class Component extends DCLogic {
     this.insertHTML(h + '</tbody></table><p><br></p>'); this.setState({ pop: null });
   }
   insertChart() {
-    this.prompt('插入图表', [{ key: 'title', label: '图表标题', value: '', first: true }, { key: 'labels', label: '数据标签（逗号分隔）', value: 'A,B,C' }, { key: 'values', label: '数值（逗号分隔）', value: '12,18,15' }], v => {
+    this.prompt('插入图表', [{ key: 'title', label: '图表标题', value: '', first: true, ai: 'the title of a chart in a Word document' }, { key: 'labels', label: '数据标签（逗号分隔）', value: 'A,B,C' }, { key: 'values', label: '数值（逗号分隔）', value: '12,18,15' }], v => {
       const labels = v.labels.split(/[,，]/).map(s => s.trim()).filter(Boolean).slice(0, 12);
       const values = v.values.split(/[,，]/).map(s => Number(s.trim())).slice(0, 12);
       if (!labels.length || labels.length !== values.length || values.some(n => !Number.isFinite(n) || n < 0)) return this.props.toast && this.props.toast($t('请为每个标签输入一个非负数值'));
@@ -1515,7 +1515,7 @@ class Component extends DCLogic {
     }
   };
   bump(dir) { const cur = this.state.fmt.size || 11; let i = SIZES.findIndex(s => s >= cur); if (i < 0) i = SIZES.length - 1; const nx = SIZES[Math.max(0, Math.min(SIZES.length - 1, SIZES[i] === cur ? i + dir : dir > 0 ? i : i - 1))]; this.setFontSize(nx); }
-  linkDlg() { this.restore(); const sel = window.getSelection().toString(); this.prompt('插入链接', [{ key: 'url', label: '链接地址', ph: 'https://', first: true }, { key: 'text', label: '显示文字', value: sel, ph: '留空则使用地址' }], v => { if (!v.url) return; const url = /^(https?:|mailto:|#)/.test(v.url) ? v.url : 'https://' + v.url; if (sel && (!v.text || v.text === sel)) this.exec('createLink', url); else this.insertHTML(`<a href="${url}">${(v.text || url).replace(/</g, '&lt;')}</a>`); }); }
+  linkDlg() { this.restore(); const sel = window.getSelection().toString(); this.prompt('插入链接', [{ key: 'url', label: '链接地址', ph: 'https://', first: true }, { key: 'text', label: '显示文字', value: sel, ph: '留空则使用地址', ai: 'the text a link shows in a Word document' }], v => { if (!v.url) return; const url = /^(https?:|mailto:|#)/.test(v.url) ? v.url : 'https://' + v.url; if (sel && (!v.text || v.text === sel)) this.exec('createLink', url); else this.insertHTML(`<a href="${url}">${(v.text || url).replace(/</g, '&lt;')}</a>`); }); }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
   /** Each page thumbnail lays out a copy of its own page's blocks (pageCuts), or of the whole document when there are no cuts (a
    *  page break inside a paragraph). The copies are refreshed at most every THUMB_MS (not after each debounced save of the typing),
@@ -1812,7 +1812,7 @@ class Component extends DCLogic {
       M('lnum', '行号@@word', [I('无', () => this.change({ lineNumbers: false }), { on: !d.lineNumbers }), I('连续', () => this.change({ lineNumbers: true }), { on: !!d.lineNumbers })], '在页边显示行号（Word 中显示）'),
       M('hyph', '断字', [I('无', () => this.change({ hyphenation: false }), { on: !d.hyphenation }), I('自动', () => this.change({ hyphenation: true }), { on: !!d.hyphenation })], '英文单词在行尾自动断字（Word 中生效）'), SEP,
       C('页面颜色', pg.color || 'var(--k0, #FFFFFF)', e => setPage({ color: e.target.value }), '页面颜色'),
-      M('wm', '水印', [['', '无'], ['机密', '机密'], ['草稿', '草稿'], ['严禁复制', '严禁复制']].map(([v, l]) => I(l, () => setPage({ wm: v }), { on: pg.wm === v })).concat([I('自定义…', () => this.prompt('自定义水印', [{ key: 'wm', label: '水印文字', value: pg.wm, first: true }], v => setPage({ wm: v.wm })))])), SEP,
+      M('wm', '水印', [['', '无'], ['机密', '机密'], ['草稿', '草稿'], ['严禁复制', '严禁复制']].map(([v, l]) => I(l, () => setPage({ wm: v }), { on: pg.wm === v })).concat([I('自定义…', () => this.prompt('自定义水印', [{ key: 'wm', label: '水印文字', value: pg.wm, first: true, ai: 'the watermark text across the pages of a Word document' }], v => setPage({ wm: v.wm })))])), SEP,
       M('before', '段前', ['0pt', '6pt', '12pt', '18pt', '24pt'].map(v => I(v, () => this.para('spaceBefore', v), { on: (f.pat || {}).spacebefore === v }))),
       M('after', '段后', ['0pt', '6pt', '8pt', '12pt', '18pt'].map(v => I(v, () => this.para('spaceAfter', v), { on: (f.pat || {}).spaceafter === v }))),
       M('ind', '首行缩进', [['无', ''], ['2 字符', '2ch'], ['悬挂缩进 2 字符', '-2ch']].map(([l, v]) => I(l, () => this.para('indentFirst', v), { on: ((f.pat || {}).indentfirst || '') === v }))),
@@ -2016,7 +2016,7 @@ class Component extends DCLogic {
         eqPresets: EQ_PRESETS.map(([l, x]) => ({ label: $t(l), title: x, onClick: () => this.setState({ eqDlg: Object.assign({}, this.state.eqDlg, { latex: ((this.state.eqDlg.latex || '') + ' ' + x).trim() }) }) })),
         onEqKey: e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.eqCommit(this.state.eqDlg.latex); } else if (e.key === 'Escape') this.setState({ eqDlg: null }); },
         eqOk: () => this.eqCommit(this.state.eqDlg.latex), eqCancel: () => this.setState({ eqDlg: null }) }))(st.eqDlg),
-      dlgFields: dlg ? (dlg.info ? [] : dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, ph: fl.ph || '', first: !!fl.first, onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } }))).concat(dlg.info ? [
+      dlgFields: dlg ? (dlg.info ? [] : dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, ph: fl.ph || '', ai: fl.ai, first: !!fl.first, onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } }))).concat(dlg.info ? [
         { label: $t('字数'), value: String(info.count), onChange: () => { } }, { label: $t('字符数（不计空格）'), value: String(info.chars), onChange: () => { } }, { label: $t('段落数'), value: String(info.paras), onChange: () => { } }, { label: $t('页数'), value: String(info.pages), onChange: () => { } }] : []) : [],
       dlgKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); const dd = this.state.dlg; this.setState({ dlg: null }); if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } } if (e.key === 'Escape') this.setState({ dlg: null }); },
       dlgCancel: () => this.setState({ dlg: null }),

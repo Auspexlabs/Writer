@@ -79,7 +79,7 @@
         <textarea ref="{{ popRef }}" class="mm-note" data-complete="{{ aiNoteHint }}" value="{{ popVal }}" onChange="{{ onPopText }}" onFocus="{{ onNoteFocus }}" onKeyDown="{{ onPopKey }}" placeholder="给这个主题写点备注…" spellCheck="false" style="height:104px;border:none;background:transparent;resize:none;padding:2px 13px 12px;font-size:12.5px;line-height:1.6;outline:none;color:var(--ink, #1D1D1F)"></textarea>
       </sc-if>
       <sc-if value="{{ popIsLine }}" hint-placeholder-val="{{ false }}">
-        <input ref="{{ popRef }}" class="mm-note" value="{{ popVal }}" onChange="{{ onPopText }}" onKeyDown="{{ onPopKey }}" onBlur="{{ onPopBlur }}" placeholder="{{ popHint }}" spellCheck="false" autoComplete="off" style="height:34px;border:none;background:transparent;padding:0 13px 8px;font-size:13px;outline:none;color:var(--ink, #1D1D1F)">
+        <input ref="{{ popRef }}" class="mm-note" data-complete="{{ aiLineHint }}" value="{{ popVal }}" onChange="{{ onPopText }}" onKeyDown="{{ onPopKey }}" onBlur="{{ onPopBlur }}" placeholder="{{ popHint }}" spellCheck="false" autoComplete="off" style="height:34px;border:none;background:transparent;padding:0 13px 8px;font-size:13px;outline:none;color:var(--ink, #1D1D1F)">
       </sc-if>
     </div>
   </sc-if>
@@ -815,7 +815,7 @@ class Component extends DCLogic {
       statCount: $t('{n} 个主题', { n: M.count(d.map) }), zPct: Math.round(z * 100), zPctText: Math.round(z * 100) + '%',
       onZoomSlide: e => this.zoomTo(+e.target.value / 100), zoomIn: () => this.zoomTo(z * 1.2), zoomOut: () => this.zoomTo(z / 1.2), fitClick: () => this.fit(1.25),
       hasPop: !!pb, popL: pb ? Math.max(8, Math.min(st.box.w - 272, tx + pb.x * z)) + 'px' : 0, popT: pb ? (ty + (pb.y + pb.h) * z + 8 + 150 > st.box.h ? ty + pb.y * z - 158 : ty + (pb.y + pb.h) * z + 8) + 'px' : 0,
-      popTitle: pop ? { note: $t('备注'), link: $t('链接'), labels: $t('标签'), rel: $t('关联线') }[pop.kind] + ' ·' : '', popTopic: pb ? pb.n.text || $t('（空）') : '', popVal: pop ? pop.val : '', popIsNote: !!pop && pop.kind === 'note', popIsLine: !!pop && pop.kind !== 'note', aiNoteHint: 'a note on the mind map topic ' + (pb ? '"' + String(pb.n.text || '').slice(0, 60) + '"' : ''),
+      popTitle: pop ? { note: $t('备注'), link: $t('链接'), labels: $t('标签'), rel: $t('关联线') }[pop.kind] + ' ·' : '', popTopic: pb ? pb.n.text || $t('（空）') : '', popVal: pop ? pop.val : '', popIsNote: !!pop && pop.kind === 'note', popIsLine: !!pop && pop.kind !== 'note', aiLineHint: pop && pop.kind === 'labels' ? 'labels for a mind map topic, separated by commas' : pop && pop.kind === 'rel' ? 'the text on a line joining two mind map topics' : undefined, aiNoteHint: 'a note on the mind map topic ' + (pb ? '"' + String(pb.n.text || '').slice(0, 60) + '"' : ''),
       popHint: pop && pop.kind === 'link' ? $t('网址，留空则删除') : pop && pop.kind === 'rel' ? $t('线上的文字') : $t('标签，用逗号分隔')
     });
   }

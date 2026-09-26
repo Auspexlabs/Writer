@@ -63,3 +63,20 @@ test('surfaceOf: only what an editor marked with data-complete, and only while i
   assert.equal(surfaceOf(el('input', { placeholder: '查找' })), null, 'the find box is not marked');
   assert.equal(surfaceOf(null), null);
 });
+
+test('install: once per page; a second install (设置 inside the shell\'s page) shares the first, and its remove leaves it be', async () => {
+  const { install } = await import('../complete.js');
+  const listeners = new Map(), on = (t, f) => listeners.set(t + ':' + (listeners.size), f);
+  const doc = { head: new Element('head'), body: new Element('body'), createElement: t => new Element(t), addEventListener: on, removeEventListener() { }, defaultView: { addEventListener() { }, removeEventListener() { }, getComputedStyle: () => ({}) } };
+  const first = install(doc, { enabled: () => true, request: async () => '' });
+  const count = listeners.size;
+  const second = install(doc, { enabled: () => false, request: async () => 'x' });
+  assert.equal(listeners.size, count, 'no second set of listeners');
+  assert.equal(second.state, first.state);
+  second.remove();
+  assert.equal(doc.__writerComplete, first, 'the first stays installed');
+  assert.equal(doc.head.children.length, 1, 'its style is still there');
+  first.remove();
+  assert.equal(doc.__writerComplete, undefined);
+  assert.equal(doc.head.children.length, 0);
+});
