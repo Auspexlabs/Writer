@@ -161,7 +161,7 @@
               <div data-light="1" class="wd-side-page" data-on="{{ pt.onA }}" style="width:{{ pt.w }};height:{{ pt.h }};background:{{ pageBg }}">
                 <div style="position:absolute;left:0;right:0;top:{{ pt.top }};height:{{ pt.ch }};overflow:hidden">
                   <div style="position:absolute;left:0;top:0;width:{{ pt.pw }};transform:{{ pt.tf }};transform-origin:0 0;pointer-events:none">
-                    <div class="wd-ed" dangerouslySetInnerHTML="{{ thumbHtml }}" style="padding:0 {{ pt.padR }} 0 {{ pt.padH }};margin-top:{{ pt.off }};font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ cols }};column-gap:32px;color:{{ pageInk }}"></div>
+                    <div class="wd-ed" dangerouslySetInnerHTML="{{ pt.html }}" style="padding:0 {{ pt.padR }} 0 {{ pt.padH }};margin-top:{{ pt.off }};font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ cols }};column-gap:32px;color:{{ pageInk }}"></div>
                   </div>
                 </div>
               </div>
@@ -411,7 +411,7 @@ const CV_PAD = [18, 24]; // canvas padding top / left: the scroll anchor when zo
 // 100% is the page as the design (定稿) draws it, A4 680px wide: st.zoom is the page's CSS zoom, the zoom shown is it against Z100
 const Z100 = 680 / 794, ZMIN = 0.2 * Z100, ZMAX = 4 * Z100;
 const pctOf = z => Math.round(z / Z100 * 100);
-const THUMB_MS = 1000, NO_THUMB = { __html: '' }; // page thumbnails re-copy the document at most once a second
+const THUMB_MS = 1000, THUMB_PAGES = 30, NO_THUMB = { __html: '' }; // page thumbnails re-copy the text at most once a second, for the first 30 pages
 const AV_ME = 'oklch(0.56 0.1 45)', AV_HUES = [225, 345, 165, 285, 105]; // comment avatars: mine keep the designed colour, other authors one of these hues
 /** An author's initials for an avatar: the first character of a CJK name, else the first letters of its first and last words. */
 const initialsOf = name => { const w = String(name || '').trim().split(/\s+/).filter(Boolean), first = s => Array.from(s)[0]; return !w.length ? '?' : /^[\p{Lu}\p{Ll}]/u.test(w[0]) ? (first(w[0]) + (w.length > 1 ? first(w[w.length - 1]) : '')).toUpperCase() : first(w[0]); };
@@ -791,9 +791,9 @@ class Component extends DCLogic {
    *  the page gap; splitting rows needs real layout. */
   pagesOf(ed, contentH, step) {
     const y = el => { let t = 0; for (let e = el; e && e !== ed; e = e.offsetParent) t += e.offsetTop; return t; };
-    const pieces = []; let brk = false, inner = false;
+    const pieces = [], tops = []; let brk = false, inner = false;
     for (const c of Array.from(ed.children)) {
-      let top = y(c), el = c, css = 'margin-top', forced = brk || c.getAttribute('data-pb') === 'before';
+      let top = y(c), el = c, css = 'margin-top', forced = brk || c.getAttribute('data-pb') === 'before'; tops.push(top);
       for (const s of c.matches('hr') ? [] : Array.from(c.querySelectorAll('span[data-pb]'))) {
         const end = y(s) + s.offsetHeight; pieces.push({ top, bottom: end, el, css, forced }); inner = true;
         top = end + (parseFloat(getComputedStyle(s).marginBottom) || 0); el = s; css = 'margin-bottom'; forced = true;
@@ -814,7 +814,21 @@ class Component extends DCLogic {
       while (bottom + shift > k * step + contentH + 1 && (k + 1) * step < bottom + shift) { const b = bottom; bottom = k * step + contentH - shift; turn(); top = k * step - shift; bottom = b; }
     }
     at.push([top === null ? 0 : top, bottom]);
-    return { at, push, inner };
+    return { at, push, inner, tops };
+  }
+  /** What each page thumbnail copies (the first THUMB_PAGES): [first, last, px] — the blocks from the one before the page's first
+   *  (so a rule such as hr + p holds as it does in the text) to its last, under an empty block `px` tall that stands in for all the
+   *  text above them, so they lay out where they are in the whole document. A copy of the whole document per thumbnail made a
+   *  30-page file lay out 30 times over while the thumbnails scrolled. Measured with the page gaps out, as pagesOf is. */
+  pageCuts(kids, tops, h, at) {
+    const out = []; let s = 0;
+    for (const [top, bottom] of at.slice(0, THUMB_PAGES)) {
+      while (s < kids.length - 1 && tops[s] + h[s] <= top) s++;
+      let e = s; while (e < kids.length - 1 && tops[e + 1] < bottom) e++;
+      const a = Math.max(0, s - 1);
+      out.push([a, e, a ? Math.round((tops[a] - (parseFloat(getComputedStyle(kids[a]).marginTop) || 0)) * 100) / 100 : 0]);
+    }
+    return out;
   }
   /** A selector for an element of the text by its place: the page view's rules must not touch the html that is saved. */
   cssPath(el) { const ed = this.edRef.current, path = []; for (let e = el; e && e !== ed; e = e.parentElement) path.unshift(`>:nth-child(${Array.prototype.indexOf.call(e.parentElement.children, e) + 1})`); return `[data-pg="${this.pgId}"]` + path.join(''); }
@@ -825,13 +839,14 @@ class Component extends DCLogic {
     const ed = this.edRef.current; if (!ed) return;
     const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, m = marginsPx(pg.margin);
     const kids = Array.from(ed.children), key = [H, m.top, m.bottom, pg.cols, this.state.view].join(), was = this.pgSeen;
-    let at, push = null, inner = false;
-    if (typed && was && was.key === key && was.kids.length === kids.length && kids.every((c, i) => c === was.kids[i] && c.offsetHeight === was.h[i])) at = was.at; // the page view's gaps stay: taking them out to measure lays the whole file out twice more
+    let at, push = null, inner = false, tops, cuts = null;
+    if (typed && was && was.key === key && was.kids.length === kids.length && kids.every((c, i) => c === was.kids[i] && c.offsetHeight === was.h[i])) ({ at, cuts } = was); // the page view's gaps stay: taking them out to measure lays the whole file out twice more
     else {
       if (this.pgCss) this.pgCss.textContent = ''; // measured as the text flows without page gaps
-      ({ at, push, inner } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP));
+      ({ at, push, inner, tops } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP));
       if (this.state.view === 'side') { const W = pg.orient === 'landscape' ? ph : pw, colW = W - m.left - m.right, gap = m.left + m.right + GAP; at = Array.from({ length: Math.max(1, Math.round((ed.scrollWidth + gap) / (colW + gap))) }, () => [0, 0]); push = []; } // 并排: each column is a page
-      this.pgDirty = false; this.pgSeen = this.state.view === 'side' || inner ? null : { key, kids, h: kids.map(c => c.offsetHeight), at }; // a break inside a paragraph is pushed down inside it: its height is not the one measured here
+      this.pgDirty = false; this.pgSeen = null;
+      if (this.state.view !== 'side' && !inner) { const h = kids.map(c => c.offsetHeight); cuts = this.pageCuts(kids, tops, h, at); this.pgSeen = { key, kids, h, at, cuts }; } // a break inside a paragraph is pushed down inside it: its height is not the one measured here
     }
     // innerText needs the layout too: read from the one just made, before the gaps go back in (every read after that lays the whole
     // document out again)
@@ -839,7 +854,7 @@ class Component extends DCLogic {
     const cjk = (t.match(/[\u4e00-\u9fa5]/g) || []).length, words = (t.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9]+/g) || []).length;
     const heads = Array.from(ed.querySelectorAll('h1,h2,h3')).map((h, i) => ({ lvl: +h.tagName[1], text: h.innerText.trim() || $t('（空标题）'), i }));
     if (push && this.pgCss && this.paged) this.pgCss.textContent = push.map(([el, css, px]) => `${this.cssPath(el)}{${css}:${Math.round(px)}px!important}`).join('\n');
-    const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
+    const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, cuts, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
     this.layoutPics(); this.drawShapes(); // floating pictures and shapes follow their paragraphs onto their pages
     if (JSON.stringify(next) !== JSON.stringify({ info: this.state.info, heads: this.state.heads })) this.setState(next); // an unchanged count re-renders nothing
   }
@@ -1502,15 +1517,18 @@ class Component extends DCLogic {
   bump(dir) { const cur = this.state.fmt.size || 11; let i = SIZES.findIndex(s => s >= cur); if (i < 0) i = SIZES.length - 1; const nx = SIZES[Math.max(0, Math.min(SIZES.length - 1, SIZES[i] === cur ? i + dir : dir > 0 ? i : i - 1))]; this.setFontSize(nx); }
   linkDlg() { this.restore(); const sel = window.getSelection().toString(); this.prompt('插入链接', [{ key: 'url', label: '链接地址', ph: 'https://', first: true }, { key: 'text', label: '显示文字', value: sel, ph: '留空则使用地址' }], v => { if (!v.url) return; const url = /^(https?:|mailto:|#)/.test(v.url) ? v.url : 'https://' + v.url; if (sel && (!v.text || v.text === sel)) this.exec('createLink', url); else this.insertHTML(`<a href="${url}">${(v.text || url).replace(/</g, '&lt;')}</a>`); }); }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
-  /** Every page thumbnail lays out its own copy of the whole document, so the copy is refreshed at most every THUMB_MS
-   *  (not after each debounced save of the typing) and only while the thumbnails are on screen. */
-  renderVals() { const v = this.vals(); v.thumbHtml = this.thumbSnap(v.thumbHtml.__html, v.pageThumbs.length > 0); return v; }
-  thumbSnap(html, shown) {
-    const t = this.thumb || (this.thumb = {});
-    if (!shown) { t.obj = null; return NO_THUMB; }
-    if (!t.obj || t.id !== this.doc.id) Object.assign(t, { id: this.doc.id, html, obj: { __html: html }, at: Date.now() });
-    else if (html !== t.html && !t.timer) t.timer = setTimeout(() => { t.timer = 0; t.obj = null; this.forceUpdate(); }, Math.max(0, THUMB_MS - (Date.now() - t.at)));
-    return t.obj;
+  /** Each page thumbnail lays out a copy of its own page's blocks (pageCuts), or of the whole document when there are no cuts (a
+   *  page break inside a paragraph). The copies are refreshed at most every THUMB_MS (not after each debounced save of the typing),
+   *  at once when the pages are cut differently, and only while the thumbnails are on screen. */
+  renderVals() { const v = this.vals(), snap = this.thumbSnap(v.thumbHtml.__html, v.pageThumbs.length > 0, (this.state.info || {}).cuts); v.pageThumbs.forEach((pt, i) => { pt.html = snap.pages ? snap.pages[i] || NO_THUMB : snap.all; }); return v; }
+  thumbSnap(html, shown, cuts) {
+    const t = this.thumb || (this.thumb = {}), kids = this.pgSeen && this.pgSeen.kids, key = cuts && kids ? JSON.stringify(cuts) : '';
+    if (!shown) { t.snap = null; return { all: NO_THUMB }; }
+    if (!t.snap || t.id !== this.doc.id || t.key !== key) {
+      const pages = key ? cuts.map(([a, e, px]) => ({ __html: (px ? `<div style="height:${px}px;margin:0;padding:0"></div>` : '') + kids.slice(a, e + 1).map(k => k.isConnected ? k.outerHTML : '').join('') })) : null;
+      Object.assign(t, { id: this.doc.id, html, key, snap: { pages, all: pages ? NO_THUMB : { __html: html } }, at: Date.now() });
+    } else if (html !== t.html && !t.timer) t.timer = setTimeout(() => { t.timer = 0; t.snap = null; this.forceUpdate(); }, Math.max(0, THUMB_MS - (Date.now() - t.at)));
+    return t.snap;
   }
   // ----- the format panel (FormatPanel.dc.html, panel.js): the design's 定稿 boards, each control running the command the pure-mode
   // toolbar runs; its menus are the toolbar's (this.menus, openPop) -----
@@ -1888,7 +1906,7 @@ class Component extends DCLogic {
     const info = st.info;
     const pure = !!this.props.pure, showTh = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the panel only when its 缩略图 asks, over the page
     const tz = 128 / PW, curPage = this.caretPage();
-    const pageThumbs = showTh && !web && st.view !== 'side' ? info.at.slice(0, 30).map(([top, bottom], i) => ({ // each page as the status bar counts it (pagesOf)
+    const pageThumbs = showTh && !web && st.view !== 'side' ? info.at.slice(0, THUMB_PAGES).map(([top, bottom], i) => ({ // each page as the status bar counts it (pagesOf)
       n: i + 1, onA: i === curPage ? '1' : '0', w: '128px', h: Math.round(PH * tz) + 'px', top: Math.round(m.top * tz) + 'px', ch: Math.floor((bottom - top) * tz) + 'px', pw: PW + 'px', tf: `scale(${tz})`, padH: m.left + 'px', padR: m.right + 'px', off: -top + 'px',
       line: 'none', onClick: () => { const cv = this.cvRef.current; if (cv) cv.scrollTop = Math.max(0, this.cvTop + (paged ? i * (PH + GAP) : m.top + top) * st.zoom - 24); }
     })) : [];

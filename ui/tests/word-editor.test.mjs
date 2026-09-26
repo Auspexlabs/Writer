@@ -80,6 +80,19 @@ test('typing that moves no block keeps the pages: the page view\'s gaps are not 
   c.refreshInfo(!c.pgDirty); assert.equal(writes, 6); assert.ok(!c.pgDirty);
 });
 
+test('each page thumbnail copies only its own page\'s blocks, under an empty block as tall as the text above them', () => {
+  const c = editor({ id: 'd', html: '<p>0</p><p>1</p><p>2</p>' }), ed = laidOut([[0, 400], [410, 400], [820, 400]]);
+  ed.children.forEach((k, i) => Object.assign(k, { isConnected: true, outerHTML: `<p>${i}</p>` }));
+  c.edRef.current = ed; c.refreshInfo();
+  assert.deepEqual(plain(c.state.info.cuts), [[0, 1, 0], [1, 2, 410]], 'page 2 starts at block 2; its copy also takes block 1, the one before');
+  const th = c.renderVals().pageThumbs;
+  assert.deepEqual(plain(th.map(t => [t.off, t.html.__html])), [['0px', '<p>0</p><p>1</p>'], ['-820px', '<div style="height:410px;margin:0;padding:0"></div><p>1</p><p>2</p>']],
+    'the page\'s blocks sit where they do in the whole document, so the thumbnail\'s offset is the page\'s own');
+  const d = editor({ id: 'e', html: '<p>whole</p>' }); pages(d, [['p', 0, 200, 88]]);
+  assert.equal(d.state.info.cuts, null);
+  assert.deepEqual(plain(d.renderVals().pageThumbs.map(t => t.html.__html)), ['<p>whole</p>', '<p>whole</p>'], 'a page break inside a paragraph: each thumbnail copies the whole document, as before');
+});
+
 test('headers and footers: every page shows its own number, the first page its own once 首页不同 is on', () => {
   const footer = '<p style="text-align:center">第 {page} 页 / 共 {pages} 页</p>';
   const c = editor({ id: 'd', html: '', header: 'H', footer, titlePg: true, firstHeader: '', firstFooter: '' });
