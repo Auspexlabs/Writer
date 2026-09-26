@@ -34,6 +34,13 @@ test('notesOf reads footnotes and endnotes with the paragraph they hang on; plan
   assert.deepEqual(r.list.map(x => [x.nid, x.id]), [['1', '1'], ['e1', '9'], ['nx', '9']]);
   const marks = parse('<p>a<sup data-fn="x" data-kind="endnote">?</sup>b<sup data-fn="y">?</sup><sup data-fn="z" data-kind="endnote">?</sup></p>');
   assert.deepEqual(EN.numberNotes(marks).map(m => m.textContent), ['i', '1', 'ii'], 'footnotes count 1, 2…, endnotes i, ii… as Word numbers them');
+  assert.deepEqual(EN.numberNotes(marks, 'decimalEnclosedCircleChinese').map(m => m.textContent), ['①', '①', '②'], 'the document\'s format numbers both kinds');
+  assert.deepEqual(EN.numberNotes(marks, 'upperRoman').map(m => m.textContent), ['I', 'I', 'II']);
+  const many = parse('<p>' + '<sup data-fn="n">?</sup>'.repeat(28) + '</p>'), last = (fmt, n) => EN.numberNotes(many, fmt).slice(-n).map(m => m.textContent);
+  assert.deepEqual(last('chineseCounting', 3), ['二十六', '二十七', '二十八']);
+  assert.deepEqual(EN.numberNotes(many, 'chineseCounting').slice(9, 12).map(m => m.textContent), ['十', '十一', '十二']);
+  assert.deepEqual(last('lowerLetter', 3), ['z', 'aa', 'bb'], 'letters run a…z, then aa, bb as Word counts');
+  assert.deepEqual(last('decimalEnclosedCircleChinese', 9).slice(0, 2), ['⑳', '21'], 'circled numbers stop at 20');
 });
 
 test('a paragraph\'s section break and its section\'s own page setup come back from the html; the setup is only sent with a break', () => {

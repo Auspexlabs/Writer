@@ -30,6 +30,28 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '阅读方式': 'Reading mode', '沉浸': 'Immersive', '插入行列': 'Insert rows and columns', '单元格': 'Cells', '样式与边框': 'Styles and borders', '对齐与行高': 'Alignment and row height', '其它': 'Other',
   '大小与环绕': 'Size and wrapping', '填充与轮廓': 'Fill and outline', '形状与大小': 'Shape and size',
 
+  // the format panel (the design's 定稿): groups, controls and their values
+  '字形': 'Font Style', '加粗 倾斜': 'Bold Italic', '间距': 'Spacing', '纸张': 'Paper', '方向': 'Orientation', '分栏与分隔': 'Columns & Breaks', '边框与底纹': 'Borders & Shading',
+  '换行和分页': 'Line & Page Breaks', '孤行控制': 'Widow/Orphan Control', '避免段落的第一行或最后一行单独出现在页面顶端或底端': 'Keep the first or last line of a paragraph from standing alone at the top or bottom of a page', '项目符号': 'Bullets', '多级列表': 'Multilevel List', '编号样式': 'Numbering Style', '• 项目符号': '• Bullets', // i18n-ok — the marker itself
+  '段落边框': 'Paragraph Borders', '多条框线': 'Several Borders', '首行不缩进': 'No First-Line Indent', '首行缩进 2 字符': 'First Line 2 ch', '悬挂缩进 {n}': v => `Hanging ${v.n}`, '首行缩进 {n}': v => `First Line ${v.n}`,
+  '{n} 行': v => `${v.n} ${+v.n === 1 ? 'line' : 'lines'}`, '{n} 倍': v => `${v.n}×`, '最小值 {v}': v => `At least ${v.v}`, '固定值 {v}': v => `Exactly ${v.v}`,
+  '查找替换 Ctrl+F': 'Find & Replace Ctrl+F', '链接 Ctrl+K': 'Link Ctrl+K', '分页符 Ctrl+Enter': 'Page Break Ctrl+Enter', '插入表格：选择行列': 'Insert Table: choose rows and columns',
+  '{size} · {w} × {h} 厘米': v => `${v.size} · ${v.w} × ${v.h} cm`, '{n} 厘米': v => `${v.n} cm`, '{side}页边距': v => `${v.side} margin`, '自定义页边距': 'Custom Margins', '适中': 'Moderate',
+  '上下左右相同…': 'Same on All Sides…', '上下对称、左右对称…': 'Top & Bottom, Left & Right…', '上下左右（厘米）': 'All sides (cm)', '上下（厘米）': 'Top and bottom (cm)', '左右（厘米）': 'Left and right (cm)',
+  '1.27 厘米': '1.27 cm', '2.54 厘米': '2.54 cm', '2.54 / 1.91 厘米': '2.54 / 1.91 cm', '2.54 / 5.08 厘米': '2.54 / 5.08 cm',
+  '上': 'Top', '下': 'Bottom', '自动断字': 'Hyphenation', '水印：{w}': v => `Watermark: ${v.w}`,
+  '插入目录': 'Insert Contents', '更新目录': 'Update Contents', '根据标题生成目录': 'Build the contents from the headings', '按现在的标题更新目录': 'Update the contents from the headings',
+  '目录样式': 'Contents Style', '经典': 'Classic', '简洁': 'Simple', '无页码': 'No Page Numbers', '脚注和尾注': 'Footnotes & Endnotes', '脚注和尾注的编号样式': 'How footnotes and endnotes are numbered',
+  '题注标签': 'Caption Label', '标签：{l}': v => `Label: ${v.l}`, '引用：{k}': v => `Refer to: ${v.k}`, '引用的类型': 'What to refer to', '没有可引用的项目': 'Nothing to refer to yet',
+  '添加书签': 'Add Bookmark', '跳转到…': 'Go To…', '还没有书签': 'No bookmarks yet', '删除所在段落的书签': "Remove This Paragraph's Bookmark",
+  '字符': 'Characters', '页': 'Pages', '文档里还没有批注。选中文字后点「新建」添加。': 'No comments yet. Select some text and click New.', '记录修改': 'Track Changes',
+  '全部接受': 'Accept All', '全部拒绝': 'Reject All', '查找与替换': 'Find & Replace', '下一个': 'Next', '替换这一处': 'Replace this one',
+  '网页': 'Web', '阅读': 'Reading', '翻页': 'Page Turning', '页面排列': 'Arrange Pages', '上下': 'Vertical', '左右': 'Side by Side', '页面上下翻': 'Pages scroll vertically', '页面并排左右翻': 'Pages side by side',
+  '行和列': 'Rows & Columns', '合并右侧': 'Merge Right', '合并下方': 'Merge Down', '拆分': 'Split', '{side}对齐': v => `Align ${v.side}`, '转文本': 'To Text', '属性': 'Properties',
+  '第一行使用标题行的格式': 'Format the first row as a header', '网格表 4（橙色标题行）': 'Grid Table 4 (orange header)', '大小与位置': 'Size & Position', '形状与排列': 'Shape & Arrangement',
+  '调整': 'Adjust', '边框与效果': 'Border & Effects', '压缩': 'Compress', '重置': 'Reset', '增加': 'Increase', '减少': 'Decrease',
+  '新页面': 'New Page', '缩小': 'Zoom Out', '放大': 'Zoom In', '交给 AI 助手改写': 'Rewrite with the assistant', '高亮（{c}）': v => `Highlight (${v.c})`, '上下左右': 'All Sides',
+
   // home ribbon
   '撤销 Ctrl+Z': 'Undo Ctrl+Z', '重做 Ctrl+Y': 'Redo Ctrl+Y',
   '格式刷': 'Format Painter', '复制格式后选择目标文字': 'Copy the format, then select text to apply it', '清除格式': 'Clear Formatting',

@@ -33,6 +33,15 @@ test('the editor draws a paragraph\'s own 段落 settings as CSS and keeps them 
   assert.equal(el.getAttribute('style'), 'text-align: center; margin-bottom: 12pt; background: #D9D9D9;', 'the old spacing goes, the alignment stays');
 });
 
+test('段前 / 段后 in lines (行) draw 12pt a line; 孤行控制 off is the paragraph\'s own, and one its style turns off shows on data-widow', () => {
+  const html = EN.blocksToHtml(EN.blocksOf([{ kind: 'paragraph', path: '/body/paragraph[1]', props: { html: 'a', spaceBefore: '0.5lines', spaceAfter: '1lines', widowControl: 'false' } },
+    { kind: 'paragraph', path: '/body/paragraph[2]', props: { html: 'b' }, computed: { widowControl: 'false' } }], 'a.docx'));
+  assert.match(html, /data-w-spacebefore="0.5lines" data-w-spaceafter="1lines" data-w-widowcontrol="false" style="margin-top:6pt;margin-bottom:12pt">a</);
+  assert.match(html, /<p data-path="\/body\/paragraph\[2\]" data-widow="off">b<\/p>/);
+  const back = EN.blocksFromHtml(parse(html));
+  assert.deepEqual([back[0].props.spaceBefore, back[0].props.widowControl, back[1].props.widowControl], ['0.5lines', 'false', undefined], 'what the style says is not written as the paragraph\'s');
+});
+
 // ----- round trips through the engine -----
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const cli = join(root, 'src/Writer.Cli/bin/Debug/net10.0/writer.dll');
@@ -76,4 +85,17 @@ test('engine: 段落 settings typed in the editor survive save → reopen; a cha
   assert.deepEqual(calls, [['/body/paragraph[1]', '--prop', 'lineSpacing=2', '--prop', 'border=none'], ['/body/paragraph[2]', '--prop', 'keepLines=true']]);
   const again = await bodyBlocks(file);
   assert.deepEqual([again[0].props.lineSpacing, again[0].props.border, again[2].props.keepLines], ['2', undefined, 'true']);
+});
+
+test('engine: spacing in lines and 孤行控制 survive save → reopen; turning widow control back on sends none', { skip: skip() }, async () => {
+  const file = join(dir, 'lines.docx');
+  await run(['create', file]);
+  await EN.planDocxBlocks(file, [], EN.blocksFromHtml(parse('<p data-w-spacebefore="0.5lines" data-w-spaceafter="1lines" data-w-widowcontrol="false">一</p>')), run);
+  const opened = await bodyBlocks(file);
+  assert.deepEqual([opened[0].props.spaceBefore, opened[0].props.spaceAfter, opened[0].props.widowControl], ['0.5lines', '1lines', 'false']);
+  const edited = EN.blocksFromHtml(parse(EN.blocksToHtml(opened))); delete edited[0].props.widowControl;
+  const calls = [];
+  await EN.planDocxBlocks(file, opened, edited, async argv => { calls.push(argv.slice(2)); return run(argv); });
+  assert.deepEqual(calls, [['/body/paragraph[1]', '--prop', 'widowControl=none']]);
+  assert.equal((await bodyBlocks(file))[0].props.widowControl, undefined);
 });

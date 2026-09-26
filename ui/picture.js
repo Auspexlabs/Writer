@@ -191,6 +191,38 @@ export function pictureRibbon(k, tools, look, busy) {
   ];
 }
 
+/** The 图片 tab of the format panel, with panel.js's kit k and the editor's menu item maker I: the same tools as the ribbon's, in
+ *  groups — the picture, its adjustments, its border and effects, the file. */
+export function picturePanel(k, I, tools, look, busy) {
+  look = look || {};
+  const on = key => look[key] === 'true', rot = num(look.rotation);
+  const line = look.line && look.line !== 'none' ? '#' + look.line : '';
+  const set = key => v => tools.set({ [key]: String(Math.round(v)) }, true);
+  return [
+    k.G('图片',
+      k.R(k.btn(busy === 'cutout' ? '抠图中…' : '抠图', null, () => { if (!busy) tools.cutout(); }, { title: '移除背景，只留下主体（Apple Vision，macOS 14 以上）', dis: !!busy }),
+        k.menuBtn('pic-crop', '裁剪', 'crop', [I('拖动裁剪…', () => tools.crop(), { hint: '拖边角' })].concat(RATIOS.map(([r, l]) => I(l, () => tools.ratio(r))), [I('取消裁剪', () => tools.set({ crop: '0,0,0,0' }), { on: !look.crop })]), { title: '裁剪到比例，或拖动边角' }),
+        k.menuBtn('pic-shape', '形状', 'shape', SHAPES.map(([g, l]) => I(l, () => tools.set({ geometry: g }), { on: (look.geometry || 'rect') === g })), { title: '裁剪为形状' })),
+      k.R(k.btn('旋转 90°', 'rotate', () => tools.set({ rotation: String((rot + 90) % 360) }), { title: '向右旋转 90°' }),
+        k.btn('水平翻转', null, () => tools.set({ flipH: on('flipH') ? 'false' : 'true' }), { on: on('flipH') }),
+        k.btn('垂直翻转', null, () => tools.set({ flipV: on('flipV') ? 'false' : 'true' }), { on: on('flipV') }))),
+    k.G('调整',
+      k.R(k.range('亮度', num(look.brightness), -100, 100, set('brightness'))),
+      k.R(k.range('对比度', num(look.contrast), -100, 100, set('contrast'))),
+      k.R(k.range('透明度', num(look.transparency), 0, 100, set('transparency'))),
+      k.R(k.chk('灰度', on('grayscale'), v => tools.set({ grayscale: v ? 'true' : 'false' })))),
+    k.G('边框与效果',
+      k.R(k.swatch('边框', line || 'transparent', c => tools.set({ line: c.slice(1).toUpperCase(), lineWidth: look.lineWidth || '1.5pt' }), { title: '边框颜色' }),
+        k.sel('pic-width', line ? T('{n} 磅', { n: num(look.lineWidth, 0.75) }) : T('无边框'), WIDTHS.map(([w, l]) => I(l, () => tools.set(w === 'none' ? { line: 'none' } : { lineWidth: w, line: look.line || '1D1D1F' }), { on: w === 'none' ? !line : !!line && num(look.lineWidth, 0.75) === num(w) })), { w: 104, title: '边框粗细' })),
+      k.R(k.chk('阴影', on('shadow'), v => tools.set({ shadow: v ? 'true' : 'false' })), k.sp(),
+        k.chk('圆角', look.geometry === 'roundRect', v => tools.set({ geometry: v ? 'roundRect' : 'rect' })))),
+    k.G('文件',
+      k.R(k.menuBtn('pic-compress', busy === 'compress' ? '压缩中…' : '压缩', null, COMPRESS.map(([v, l]) => I(l, () => { if (!busy) tools.compress(v); })), { title: '按显示尺寸重新编码，并删除裁掉的部分' }),
+        k.btn(busy === 'reset' ? '重置中…' : '重置', null, () => { if (!busy) tools.reset(); }, { title: '去掉所有调整，恢复原图', dis: !!busy }),
+        k.btn(busy === 'replace' ? '替换中…' : '替换', null, () => { if (!busy) tools.replace(); }, { title: '换一张图片，保留宽度与位置', dis: !!busy })))
+  ];
+}
+
 // ---- where a Word picture sits: in the line of text, or floating in its paragraph (the engine's wrap / x / y / xFrom / yFrom /
 // xAlign / yAlign, as `get` prints them, lengths in cm) ----
 

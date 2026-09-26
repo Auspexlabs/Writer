@@ -129,10 +129,16 @@ test('tables render their lines as the file draws them, and contents as the file
   assert.match(three(0, 3), /border-top:1\.5px solid[^;]*;.*border-bottom:1px solid #1D1D1F/);
   assert.match(three(2, 3), /border-bottom:1\.5px solid/);
   assert.match(three(1, 3), /border-top:1px dashed/);
-  const html = EN.tocHtml({ path: '/body/toc[1]', levels: '2', title: '目录', entries: [{ text: 'A', level: 1, page: '3' }, { text: 'B', level: 2 }] });
+  assert.equal(EN.tableLook({ style: 'ThreeLineTable', header: 'false' }), 'three0', 'without 标题行 the style draws no rule under the first row');
+  assert.match(EN.cellLines('three0', 0, { c: 0, cs: 1, rs: 1 }, 3, 2), /border-top:1\.5px solid[^;]*;.*border-bottom:1px dashed/);
+  const entries = [{ text: 'A', level: 1, page: '3' }, { text: 'B', level: 2 }];
+  const html = EN.tocHtml({ path: '/body/toc[1]', levels: '2', title: '目录', entries });
   assert.match(html, /^<nav data-toc="1" data-path="\/body\/toc\[1\]" data-levels="2" data-title="目录" contenteditable="false"/);
-  assert.match(html, /padding-left:18px"><span style="flex:1">B<\/span>/);
-  assert.match(html, />3<\/span>/);
+  assert.match(html, /padding-left:18px"><span>B<\/span><\/div>/);
+  assert.match(html, /dotted[^>]*><\/span><span style="color:#8E8E93">3<\/span>/, 'classic: dots run to the page number');
+  const simple = EN.tocHtml({ levels: '2', title: '', entries, style: 'simple' }), plain = EN.tocHtml({ levels: '2', title: '', entries, style: 'plain' });
+  assert.match(simple, /data-toc-style="simple"/); assert.doesNotMatch(simple, /dotted/); assert.match(simple, />3<\/span>/);
+  assert.match(plain, /data-toc-style="plain"/); assert.doesNotMatch(plain, />3<\/span>/, 'plain: titles only');
   assert.match(EN.tocHtml({ levels: '3', title: '', entries: [] }), /添加标题后/);
 });
 

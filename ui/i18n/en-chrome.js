@@ -3,6 +3,7 @@
 // The menu bar and the other Rust-side text are in desktop/src-tauri/src/main.rs (t()).
 Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   // ---- title strip (mac.dc.html, win.dc.html)
+  '关闭标签页': 'Close Tab', '沉浸阅读': 'Immersive Reading', '沉浸阅读 ⌘.': 'Immersive Reading ⌘.', '缩略图 ⌃⌘S': 'Thumbnails ⌃⌘S', '隐藏缩略图 ⌃⌘S': 'Hide Thumbnails ⌃⌘S',
   '关闭': 'Close',
   '最小化': 'Minimize',
   '最大化': 'Maximize',

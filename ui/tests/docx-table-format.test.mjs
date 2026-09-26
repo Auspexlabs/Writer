@@ -17,6 +17,20 @@ const EN = await import('../engine.js');
 const table = (props, rows) => ({ kind: 'table', path: '/body/table[1]', props, rows: rows.map((cells, r) => ({ kind: 'row', path: `/body/table[1]/row[${r + 1}]`, props: cells.rowProps || {},
   cells: cells.map((c, i) => ({ kind: 'cell', path: `/body/table[1]/row[${r + 1}]/cell[${i + 1}]`, props: typeof c === 'string' ? { html: c } : c })) })) });
 
+test('标题行 is the table\'s header prop, kept on the table and sent once it changes; the contents\' style goes with its own set', async () => {
+  const plan = async (a, b) => { const calls = []; await EN.planDocxBlocks('t.docx', [a], [b], async argv => { calls.push(argv.slice(0, 1).concat(argv.slice(2))); return { path: argv[2] }; }); return calls; };
+  const html = EN.blocksToHtml([table({ style: 'GridTable4Accent2', header: 'false' }, [['a']])]);
+  assert.match(html, /<table data-path="\/body\/table\[1\]" data-w-style="GridTable4Accent2" data-w-header="false"/);
+  const [t] = EN.blocksFromHtml(parse(html)), on = EN.blocksFromHtml(parse(html.replace('data-w-header="false"', 'data-w-header="true"')))[0];
+  assert.equal(t.props.header, 'false');
+  assert.deepEqual(await plan(t, on), [['set', '/body/table[1]', '--prop', 'header=true']]);
+  const toc = style => ({ kind: 'toc', path: '/body/toc[1]', props: { levels: '3', title: '目录', style } });
+  assert.deepEqual(await plan(toc('classic'), toc('plain')), [['set', '/body/toc[1]', '--prop', 'style=plain']]);
+  assert.deepEqual(await plan(toc(undefined), toc('classic')), [], 'classic is what a contents without a style has');
+  const [back] = EN.blocksFromHtml(parse(EN.tocHtml({ path: '/body/toc[1]', levels: '2', title: '', entries: [], style: 'simple' })));
+  assert.deepEqual([back.kind, back.props.style], ['toc', 'simple']);
+});
+
 test('the editor draws widths, heights, a header row, cell borders and alignment, and reads them back as the same props', () => {
   const r1 = ['a', { html: 'b', borders: 'top bottom', align: 'center', valign: 'middle' }]; r1.rowProps = { header: 'true', height: '360000' };
   const html = EN.blocksToHtml([table({ style: 'PlainTable1', widths: '["3cm","5cm"]', width: '8cm', align: 'center' }, [r1, ['c', 'd']])]);

@@ -41,25 +41,25 @@ const plain = x => JSON.parse(JSON.stringify(x)); // the editor runs in another 
 const pages = (c, blocks) => { c.edRef.current = laidOut(blocks); c.refreshInfo(); const v = c.renderVals(); return plain({ text: v.pagesText, thumbs: v.pageThumbs.map(t => [t.off, t.ch]) }); };
 
 test('page thumbnails split where the status bar counts pages: every page break starts the next page', () => {
-  const c = editor({ id: 'd', html: '<p>one</p><hr data-pb="1"><p>two</p>' }); // A4, normal margins: 931px of text a page, thumbnails at 140 / 794
-  assert.deepEqual(pages(c, [[0, 100], ['hr', 128, 1], [157, 100]]), { text: '共 2 页', thumbs: [['0px', '22px'], ['-157px', '17px']] },
+  const c = editor({ id: 'd', html: '<p>one</p><hr data-pb="1"><p>two</p>' }); // A4, normal margins: 931px of text a page, thumbnails at 128 / 794 (the design's sidebar)
+  assert.deepEqual(pages(c, [[0, 100], ['hr', 128, 1], [157, 100]]), { text: '共 2 页', thumbs: [['0px', '20px'], ['-157px', '16px']] },
     'page 1 ends at the break and page 2 begins with what follows it (page 2 was blank and page 1 showed both)');
-  assert.deepEqual(pages(c, [[0, 900], ['hr', 928, 1], [957, 900]]), { text: '共 2 页', thumbs: [['0px', '163px'], ['-957px', '158px']] },
+  assert.deepEqual(pages(c, [[0, 900], ['hr', 928, 1], [957, 900]]), { text: '共 2 页', thumbs: [['0px', '149px'], ['-957px', '145px']] },
     'two nearly full pages are two pages, not three');
-  assert.deepEqual(pages(c, [[0, 1500], ['hr', 1528, 1], [1557, 50]]), { text: '共 3 页', thumbs: [['0px', '164px'], ['-1143px', '68px'], ['-1557px', '8px']] },
+  assert.deepEqual(pages(c, [[0, 1500], ['hr', 1528, 1], [1557, 50]]), { text: '共 3 页', thumbs: [['0px', '150px'], ['-1143px', '62px'], ['-1557px', '8px']] },
     'a block longer than a page runs on over the next one, up to the break');
-  assert.deepEqual(pages(c, [[0, 1500]]), { text: '共 2 页', thumbs: [['0px', '164px'], ['-1143px', '62px']] }, 'without breaks too');
-  assert.deepEqual(pages(c, [[0, 900], [908, 100]]), { text: '共 2 页', thumbs: [['0px', '158px'], ['-908px', '17px']] }, 'a paragraph that does not fit starts the next page');
+  assert.deepEqual(pages(c, [[0, 1500]]), { text: '共 2 页', thumbs: [['0px', '150px'], ['-1143px', '57px']] }, 'without breaks too');
+  assert.deepEqual(pages(c, [[0, 900], [908, 100]]), { text: '共 2 页', thumbs: [['0px', '145px'], ['-908px', '16px']] }, 'a paragraph that does not fit starts the next page');
   assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(2){margin-top:243px!important}`, 'the page view moves it to the top of page 2 (1123px + 20px gap)');
 });
 
 test('a page break inside a paragraph and a paragraph that starts a page split pages too, and never make an empty one', () => {
   const c = editor({ id: 'd', html: '' });
-  assert.deepEqual(pages(c, [['p', 0, 200, 88]]), { text: '共 2 页', thumbs: [['0px', '15px'], ['-117px', '14px']] }, 'Ctrl+Enter after text');
+  assert.deepEqual(pages(c, [['p', 0, 200, 88]]), { text: '共 2 页', thumbs: [['0px', '14px'], ['-117px', '13px']] }, 'Ctrl+Enter after text');
   assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(1)>:nth-child(1){margin-bottom:1054px!important}`, 'the rest of the paragraph moves on');
-  assert.deepEqual(pages(c, [[0, 100], ['before', 128, 60]]), { text: '共 2 页', thumbs: [['0px', '17px'], ['-128px', '10px']] }, 'pageBreakBefore');
-  assert.deepEqual(pages(c, [['before', 0, 60], [88, 60]]), { text: '共 1 页', thumbs: [['0px', '26px']] }, 'the first paragraph is on a new page already');
-  assert.deepEqual(pages(c, [[0, 100], ['hr', 128, 1], ['before', 157, 60]]), { text: '共 2 页', thumbs: [['0px', '22px'], ['-157px', '10px']] }, 'and so is one right after a page break');
+  assert.deepEqual(pages(c, [[0, 100], ['before', 128, 60]]), { text: '共 2 页', thumbs: [['0px', '16px'], ['-128px', '9px']] }, 'pageBreakBefore');
+  assert.deepEqual(pages(c, [['before', 0, 60], [88, 60]]), { text: '共 1 页', thumbs: [['0px', '23px']] }, 'the first paragraph is on a new page already');
+  assert.deepEqual(pages(c, [[0, 100], ['hr', 128, 1], ['before', 157, 60]]), { text: '共 2 页', thumbs: [['0px', '20px'], ['-157px', '9px']] }, 'and so is one right after a page break');
 });
 
 test('headers and footers: every page shows its own number, the first page its own once 首页不同 is on', () => {

@@ -494,7 +494,7 @@ export function tableLook(p) {
   if (p.borders) return p.borders === 'all' ? 'grid' : p.borders; // none | outside | inside | horizontal
   const style = p.style || '';
   if (!style || /^TableNormal$/i.test(style)) return 'none';
-  if (/^ThreeLineTable$/i.test(style)) return 'three';
+  if (/^ThreeLineTable$/i.test(style)) return p.header === 'false' ? 'three0' : 'three'; // three0: no 标题行, so no rule under the first row
   if (/^PlainTable1$/i.test(style)) return 'horizontal';
   return 'grid';
 }
@@ -503,9 +503,10 @@ const LINE = '1px solid #C7C7CC', GUIDE = '1px dashed #E5E5EA', RULE = '1.5px so
 export function cellLines(look, r, x, R, C) {
   const top = r === 0, bottom = r + x.rs >= R, left = x.c === 0, right = x.c + x.cs >= C;
   const edge = (outer, isOuter) => look === 'grid' ? LINE : look === 'outside' ? (isOuter ? LINE : GUIDE) : look === 'inside' ? (isOuter ? GUIDE : LINE) : outer;
-  const t = look === 'three' ? (top ? RULE : GUIDE) : look === 'horizontal' ? LINE : edge(GUIDE, top);
-  const b = look === 'three' ? (bottom ? RULE : r === 0 ? HAIR : GUIDE) : look === 'horizontal' ? LINE : edge(GUIDE, bottom);
-  const l = look === 'three' || look === 'horizontal' ? GUIDE : edge(GUIDE, left), rt = look === 'three' || look === 'horizontal' ? GUIDE : edge(GUIDE, right);
+  const three = look === 'three' || look === 'three0';
+  const t = three ? (top ? RULE : GUIDE) : look === 'horizontal' ? LINE : edge(GUIDE, top);
+  const b = three ? (bottom ? RULE : r === 0 && look === 'three' ? HAIR : GUIDE) : look === 'horizontal' ? LINE : edge(GUIDE, bottom);
+  const l = three || look === 'horizontal' ? GUIDE : edge(GUIDE, left), rt = three || look === 'horizontal' ? GUIDE : edge(GUIDE, right);
   return `border-top:${t};border-right:${rt};border-bottom:${b};border-left:${l}`;
 }
 /** A cell's own lines over the table's (its borders prop): none, all, or the sides listed; '' leaves the table's. */
@@ -520,12 +521,15 @@ const colgroupOf = widths => { let list = []; try { list = JSON.parse(widths || 
 const rowStyle = props => props.height ? ` style="height:${Math.round(cmOf(props.height + 'emu') * CM_PX)}px"` : '';
 
 const TOC_STYLE = "border:1px solid #E5E5EA;border-radius:6px;padding:14px 18px;margin:12px 0;font-family:'Noto Sans SC',sans-serif;font-size:14px;line-height:1.9;background:#FFFFFF;color:#1D1D1F";
-/** A table of contents in the editor: read-only, its entries indented by level, page numbers when the file has them. */
-export function tocHtml({ path, levels, title, entries }) {
+/** A table of contents in the editor: read-only, its entries indented by level, page numbers when the file has them. Its style
+ *  (DocxToc.StyleOf) says how an entry ends: classic runs dots to the number, simple leaves a gap, plain has no number. */
+export function tocHtml({ path, levels, title, entries, style }) {
+  style = style === 'simple' || style === 'plain' ? style : 'classic';
   const head = title ? `<div style="font-weight:600;margin-bottom:4px">${esc(title)}</div>` : '';
-  const body = entries.length ? entries.map(e => `<div style="display:flex;gap:12px;padding-left:${(Math.max(1, e.level) - 1) * 18}px"><span style="flex:1">${e.href ? `<a href="#${esc(e.href)}">${esc(e.text)}</a>` : esc(e.text)}</span>${e.page ? `<span style="color:#8E8E93">${esc(e.page)}</span>` : ''}</div>`).join('')
+  const dots = style === 'classic' ? '<span style="flex:1;min-width:12px;margin:0 4px;border-bottom:1.5px dotted #AEAEB2;transform:translateY(-5px)"></span>' : '<span style="flex:1;min-width:12px"></span>';
+  const body = entries.length ? entries.map(e => `<div style="display:flex;align-items:baseline;padding-left:${(Math.max(1, e.level) - 1) * 18}px"><span>${e.href ? `<a href="#${esc(e.href)}">${esc(e.text)}</a>` : esc(e.text)}</span>${style !== 'plain' && e.page ? dots + `<span style="color:#8E8E93">${esc(e.page)}</span>` : ''}</div>`).join('')
     : `<div style="color:#8E8E93">${_t('添加标题后，目录会在保存时生成')}</div>`;
-  return `<nav data-toc="1"${path ? ` data-path="${esc(path)}"` : ''} data-levels="${esc(levels || '3')}" data-title="${esc(title || '')}" contenteditable="false" style="${TOC_STYLE}">${head}${body}</nav>`;
+  return `<nav data-toc="1"${path ? ` data-path="${esc(path)}"` : ''} data-levels="${esc(levels || '3')}" data-title="${esc(title || '')}"${style !== 'classic' ? ` data-toc-style="${style}"` : ''} contenteditable="false" style="${TOC_STYLE}">${head}${body}</nav>`;
 }
 /** Headings of the live editor that a contents of `levels` levels lists, each with an id to jump to. */
 export function editorHeadings(root, levels) {
@@ -537,7 +541,7 @@ export function editorHeadings(root, levels) {
 export function refreshTocs(root) {
   for (const nav of Array.from(root.querySelectorAll('[data-toc]'))) {
     const levels = nav.getAttribute('data-levels') || '3', title = nav.getAttribute('data-title') || '';
-    const tmp = parseHtml(tocHtml({ path: nav.getAttribute('data-path'), levels, title, entries: editorHeadings(root, levels) })).firstChild;
+    const tmp = parseHtml(tocHtml({ path: nav.getAttribute('data-path'), levels, title, entries: editorHeadings(root, levels), style: nav.getAttribute('data-toc-style') })).firstChild;
     nav.replaceWith(tmp);
   }
 }
@@ -599,7 +603,7 @@ export function runTableOp(table, op, cell, flag) {
 }
 /** Draws the live table's lines from its style and borders attributes, after a command or a new look. */
 export function drawTableLines(table) {
-  const m = tableModelOf(table), look = tableLook({ style: table.getAttribute('data-w-style'), borders: table.getAttribute('data-w-borders') });
+  const m = tableModelOf(table), look = tableLook({ style: table.getAttribute('data-w-style'), borders: table.getAttribute('data-w-borders'), header: table.getAttribute('data-w-header') });
   const R = m.rows.length, C = Math.max(1, ...coverage(m).map(r => r.length));
   m.rows.forEach((row, r) => row.cells.forEach(x => { x.ref.style.border = ''; x.ref.style.cssText += ';' + cellLines(look, r, x, R, C) + (x.ref.getAttribute('data-w-borders') ? ';' + ownLines(x.ref.getAttribute('data-w-borders')) : ''); }));
 }
@@ -613,8 +617,9 @@ export const joinCells = (a, b) => [a, b].filter(h => !blankHtml(h)).join('<br>'
 const PB_WORD = '<br style="page-break-before:always">', PB_LINE = '<span data-pb="1" contenteditable="false"></span>';
 export const pbIn = html => String(html).split(PB_WORD).join(PB_LINE);
 export const pbOut = html => String(html).replace(/<span data-pb="1"[^>]*><\/span>/g, PB_WORD);
-/** A heading or paragraph's own props (kept for the save), and how it shows, its own or its style's: a page break above it, a fill. */
-const paraOf = (b, p, n) => { const c = n.computed || {}; for (const k of PARA_OWN) if (p[k]) b.props[k] = p[k]; b.pbb = (p.pageBreakBefore || c.pageBreakBefore) === 'true'; b.shade = p.fill || c.fill; };
+/** A heading or paragraph's own props (kept for the save), and how it shows, its own or its style's: a page break above it, a fill;
+ *  widow control its style turns off rides on data-widow, for the panel's 孤行控制. */
+const paraOf = (b, p, n) => { const c = n.computed || {}; for (const k of PARA_OWN) if (p[k]) b.props[k] = p[k]; b.pbb = (p.pageBreakBefore || c.pageBreakBefore) === 'true'; b.shade = p.fill || c.fill; b.widowOff = !p.widowControl && c.widowControl === 'false'; };
 
 /** Word pictures are addressed by id (//image[@id=n], their wp:docPr) when the file gives every picture one of its own: the address
  *  survives every move and renumbering; else by their place (/body/image[n]). */
@@ -638,14 +643,14 @@ export function blocksOf(nodes, file) {
     else if (n.kind === 'code') b.props.text = p.text || '';
     else if (n.kind === 'table') {
       // the tree gives json props (widths) parsed; the editor keeps them as the JSON text the engine takes back
-      b.props = Object.fromEntries(['style', 'borders', 'borderColor', 'width', 'widths', 'align'].filter(k => p[k] != null).map(k => [k, typeof p[k] === 'object' ? JSON.stringify(p[k]) : p[k]]));
+      b.props = Object.fromEntries(['style', 'header', 'borders', 'borderColor', 'width', 'widths', 'align'].filter(k => p[k] != null).map(k => [k, typeof p[k] === 'object' ? JSON.stringify(p[k]) : p[k]]));
       b.rows = (n.children || []).filter(r => r.kind === 'row').map(r => ({ kind: 'row', path: r.path,
         props: Object.fromEntries(['header', 'height'].filter(k => r.props?.[k] != null).map(k => [k, r.props[k]])),
         cells: (r.children || []).filter(c => c.kind === 'cell').map(c => ({ kind: 'cell', path: c.path,
           props: Object.assign({ html: c.props.html != null ? c.props.html : esc(c.props.text) },
             Object.fromEntries(['fill', 'colspan', 'rowspan', 'borders', 'valign', 'width', 'align'].filter(k => c.props?.[k] != null).map(k => [k, c.props[k]]))) })) }));
     }
-    else if (n.kind === 'toc') b.props = { levels: p.levels || '3', title: p.title || '', text: p.text || '' };
+    else if (n.kind === 'toc') b.props = { levels: p.levels || '3', title: p.title || '', text: p.text || '', style: p.style || 'classic' };
     else if (n.kind === 'image') Object.assign(b, picOf(n, file, byId));
     else if (n.kind === 'pagebreak') { }
     else b.props.html = esc(p.text || '');
@@ -665,7 +670,7 @@ export function blocksToHtml(blocks) {
   const closeLists = n => { while (stack.length > n) { out += '</' + stack.pop().type + '>'; } };
   const pa = (b, tag, extra) => {
     const css = [alignCss(b.props.align), b.shade ? 'background:#' + esc(b.shade) : '', paraCss(b.props)].filter(Boolean).join(';');
-    return `<${tag} data-path="${esc(b.path)}"${extra || ''}${attrs(b.props, PARA_OWN)}${b.pbb ? ' data-pb="before"' : ''}${css ? ` style="${css}"` : ''}>${(b.pics || []).map(x => picHtml(x, true)).join('')}${pbIn(b.props.html || '<br>')}</${tag}>`;
+    return `<${tag} data-path="${esc(b.path)}"${extra || ''}${attrs(b.props, PARA_OWN)}${b.pbb ? ' data-pb="before"' : ''}${b.widowOff ? ' data-widow="off"' : ''}${css ? ` style="${css}"` : ''}>${(b.pics || []).map(x => picHtml(x, true)).join('')}${pbIn(b.props.html || '<br>')}</${tag}>`;
   };
   const attrs = (p, keys) => keys.map(k => p?.[k] != null ? ` data-w-${k.toLowerCase()}="${esc(p[k])}"` : '').join('');
   for (const b of blocks) {
@@ -694,13 +699,13 @@ export function blocksToHtml(blocks) {
     else if (b.kind === 'code') out += `<pre data-path="${esc(b.path)}">${esc(b.props.text)}</pre>`;
     else if (b.kind === 'table') {
       const look = tableLook(b.props), m = blocksModel(b.rows), R = m.rows.length, C = Math.max(1, ...coverage(m).map(r => r.length));
-      out += `<table data-path="${esc(b.path)}"${attrs(b.props, ['style', 'borders', 'borderColor', 'width', 'widths', 'align'])} style="${tableCss(b.props)}">${colgroupOf(b.props.widths)}<tbody>` + m.rows.map((row, r) => `<tr data-path="${esc(row.ref.path)}"${attrs(row.ref.props, ['header', 'height'])}${rowStyle(row.ref.props)}>` + row.cells.map(x => { const c = x.ref;
+      out += `<table data-path="${esc(b.path)}"${attrs(b.props, ['style', 'header', 'borders', 'borderColor', 'width', 'widths', 'align'])} style="${tableCss(b.props)}">${colgroupOf(b.props.widths)}<tbody>` + m.rows.map((row, r) => `<tr data-path="${esc(row.ref.path)}"${attrs(row.ref.props, ['header', 'height'])}${rowStyle(row.ref.props)}>` + row.cells.map(x => { const c = x.ref;
         return `<td data-path="${esc(c.path)}"${attrs(c.props, ['fill', 'borders', 'valign', 'width', 'align'])}${x.cs > 1 ? ` colspan="${x.cs}"` : ''}${x.rs > 1 ? ` rowspan="${x.rs}"` : ''} style="${cellStyle(c.props, look, r, x, R, C)}">${pbIn(c.props.html || '<br>')}</td>`; }).join('') + '</tr>').join('') + '</tbody></table>';
     }
     else if (b.kind === 'toc') {
       const oneLine = h => plainOf(h).replace(/\s+/g, ' ').trim(), levels = new Map(blocks.filter(h => h.kind === 'heading').map(h => [oneLine(h.props.html), +h.props.level || 1]));
       const entries = (b.props.text || '').split('\n').filter(Boolean).map(line => { const tab = line.lastIndexOf('\t'); const text = tab < 0 ? line : line.slice(0, tab); return { text, page: tab < 0 ? '' : line.slice(tab + 1), level: levels.get(text.replace(/\s+/g, ' ').trim()) || 1 }; });
-      out += tocHtml({ path: b.path, levels: b.props.levels, title: b.props.title, entries });
+      out += tocHtml({ path: b.path, levels: b.props.levels, title: b.props.title, entries, style: b.props.style });
     }
     else if (b.kind === 'image') out += picHtml(b);
     else if (b.kind === 'pagebreak') out += `<hr data-pb="1" data-path="${esc(b.path)}">`;
@@ -711,11 +716,12 @@ export function blocksToHtml(blocks) {
 }
 
 // ----- docx: page setup, header and footer (document props) -----
-const PAPERS = ['A4', 'Letter', 'A5'], MARGINS = ['narrow', 'normal', 'wide'];
-/** The editor's page model from the document props; sizes and margins the editor cannot show fall back but stay in `raw`. */
+const PAPERS = ['A4', 'Letter', 'A5', 'B5', 'A3', 'Legal'], MARGINS = ['narrow', 'normal', 'moderate', 'wide'];
+/** The editor's page model from the document props: margins are a preset (DocxSection.Margins) or the four lengths the engine
+ *  prints (2.54cm 3.18cm 2.54cm 3.18cm); a paper size the editor cannot show falls back to A4 but stays in `raw`. */
 export function pageOf(p) {
   p = p || {};
-  return { size: PAPERS.includes(p.page) ? p.page : 'A4', orient: p.orientation === 'landscape' ? 'landscape' : 'portrait', margin: p.margin === 'moderate' ? 'normal' : MARGINS.includes(p.margin) ? p.margin : 'normal', cols: Math.max(1, +p.columns || 1), raw: { size: p.page || '', margin: p.margin || '' } };
+  return { size: PAPERS.includes(p.page) ? p.page : 'A4', orient: p.orientation === 'landscape' ? 'landscape' : 'portrait', margin: MARGINS.includes(p.margin) || /\d/.test(p.margin || '') ? p.margin : 'normal', cols: Math.max(1, +p.columns || 1), raw: { size: p.page || '', margin: p.margin || '' } };
 }
 /** Header or footer text for the editor: inline html → plain lines, {page}/{pages} kept. */
 export function plainOf(html) {
@@ -735,6 +741,7 @@ export function pageDiff(orig, doc) {
   for (const k of HF) if ((doc[k] || '') !== (orig[k] || '')) p[k] = doc[k] || '';
   if (!!doc.titlePg !== !!orig.titlePg) p.titlePg = doc.titlePg ? 'true' : 'false';
   for (const k of ['lineNumbers', 'hyphenation']) if (!!doc[k] !== !!orig[k]) p[k] = doc[k] ? 'true' : 'false';
+  if ((doc.noteFormat || '') !== (orig.noteFormat || '')) p.noteFormat = doc.noteFormat || 'none';
   return p;
 }
 
@@ -747,8 +754,8 @@ async function openDocx(doc) {
   const page = Object.assign({ hf: true }, doc.page || {}, pageOf(p));
   const comments = commentsOf(body.children, p.author || 'Writer'), track = p.track === 'true'; // the engine writes comments as the document's author, else Writer
   const notes = notesOf(body.children), eqs = eqsOf(body.children), shapes = shapesOf(body.children);
-  const html = inkFills(parseHtml(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes), eqs, shapes))).innerHTML;
-  const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true' };
+  const html = inkFills(parseHtml(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes))).innerHTML;
+  const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true', noteFormat: p.noteFormat || '' };
   return { html, rev: (doc.rev || 0) + 1, track, comments: comments.map(c => ({ id: c.cid, author: c.author, initials: c.initials, mine: c.mine, time: c.time, text: c.text, quote: c.quote, path: c.path, resolved: c.resolved, parent: c.parent })),
     notes: notes.map(x => ({ id: x.nid, kind: x.kind, text: x.text })), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
     _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes } };
@@ -790,20 +797,27 @@ function placeAt(el, at, mark) {
 }
 const noteMark = (d, x) => { const s = d.createElement('sup'); s.setAttribute('data-fn', x.nid); s.setAttribute('data-kind', x.kind); s.setAttribute('contenteditable', 'false'); s.textContent = '?'; return s; };
 /** Puts each note's mark at its character offset in its paragraph (deleted text and other marks not counted, a br one character). */
-export function anchorNotes(html, notes) {
+export function anchorNotes(html, notes, format) {
   if (!notes.length) return html;
   const root = parseHtml(html), d = root.ownerDocument;
   for (const x of notes) { const el = root.querySelector(`[data-path="${x.path}"]`); if (el) placeAt(el, x.at, noteMark(d, x)); }
-  numberNotes(root);
+  numberNotes(root, format);
   return root.innerHTML;
 }
-/** Numbers the marks 1… per kind in reading order, as Word does; returns the marks. */
-export function numberNotes(root) {
-  const count = {}, marks = Array.from(root.querySelectorAll(NOTE_MARK));
-  for (const s of marks) { const k = s.getAttribute('data-kind') || 'footnote'; count[k] = (count[k] || 0) + 1; const n = k === 'endnote' ? toRoman(count[k]) : String(count[k]); if (s.textContent !== n) s.textContent = n; }
+/** Numbers the marks 1… per kind in reading order, as Word does: in the document's noteFormat (DocxSection.NoteFormats) for both
+ *  kinds, else footnotes 1, 2, 3 and endnotes i, ii, iii. Returns the marks. */
+export function numberNotes(root, format) {
+  const count = {}, marks = Array.from(root.querySelectorAll(NOTE_MARK)), num = NOTE_NUMBERS[format];
+  for (const s of marks) { const k = s.getAttribute('data-kind') || 'footnote'; count[k] = (count[k] || 0) + 1; const n = num ? num(count[k]) : k === 'endnote' ? toRoman(count[k]) : String(count[k]); if (s.textContent !== n) s.textContent = n; }
   return marks;
 }
 const toRoman = n => [[1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'], [100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']].reduce((s, [v, r]) => { while (n >= v) { s += r; n -= v; } return s; }, '');
+const CN_DIGITS = '〇一二三四五六七八九'; // i18n-ok — Word's 一二三 numbering itself
+/** Word's numFmt as it draws the numbers: letters run a…z, then aa, bb…; circled numbers stop at ⑳; 一二三 count to 九十九. */
+const NOTE_NUMBERS = { decimal: String, lowerRoman: toRoman, upperRoman: n => toRoman(n).toUpperCase(),
+  lowerLetter: n => String.fromCharCode(97 + (n - 1) % 26).repeat(Math.floor((n - 1) / 26) + 1), upperLetter: n => NOTE_NUMBERS.lowerLetter(n).toUpperCase(),
+  decimalEnclosedCircleChinese: n => n <= 20 ? String.fromCharCode(0x2460 + n - 1) : String(n),
+  chineseCounting: n => n < 10 ? CN_DIGITS[n] : n < 100 ? (n < 20 ? '' : CN_DIGITS[Math.floor(n / 10)]) + '十' + (n % 10 ? CN_DIGITS[n % 10] : '') : String(n) }; // i18n-ok
 /** The editor's notes as the engine sees them: the paragraph each mark sits in now and its character offset there. */
 function notesIn(doc, el, blocks) {
   const cells = blocks.filter(b => b.rows).flatMap(b => b.rows.flatMap(r => r.cells));
@@ -1080,10 +1094,10 @@ export function blocksFromHtml(root) {
       }
       if (tag === 'PRE') { out.push({ kind: 'code', path: pathOf(c), props: { text: c.innerText.replace(/\n$/, '') }, el: c }); continue; }
       if (tag === 'BLOCKQUOTE') { out.push(withPics({ kind: 'paragraph', path: pathOf(c), props: Object.assign({ html: inlineHtml(c), style: c.getAttribute('data-style') || 'Quote' }, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c))); continue; }
-      if (c.hasAttribute('data-toc')) { out.push({ kind: 'toc', path: pathOf(c), props: { levels: c.getAttribute('data-levels') ?? '3', title: c.getAttribute('data-title') ?? '目录' }, refresh: c.hasAttribute('data-refresh'), el: c }); continue; }
+      if (c.hasAttribute('data-toc')) { out.push({ kind: 'toc', path: pathOf(c), props: { levels: c.getAttribute('data-levels') ?? '3', title: c.getAttribute('data-title') ?? '目录', style: c.getAttribute('data-toc-style') || 'classic' }, refresh: c.hasAttribute('data-refresh'), el: c }); continue; }
       if (tag === 'TABLE') {
         let ops = []; try { ops = JSON.parse(c.getAttribute('data-ops') || '[]'); } catch (e) { ops = null; } // unreadable: the save writes the table anew
-        out.push({ kind: 'table', path: pathOf(c), el: c, ops, props: docxAttrs(c, ['style', 'borders', 'borderColor', 'width', 'widths', 'align']),
+        out.push({ kind: 'table', path: pathOf(c), el: c, ops, props: docxAttrs(c, ['style', 'header', 'borders', 'borderColor', 'width', 'widths', 'align']),
           rows: Array.from(c.querySelectorAll('tr')).filter(tr => tr.closest('table') === c).map(tr => ({ kind: 'row', path: pathOf(tr), el: tr,
             props: docxAttrs(tr, ['header', 'height']), cells: Array.from(tr.children).filter(td => /^(TD|TH)$/.test(td.tagName)).map(td => ({ kind: 'cell', path: pathOf(td), el: td,
               props: Object.assign({ html: inlineHtml(td) }, docxAttrs(td, ['fill', 'borders', 'valign', 'width', 'align']), td.colSpan > 1 ? { colspan: String(td.colSpan) } : {}, td.rowSpan > 1 ? { rowspan: String(td.rowSpan) } : {}) })) })) });
@@ -1114,11 +1128,11 @@ const listKind = (el, parent) => el.tagName === 'UL' ? 'bullet' : el.getAttribut
 /** A heading or paragraph's own props that its element keeps as data-w-* (the file's; not what its style gives), and the value
  *  that turns each off. */
 const SECTION_PROPS = ['page', 'orientation', 'margin', 'columns']; // of the section a paragraph ends: only with its sectionBreak
-const PARA_OWN = ['pageBreakBefore', 'fill', 'lineSpacing', 'spaceBefore', 'spaceAfter', 'indentLeft', 'indentRight', 'indentFirst', 'border', 'keepNext', 'keepLines', 'tabs', 'bookmark', 'caption', 'dropCap', 'sectionBreak', ...SECTION_PROPS];
+const PARA_OWN = ['pageBreakBefore', 'fill', 'lineSpacing', 'spaceBefore', 'spaceAfter', 'indentLeft', 'indentRight', 'indentFirst', 'border', 'keepNext', 'keepLines', 'widowControl', 'tabs', 'bookmark', 'caption', 'dropCap', 'sectionBreak', ...SECTION_PROPS];
 const PARA_OFF = Object.fromEntries(PARA_OWN.map(k => [k, k === 'pageBreakBefore' || k === 'keepNext' || k === 'keepLines' ? 'false' : 'none']));
 const paraAttrs = el => docxAttrs(el, PARA_OWN);
-/** A Word length as CSS: characters (2ch) as em, cm and pt as they are. */
-const lenCss = v => /(ch|em)$/i.test(v) ? parseFloat(v) + 'em' : v;
+/** A Word length as CSS: characters (2ch) as em, lines (0.5lines, Word's 行, 12pt each) as pt, cm and pt as they are. */
+const lenCss = v => /(ch|em)$/i.test(v) ? parseFloat(v) + 'em' : /lines?$/i.test(v) ? Math.round(parseFloat(v) * 1200) / 100 + 'pt' : v;
 /** text-align for a paragraph alignment; distribute (分散对齐) also spreads the last line. */
 const alignCss = a => !a || a === 'left' ? '' : a === 'distribute' ? 'text-align:justify;text-align-last:justify' : 'text-align:' + a;
 /** The CSS a paragraph's own 段落 settings draw: line spacing (a multiple of Word's single, 1.5 here, so the template's 1.15 is the
@@ -1293,7 +1307,7 @@ function blockProps(b, forNew) {
   else if (b.kind === 'table') { p.data = JSON.stringify(tableData(b.rows)); Object.assign(p, b.props); }
   else if (b.kind === 'row') { p.data = JSON.stringify(b.cells.map(c => textOf(c.props.html))); Object.assign(p, b.props); }
   else if (b.kind === 'cell') Object.assign(p, b.props);
-  else if (b.kind === 'toc') { p.levels = b.props.levels || '3'; p.title = b.props.title || ''; }
+  else if (b.kind === 'toc') { p.levels = b.props.levels || '3'; p.title = b.props.title || ''; if (b.props.style && b.props.style !== 'classic') p.style = b.props.style; }
   return p;
 }
 const textOf = html => { const d = parseHtml(html || ''); return d.innerText.replace(/ /g, ' ').trim(); };
@@ -1317,9 +1331,10 @@ function changedProps(orig, b) {
   if (b.kind === 'toc') {
     if (String(orig.props.levels || '3') !== String(b.props.levels || '3')) p.levels = b.props.levels || '3';
     if ((orig.props.title || '') !== (b.props.title || '')) p.title = b.props.title || '';
+    if ((orig.props.style || 'classic') !== (b.props.style || 'classic')) p.style = b.props.style || 'classic';
   }
   if (b.kind === 'table' || b.kind === 'row' || b.kind === 'cell') {
-    const keys = b.kind === 'table' ? ['style', 'borders', 'borderColor', 'width', 'widths', 'align'] : b.kind === 'row' ? ['header', 'height'] : ['fill', 'colspan', 'rowspan', 'borders', 'valign', 'width', 'align'];
+    const keys = b.kind === 'table' ? ['style', 'header', 'borders', 'borderColor', 'width', 'widths', 'align'] : b.kind === 'row' ? ['header', 'height'] : ['fill', 'colspan', 'rowspan', 'borders', 'valign', 'width', 'align'];
     for (const k of keys) {
       const was = String(orig.props?.[k] ?? ''), now = String(b.props?.[k] ?? '');
       if (was === now) continue;
@@ -1535,7 +1550,7 @@ async function saveDocx(doc, root, log) {
   doc.notes = notes.list.map(x => ({ id: x.nid, kind: x.kind, text: x.text }));
   const pageProps = Object.fromEntries(['page', 'orientation', 'margin', 'columns'].filter(k => k in pp).map(k => [k, pp[k]]));
   const now = Object.assign({}, orig, { titlePg: String(!!orig.titlePg) }, pp); // headers and footers as the file has them now
-  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list });
+  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list });
   doc.html = el.innerHTML;
   return n;
 }

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./i18n.js"></script><script src="./vendor/offline.js"></script><script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./theme-dark.css">
+<style>
+/* The right-hand format panel of every editor (the design's 定稿 boards): a glass sheet 304px wide, a row of tabs along its top
+   edge, then groups one under another, each a small grey title and rows of controls. The controls are the design's own:
+   popup buttons with a double chevron, segmented controls, number fields with a stepper, swatches, checkboxes, a switch,
+   white buttons and the insert tiles. Colours come from theme-dark.css (--fp-*), so dark follows. */
+.fp{position:absolute;inset:0;box-sizing:border-box;padding:12px 14px 0;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;background:var(--fp-bg);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--fp-sh);color:var(--fp-ink);font:12.5px/1.3 var(--font-ui);-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;cursor:default}
+.fp button{font-family:var(--font-ui);color:var(--fp-ink);cursor:default;-webkit-tap-highlight-color:transparent}
+.fp svg{display:block;flex:none}
+.fp-tabs{display:flex;align-items:flex-end;justify-content:space-between;margin:-12px -14px 2px;padding:0 16px;box-shadow:inset 0 -.5px 0 var(--fp-line);flex:none}
+.fp-tab{height:38px;padding:0 1px;border:none;background:transparent;font-size:13px;font-weight:400;color:var(--fp-tab)!important;flex:none;white-space:nowrap;transition:color .15s}
+.fp-tab:hover{color:var(--fp-title)!important}
+.fp-tab[data-on="1"]{font-weight:600;color:var(--fp-ink)!important;box-shadow:inset 0 -2px 0 var(--fp-ink)}
+.fp-tab[data-ctx="1"]{color:var(--fp-accent)!important}
+.fp-tab[data-ctx="1"][data-on="1"]{box-shadow:inset 0 -2px 0 var(--fp-accent)}
+.fp-scroll{flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;margin:0 -14px;padding:0 14px 12px}
+.fp-scroll::-webkit-scrollbar{width:11px}
+.fp-scroll::-webkit-scrollbar-track{background:transparent}
+.fp-scroll::-webkit-scrollbar-thumb{background-color:var(--fp-thumb);border:4px solid transparent;border-right-width:4px;background-clip:padding-box;border-radius:6px}
+.fp-g{display:flex;flex-direction:column;gap:7px;padding:10px 0;border-bottom:.5px solid var(--fp-line)}
+.fp-g:last-child{border-bottom:none}
+.fp-gt{font-size:11.5px;font-weight:600;color:var(--fp-title)}
+.fp-r{display:flex;align-items:center;gap:8px;min-width:0}
+.fp-r[data-grid]{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr))}
+.fp-r[data-wrap="1"]{flex-wrap:wrap;gap:6px}
+.fp-sp{flex:1}
+.fp-lab{font-size:12.5px;flex:none;white-space:nowrap}
+/* popup button: label, then the double chevron */
+.fp-sel{position:relative;height:28px;min-width:0;padding:0 8px 0 10px;border:none;border-radius:7px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
+.fp-sel>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fp-sel[data-sw="1"]{padding:0 8px 0 6px;justify-content:flex-start}
+.fp-sel[data-sw="1"]>span:first-child{width:16px;height:16px;border-radius:4px;box-shadow:inset 0 0 0 .5px var(--fp-swb);flex:none}
+.fp-sel[data-sw="1"]>span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fp-sel[data-open="1"],.fp-btn[data-open="1"]{box-shadow:var(--fp-ctl-sh),0 0 0 3px var(--fp-ring)}
+.fp-sel select,.fp-sel input[type=color]{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:none;opacity:0;cursor:default;-webkit-appearance:none;appearance:none}
+.fp-chev{display:flex;color:var(--fp-chev);flex:none}
+/* segmented control: a grey track, the chosen segment raised in white */
+.fp-seg{display:flex;padding:2px;border-radius:8px;background:var(--fp-seg);min-width:0;box-sizing:border-box}
+.fp-seg>button{flex:1;min-width:0;height:24px;padding:0;border:none;border-radius:6px;background:transparent;display:flex;align-items:center;justify-content:center;font-size:12.5px;white-space:nowrap;transition:background .15s,box-shadow .15s}
+.fp-seg>button[data-on="1"]{background:var(--fp-on);box-shadow:var(--fp-on-sh)}
+.fp-seg>button:disabled{opacity:.35}
+/* number field with its stepper */
+.fp-num{display:flex;align-items:center;gap:4px;flex:none}
+.fp-num input{height:28px;box-sizing:border-box;padding:0 9px;border:none;border-radius:7px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);font:12.5px var(--font-ui);color:var(--fp-ink);font-variant-numeric:tabular-nums;outline:none;-webkit-user-select:text;user-select:text}
+.fp-num input:focus,.fp-in:focus,.fp-cmt textarea:focus,.fp-cmt input:focus{box-shadow:var(--fp-ctl-sh),0 0 0 3px var(--fp-ring)}
+.fp-step{width:18px;height:28px;border-radius:6px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fp-step>button{width:16px;height:12px;padding:0;border:none;background:transparent;color:var(--fp-step)!important;display:flex;align-items:center;justify-content:center}
+/* checkbox and switch */
+.fp-range{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+.fp-range input{flex:1;min-width:0;height:18px;margin:0;accent-color:var(--fp-accent)}
+.fp-range .fp-lab{width:44px}
+.fp-rv{width:30px;text-align:right;font-size:12px;color:var(--fp-title);font-variant-numeric:tabular-nums;flex:none}
+.fp-chk{display:flex;align-items:center;gap:8px;font-size:12.5px;white-space:nowrap}
+.fp-chk input{accent-color:#007AFF;width:15px;height:15px;margin:0;flex:none}
+.fp-sw{width:38px;height:22px;padding:0;border:none;border-radius:999px;background:var(--fp-sw);position:relative;flex:none;transition:background .2s}
+.fp-sw[data-on="1"]{background:#34C759}
+.fp-sw>span{position:absolute;left:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s cubic-bezier(.2,1,.3,1)}
+.fp-sw[data-on="1"]>span{left:18px}
+/* buttons */
+.fp-btn{height:28px;min-width:0;padding:0 10px;border:none;border-radius:7px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;flex:1;white-space:nowrap}
+.fp-btn>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.fp-r[data-tight] .fp-btn{padding:0 6px;gap:4px}
+.fp-btn[data-on="1"]{color:var(--fp-accent)!important;box-shadow:var(--fp-ctl-sh),inset 0 0 0 1px var(--fp-accent)}
+.fp-btn:disabled,.fp-sel:disabled,.fp-card:disabled{opacity:.4}
+.fp-btn:active:not(:disabled),.fp-card:active:not(:disabled),.fp-sel:active:not(:disabled){filter:brightness(.96)}
+.fp-chip{height:26px;padding:0 10px;border:none;border-radius:999px;background:var(--fp-soft);font:12px 'Noto Serif SC',serif;white-space:nowrap}
+.fp-chip[data-on="1"]{background:var(--fp-on);box-shadow:var(--fp-on-sh)}
+.fp-link{align-self:flex-start;padding:0;border:none;background:transparent;font-size:12.5px;color:var(--fp-danger)!important}
+.fp-link:disabled{opacity:.4}
+/* A− 12 A+ */
+.fp-size{flex:1;min-width:0;height:30px;border-radius:8px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);display:flex;align-items:center;overflow:hidden}
+.fp-size>button{height:100%;padding:0;border:none;background:transparent;display:flex;align-items:center;justify-content:center;flex:none}
+.fp-size>button:first-child,.fp-size>button:last-child{width:34px}
+.fp-size>button:nth-child(3){flex:1;min-width:56px;padding:0 6px;font-size:13px;font-variant-numeric:tabular-nums;gap:4px}
+.fp-size>i{width:.5px;height:16px;background:var(--fp-line);flex:none}
+.fp-a{display:flex;align-items:baseline}
+.fp-a>b{font-weight:500}
+.fp-a>span{font-size:9px;margin-left:1px}
+/* insert tiles, table styles */
+.fp-card{height:64px;padding:0;border:none;border-radius:12px;background:var(--fp-ctl);box-shadow:var(--fp-card-sh);font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0}
+.fp-tsty{height:44px;padding:5px;border:none;border-radius:8px;background:#FFFFFF;box-shadow:0 0 0 .5px var(--fp-tstyb);display:flex;flex-direction:column;gap:2px;min-width:0} /* theme: keep — a table style's own colours on white paper */
+.fp-tsty[data-on="1"]{box-shadow:0 0 0 1.5px #007AFF}
+.fp-tsty>span{height:5px;border-radius:1px;flex:none}
+.fp-tsty>span:first-child{height:7px;border-radius:2px}
+/* 审阅: the counts, a comment, the find fields */
+.fp-stat{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fp-stat>b{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fp-stat>span{font-size:11.5px;color:var(--fp-title)}
+.fp-in{width:100%;height:28px;box-sizing:border-box;padding:0 10px;border:none;border-radius:7px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);font:12.5px var(--font-ui);color:var(--fp-ink);outline:none;-webkit-user-select:text;user-select:text}
+.fp-in::placeholder,.fp-cmt textarea::placeholder,.fp-cmt input::placeholder{color:var(--fp-tab)}
+.fp-cmt{display:flex;gap:10px;padding:10px;border-radius:10px;background:var(--fp-soft);box-shadow:inset 0 0 0 1px var(--fp-cmtb)}
+.fp-cmt[data-on="1"]{box-shadow:inset 0 0 0 1.5px #E3B25A}
+.fp-cmt[data-done="1"]>div{opacity:.55}
+.fp-av{width:24px;height:24px;border-radius:50%;color:#FFFFFF;font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
+.fp-cmt>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.fp-cmt-h{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fp-title)}
+.fp-cmt-h>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fp-cmt-h>button{padding:0;border:none;background:transparent;font-size:12px;color:var(--fp-title)!important;opacity:0;transition:opacity .15s}
+.fp-cmt:hover .fp-cmt-h>button,.fp-cmt[data-on="1"] .fp-cmt-h>button{opacity:1}
+.fp-cmt-t{font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.fp-cmt-q{font-size:11.5px;color:var(--fp-title);border-left:2px solid #E3B25A;padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-cmt textarea,.fp-cmt input{width:100%;box-sizing:border-box;margin-top:3px;padding:5px 8px;border:none;border-radius:6px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);font:12.5px/1.5 var(--font-ui);color:var(--fp-ink);outline:none;resize:vertical;-webkit-user-select:text;user-select:text}
+.fp-cmt input{height:26px;padding:0 8px}
+.fp-rep{display:flex;gap:6px;margin-top:4px;padding-left:8px;border-left:2px solid var(--fp-line)}
+.fp-rep .fp-av{width:18px;height:18px;font-size:9.5px}
+.fp-empty{font-size:12px;color:var(--fp-title);line-height:1.6}
+</style>
+</helmet>
+<aside class="fp" data-format-panel="1" aria-label="格式面板">
+  <nav class="fp-tabs" aria-label="格式标签">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6"><button class="fp-tab" data-panel-tab="{{ t.key }}" data-on="{{ t.onA }}" data-ctx="{{ t.ctxA }}" onMouseDown="{{ keep }}" onClick="{{ t.onClick }}">{{ t.label }}</button></sc-for>
+  </nav>
+  <div class="fp-scroll" key="{{ scrollKey }}">
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+      <section class="fp-g">
+        <sc-if value="{{ g.title }}" hint-placeholder-val="{{ true }}"><div class="fp-gt">{{ g.title }}</div></sc-if>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="2">
+          <div class="fp-r" data-grid="{{ r.grid }}" data-wrap="{{ r.wrap }}" data-tight="{{ r.tight }}" style="{{ r.css }}">
+            <sc-for list="{{ r.items }}" as="it" hint-placeholder-count="2">
+              <sc-if value="{{ it.isSelBtn }}" hint-placeholder-val="{{ true }}">
+                <button class="fp-sel" data-open="{{ it.openA }}" title="{{ it.title }}" disabled="{{ it.dis }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}" style="{{ it.box }}"><span style="{{ it.lcss }}">{{ it.label }}</span><span class="fp-chev"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5 4 2l2.5 2.5"></path><path d="M1.5 7.5 4 10l2.5-2.5"></path></svg></span></button>
+              </sc-if>
+              <sc-if value="{{ it.isSelNative }}" hint-placeholder-val="{{ false }}">
+                <label class="fp-sel" title="{{ it.title }}" style="{{ it.box }}"><span style="{{ it.lcss }}">{{ it.label }}</span><span class="fp-chev"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5 4 2l2.5 2.5"></path><path d="M1.5 7.5 4 10l2.5-2.5"></path></svg></span><select value="{{ it.value }}" disabled="{{ it.dis }}" onChange="{{ it.onChange }}" aria-label="{{ it.title }}"><sc-for list="{{ it.options }}" as="o" hint-placeholder-count="0"><option value="{{ o.v }}" disabled="{{ o.dis }}">{{ o.l }}</option></sc-for></select></label>
+              </sc-if>
+              <sc-if value="{{ it.isSwBtn }}" hint-placeholder-val="{{ false }}">
+                <button class="fp-sel" data-sw="1" data-open="{{ it.openA }}" title="{{ it.title }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}" style="{{ it.box }}"><span style="background:{{ it.color }}"></span><span>{{ it.label }}</span><span class="fp-chev"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5 4 2l2.5 2.5"></path><path d="M1.5 7.5 4 10l2.5-2.5"></path></svg></span></button>
+              </sc-if>
+              <sc-if value="{{ it.isSwPick }}" hint-placeholder-val="{{ false }}">
+                <label class="fp-sel" data-sw="1" title="{{ it.title }}" style="{{ it.box }}"><span style="background:{{ it.color }}"></span><span>{{ it.label }}</span><span class="fp-chev"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5 4 2l2.5 2.5"></path><path d="M1.5 7.5 4 10l2.5-2.5"></path></svg></span><input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" aria-label="{{ it.title }}"></label>
+              </sc-if>
+              <sc-if value="{{ it.isSeg }}" hint-placeholder-val="{{ false }}">
+                <div class="fp-seg" role="group" aria-label="{{ it.title }}" style="{{ it.box }}">
+                  <sc-for list="{{ it.opts }}" as="o" hint-placeholder-count="3"><button data-on="{{ o.onA }}" aria-label="{{ o.title }}" aria-pressed="{{ o.on }}" title="{{ o.tip }}" disabled="{{ o.dis }}" onMouseDown="{{ keep }}" onClick="{{ o.onClick }}"><sc-if value="{{ o.svg }}" hint-placeholder-val="{{ false }}"><span style="display:flex" dangerouslySetInnerHTML="{{ o.svg }}"></span></sc-if><sc-if value="{{ o.rich }}" hint-placeholder-val="{{ false }}"><span style="{{ o.css }}" dangerouslySetInnerHTML="{{ o.rich }}"></span></sc-if><sc-if value="{{ o.plain }}" hint-placeholder-val="{{ true }}"><span style="{{ o.css }}">{{ o.label }}</span></sc-if></button></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ it.isNum }}" hint-placeholder-val="{{ false }}">
+                <div class="fp-num" style="{{ it.box }}"><sc-if value="{{ it.lab }}" hint-placeholder-val="{{ false }}"><span class="fp-lab" style="width:{{ it.labW }};margin-right:4px">{{ it.lab }}</span></sc-if><input key="{{ it.value }}" defaultValue="{{ it.value }}" aria-label="{{ it.title }}" onKeyDown="{{ it.onKey }}" onBlur="{{ it.onBlur }}" style="width:{{ it.fieldW }}"><span class="fp-step"><button aria-label="增加" title="{{ it.upTip }}" onMouseDown="{{ keep }}" onClick="{{ it.up }}"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l4-4 4 4"></path></svg></button><button aria-label="减少" title="{{ it.downTip }}" onMouseDown="{{ keep }}" onClick="{{ it.dn }}"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg></button></span></div>
+              </sc-if>
+              <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}">
+                <label class="fp-range" title="{{ it.title }}"><span class="fp-lab">{{ it.label }}</span><input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}"><span class="fp-rv">{{ it.text }}</span></label>
+              </sc-if>
+              <sc-if value="{{ it.isChk }}" hint-placeholder-val="{{ false }}">
+                <label class="fp-chk" title="{{ it.title }}" style="{{ it.box }}"><input type="checkbox" checked="{{ it.on }}" disabled="{{ it.dis }}" onMouseDown="{{ keep }}" onChange="{{ it.onChange }}">{{ it.label }}</label>
+              </sc-if>
+              <sc-if value="{{ it.isSw }}" hint-placeholder-val="{{ false }}">
+                <button class="fp-sw" role="switch" aria-checked="{{ it.on }}" aria-label="{{ it.title }}" title="{{ it.title }}" data-on="{{ it.onA }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}"><span></span></button>
+              </sc-if>
+              <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ false }}">
+                <button class="fp-btn" data-on="{{ it.onA }}" data-open="{{ it.openA }}" title="{{ it.title }}" disabled="{{ it.dis }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}" style="{{ it.box }}"><sc-if value="{{ it.svg }}" hint-placeholder-val="{{ false }}"><span style="display:flex" dangerouslySetInnerHTML="{{ it.svg }}"></span></sc-if><span>{{ it.label }}</span></button>
+              </sc-if>
+              <sc-if value="{{ it.isChip }}" hint-placeholder-val="{{ false }}">
+                <button class="fp-chip" data-on="{{ it.onA }}" title="{{ it.title }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}" style="{{ it.lcss }}">{{ it.label }}</button>
+              </sc-if>
+              <sc-if value="{{ it.isLab }}" hint-placeholder-val="{{ false }}"><span class="fp-lab" style="{{ it.box }}">{{ it.label }}</span></sc-if>
+              <sc-if value="{{ it.isSp }}" hint-placeholder-val="{{ false }}"><span class="fp-sp"></span></sc-if>
+              <sc-if value="{{ it.isSize }}" hint-placeholder-val="{{ false }}">
+                <div class="fp-size" style="height:{{ it.h }};flex:{{ it.flex }}"><button aria-label="{{ it.decTitle }}" title="{{ it.decTitle }}" onMouseDown="{{ keep }}" onClick="{{ it.onDec }}" style="width:{{ it.bw }}"><span class="fp-a"><b style="font-size:11px">A</b><span>−</span></span></button><i></i><button title="{{ it.title }}" data-open="{{ it.openA }}" onMouseDown="{{ keep }}" onClick="{{ it.onMenu }}" style="min-width:{{ it.minW }}">{{ it.value }}<span class="fp-chev"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg></span></button><i></i><button aria-label="{{ it.incTitle }}" title="{{ it.incTitle }}" onMouseDown="{{ keep }}" onClick="{{ it.onInc }}" style="width:{{ it.bw }}"><span class="fp-a"><b style="font-size:15px">A</b><span>+</span></span></button></div>
+              </sc-if>
+              <sc-if value="{{ it.isCard }}" hint-placeholder-val="{{ false }}">
+                <button class="fp-card" data-open="{{ it.openA }}" title="{{ it.title }}" disabled="{{ it.dis }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}"><span style="display:flex" dangerouslySetInnerHTML="{{ it.svg }}"></span><span>{{ it.label }}</span></button>
+              </sc-if>
+              <sc-if value="{{ it.isTsty }}" hint-placeholder-val="{{ false }}">
+                <button class="fp-tsty" data-on="{{ it.onA }}" aria-label="{{ it.title }}" title="{{ it.title }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}"><span style="background:{{ it.head }};box-shadow:{{ it.headSh }}"></span><span style="background:{{ it.b1 }};box-shadow:{{ it.rowSh }}"></span><span style="background:{{ it.b2 }};box-shadow:{{ it.rowSh }}"></span><span style="background:{{ it.b1 }};box-shadow:{{ it.rowSh }}"></span><span style="background:{{ it.b2 }};box-shadow:{{ it.lastSh }}"></span></button>
+              </sc-if>
+              <sc-if value="{{ it.isStat }}" hint-placeholder-val="{{ false }}"><div class="fp-stat"><b>{{ it.n }}</b><span>{{ it.label }}</span></div></sc-if>
+              <sc-if value="{{ it.isInput }}" hint-placeholder-val="{{ false }}">
+                <input class="fp-in" ref="{{ it.ref }}" value="{{ it.value }}" placeholder="{{ it.label }}" aria-label="{{ it.label }}" onChange="{{ it.onChange }}" onKeyDown="{{ it.onKey }}">
+              </sc-if>
+              <sc-if value="{{ it.isLink }}" hint-placeholder-val="{{ false }}"><button class="fp-link" disabled="{{ it.dis }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}">{{ it.label }}</button></sc-if>
+              <sc-if value="{{ it.isEmpty }}" hint-placeholder-val="{{ false }}"><div class="fp-empty">{{ it.label }}</div></sc-if>
+              <sc-if value="{{ it.isCmt }}" hint-placeholder-val="{{ false }}">
+                <div class="fp-cmt" data-on="{{ it.onA }}" data-done="{{ it.doneA }}" onClick="{{ it.onClick }}" style="flex:1">
+                  <span class="fp-av" style="background:{{ it.avBg }}">{{ it.av }}</span>
+                  <div>
+                    <div class="fp-cmt-h"><span>{{ it.head }}</span><button onClick="{{ it.onResolve }}" title="{{ it.resolveTitle }}">{{ it.resolveLabel }}</button><button onClick="{{ it.onDelete }}">删除</button></div>
+                    <sc-if value="{{ it.quote }}" hint-placeholder-val="{{ false }}"><div class="fp-cmt-q">{{ it.quote }}</div></sc-if>
+                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea value="{{ it.text }}" onChange="{{ it.onText }}" placeholder="输入批注…" rows="2"></textarea></sc-if>
+                    <sc-if value="{{ it.reading }}" hint-placeholder-val="{{ true }}"><div class="fp-cmt-t">{{ it.text }}</div></sc-if>
+                    <sc-for list="{{ it.replies }}" as="rp" hint-placeholder-count="0">
+                      <div class="fp-rep"><span class="fp-av" style="background:{{ rp.avBg }}">{{ rp.av }}</span><div style="flex:1;min-width:0"><div class="fp-cmt-h"><span>{{ rp.head }}</span><button onClick="{{ rp.onDelete }}">删除</button></div><sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea value="{{ rp.text }}" onChange="{{ rp.onText }}" rows="1"></textarea></sc-if><sc-if value="{{ it.reading }}" hint-placeholder-val="{{ true }}"><div class="fp-cmt-t">{{ rp.text }}</div></sc-if></div></div>
+                    </sc-for>
+                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><input value="{{ it.draft }}" onChange="{{ it.onDraft }}" onKeyDown="{{ it.onReplyKey }}" placeholder="回复…（回车发送）"></sc-if>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-for>
+          </div>
+        </sc-for>
+      </section>
+    </sc-for>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:304,&quot;height&quot;:734},&quot;tabs&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ key: string, label: string, on?: boolean, ctx?: boolean, onClick: () =&gt; void }[]&quot;},&quot;groups&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ title?: string, rows: { items: object[], grid?: number, wrap?: boolean, css?: string }[] }[]&quot;},&quot;tab&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+// The panel draws what an editor hands it: tabs, then groups of rows of items, each item a plain object whose `t` names the control:
+//   sel     popup button: label (lcss styles it), onClick(e) opens the editor's menu, or options [[value, label]] + value + onChange (a
+//           native menu); open marks it while its menu shows
+//   swatch  popup button with a colour square: color, label, onClick(e), or value + onChange for the system colour picker
+//   seg     segmented control: opts [{ label | rich (html) | icon, title, on, onClick, css }]
+//   num     number field and stepper: value (text with its unit), onStep(+1 | -1), onSet(text); w the field's width
+//   chk     checkbox: label, on, onChange(checked);  sw  switch: on, onChange(on)
+//   btn     white button: label, icon, onClick, on (armed), dis;  chip  style chip: label, on, lcss;  link  red text button
+//   lab     a row's label;  sp  pushes what follows to the right;  size  A− value ⌄ A+: value, onDec, onInc, onMenu(e)
+//   card    insert tile: label, icon;  tsty  table style thumbnail: head, b1, b2, on;  stat  a count: n, label
+//   input   text field: value, label (placeholder), onChange, onKey, ref;  empty  a grey line of text;  cmt  a comment card
+// w: a fixed width in px (else the item grows); items in a row with `grid: n` share n equal columns.
+const S = (w, sw = 1.3) => `width="${w}" height="${w}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
+/** The design's line icons, 16×16 boxes: tool buttons draw them at 15px, segments at 16px, insert tiles at 20px (1.2 stroke). */
+const ICONS = {
+  undo: '<path d="M5.9 3.4 3 6.3l2.9 2.9"/><path d="M3.3 6.3h6.4a3.4 3.4 0 0 1 0 6.8H8.3"/>',
+  redo: '<path d="M10.1 3.4 13 6.3l-2.9 2.9"/><path d="M12.7 6.3H6.3a3.4 3.4 0 0 0 0 6.8h1.4"/>',
+  alignLeft: '<path d="M2.5 4h11M2.5 7h7M2.5 10h11M2.5 13h7"/>',
+  alignCenter: '<path d="M2.5 4h11M4.5 7h7M2.5 10h11M4.5 13h7"/>',
+  alignRight: '<path d="M2.5 4h11M6.5 7h7M2.5 10h11M6.5 13h7"/>',
+  justify: '<path d="M2.5 4h11M2.5 7h11M2.5 10h11M2.5 13h11"/>',
+  distribute: '<path d="M2.5 4h11M2.5 7h11M2.5 10h11M2.5 13h11"/><path d="M5 13h6" stroke-dasharray="1 1.4"/>',
+  outdent: '<path d="M2.5 3.5h11M7.5 6.5h6M7.5 9.5h6M2.5 12.5h11"/><path d="M5 6.2 2.8 8 5 9.8"/>',
+  indent: '<path d="M2.5 3.5h11M7.5 6.5h6M7.5 9.5h6M2.5 12.5h11"/><path d="M2.8 6.2 5 8 2.8 9.8"/>',
+  bullets: '<circle cx="3.3" cy="4.5" r=".9" fill="currentColor" stroke="none"/><circle cx="3.3" cy="8" r=".9" fill="currentColor" stroke="none"/><circle cx="3.3" cy="11.5" r=".9" fill="currentColor" stroke="none"/><path d="M6.3 4.5h7.2M6.3 8h7.2M6.3 11.5h7.2"/>',
+  numbers: '<path d="M2.6 3.4h.9v3M2.3 6.4h1.8M2.4 9.6c.3-.5 1.8-.6 1.8.3 0 .7-1.8 1.2-1.8 2h1.9"/><path d="M6.3 4.5h7.2M6.3 8h7.2M6.3 11.5h7.2"/>',
+  multilevel: '<path d="M2.5 4h1.5M6 4h7.5M4.5 8h1.5M8 8h5.5M6.5 12h1.5M10 12h3.5"/>',
+  painter: '<rect x="2.5" y="2.5" width="9" height="3.5" rx="1"/><path d="M11.5 4.2h1.5v3.3H7.5v2"/><rect x="6.5" y="9.5" width="2" height="4.5" rx=".8"/>',
+  clear: '<path d="M3 3.5h8M7 3.5v9"/><path d="M10 10.5l3.5 3.5M13.5 10.5 10 14"/>',
+  search: '<circle cx="7" cy="7" r="4.4"/><path d="M10.3 10.3 13.6 13.6"/>',
+  table: '<rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 6.5h12M2 10h12M6 3v10M10 3v10"/>',
+  picture: '<rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.5" cy="6.3" r="1.1"/><path d="M2.5 12l3.5-3.5 2.5 2.5 2-2 3 3"/>',
+  shape: '<circle cx="5.5" cy="6" r="3.2"/><rect x="7.5" y="7.5" width="6" height="6" rx="1"/>',
+  chart: '<path d="M2.5 13.5h11"/><rect x="3.5" y="8" width="2" height="5" rx=".5"/><rect x="7" y="5" width="2" height="8" rx=".5"/><rect x="10.5" y="2.5" width="2" height="10.5" rx=".5"/>',
+  textbox: '<rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5.5 5.5h5M8 5.5v5"/>',
+  link: '<path d="M6.8 9.2a2.6 2.6 0 0 0 3.7 0l2.2-2.2a2.6 2.6 0 0 0-3.7-3.7l-.6.6"/><path d="M9.2 6.8a2.6 2.6 0 0 0-3.7 0L3.3 9a2.6 2.6 0 0 0 3.7 3.7l.6-.6"/>',
+  header: '<rect x="3" y="1.8" width="10" height="12.4" rx="1.4"/><path d="M3 5.2h10"/><path d="M5 9h6M5 11h4"/>',
+  footer: '<rect x="3" y="1.8" width="10" height="12.4" rx="1.4"/><path d="M3 10.8h10"/><path d="M5 4.5h6M5 6.5h4"/>',
+  pageNumber: '<rect x="3" y="1.8" width="10" height="12.4" rx="1.4"/><path d="M5 4.5h6M5 6.5h6"/><path d="M7.4 10.2l.8-.6v3"/>',
+  pageBreak: '<path d="M3.5 1.8v3.7h9V1.8M3.5 14.2v-3.7h9v3.7"/><path d="M1.8 8h12.4" stroke-dasharray="1.6 1.6"/>',
+  cover: '<rect x="3" y="1.8" width="10" height="12.4" rx="1.4"/><rect x="4.8" y="3.8" width="6.4" height="4" rx=".6"/><path d="M5 10.5h6M5 12.2h4"/>',
+  rule: '<path d="M2 8h12"/><path d="M2 5h12M2 11h12" opacity=".35"/>',
+  equation: '<path d="M11.5 3.5H4.5l4 4.5-4 4.5h7"/>',
+  symbol: '<path d="M3.5 13h3v-1.6A4.5 4.5 0 1 1 9.5 11.4V13h3"/>',
+  date: '<rect x="2.5" y="3.5" width="11" height="10" rx="1.6"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>',
+  dropCap: '<path d="M2.5 9V3.5h3a2.7 2.7 0 0 1 0 5.5h-3z"/><path d="M9.5 4h4M9.5 7h4M2.5 11h11M2.5 13.5h8"/>',
+  bookmark: '<path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/>',
+  comment: '<path d="M3 3h10a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1H7l-3 2.5v-2.5H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
+  toc: '<path d="M3 4h6M3 8h6M3 12h6"/><path d="M11.5 4h1.5M11.5 8h1.5M11.5 12h1.5"/>',
+  refresh: '<path d="M3 6.5A4.6 4.6 0 0 1 11.2 4"/><path d="M11.6 1.8v2.5H9.1"/><path d="M13 9.5a4.6 4.6 0 0 1-8.2 2.5"/><path d="M4.4 14.2v-2.5h2.5"/>',
+  note: '<path d="M3 5h7M3 8.5h7M3 12h5"/><path d="M12.2 3.6l.9-.6v3.4"/>',
+  up: '<path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7"/>',
+  down: '<path d="M8 3.5v9M4.5 9 8 12.5 11.5 9"/>',
+  check: '<path d="M3.5 8.5 6.5 11.5 12.5 4.5"/>',
+  cross: '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>',
+  plus: '<path d="M8 3v10M3 8h10"/>',
+  fit: '<path d="M9.5 2.5h4v4"/><path d="M13.5 2.5 9.3 6.7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l4.2-4.2"/>',
+  rowAbove: '<rect x="2" y="7" width="12" height="7" rx="1.2"/><path d="M8 1.8v3.6M6.2 3.6h3.6"/>',
+  rowBelow: '<rect x="2" y="2" width="12" height="7" rx="1.2"/><path d="M8 10.6v3.6M6.2 12.4h3.6"/>',
+  colLeft: '<rect x="7" y="2" width="7" height="12" rx="1.2"/><path d="M1.8 8h3.6M3.6 6.2v3.6"/>',
+  colRight: '<rect x="2" y="2" width="7" height="12" rx="1.2"/><path d="M10.6 8h3.6M12.4 6.2v3.6"/>',
+  trash: '<path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.4c.1.6.5 1.1 1.1 1.1h3.6c.6 0 1-.5 1.1-1.1l.6-8.4"/>',
+  merge: '<rect x="2" y="3.5" width="12" height="9" rx="1.2"/><path d="M5 8h6M9.5 6.5 11 8l-1.5 1.5M6.5 6.5 5 8l1.5 1.5"/>',
+  split: '<rect x="2" y="3.5" width="12" height="9" rx="1.2"/><path d="M8 3.5v9"/>',
+  vTop: '<path d="M2.5 2.5h11"/><path d="M5 5.5h6M5 8h6"/>',
+  vMiddle: '<path d="M5 6.5h6M5 9.5h6"/><path d="M2.5 2.5h11M2.5 13.5h11" opacity=".35"/>',
+  vBottom: '<path d="M2.5 13.5h11"/><path d="M5 8h6M5 10.5h6"/>',
+  sort: '<path d="M4.5 3v10M2.5 11l2 2 2-2"/><path d="M9 4h4.5M9 7.5h3.5M9 11h2.5"/>',
+  toText: '<rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5.5 5.5h5M8 5.5v5"/>',
+  gear: '<circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M3.6 12.4l1.3-1.3M11.1 4.9l1.3-1.3"/>',
+  crop: '<path d="M4.5 1.8v9.7h9.7"/><path d="M1.8 4.5h9.7v9.7"/>',
+  rotate: '<path d="M3 8a5 5 0 1 0 1.5-3.6"/><path d="M4.2 1.9v2.7h2.7"/>',
+  star: '<path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z" fill="currentColor" stroke="none"/><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z" fill="currentColor" stroke="none"/>',
+  play: '<path d="M5 3.2v9.6L12.6 8z"/>',
+  slide: '<rect x="2" y="3.5" width="12" height="9" rx="1.2"/><path d="M5.5 14h5M8 12.5V14"/>',
+  duplicate: '<rect x="5" y="5" width="8.5" height="8.5" rx="1.4"/><path d="M11 3.2V3a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6.5a1 1 0 0 0 1 1h.2"/>',
+  export: '<path d="M8 10V2.5M5 5.2 8 2.3l3 2.9"/><path d="M3 9.5v3a1.5 1.5 0 0 0 1.5 1.5h7a1.5 1.5 0 0 0 1.5-1.5v-3"/>',
+  filter: '<path d="M2.5 3.5h11L9.3 8.6v4.2l-2.6 1.2V8.6z"/>',
+  sigma: '<path d="M11.5 3.5H4.5l4 4.5-4 4.5h7"/>',
+  grid: '<rect x="2.5" y="2.5" width="11" height="11" rx="1.2"/><path d="M2.5 6.2h11M2.5 9.8h11M6.2 2.5v11M9.8 2.5v11"/>',
+  paste: '<rect x="3.5" y="3" width="9" height="11" rx="1.4"/><path d="M6 3V2h4v1"/>',
+  cut: '<circle cx="4.5" cy="11.5" r="1.8"/><circle cx="11.5" cy="11.5" r="1.8"/><path d="M5.8 10.2 12 2.5M10.2 10.2 4 2.5"/>',
+  copy: '<rect x="5" y="5" width="8.5" height="8.5" rx="1.4"/><path d="M11 3.2V3a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6.5a1 1 0 0 0 1 1h.2"/>',
+  wrap: '<path d="M2.5 4h11M2.5 8h8.5a2 2 0 0 1 0 4H8.5"/><path d="M9.8 10.6 8.4 12l1.4 1.4"/><path d="M2.5 12h3"/>',
+  topic: '<rect x="4.5" y="5.5" width="7" height="5" rx="1.4"/><path d="M8 2.5v3M8 10.5v3"/>',
+  child: '<rect x="2" y="5.5" width="6" height="5" rx="1.2"/><rect x="10.5" y="10" width="4" height="3.5" rx="1"/><path d="M8 8h1.5v3.7h1"/>',
+  sibling: '<rect x="4" y="2" width="8" height="4.5" rx="1.2"/><rect x="4" y="9.5" width="8" height="4.5" rx="1.2"/><path d="M8 6.5v3"/>',
+  outline: '<path d="M2.5 4h1.5M6 4h7.5M4.5 8h1.5M8 8h5.5M4.5 12h1.5M8 12h5.5"/>',
+  convert: '<path d="M2.5 5.5h9l-2.2-2.2M13.5 10.5h-9l2.2 2.2"/>',
+  pdf: '<rect x="3" y="1.8" width="10" height="12.4" rx="1.4"/><path d="M5.5 9.5h5M5.5 11.5h3.5M5.5 4.5h5v2.5h-5z"/>',
+  zoomIn: '<circle cx="7" cy="7" r="4.4"/><path d="M10.3 10.3 13.6 13.6M5 7h4M7 5v4"/>',
+  zoomOut: '<circle cx="7" cy="7" r="4.4"/><path d="M10.3 10.3 13.6 13.6M5 7h4"/>'
+};
+const svgOf = (name, w, sw) => ICONS[name] ? { __html: `<svg ${S(w, sw)}>${ICONS[name]}</svg>` } : null;
+const box = it => it.w ? `width:${it.w}px;flex:none` : it.grow === false ? 'flex:none' : 'flex:1;min-width:0';
+const keep = e => e.preventDefault(); // a click on the panel leaves the caret, and the selection, in the text
+const hex = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#000000';
+
+class Component extends DCLogic {
+  item(it) {
+    const t = it.t, o = { ...it };
+    if (t === 'sel') {
+      Object.assign(o, { isSelBtn: !it.options, isSelNative: !!it.options, box: box(it), openA: it.open ? '1' : '0', lcss: it.lcss || '', dis: !!it.dis });
+      if (it.options) Object.assign(o, { options: it.options.map(([v, l, dis]) => ({ v: String(v), l, dis: !!dis })), value: String(it.value == null ? '' : it.value), onChange: e => it.onChange && it.onChange(e.target.value) });
+    } else if (t === 'swatch') Object.assign(o, { isSwBtn: !it.onChange, isSwPick: !!it.onChange, box: box(it), openA: it.open ? '1' : '0', color: it.color || 'transparent', value: hex(it.value || it.color), onChange: it.onChange ? e => it.onChange(e.target.value) : undefined });
+    else if (t === 'seg') Object.assign(o, { isSeg: true, box: box(it), opts: (it.opts || []).map(x => ({ ...x, onA: x.on ? '1' : '0', on: !!x.on, dis: !!x.dis, tip: x.tip || x.title, svg: x.icon ? svgOf(x.icon, 16) : null, rich: x.rich ? { __html: x.rich } : null, plain: !x.icon && !x.rich, css: x.css || '' })) });
+    else if (t === 'num') {
+      const set = e => { const v = e.target.value.trim(); if (v !== String(it.value)) it.onSet && it.onSet(v); };
+      Object.assign(o, { isNum: true, box: it.grow ? 'flex:1;min-width:0' : '', fieldW: (it.w || 56) + 'px', up: () => it.onStep && it.onStep(1), dn: () => it.onStep && it.onStep(-1),
+        onKey: e => { if (e.key === 'Enter' && !(e.nativeEvent && (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) { e.preventDefault(); set(e); e.target.blur(); } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); it.onStep && it.onStep(e.key === 'ArrowUp' ? 1 : -1); } else if (e.key === 'Escape') { e.target.value = it.value; e.target.blur(); } },
+        onBlur: set });
+    } else if (t === 'chk') Object.assign(o, { isChk: true, on: !!it.on, dis: !!it.dis, box: it.w ? `width:${it.w}px` : '', onChange: e => it.onChange && it.onChange(e.target.checked) });
+    else if (t === 'sw') Object.assign(o, { isSw: true, on: !!it.on, onA: it.on ? '1' : '0', onClick: () => it.onChange && it.onChange(!it.on) });
+    else if (t === 'btn') Object.assign(o, { isBtn: true, box: box(it), onA: it.on ? '1' : '0', openA: it.open ? '1' : '0', dis: !!it.dis, svg: it.icon ? svgOf(it.icon, 15) : null });
+    else if (t === 'chip') Object.assign(o, { isChip: true, onA: it.on ? '1' : '0', lcss: it.lcss || '' });
+    else if (t === 'lab') Object.assign(o, { isLab: true, box: it.w ? `width:${it.w}px` : '' });
+    else if (t === 'sp') o.isSp = true;
+    else if (t === 'size') Object.assign(o, { isSize: true, h: (it.h || 30) + 'px', bw: (it.h === 28 ? 30 : 34) + 'px', minW: (it.minW || 56) + 'px', flex: it.w ? `0 0 ${it.w}px` : '1', openA: it.open ? '1' : '0', decTitle: it.decTitle, incTitle: it.incTitle });
+    else if (t === 'card') Object.assign(o, { isCard: true, svg: svgOf(it.icon, 20, 1.2), openA: it.open ? '1' : '0', dis: !!it.dis });
+    else if (t === 'tsty') Object.assign(o, { isTsty: true, onA: it.on ? '1' : '0', headSh: it.headSh || 'none', rowSh: it.rowSh || 'none', lastSh: it.lastSh || it.rowSh || 'none' });
+    else if (t === 'range') Object.assign(o, { isRange: true, onChange: e => it.onChange && it.onChange(+e.target.value) });
+    else if (t === 'stat') o.isStat = true;
+    else if (t === 'input') o.isInput = true;
+    else if (t === 'link') Object.assign(o, { isLink: true, dis: !!it.dis });
+    else if (t === 'empty') o.isEmpty = true;
+    else if (t === 'cmt') Object.assign(o, { isCmt: true, onA: it.on ? '1' : '0', doneA: it.done ? '1' : '0', editing: !!it.on, reading: !it.on, replies: it.replies || [] });
+    return o;
+  }
+  renderVals() {
+    const p = this.props;
+    return {
+      keep, scrollKey: p.tab || '',
+      tabs: (p.tabs || []).map(t => ({ ...t, onA: t.on ? '1' : '0', ctxA: t.ctx ? '1' : '0' })),
+      groups: (p.groups || []).filter(Boolean).map(g => ({ title: g.title || '', rows: (g.rows || []).filter(r => r && r.items && r.items.length).map(r => ({ grid: r.grid ? String(r.grid) : undefined, wrap: r.wrap ? '1' : undefined, tight: (r.grid || r.items.filter(Boolean).length) >= 3 && r.items.some(it => it && it.t === 'btn') ? '1' : undefined, css: (r.grid ? `--cols:${r.grid};` : '') + (r.css || ''), items: r.items.filter(Boolean).map(it => this.item(it)) })) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

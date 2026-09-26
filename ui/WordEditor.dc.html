@@ -44,9 +44,13 @@
 .wd-ed [data-pb="before"]:first-child::before,.wd-ed hr[data-pb]+[data-pb="before"]::before{display:none}
 .wd-ed hr{border:none;border-top:1px solid var(--k10, #D1D1D6);margin:16px 0}
 .wd-ed td,.wd-ed th{vertical-align:top}
-.wd-ed table[data-w-style=PlainTable1] tr:first-child td{font-weight:700}.wd-ed table[data-w-style=PlainTable1] tr:nth-child(even) td{background:#F2F2F2} /* theme: keep — the table styles' own colours, as the file has them */
-.wd-ed table[data-w-style=GridTable4Accent1] tr:first-child td{background:#4472C4;color:#FFFFFF;font-weight:700}.wd-ed table[data-w-style=GridTable4Accent1] tr:nth-child(even) td{background:#D9E2F3}
-.wd-ed table[data-w-style=ThreeLineTable] tr:first-child td{font-weight:700}
+.wd-ed table[data-w-style=PlainTable1]:not([data-w-header=false]) tr:first-child td{font-weight:700} /* theme: keep — the table styles' own colours, as the file has them; with 标题行 off (data-w-header=false) the bands start at the first row */
+.wd-ed table[data-w-style=PlainTable1]:not([data-w-header=false]) tr:nth-child(even) td,.wd-ed table[data-w-style=PlainTable1][data-w-header=false] tr:nth-child(odd) td{background:#F2F2F2}
+.wd-ed table[data-w-style=GridTable4Accent1]:not([data-w-header=false]) tr:first-child td{background:#4472C4;color:#FFFFFF;font-weight:700}
+.wd-ed table[data-w-style=GridTable4Accent1]:not([data-w-header=false]) tr:nth-child(even) td,.wd-ed table[data-w-style=GridTable4Accent1][data-w-header=false] tr:nth-child(odd) td{background:#D9E2F3}
+.wd-ed table[data-w-style=GridTable4Accent2]:not([data-w-header=false]) tr:first-child td{background:#ED7D31;color:#FFFFFF;font-weight:700}
+.wd-ed table[data-w-style=GridTable4Accent2]:not([data-w-header=false]) tr:nth-child(even) td,.wd-ed table[data-w-style=GridTable4Accent2][data-w-header=false] tr:nth-child(odd) td{background:#FBE4D5}
+.wd-ed table[data-w-style=ThreeLineTable]:not([data-w-header=false]) tr:first-child td{font-weight:700}
 .wd-ed tr[data-w-header] td{font-weight:600}
 [data-thumbpanel] div:has(> div > div > .wd-ed){content-visibility:auto}
 .wd-ed [data-toc] a{color:inherit;text-decoration:none}
@@ -71,37 +75,57 @@
 .wd-ed [data-w-sectionbreak="nextPage"]::after{content:var(--wd-sb-nextPage)}.wd-ed [data-w-sectionbreak="continuous"]::after{content:var(--wd-sb-continuous)}
 .wd-ed [data-w-sectionbreak="evenPage"]::after{content:var(--wd-sb-evenPage)}.wd-ed [data-w-sectionbreak="oddPage"]::after{content:var(--wd-sb-oddPage)}
 .wd-hfbox:empty::before,.wd-hfbox:has(>br:only-child)::before,.wd-hfbox>p:only-child:has(>br:only-child)::before{content:var(--wd-hf-hint);color:var(--k8, #8E8E93);pointer-events:none}
-.wd-format{position:absolute;top:6px;right:8px;bottom:8px;width:304px;z-index:44;display:flex;flex-direction:column;min-height:0;border-radius:18px;background:var(--format-panel-bg);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--format-panel-sh);color:var(--ink);font-family:var(--font-ui);overflow:hidden}
-.wd-format-tabs{height:48px;flex:none;display:flex;align-items:stretch;justify-content:space-between;gap:2px;padding:0 12px;border-bottom:.5px solid var(--line);overflow-x:auto;scrollbar-width:none}
-.wd-format-tabs button{position:relative;flex:none;border:0;background:none;padding:0 3px;font:400 13px var(--font-ui);color:var(--ink-3);cursor:pointer;white-space:nowrap}
-.wd-format-tabs button[data-on="1"]{font-weight:600;color:var(--ink)}.wd-format-tabs button[data-on="1"]::after{content:"";position:absolute;bottom:0;left:3px;right:3px;height:2px;background:var(--ink)}
-.wd-format-tabs button[data-context="1"]{color:var(--format-accent)}.wd-format-tabs button[data-context="1"][data-on="1"]::after{background:var(--format-accent)}
-.wd-format-scroll{flex:1;min-height:0;overflow:auto;padding:4px 14px 18px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-.wd-format-group{padding:10px 0;border-bottom:.5px solid var(--line)}.wd-format-group:last-child{border-bottom:0}
-.wd-format-group-title{font-size:11.5px;font-weight:600;color:var(--ink-2);margin:0 0 9px}
-.wd-format-items{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.wd-format-items button,.wd-format-items select,.wd-format-items label{box-sizing:border-box;height:29px;min-width:29px;border:0;border-radius:8px;background:var(--format-control);box-shadow:var(--format-control-sh);color:var(--ink);font:12px var(--font-ui);cursor:pointer}
-.wd-format-items button{padding:0 9px}.wd-format-items button:hover{background:var(--fill)}.wd-format-items button[data-on="1"]{background:var(--format-selected)}
-.wd-format[data-tab="insert"] .wd-format-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
-.wd-format[data-tab="insert"] .wd-format-items button{width:100%;min-height:64px;height:auto;padding:6px;white-space:normal;line-height:1.35;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:12px}
-.wd-insert-icon{width:20px;height:20px;flex:none;object-fit:contain}
-.wd-format[data-tab="insert"] .wd-menu-chevron{display:none}
-html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
-.wd-format-items select{padding:0 7px;max-width:100%;min-width:65px;flex:1}.wd-format-items label{display:flex;align-items:center;gap:6px;padding:0 8px}
-.wd-format-items input[type=color]{width:20px;height:20px;border:0;padding:0;background:transparent;cursor:pointer}
-.wd-format-items input[type=range]{width:90px;accent-color:var(--format-accent)}
-.wd-format-comment{display:flex;flex-direction:column;gap:7px;margin-top:9px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--format-control)}
-.wd-format-comment-head{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-2)}
-.wd-format-comment-head button{border:0;background:transparent;color:var(--ink-2);font:11.5px var(--font-ui);cursor:pointer;padding:3px}
-.wd-format-comment-avatar{width:18px;height:18px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px}
-.wd-format-comment-quote{font-size:11.5px;color:var(--ink-2);border-left:2px solid #E3B25A;padding-left:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wd-format-comment textarea,.wd-format-comment input{box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:7px;background:var(--format-panel-bg);color:var(--ink);font:12px/1.5 var(--font-ui);padding:5px 7px;outline:none;resize:vertical}
-.wd-format-comment-reply{padding-left:9px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:4px}
-.wd-selectbar{position:fixed;z-index:80;display:flex;align-items:center;gap:4px;height:42px;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none;padding:4px 7px;border-radius:13px;background:var(--format-panel-bg);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--format-panel-sh);font-family:var(--font-ui);white-space:nowrap}
-.wd-selectbar[data-below="0"]{transform:translate(-50%,-100%)}.wd-selectbar[data-below="1"]{transform:translate(-50%,0)}
-.wd-selectbar::after{content:"";position:absolute;left:50%;width:9px;height:9px;transform:translateX(-50%) rotate(45deg);background:var(--format-panel-bg);box-shadow:1px 1px 1px rgba(0,0,0,.05)}
-.wd-selectbar[data-below="0"]::after{bottom:-4px}.wd-selectbar[data-below="1"]::after{top:-4px}
-.wd-selectbar button,.wd-selectbar select{height:30px;border:0;border-radius:7px;background:transparent;color:var(--ink);font:13px var(--font-ui);cursor:pointer}.wd-selectbar button{min-width:27px;padding:0 7px}.wd-selectbar button:hover,.wd-selectbar button[data-on="1"]{background:var(--format-selected)}.wd-selectbar select{background:var(--format-control);box-shadow:var(--format-control-sh);max-width:105px}
+/* the selection bar (the design's 选中文字 board): the panel's glass, 42px high, a tail pointing at the middle of the selection */
+/* menus: the panel's glass, under the control that opened them, kept inside the window */
+.wd-menu{position:fixed;z-index:91;overflow:auto;box-sizing:border-box;border-radius:12px;background:var(--fp-bg);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--fp-sh);color:var(--fp-ink);font-family:var(--font-ui);padding:5px;display:flex;flex-direction:column;animation:wd-qin .12s ease-out}
+.wd-mi{min-height:26px;text-align:left;padding:4px 12px 4px 6px;border:none;background:transparent;border-radius:7px;font-size:13px;color:var(--fp-ink);white-space:nowrap;cursor:default;display:flex;gap:6px;align-items:center}
+.wd-mi:hover{background:var(--fp-seg)}
+.wd-mi-c{width:14px;flex:none;font-size:12px;color:var(--fp-accent);visibility:hidden}
+.wd-mi[data-on="1"] .wd-mi-c{visibility:visible}
+.wd-mh{padding:6px 10px 2px 26px;font-size:11.5px;font-weight:600;color:var(--fp-title)}
+.wd-mh:empty{height:0;padding:0;margin:4px 8px;border-top:.5px solid var(--fp-line)}
+/* the thumbnails sidebar (the design's 缩略图 board): a whole-height glass column; the lights and its hide button sit in its top */
+.wd-side{position:fixed;top:8px;left:8px;bottom:8px;width:232px;z-index:57;display:flex;flex-direction:column;min-height:0;border-radius:18px;overflow:hidden;background:var(--fp-bg);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--fp-sh);color:var(--fp-ink);font-family:var(--font-ui)}
+.wd-side-seg{display:flex;margin:0 14px;padding:2px;border-radius:999px;background:var(--fp-seg);flex:none}
+.wd-side-seg>button{flex:1;height:26px;padding:0 13px;border:none;border-radius:999px;background:transparent;color:var(--fp-title);font:12px var(--font-ui);cursor:default}
+.wd-side-seg>button[data-on="1"]{background:var(--fp-on);box-shadow:var(--fp-on-sh);color:var(--fp-ink);font-weight:500}
+.wd-side-list{flex:1;min-height:0;overflow:auto;padding:14px 10px 14px;display:flex;flex-direction:column;gap:2px}
+.wd-side-page{border-radius:3px;overflow:hidden;position:relative;box-shadow:0 0 0 .5px rgba(0,0,0,.08),0 3px 10px rgba(0,0,0,.07);outline:2.5px solid transparent;outline-offset:3px;transition:outline-color .15s}
+.wd-side-page[data-on="1"]{outline-color:#007AFF}
+.wd-side-n{font-size:11px;color:var(--fp-title)}
+.wd-side-n[data-on="1"]{font-weight:600;color:#007AFF}
+.wd-side-new{margin-top:10px;height:30px;padding:0 14px;border:none;border-radius:999px;background:var(--fp-ctl);box-shadow:0 0 0 .5px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.05);color:var(--fp-title);font:12.5px var(--font-ui);display:flex;align-items:center;gap:6px;cursor:default}
+/* the count under the page (the design's 字数 pill): words · page, then the zoom; it follows the page as panels open and close */
+.wd-count{position:absolute;transform:translateX(-50%);bottom:21px;z-index:30;height:26px;box-sizing:border-box;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:10px;font:11.5px var(--font-ui);color:var(--pill-dim);font-variant-numeric:tabular-nums;white-space:nowrap;background:var(--pill-bg);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:var(--pill-sh);transition:left .55s cubic-bezier(.2,1,.3,1)}
+.wd-count-sep{width:1px;height:12px;background:var(--fp-line)}
+.wd-count button{padding:0;border:none;background:transparent;color:inherit;font:inherit;cursor:default}
+.wd-count button:hover{color:var(--fp-ink)}
+.wd-count input{width:38px;height:18px;padding:0;border:none;border-radius:5px;background:transparent;font:inherit;color:var(--fp-ink);text-align:center;outline:none}
+.wd-count input:hover,.wd-count input:focus{background:var(--fp-seg)}
+.wd-qbar{position:fixed;z-index:80;height:42px;box-sizing:border-box;padding:0 6px;border-radius:13px;display:flex;align-items:center;gap:1px;white-space:nowrap;background:var(--fp-bg);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--fp-sh);color:var(--fp-ink);font:12.5px var(--font-ui);transform:translate(-50%,-100%);-webkit-user-select:none;user-select:none;animation:wd-qin .16s ease-out}
+.wd-qbar[data-below="1"]{transform:translate(-50%,0)}
+@keyframes wd-qin{from{opacity:0}}
+.wd-qtail{position:absolute;left:var(--tail,50%);bottom:-6px;width:12px;height:12px;margin-left:-6px;transform:rotate(45deg);border-radius:2px;background:var(--fp-tail);box-shadow:var(--fp-tail-sh)}
+.wd-qbar[data-below="1"] .wd-qtail{bottom:auto;top:-6px;box-shadow:-.5px -.5px 0 var(--fp-line)}
+.wd-qbar button,.wd-qbar label{position:relative;height:28px;padding:0;border:none;border-radius:8px;background:transparent;color:var(--fp-ink);font:inherit;display:flex;align-items:center;justify-content:center;flex:none;cursor:default}
+.wd-qbar svg{display:block;flex:none}
+.wd-qb{width:30px}
+.wd-qb:hover,.wd-qai:hover{background:var(--fp-seg)}
+.wd-qb[data-on="1"]{background:var(--fp-press)}
+.wd-qsel{width:70px;height:26px!important;padding:0 7px 0 10px!important;border-radius:7px!important;background:var(--fp-ctl)!important;box-shadow:var(--fp-ctl-sh);justify-content:space-between!important;gap:8px}
+.wd-qsel>span:first-child{font-family:'Noto Serif SC',serif;overflow:hidden;text-overflow:ellipsis}
+.wd-qchev{display:flex;color:var(--fp-chev);flex:none}
+.wd-qsep{width:1px;height:20px;background:var(--fp-line);margin:0 5px;flex:none}
+.wd-qsize{height:28px;border-radius:8px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);display:flex;align-items:center;overflow:hidden;flex:none}
+.wd-qsize>button{width:30px;border-radius:0!important}
+.wd-qsize>button:nth-child(3){width:auto;min-width:40px;padding:0 6px;font-size:13px;font-variant-numeric:tabular-nums;gap:4px}
+.wd-qsize>i{width:.5px;height:16px;background:var(--fp-line);flex:none}
+.wd-qa{display:flex;align-items:baseline}.wd-qa>b{font-weight:500}.wd-qa>span{font-size:9px;margin-left:1px}
+.wd-qcol{flex-direction:column;gap:1px}
+.wd-qbar-c{width:14px;height:3px;border-radius:2px;flex:none}
+.wd-qcol input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;padding:0;border:none}
+.wd-qai{padding:0 10px 0 8px!important;font-size:13px!important;font-weight:500;gap:5px}
+.wd-ed ::selection,.wd-ed::selection{background:var(--sel-page, #C7DDFB)} /* theme: keep — the page stays white in both themes, as in the design */
 </style>
 </helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:{{ rootBg }};position:relative;outline:none">
@@ -150,43 +174,7 @@ html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
 
   </sc-if>
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ true }}">
-    <aside class="wd-format" data-word-format="1" data-tab="{{ tabKey }}" aria-label="格式面板">
-      <nav class="wd-format-tabs" aria-label="格式标签">
-        <sc-for list="{{ panelTabs }}" as="t" hint-placeholder-count="6"><button data-word-tab="{{ t.key }}" data-on="{{ t.on }}" data-context="{{ t.context }}" onClick="{{ t.onClick }}">{{ t.label }}</button></sc-for>
-      </nav>
-      <div class="wd-format-scroll">
-        <sc-for list="{{ panelGroups }}" as="g" hint-placeholder-count="5">
-          <section class="wd-format-group">
-            <div class="wd-format-group-title">{{ g.title }}</div>
-            <div class="wd-format-items">
-              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="6">
-                <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}"><button title="{{ it.title }}" data-on="{{ it.on }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }}"><sc-if value="{{ it.icon }}" hint-placeholder-val="{{ false }}"><img class="wd-insert-icon" src="{{ it.icon }}" alt=""></sc-if>{{ it.label }}</button></sc-if>
-                <sc-if value="{{ it.isAlign }}" hint-placeholder-val="{{ false }}"><button title="{{ it.title }}" data-on="{{ it.on }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}">{{ it.label }}</button></sc-if>
-                <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}"><select title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}"><sc-for list="{{ it.options }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
-                <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}"><label title="{{ it.title }}"><span style="width:16px;height:16px;border-radius:4px;background:{{ it.swatch }};box-shadow:0 0 0 .5px var(--line)"></span><span>{{ it.title }}</span><input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;opacity:0;width:1px;height:1px"></label></sc-if>
-                <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}"><button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}"><sc-if value="{{ it.icon }}" hint-placeholder-val="{{ false }}"><img class="wd-insert-icon" src="{{ it.icon }}" alt=""></sc-if>{{ it.label }}<span class="wd-menu-chevron"> ⌄</span></button></sc-if>
-                <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}"><label title="{{ it.title }}">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}"><span>{{ it.text }}</span></label></sc-if>
-              </sc-for>
-            </div>
-          </section>
-        </sc-for>
-        <sc-if value="{{ panelCommentsOpen }}" hint-placeholder-val="{{ false }}">
-          <section class="wd-format-group"><div class="wd-format-group-title">批注 · {{ commentCount }}</div>
-            <div class="wd-format-items"><button onClick="{{ prevComment }}">上一条</button><button onClick="{{ nextComment }}">下一条</button></div>
-            <sc-for list="{{ comments }}" as="c" hint-placeholder-count="1">
-              <div class="wd-format-comment" onClick="{{ c.onFocus }}" style="border-color:{{ c.border }};opacity:{{ c.op }}">
-                <div class="wd-format-comment-head"><span class="wd-format-comment-avatar" style="background:{{ c.avBg }}">{{ c.av }}</span><span style="flex:1">{{ c.time }}</span><button onClick="{{ c.onResolve }}" title="{{ c.resolveTitle }}">{{ c.resolveLabel }}</button><button onClick="{{ c.onDelete }}">删除</button></div>
-                <div class="wd-format-comment-quote">{{ c.quote }}</div>
-                <textarea value="{{ c.text }}" onChange="{{ c.onText }}" placeholder="输入批注…" rows="2"></textarea>
-                <sc-for list="{{ c.replies }}" as="r" hint-placeholder-count="0"><div class="wd-format-comment-reply"><div class="wd-format-comment-head"><span class="wd-format-comment-avatar" style="background:{{ r.avBg }}">{{ r.av }}</span><span style="flex:1">{{ r.time }}</span><button onClick="{{ r.onDelete }}">删除</button></div><textarea value="{{ r.text }}" onChange="{{ r.onText }}" rows="1"></textarea></div></sc-for>
-                <input value="{{ c.draft }}" onChange="{{ c.onDraft }}" onKeyDown="{{ c.onReplyKey }}" placeholder="回复…（回车发送）">
-              </div>
-            </sc-for>
-          </section>
-        </sc-if>
-        <sc-if value="{{ panelNotesOpen }}" hint-placeholder-val="{{ false }}"><section class="wd-format-group"><div class="wd-format-group-title">脚注和尾注 · {{ noteCount }}</div><sc-for list="{{ notes }}" as="nt" hint-placeholder-count="1"><div class="wd-format-comment" onClick="{{ nt.onFocus }}" style="border-color:{{ nt.border }}"><div class="wd-format-comment-head"><span style="flex:1">{{ nt.label }}</span><button onClick="{{ nt.onDelete }}">删除</button></div><textarea value="{{ nt.text }}" onChange="{{ nt.onText }}" placeholder="输入注释文字…" rows="2"></textarea></div></sc-for></section></sc-if>
-      </div>
-    </aside>
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
   <sc-if value="{{ showFind }}" hint-placeholder-val="{{ false }}">
     <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:58px;left:50%;margin-left:-330px;width:660px;z-index:38;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 8px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px">
@@ -203,37 +191,38 @@ html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
 
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ bodyCols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
-      <div data-thumbpanel="1" data-pop="left" style="position:fixed;top:8px;left:8px;bottom:8px;width:232px;z-index:57;display:flex;flex-direction:column;min-height:0;border-radius:18px;overflow:hidden;background:var(--format-panel-bg);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--format-panel-sh)"><div style="height:68px;flex:none"></div><div style="flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;display:flex;flex-direction:column;gap:2px">
-        
-        <div style="display:flex;padding:2px;margin:0 0 14px;border-radius:9px;background:var(--fill);flex:none"><button onClick="{{ thumbPagesClick }}" style="flex:1;height:27px;border:0;border-radius:8px;background:{{ thumbPagesBg }};box-shadow:{{ thumbPagesSh }};font-size:12px;cursor:pointer">页面</button><button onClick="{{ thumbOutlineClick }}" style="flex:1;height:27px;border:0;border-radius:8px;background:{{ thumbOutlineBg }};box-shadow:{{ thumbOutlineSh }};font-size:12px;cursor:pointer">大纲</button></div>
-        <sc-if value="{{ navPages }}" hint-placeholder-val="{{ true }}"><div style="flex:none;display:flex;flex-direction:column;gap:12px;align-items:center;padding-bottom:16px">
+      <div data-thumbpanel="1" data-pop="left" class="wd-side"><div style="height:48px;flex:none"></div>
+        <div class="wd-side-seg" role="tablist"><button role="tab" aria-selected="{{ navPages }}" data-on="{{ navPagesA }}" onClick="{{ thumbPagesClick }}">页面</button><button role="tab" aria-selected="{{ navOutline }}" data-on="{{ navOutlineA }}" onClick="{{ thumbOutlineClick }}">大纲</button></div>
+        <div class="wd-side-list">
+        <sc-if value="{{ navPages }}" hint-placeholder-val="{{ true }}"><div style="flex:none;display:flex;flex-direction:column;gap:8px;align-items:center;padding:4px 0 16px">
           <sc-for list="{{ pageThumbs }}" as="pt" hint-placeholder-count="1">
-            <div onClick="{{ pt.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer" style-hover="transform:translateY(-1px)">
-              <div data-light="1" style="width:{{ pt.w }};height:{{ pt.h }};background:{{ pageBg }};box-shadow:0 0 0 1px var(--kpageb, rgba(0,0,0,0.06)),0 3px 10px var(--k65, rgba(0,0,0,0.07));border-radius:4px;overflow:hidden;position:relative;outline:{{ pt.line }};outline-offset:3px;transition:transform .35s cubic-bezier(.2,1.4,.4,1)">
+            <div onClick="{{ pt.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:default">
+              <div data-light="1" class="wd-side-page" data-on="{{ pt.onA }}" style="width:{{ pt.w }};height:{{ pt.h }};background:{{ pageBg }}">
                 <div style="position:absolute;left:0;right:0;top:{{ pt.top }};height:{{ pt.ch }};overflow:hidden">
                   <div style="position:absolute;left:0;top:0;width:{{ pt.pw }};transform:{{ pt.tf }};transform-origin:0 0;pointer-events:none">
-                    <div class="wd-ed" dangerouslySetInnerHTML="{{ thumbHtml }}" style="padding:0 {{ pt.padH }};margin-top:{{ pt.off }};font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ cols }};column-gap:32px;color:{{ pageInk }}"></div>
+                    <div class="wd-ed" dangerouslySetInnerHTML="{{ thumbHtml }}" style="padding:0 {{ pt.padR }} 0 {{ pt.padH }};margin-top:{{ pt.off }};font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ cols }};column-gap:32px;color:{{ pageInk }}"></div>
                   </div>
                 </div>
               </div>
-              <span style="font-size:11px;color:var(--ink-2, rgba(29,29,31,0.62))">{{ pt.n }}</span>
+              <span class="wd-side-n" data-on="{{ pt.onA }}">{{ pt.n }}</span>
             </div>
           </sc-for>
-          <button onClick="{{ addPageQuick }}" style="flex:none;width:140px;height:32px;border:1px dashed var(--line, rgba(0,0,0,0.1));border-radius:10px;background:transparent;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">＋ 新页面</button>
+          <button class="wd-side-new" onClick="{{ addPageQuick }}"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v10M3 8h10"></path></svg>新页面</button>
         </div></sc-if>
         <sc-if value="{{ navOutline }}" hint-placeholder-val="{{ false }}"><div style="flex:none;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 8px 6px">标题</div></sc-if>
         <sc-for list="{{ heads }}" as="h" hint-placeholder-count="4">
           <div onClick="{{ h.onClick }}" style="flex:none;padding:7px 10px;padding-left:{{ h.indent }};border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;color:var(--ink-2, rgba(29,29,31,0.62));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:{{ h.fw }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)">{{ h.text }}</div>
         </sc-for>
-        <sc-if value="{{ noHeads }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 8px;line-height:1.6">用「标题 1/2/3」样式的段落会显示在这里。</div></div></sc-if>
+        <sc-if value="{{ noHeads }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--fp-title);padding:0 8px;line-height:1.6">用「标题 1/2/3」样式的段落会显示在这里。</div></sc-if>
+        </div>
       </div>
     </sc-if>
     <div ref="{{ cvRef }}" data-light="{{ cvLight }}" onMouseDown="{{ onCanvasDown }}" style="grid-column:2;overflow:auto;padding:{{ cvPad }};min-width:0;background:{{ cvBg }}">
       <div style="zoom:{{ zoomV }};width:{{ pageW }};margin:0 auto">
         <sc-if value="{{ showRuler }}" hint-placeholder-val="{{ false }}">
           <div data-light="1" onClick="{{ onRuler }}" title="{{ rulerTitle }}" style="position:relative;height:18px;margin:0 0 6px;border-radius:4px;background:var(--kpage, #FFFFFF);box-shadow:0 0 0 1px var(--kpageb, rgba(0,0,0,0.06));cursor:pointer;overflow:hidden">
-            <div style="position:absolute;left:0;right:0;top:0;bottom:0;background:linear-gradient(90deg,var(--k12, #F2F2F7) 0 {{ padH }},transparent {{ padH }} calc(100% - {{ padH }}),var(--k12, #F2F2F7) calc(100% - {{ padH }}))"></div>
-            <div style="position:absolute;left:{{ padH }};right:{{ padH }};top:0;bottom:0;background-image:repeating-linear-gradient(90deg,var(--k8, #8E8E93) 0 1px,transparent 1px {{ cmPx }}),repeating-linear-gradient(90deg,var(--k47, #C7C7CC) 0 1px,transparent 1px {{ halfCmPx }});background-size:100% 10px,100% 4px;background-position:0 100%,0 100%;background-repeat:no-repeat"></div>
+            <div style="position:absolute;left:0;right:0;top:0;bottom:0;background:linear-gradient(90deg,var(--k12, #F2F2F7) 0 {{ padH }},transparent {{ padH }} calc(100% - {{ padR }}),var(--k12, #F2F2F7) calc(100% - {{ padR }}))"></div>
+            <div style="position:absolute;left:{{ padH }};right:{{ padR }};top:0;bottom:0;background-image:repeating-linear-gradient(90deg,var(--k8, #8E8E93) 0 1px,transparent 1px {{ cmPx }}),repeating-linear-gradient(90deg,var(--k47, #C7C7CC) 0 1px,transparent 1px {{ halfCmPx }});background-size:100% 10px,100% 4px;background-position:0 100%,0 100%;background-repeat:no-repeat"></div>
             <sc-for list="{{ tabStops }}" as="ts" hint-placeholder-count="0">
               <span onClick="{{ ts.onClick }}" title="{{ ts.title }}" style="position:absolute;left:{{ ts.x }};top:0;width:14px;margin-left:-7px;text-align:center;line-height:16px;font-size:12px;font-weight:700;color:var(--k1, #1D1D1F);font-family:'IBM Plex Mono',monospace">{{ ts.glyph }}</span>
             </sc-for>
@@ -251,11 +240,11 @@ html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
           <sc-for list="{{ hfZones }}" as="z" hint-placeholder-count="0">
             <div title="{{ z.title }}" onDoubleClick="{{ z.onDbl }}" style="position:absolute;left:0;right:0;top:{{ z.top }};bottom:{{ z.bottom }};height:{{ z.h }};z-index:2;box-sizing:border-box;border-top:{{ z.lineT }};border-bottom:{{ z.lineB }}">
               <sc-if value="{{ z.editing }}" hint-placeholder-val="{{ false }}">
-                <div ref="{{ hfRef }}" class="wd-hf wd-hfbox" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onHfInput }}" onKeyDown="{{ onHfKey }}" style="position:absolute;left:{{ padH }};right:{{ padH }};top:{{ z.bt }};bottom:{{ z.bb }};min-height:1.5em;outline:none"></div>
+                <div ref="{{ hfRef }}" class="wd-hf wd-hfbox" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onHfInput }}" onKeyDown="{{ onHfKey }}" style="position:absolute;left:{{ padH }};right:{{ padR }};top:{{ z.bt }};bottom:{{ z.bb }};min-height:1.5em;outline:none"></div>
                 <span style="position:absolute;left:{{ padH }};top:{{ z.lt }};bottom:{{ z.lb }};font-size:11px;line-height:18px;padding:0 7px;border-radius:5px;background:var(--k12, #F2F2F7);color:var(--k11, #6E6E73);font-family:'Noto Sans SC',sans-serif;pointer-events:none">{{ z.label }}</span>
               </sc-if>
               <sc-if value="{{ z.showing }}" hint-placeholder-val="{{ true }}">
-                <div class="wd-hf" dangerouslySetInnerHTML="{{ z.html }}" style="position:absolute;left:{{ padH }};right:{{ padH }};top:{{ z.bt }};bottom:{{ z.bb }};opacity:{{ hfOp }}"></div>
+                <div class="wd-hf" dangerouslySetInnerHTML="{{ z.html }}" style="position:absolute;left:{{ padH }};right:{{ padR }};top:{{ z.bt }};bottom:{{ z.bb }};opacity:{{ hfOp }}"></div>
               </sc-if>
             </div>
           </sc-for>
@@ -300,13 +289,9 @@ html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
 
   <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out"><span>{{ wordsText }}</span><span> · </span><span>{{ pagesText }}</span></div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-  <div data-word-status="1" style="position:absolute;left:{{ statusX }};transform:translateX(-50%);bottom:21px;z-index:30;height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-radius:999px;background:var(--format-panel-bg);box-shadow:var(--format-panel-sh);font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap;transition:left .55s cubic-bezier(.2,1,.3,1)">
-    <span>{{ wordsText }}</span><span>·</span><span>{{ pagePositionText }}</span><span style="height:15px;width:1px;background:var(--line);margin:0 2px"></span>
-    <div style="display:flex;align-items:center;gap:4px">
-    <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">−</button>
-    <input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" style="width:40px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;font:inherit;color:inherit;text-align:center;outline:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
-    <button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" style="border:none;background:transparent;cursor:pointer;font-size:12px;color:inherit;width:16px;padding:0" style-hover="color:var(--ink, #1D1D1F)">＋</button>
-    </div>
+  <div data-word-status="1" class="wd-count" style="left:{{ statusX }}">
+    <span>{{ wordsText }} · {{ pagePositionText }}</span><span class="wd-count-sep"></span>
+    <span style="display:flex;align-items:center;gap:8px"><button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" aria-label="缩小">−</button><input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" aria-label="缩放比例"><button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" aria-label="放大">＋</button></span>
   </div>
   </sc-if>
   <sc-if value="{{ hasBubble }}" hint-placeholder-val="{{ false }}">
@@ -318,17 +303,21 @@ html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
     </div>
   </sc-if>
   <sc-if value="{{ hasWordSelection }}" hint-placeholder-val="{{ false }}">
-    <div class="wd-selectbar" data-word-selection="1" data-below="{{ selBelow }}" style="left:{{ bx }};top:{{ by }}">
-      <select title="样式" value="{{ selectionStyle }}" onChange="{{ onSelectionStyle }}"><sc-for list="{{ selectionStyles }}" as="s" hint-placeholder-count="4"><option value="{{ s.id }}">{{ s.label }}</option></sc-for></select>
-      <span style="width:1px;height:18px;background:var(--line)"></span>
-      <button onClick="{{ selectionSmaller }}" title="减小字号">A−</button>
-      <select title="字号" value="{{ selectionSize }}" onChange="{{ onSelectionSize }}" style="width:53px"><sc-for list="{{ selectionSizes }}" as="s" hint-placeholder-count="8"><option value="{{ s }}">{{ s }}</option></sc-for></select>
-      <button onClick="{{ selectionLarger }}" title="增大字号">A+</button>
-      <span style="width:1px;height:18px;background:var(--line)"></span>
-      <button onClick="{{ selectionBold }}" data-on="{{ selectionBoldOn }}" title="加粗" style="font-weight:700">B</button><button onClick="{{ selectionItalic }}" data-on="{{ selectionItalicOn }}" title="斜体" style="font-style:italic">I</button><button onClick="{{ selectionUnderline }}" data-on="{{ selectionUnderlineOn }}" title="下划线" style="text-decoration:underline">U</button>
-      <label title="文字颜色" style="position:relative;display:flex;align-items:center;justify-content:center;width:30px;height:30px;cursor:pointer"><span style="border-bottom:3px solid {{ selectionColor }};font-weight:600">A</span><input type="color" value="{{ selectionColor }}" onChange="{{ onSelectionColor }}" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
-      <button onClick="{{ selectionHighlight }}" title="高亮" style="text-decoration:underline;text-decoration-color:{{ selectionHighlightColor }};text-decoration-thickness:3px">▱</button>
-      <span style="width:1px;height:18px;background:var(--line)"></span><button onClick="{{ selectionLink }}" title="链接">↗</button><button onClick="{{ selectionRewrite }}" title="改写">✦ {{ rewriteLabel }}</button>
+    <div class="wd-qbar" data-word-selection="1" data-below="{{ selBelow }}" onMouseDown="{{ md }}" style="left:{{ bx }};top:{{ by }};--tail:{{ tailX }}">
+      <span class="wd-qtail"></span>
+      <button class="wd-qsel" title="样式" onClick="{{ selStyleMenu }}"><span>{{ selStyleLabel }}</span><span class="wd-qchev"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5 4 2l2.5 2.5"></path><path d="M1.5 7.5 4 10l2.5-2.5"></path></svg></span></button>
+      <i class="wd-qsep"></i>
+      <div class="wd-qsize"><button aria-label="减小字号" title="减小字号" onClick="{{ selectionSmaller }}"><span class="wd-qa"><b style="font-size:11px">A</b><span>−</span></span></button><i></i><button title="字号" onClick="{{ selSizeMenu }}">{{ selectionSize }}<span class="wd-qchev"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg></span></button><i></i><button aria-label="增大字号" title="增大字号" onClick="{{ selectionLarger }}"><span class="wd-qa"><b style="font-size:15px">A</b><span>+</span></span></button></div>
+      <i class="wd-qsep"></i>
+      <button class="wd-qb" data-on="{{ selectionBoldOn }}" aria-label="加粗" title="加粗 Ctrl+B" onClick="{{ selectionBold }}"><span style="font-size:14px;font-weight:700">B</span></button>
+      <button class="wd-qb" data-on="{{ selectionItalicOn }}" aria-label="倾斜" title="斜体 Ctrl+I" onClick="{{ selectionItalic }}"><span style="font-family:Georgia,serif;font-size:15px;font-style:italic">I</span></button>
+      <button class="wd-qb" data-on="{{ selectionUnderlineOn }}" aria-label="下划线" title="下划线 Ctrl+U" onClick="{{ selectionUnderline }}"><span style="font-size:14px;text-decoration:underline">U</span></button>
+      <i class="wd-qsep"></i>
+      <label class="wd-qb wd-qcol" title="文字颜色"><span style="font-size:13.5px;font-weight:600;line-height:1">A</span><span class="wd-qbar-c" style="background:{{ selectionColor }}"></span><input type="color" value="{{ selectionColor }}" onChange="{{ onSelectionColor }}" aria-label="文字颜色"></label>
+      <button class="wd-qb wd-qcol" aria-label="高亮" title="{{ hlTitle }}" onClick="{{ selectionHighlight }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.8 2.8l3.4 3.4-5.9 5.9H3.9V8.7z"></path></svg><span class="wd-qbar-c" style="background:{{ selectionHighlightColor }}"></span></button>
+      <i class="wd-qsep"></i>
+      <button class="wd-qb" aria-label="链接" title="链接 Ctrl+K" onClick="{{ selectionLink }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.8 9.2a2.6 2.6 0 0 0 3.7 0l2.2-2.2a2.6 2.6 0 0 0-3.7-3.7l-.6.6"></path><path d="M9.2 6.8a2.6 2.6 0 0 0-3.7 0L3.3 9a2.6 2.6 0 0 0 3.7 3.7l.6-.6"></path></svg></button>
+      <sc-if value="{{ canRewrite }}" hint-placeholder-val="{{ true }}"><i class="wd-qsep"></i><button class="wd-qai" title="交给 AI 助手改写" onClick="{{ selectionRewrite }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>改写</button></sc-if>
     </div>
   </sc-if>
 
@@ -336,11 +325,11 @@ html[data-theme="dark"] .wd-insert-icon{filter:invert(.9)}
 
   <sc-if value="{{ hasPop }}" hint-placeholder-val="{{ false }}">
     <div onMouseDown="{{ closePop }}" style="position:fixed;inset:0;z-index:90"></div>
-    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:168px;max-height:420px;overflow:auto;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);padding:6px;display:flex;flex-direction:column">
+    <div data-menu="1" data-pop="menu" class="wd-menu" onMouseDown="{{ md }}" style="left:{{ popX }};top:{{ popY }};min-width:{{ popMinW }};max-height:{{ popMaxH }};translate:{{ popShift }}">
       <sc-for list="{{ popItems }}" as="mi" hint-placeholder-count="0">
-        <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 10px 3px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ mi.label }}</div></sc-if>
+        <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div class="wd-mh">{{ mi.label }}</div></sc-if>
         <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:{{ mi.bg }};border-radius:var(--ctl-r, 8px);font-size:13px;white-space:nowrap;cursor:pointer;font-family:{{ mi.font }};display:flex;gap:10px;align-items:center" style-hover="background:var(--fill, rgba(0,0,0,0.07))"><span style="flex:1;{{ mi.css }}">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
+          <button class="wd-mi" data-on="{{ mi.onA }}" onClick="{{ mi.onClick }}" style="font-family:{{ mi.font }}"><span class="wd-mi-c">✓</span><span style="flex:1;{{ mi.css }}">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
         </sc-if>
       </sc-for>
       <sc-if value="{{ popIsGrid }}" hint-placeholder-val="{{ false }}">
@@ -405,9 +394,34 @@ const CASES = { // 更改大小写, as Word's dialog has them; the last two swit
   half: s => Array.from(s, c => c === '\u3000' ? ' ' : c >= '\uFF01' && c <= '\uFF5E' ? String.fromCharCode(c.charCodeAt(0) - 0xFEE0) : c).join(''),
   full: s => Array.from(s, c => c === ' ' ? '\u3000' : c >= '!' && c <= '~' ? String.fromCharCode(c.charCodeAt(0) + 0xFEE0) : c).join('') };
 const SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 60, 72];
-const PAGES = { A4: [794, 1123], Letter: [816, 1056], A5: [559, 794] };
-const MARG = { narrow: [48, 48], normal: [96, 96], wide: [96, 144] };
-const INSERT_ICONS = { '表格': 'table', '图片': 'picture', '形状': 'shape', '图表': 'chart', '文本框': 'textbox', '链接': 'link', '页眉': 'header', '页脚': 'footer', '页码': 'page-number', '分页符': 'page-break', '封面': 'cover', '分隔线': 'rule', '公式@@word': 'equation', '符号': 'symbol', '日期': 'date', '首字下沉': 'drop-cap', '书签': 'bookmark', '批注': 'comment' };
+const PAGES = { A4: [794, 1123], Letter: [816, 1056], A5: [559, 794], B5: [665, 945], A3: [1123, 1587], Legal: [816, 1344] }; // px at 96 dpi, portrait
+const PAPER_CM = { A4: [21, 29.7], A5: [14.8, 21], B5: [17.6, 25], A3: [29.7, 42], Letter: [21.59, 27.94], Legal: [21.59, 35.56] }; // 纸张, as the panel names them
+// 页边距: the engine's presets (DocxSection.Margins), cm top / sides; any other margins are "top right bottom left" as the engine prints them
+const MARGIN_PRESETS = [['normal', '普通', '2.54 厘米'], ['narrow', '窄', '1.27 厘米'], ['moderate', '适中', '2.54 / 1.91 厘米'], ['wide', '宽', '2.54 / 5.08 厘米']];
+const MARGIN_CM = { normal: [2.54, 2.54], narrow: [1.27, 1.27], moderate: [2.54, 1.91], wide: [2.54, 5.08] };
+/** A page's margins in cm, { top, right, bottom, left }, from a preset's name or the engine's four lengths. */
+const marginsCm = margin => {
+  const p = MARGIN_CM[margin]; if (p) return { top: p[0], right: p[1], bottom: p[0], left: p[1] };
+  const v = String(margin || '').trim().split(/[\s,]+/).map(s => { const m = /^(-?[\d.]+)\s*(cm|mm|in|pt)?$/i.exec(s); return m ? +m[1] * ({ mm: 0.1, in: 2.54, pt: 2.54 / 72 }[(m[2] || '').toLowerCase()] || 1) : NaN; });
+  const [t, r, b, l] = v.length === 4 ? v : v.length === 2 ? [v[0], v[1], v[0], v[1]] : v.length === 1 ? [v[0], v[0], v[0], v[0]] : [];
+  return [t, r, b, l].every(x => x >= 0) ? { top: t, right: r, bottom: b, left: l } : marginsCm('normal');
+};
+/** Margins as the page model keeps them: a preset's name when they are one, else top right bottom left in cm. */
+const marginText = m => { const r = x => +(+x).toFixed(2); const hit = Object.entries(MARGIN_CM).find(([, [a, b]]) => r(m.top) === a && r(m.bottom) === a && r(m.left) === b && r(m.right) === b); return hit ? hit[0] : `${r(m.top)}cm ${r(m.right)}cm ${r(m.bottom)}cm ${r(m.left)}cm`; };
+const marginsPx = margin => { const m = marginsCm(margin), px = x => Math.round(x * 96 / 2.54); return { top: px(m.top), right: px(m.right), bottom: px(m.bottom), left: px(m.left) }; };
+/** A CSS colour (rgb() from getComputedStyle, or #hex) as #RRGGBB; '' when it is not one. */
+const rgbHex = c => { const m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ''); return m ? '#' + [m[1], m[2], m[3]].map(x => (+x).toString(16).padStart(2, '0')).join('').toUpperCase() : /^#[0-9a-f]{6}$/i.test(c || '') ? c.toUpperCase() : ''; };
+// 段前 / 段后: in lines (行) as Chinese Word counts them — "0.5lines" in the file's beforeLines — or points for documents that use them
+const spaceText = v => { const m = /^(-?[\d.]+)\s*(lines?|pt)?$/i.exec(v || ''); if (!m) return $t('{n} 行', { n: 0 }); return /^pt$/i.test(m[2] || '') ? $t('{n} 磅', { n: +m[1] }) : $t('{n} 行', { n: +m[1] }); };
+const spaceStep = (v, dir) => { const m = /^(-?[\d.]+)\s*(lines?|pt)?$/i.exec(v || ''), n = m ? +m[1] : 0; return m && /^pt$/i.test(m[2] || '') ? Math.max(0, n + 6 * dir) + 'pt' : Math.max(0, Math.round((n + 0.5 * dir) * 10) / 10) + 'lines'; };
+const spaceParse = t => { const m = /^\s*([\d.]+)\s*(行|lines?|磅|pt)?\s*$/i.exec(t || ''); if (!m) return null; return /^(磅|pt)$/i.test(m[2] || '') ? +m[1] + 'pt' : +m[1] + 'lines'; };
+const TOC_STYLES = [['classic', '经典'], ['simple', '简洁'], ['plain', '无页码']]; // 目录样式: dotted leaders to the page numbers, no leaders, titles only
+const NOTE_FORMATS = [['decimal', '1, 2, 3'], ['lowerRoman', 'i, ii, iii'], ['upperRoman', 'I, II, III'], ['lowerLetter', 'a, b, c'], ['upperLetter', 'A, B, C'], ['decimalEnclosedCircleChinese', '①, ②, ③'], ['chineseCounting', '一, 二, 三']]; // i18n-ok — the numbers themselves
+// 表格样式: the gallery Word ships that the engine writes (DocxTemplate), each drawn as a small table: its header row, then two bands
+const TABLE_STYLES = [['GridTable4Accent1', '网格表 4（彩色标题行）', { head: '#AFC6EA', b1: '#F1F1F3', b2: '#EEF3FB' }], ['PlainTable1', '简明表格（隔行底纹）', { head: '#BDBDC3', b1: '#F1F1F3', b2: '#F4F4F6' }],
+  ['GridTable4Accent2', '网格表 4（橙色标题行）', { head: '#E5C9A8', b1: '#F1F1F3', b2: '#FAF3EA' }], ['TableGrid', '网格', { head: '#FFFFFF', b1: '#FFFFFF', b2: '#FFFFFF', headSh: 'inset 0 0 0 .5px #AEAEB2', rowSh: 'inset 0 0 0 .5px #C7C7CC' }],
+  ['ThreeLineTable', '三线表', { head: '#FFFFFF', b1: '#FFFFFF', b2: '#FFFFFF', headSh: 'inset 0 1.5px 0 #1D1D1F,inset 0 -1px 0 #1D1D1F', lastSh: 'inset 0 -1.5px 0 #1D1D1F' }],
+  ['none', '无框线', { head: '#F4F4F6', b1: '#FFFFFF', b2: '#FFFFFF' }]]; // theme: keep — each style's own colours
 const BLOCKS = [['p', '正文'], ['h1', '标题 1'], ['h2', '标题 2'], ['h3', '标题 3'], ['blockquote', '引用'], ['pre', '代码']];
 // Word's quick styles: id, the name styles.xml gives it (documents from a localized Word keep the English name), its type; and the
 // labels the gallery shows for the names Word ships (a document's own styles show their names)
@@ -426,7 +440,8 @@ const md = e => e.preventDefault();
 const frameOf = img => img.closest('figure[data-pic]') || img; // what frames a picture: its figure once it has a look, else the img
 const PIC_BLOCKS = 'p,h1,h2,h3,li,blockquote'; // the blocks a picture can sit in
 const OUTLINE = '2px solid var(--k59, #3F7D5C)';
-const CV_PAD = [76, 24]; // canvas padding top / left: the scroll anchor when zooming
+const CV_PAD = [18, 24]; // canvas padding top / left: the scroll anchor when zooming (纯净模式 keeps PURE_TOP above the page)
+const PURE_TOP = 76;
 const ZMIN = 0.2, ZMAX = 4;
 const THUMB_MS = 1000, NO_THUMB = { __html: '' }; // page thumbnails re-copy the document at most once a second
 const AV_ME = 'oklch(0.56 0.1 45)', AV_HUES = [225, 345, 165, 285, 105]; // comment avatars: mine keep the designed colour, other authors one of these hues
@@ -463,8 +478,8 @@ const hfOut = html => {
 };
 
 class Component extends DCLogic {
-  state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: 1, zoomEdit: null, view: 'page', showRuler: true, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFF2A8', activeCid: null, imgSel: false, hf: null, hfLive: null };
-  edRef = React.createRef(); cvRef = React.createRef(); imgRef = React.createRef(); findRef = React.createRef(); hfRef = React.createRef();
+  state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: 1, zoomEdit: null, view: 'page', showRuler: false, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFFF00', activeCid: null, imgSel: false, hf: null, hfLive: null };
+  edRef = React.createRef(); cvRef = React.createRef(); imgRef = React.createRef(); findRef = React.createRef(); hfRef = React.createRef(); panelFindRef = React.createRef();
   pgId = 'pg' + Math.random().toString(36).slice(2, 8); // scopes the page view's rules (pgCss) to this editor's text
   componentDidMount() {
     this.pgCss = document.head.appendChild(document.createElement('style'));
@@ -474,6 +489,7 @@ class Component extends DCLogic {
     import('./glass.js');
     import('./engine.js').then(m => { this.EN = m; }); // the table and contents commands share their model with the save
     import('./picture.js').then(m => { this.P = m; this.layoutPics(); this.drawShapes(); }); // the 图片 tab, and where pictures sit
+    import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./md.js').then(m => { this.MD = m; this.drawEqs(); }); // KaTeX, for the equations
     this.load();
     document.addEventListener('selectionchange', this.onSel);
@@ -484,7 +500,7 @@ class Component extends DCLogic {
     if (this.cvRef.current) this.cvRef.current.addEventListener('scroll', this.onCvScroll, { passive: true });
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) { }
     this.autoFit = true;
-    const fit = () => { const cv = this.cvRef.current; if (!cv || !this.autoFit || this.state.view === 'web') return; const pg = this.page, [pw, ph] = PAGES[pg.size], W = pg.orient === 'landscape' ? ph : pw; const z = Math.max(ZMIN, Math.min(1, Math.floor((cv.clientWidth - 48) / W * 20) / 20)); if (z !== this.state.zoom) this.setState({ zoom: z }); };
+    const fit = () => { const cv = this.cvRef.current; if (!cv || !this.autoFit || this.state.view === 'web') return; const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; const z = Math.max(ZMIN, Math.min(1, Math.floor((cv.clientWidth - 48) / W * 20) / 20)); if (z !== this.state.zoom) this.setState({ zoom: z }); };
     this.fitRO = new ResizeObserver(() => { fit(); clearTimeout(this.riT); this.riT = setTimeout(() => this.refreshInfo(), 200); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.refreshInfo()); if (this.cvRef.current) this.fitRO.observe(this.cvRef.current);
     this.attachWheel();
@@ -507,13 +523,13 @@ class Component extends DCLogic {
     z = Math.max(ZMIN, Math.min(ZMAX, z)); this.autoFit = false;
     const cv = this.cvRef.current, z0 = this.state.zoom; if (!cv || Math.abs(z - z0) < 1e-4) return;
     const cr = cv.getBoundingClientRect(), ax = at ? at.x - cr.left : cv.clientWidth / 2, ay = at ? at.y - cr.top : cv.clientHeight / 2, r = z / z0, sx = cv.scrollLeft, sy = cv.scrollTop;
-    this.setState({ zoom: z }, () => { cv.scrollLeft = (sx + ax - CV_PAD[1]) * r + CV_PAD[1] - ax; cv.scrollTop = (sy + ay - CV_PAD[0]) * r + CV_PAD[0] - ay; this.follow && this.follow.update('zoom'); });
+    this.setState({ zoom: z }, () => { cv.scrollLeft = (sx + ax - CV_PAD[1]) * r + CV_PAD[1] - ax; cv.scrollTop = (sy + ay - this.cvTop) * r + this.cvTop - ay; this.follow && this.follow.update('zoom'); });
   }
   /** 整页: one whole page fits the window. */
-  fitPage() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size], [W, H] = pg.orient === 'landscape' ? [ph, pw] : [pw, ph]; if (cv) this.setZoom(Math.min((cv.clientWidth - 60) / W, (cv.clientHeight - CV_PAD[0] - 72) / H)); }
+  fitPage() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, [W, H] = pg.orient === 'landscape' ? [ph, pw] : [pw, ph]; if (cv) this.setZoom(Math.min((cv.clientWidth - 60) / W, (cv.clientHeight - this.cvTop - 72) / H)); }
   /** 并排 / 多页: the pages side by side, two across the window, turned left and right (Word's 页面移动 › 并排). */
-  sideBySide() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size], W = pg.orient === 'landscape' ? ph : pw; this.setState({ view: 'side' }, () => { if (cv) this.setZoom((cv.clientWidth - 60) / (2 * W + GAP)); this.refreshInfo(); }); }
-  fitWidth() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size]; if (cv) this.setZoom((cv.clientWidth - 60) / (pg.orient === 'landscape' ? ph : pw)); }
+  sideBySide() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; this.setState({ view: 'side' }, () => { if (cv) this.setZoom((cv.clientWidth - 60) / (2 * W + GAP)); this.refreshInfo(); }); }
+  fitWidth() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4; if (cv) this.setZoom((cv.clientWidth - 60) / (pg.orient === 'landscape' ? ph : pw)); }
   onWheel = e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom(this.state.zoom * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
   applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
   componentDidUpdate(pp) {
@@ -624,10 +640,10 @@ class Component extends DCLogic {
     const P = this.P, ed = this.edRef.current; if (!P || !img.isConnected) return;
     const f = frameOf(img), place = this.placeAttrs(img), block = f.parentElement && f.parentElement !== ed ? f.parentElement.closest(PIC_BLOCKS) : null;
     if (!block || !P.floating(place)) { if (f.hasAttribute('data-placed')) { f.removeAttribute('data-placed'); Object.assign(f.style, P.placeStyle({}, 0, 0)); this.inlineStyle(img, !block || !block.textContent.trim()); } return; }
-    const pg = this.page, [pw, ph] = PAGES[pg.size], [PW, PH] = pg.orient === 'landscape' ? [ph, pw] : [pw, ph], m = MARG[pg.margin];
+    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, [PW, PH] = pg.orient === 'landscape' ? [ph, pw] : [pw, ph], m = marginsPx(pg.margin);
     let y = 0; for (let e = block; e && e !== ed; e = e.offsetParent) y += e.offsetTop; // the paragraph's top in the text, and so on its page
     f.setAttribute('data-placed', '1');
-    Object.assign(f.style, P.placeStyle(place, f.offsetWidth, f.offsetHeight, { colW: block.clientWidth, pageW: PW, pageH: PH, mL: m[1], mT: m[0], top: this.paged ? (y + m[0]) % (PH + GAP) : y + m[0] }));
+    Object.assign(f.style, P.placeStyle(place, f.offsetWidth, f.offsetHeight, { colW: block.clientWidth, pageW: PW, pageH: PH, mL: m.left, mT: m.top, top: this.paged ? (y + m.top) % (PH + GAP) : y + m.top }));
   }
   /** A picture's own style once it is inline: in the line of text, or (`asBlock`) a block of its own, centred, as the engine shows block pictures. */
   inlineStyle(img, asBlock) {
@@ -782,7 +798,7 @@ class Component extends DCLogic {
   sync() { clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 350); }
   flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
-  ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
+  ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
   /** The pages, as [top, bottom] of the text as it flows without page gaps. A block that does not fit what is left of a page starts
    *  the next one, and so does what follows a page break: a paragraph of its own (hr[data-pb]), one inside a paragraph (span[data-pb]:
    *  the rest of that paragraph moves on), a paragraph that starts a page (data-pb="before", unless at the top of one already). A
@@ -824,10 +840,10 @@ class Component extends DCLogic {
     const ed = this.edRef.current; if (!ed) return;
     const t = ed.innerText || '';
     const cjk = (t.match(/[\u4e00-\u9fa5]/g) || []).length, words = (t.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9]+/g) || []).length;
-    const pg = this.page, [pw, ph] = PAGES[pg.size], H = pg.orient === 'landscape' ? pw : ph, m = MARG[pg.margin];
+    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, m = marginsPx(pg.margin);
     if (this.pgCss) this.pgCss.textContent = ''; // measured as the text flows without page gaps
-    let { at, push } = this.pagesOf(ed, H - 2 * m[0], H + GAP);
-    if (this.state.view === 'side') { const W = pg.orient === 'landscape' ? ph : pw, colW = W - 2 * m[1], gap = 2 * m[1] + GAP; at = Array.from({ length: Math.max(1, Math.round((ed.scrollWidth + gap) / (colW + gap))) }, () => [0, 0]); push = []; } // 并排: each column is a page
+    let { at, push } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP);
+    if (this.state.view === 'side') { const W = pg.orient === 'landscape' ? ph : pw, colW = W - m.left - m.right, gap = m.left + m.right + GAP; at = Array.from({ length: Math.max(1, Math.round((ed.scrollWidth + gap) / (colW + gap))) }, () => [0, 0]); push = []; } // 并排: each column is a page
     if (this.pgCss && this.paged) this.pgCss.textContent = push.map(([el, css, px]) => `${this.cssPath(el)}{${css}:${Math.round(px)}px!important}`).join('\n');
     const heads = Array.from(ed.querySelectorAll('h1,h2,h3')).map((h, i) => ({ lvl: +h.tagName[1], text: h.innerText.trim() || $t('（空标题）'), i }));
     const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
@@ -835,6 +851,8 @@ class Component extends DCLogic {
     if (JSON.stringify(next) !== JSON.stringify({ info: this.state.info, heads: this.state.heads })) this.setState(next); // an unchanged count re-renders nothing
   }
   /** Where typing and the ribbon go: the header or footer being edited, else the text. */
+  /** The canvas's padding above the page: under the title bar, or in 纯净模式 clear of the lights. */
+  get cvTop() { return this.props.pure ? PURE_TOP : CV_PAD[0]; }
   get root() { return (this.state.hf && this.hfRef.current) || this.edRef.current; }
   onSel = () => {
     const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) { if (this.state.selBub) this.setState({ selBub: null }); return; }
@@ -854,15 +872,16 @@ class Component extends DCLogic {
     const tdEl = el.closest('td,th'), tblEl = tdEl && tdEl.closest('table'), tbl = dw(tblEl), row = dw(tdEl && tdEl.parentElement), cellAt = dw(tdEl);
     if (tbl.bordercolor) tbl.borderColor = tbl.bordercolor;
     const f = { b: q('bold'), i: q('italic'), u: q('underline'), s: q('strikeThrough'), sup: q('superscript'), sub: q('subscript'), ul: q('insertUnorderedList'), ol: q('insertOrderedList'), block, font: fam, size: Math.round(parseFloat(cs.fontSize) * 0.75 * 2) / 2, align: q('justifyCenter') ? 'center' : q('justifyRight') ? 'right' : q('justifyFull') ? (cs.textAlignLast === 'justify' ? 'distribute' : 'justify') : 'left', inTable: !!el.closest('td,th'), color: cs.color,
-      lk: !list ? '' : list.tagName === 'UL' ? 'bullet' : (list.closest('ol[data-w-list]') || list).getAttribute('data-w-list') || 'number', pat, ps, rs, tbl, row, cell: cellAt };
+      lk: !list ? '' : list.tagName === 'UL' ? 'bullet' : (list.closest('ol[data-w-list]') || list).getAttribute('data-w-list') || 'number', pat, ps, rs, tbl, row, cell: cellAt,
+      widowOff: !!(b && ed.contains(b) && b.getAttribute('data-widow') === 'off') }; // widow control the paragraph's style turns off
     const next = {};
     if (JSON.stringify(f) !== JSON.stringify(this.state.fmt)) next.fmt = f;
     if (f.inTable && !this.state.fmt.inTable && !this.state.imgSel && !this.state.shapeSel) next.tab = 'table';
     else if (!f.inTable && this.state.tab === 'table') next.tab = 'home';
-    const rc = r.getBoundingClientRect(), below = rc.top < 95, rawX = rc.left + rc.width / 2;
+    const rc = r.getBoundingClientRect(), rootEl = ed.closest && ed.closest('[data-edroot]'), top = rootEl ? rootEl.getBoundingClientRect().top : 0, below = rc.top - 56 < top + 8, rawX = rc.left + rc.width / 2;
     const half = this.props.pure ? 0 : Math.min(255, (window.innerWidth - 16) / 2);
     const x = Math.max(half + 8, Math.min(window.innerWidth - half - 8, rawX));
-    const selBar = r.collapsed || !rc.width ? null : { x: Math.round(x), y: Math.round(below ? rc.bottom + 8 : rc.top - 8), below };
+    const selBar = r.collapsed || !rc.width ? null : { x: Math.round(x), y: Math.round(below ? rc.bottom + 10 : rc.top - 10), below, dx: Math.max(-half + 16, Math.min(half - 16, Math.round(rawX - x))) };
     if (JSON.stringify(selBar) !== JSON.stringify(this.state.selBub || null)) next.selBub = selBar;
     if (Object.keys(next).length) this.setState(next);
   };
@@ -988,9 +1007,9 @@ class Component extends DCLogic {
     const px = v => Math.max(8, Math.round(EN.cmOf(v) * 96 / 2.54)), w = px(a.width || '4cm'), h = px(a.height || '2cm');
     el.style.width = w + 'px'; el.style.height = h + 'px';
     const block = el.parentElement; if (!P || !block || block === ed) return;
-    const pg = this.page, [pw, ph] = PAGES[pg.size], [PW, PH] = pg.orient === 'landscape' ? [ph, pw] : [pw, ph], m = MARG[pg.margin];
+    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, [PW, PH] = pg.orient === 'landscape' ? [ph, pw] : [pw, ph], m = marginsPx(pg.margin);
     let y = 0; for (let e = block; e && e !== ed; e = e.offsetParent) y += e.offsetTop;
-    Object.assign(el.style, P.placeStyle(Object.assign({ wrap: 'square', xFrom: 'column', yFrom: 'paragraph' }, a), w, h, { colW: block.clientWidth, pageW: PW, pageH: PH, mL: m[1], mT: m[0], top: this.paged ? (y + m[0]) % (PH + GAP) : y + m[0] }));
+    Object.assign(el.style, P.placeStyle(Object.assign({ wrap: 'square', xFrom: 'column', yFrom: 'paragraph' }, a), w, h, { colW: block.clientWidth, pageW: PW, pageH: PH, mL: m.left, mT: m.top, top: this.paged ? (y + m.top) % (PH + GAP) : y + m.top }));
   }
   drawShapes() { const ed = this.edRef.current; if (ed && ed.querySelectorAll && this.EN) ed.querySelectorAll('span[data-shape]').forEach(el => this.drawShape(el)); }
   /** 文本框 / 形状: a new one floating at the top left of the caret's paragraph, selected; a text box takes the typing. */
@@ -1290,6 +1309,7 @@ class Component extends DCLogic {
       else if (op === 'cborder') { this.tprop(td, 'borders', arg); EN.drawTableLines(table); }
       else if (op === 'calign') { this.tprop(td, 'align', arg[0] === 'left' ? '' : arg[0]); this.tprop(td, 'valign', arg[1] === 'top' ? '' : arg[1]); td.style.textAlign = arg[0] === 'left' ? '' : arg[0]; td.style.verticalAlign = arg[1] === 'top' ? '' : arg[1]; }
       else if (op === 'height') { const tr = td.parentElement; this.tprop(tr, 'height', arg); tr.style.height = arg ? EN.cmOf(arg) * (96 / 2.54) + 'px' : ''; }
+      else if (op === 'look') { this.tprop(table, 'header', arg); EN.drawTableLines(table); }
       else if (op === 'header') { const tr = td.parentElement; this.tprop(tr, 'header', tr.hasAttribute('data-w-header') ? '' : 'true'); }
       else if (op === 'props') { for (const k of ['width', 'align', 'borderColor']) this.tprop(table, k, arg[k]); table.setAttribute('style', EN.tableCss(Object.assign({ widths: table.getAttribute('data-w-widths') }, arg))); EN.drawTableLines(table); }
     } catch (e) { say(e.message); return; }
@@ -1385,12 +1405,23 @@ class Component extends DCLogic {
   insertToc() {
     const ed = this.edRef.current, EN = this.EN; if (!EN) return;
     const old = ed.querySelector('[data-toc]'), levels = old ? old.getAttribute('data-levels') || '3' : '3', title = old ? old.getAttribute('data-title') || '' : $t('目录');
-    const html = EN.tocHtml({ path: old && old.getAttribute('data-path'), levels, title, entries: EN.editorHeadings(ed, levels) });
+    const html = EN.tocHtml({ path: old && old.getAttribute('data-path'), levels, title, entries: EN.editorHeadings(ed, levels), style: old ? old.getAttribute('data-toc-style') : this.state.tocStyle });
     if (!old) return this.insertHTML(html + '<p><br></p>');
     const box = document.createElement('div'); box.innerHTML = html; const nav = box.firstChild;
     if (old.getAttribute('data-path')) nav.setAttribute('data-refresh', '1');
     old.replaceWith(nav); this.change({ html: ed.innerHTML }); this.props.toast && this.props.toast($t('目录已更新'));
   }
+  /** 目录样式: how the contents draw their entries — dotted leaders to the page numbers (经典), no leaders (简洁), titles only (无页码);
+   *  kept on the contents as data-toc-style, which the save writes into its field. Without contents it is the style the next gets. */
+  setTocStyle(key) {
+    this.setState({ tocStyle: key });
+    const ed = this.edRef.current, EN = this.EN, old = ed && ed.querySelector('[data-toc]'); if (!old || !EN) return;
+    const levels = old.getAttribute('data-levels') || '3', box = document.createElement('div');
+    box.innerHTML = EN.tocHtml({ path: old.getAttribute('data-path'), levels, title: old.getAttribute('data-title') || '', entries: EN.editorHeadings(ed, levels), style: key });
+    old.replaceWith(box.firstChild); this.change({ html: ed.innerHTML });
+  }
+  /** 脚注和尾注 › 编号: how both kinds of notes count (the file's footnotePr and endnotePr); the marks count again in it now. */
+  setNoteFormat(key) { const ed = this.edRef.current; if (!ed || !this.EN) return; this.EN.numberNotes(ed, key); this.change({ noteFormat: key, html: ed.innerHTML }); }
   paint() {
     const f = this.state.painter; if (!f) return; this.setState({ painter: null });
     const s = window.getSelection(); if (!s.rangeCount || s.getRangeAt(0).collapsed) return;
@@ -1445,10 +1476,10 @@ class Component extends DCLogic {
   /** The page the caret is on (0 when it is not in the text). */
   caretPage() {
     const ed = this.edRef.current, r = this.range; if (!ed || !r || !ed.contains(r.startContainer) || !this.paged) return 0;
-    const pg = this.page, [pw, ph] = PAGES[pg.size], H = pg.orient === 'landscape' ? pw : ph;
+    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph;
     return Math.max(0, Math.min(this.state.info.pages - 1, Math.floor((r.getBoundingClientRect().top - ed.getBoundingClientRect().top) / this.state.zoom / (H + GAP))));
   }
-  openPop(id, e) { const r = e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id ? null : { id, x: r.left, y: r.bottom + 4 }, gridHover: null }); }
+  openPop(id, e) { const r = e.currentTarget.getBoundingClientRect(), up = r.bottom + 280 > window.innerHeight && r.top > window.innerHeight - r.bottom; this.setState({ pop: this.state.pop && this.state.pop.id === id ? null : { id, x: Math.round(r.left), y: Math.round(up ? r.top - 4 : r.bottom + 4), up, w: Math.round(r.width) }, gridHover: null }); }
   prompt(title, fields, ok) { this.setState({ dlg: { title: $t(title), fields: fields.map(f => Object.assign({ value: '' }, f, { label: $t(f.label), ph: f.ph ? $t(f.ph) : f.ph })), ok } }); }
   onKey = e => {
     const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
@@ -1482,6 +1513,206 @@ class Component extends DCLogic {
     else if (html !== t.html && !t.timer) t.timer = setTimeout(() => { t.timer = 0; t.obj = null; this.forceUpdate(); }, Math.max(0, THUMB_MS - (Date.now() - t.at)));
     return t.obj;
   }
+  // ----- the format panel (FormatPanel.dc.html, panel.js): the design's 定稿 boards, each control running the command the pure-mode
+  // toolbar runs; its menus are the toolbar's (this.menus, openPop) -----
+  /** The panel's tabs and the current tab's groups; c carries what vals() worked out (the tab, the caret's format, the page, …). */
+  panelVals(c) {
+    const FP = this.FP; if (!FP || !c.formatOpen) return { tabs: [], groups: [] };
+    const k = FP.kit(this), tab = c.tab;
+    const tabs = FP.tabs(c.tabsDef.map(([key, l]) => [key, key === 'shape' ? '形状' : l, key === 'table' || key === 'image' || key === 'shape']), tab, key => this.setState({ tab: key, pop: null, bubble: false }));
+    const make = { home: this.panelHome, insert: this.panelInsert, layout: this.panelLayout, refs: this.panelRefs, review: this.panelReview, view: this.panelView, table: this.panelTable, image: this.panelImage, shape: this.panelShape }[tab];
+    return { tabs, groups: make ? make.call(this, k, c) : [] };
+  }
+  panelHome(k, c) {
+    const { G, R, wrap, sel, swatch, seg, num, chk, lab, sp, size, btn } = k, { st, f, I } = c, pat = f.pat || {}, gal = this.gallery(), ps = f.ps || 'Normal';
+    const chip = (id, label, css) => { const s = gal.find(x => x.id === id); return s && { t: 'chip', label: $t(label), on: ps === id, lcss: css, title: s.label, onClick: () => this.applyStyle(s) }; };
+    const fam = f.font || 'Noto Serif SC', font = FONTS.find(x => x[0] === fam);
+    const face = [['常规', false, false], ['倾斜', false, true], ['加粗', true, false], ['加粗 倾斜', true, true]];
+    const faceNow = face.find(([, b, i]) => !!f.b === b && !!f.i === i);
+    const setFace = (b, i) => { if (!!f.b !== b) this.exec('bold'); if (!!f.i !== i) this.exec('italic'); };
+    const ind = pat.indentfirst || '', indLabel = !ind ? $t('首行不缩进') : ind === '2ch' ? $t('首行缩进 2 字符') : ind === '-2ch' ? $t('悬挂缩进 2 字符') : ind.startsWith('-') ? $t('悬挂缩进 {n}', { n: ind.slice(1) }) : $t('首行缩进 {n}', { n: ind });
+    const lh = pat.linespacing || '', lhLabel = !lh ? $t('默认') : /^[\d.]+$/.test(lh) ? $t('{n} 倍', { n: lh }) : lh.startsWith('min ') ? $t('最小值 {v}', { v: lh.slice(4) }) : $t('固定值 {v}', { v: lh });
+    const bd = pat.border || '', bdLabel = !bd || bd === 'none' ? $t('无边框') : bd === 'box' ? $t('外侧框线') : bd.split(' ').length > 1 ? $t('多条框线') : $t({ top: '上框线', bottom: '下框线', left: '左框线', right: '右框线' }[bd] || '边框');
+    const lk = f.lk, listLabel = lk === 'outline' ? '1. 1.1 1.1.1' : lk === 'chinese' ? '一、（一）1.' : lk === 'bullet' ? $t('• 项目符号') : '1. 2. 3.'; // i18n-ok — the galleries' own markers
+    const flow = (label, key, dflt) => chk(label, (pat[key.toLowerCase()] || dflt) === 'true', v => this.para(key, v ? 'true' : 'false'));
+    const color = rgbHex(f.color) || '#1D1D1F';
+    return [
+      G('样式', R(sel('sty', this.styleLabel(ps), null, { title: '样式', lcss: "font-family:'Noto Serif SC',serif;font-size:13.5px" })),
+        wrap(chip('Normal', '正文', ''), chip('Heading1', '标题 1', 'font-weight:700'), chip('Heading2', '标题 2', 'font-weight:700'), chip('Quote', '引用', 'font-style:italic'))),
+      G('字体', R(sel('font', font ? $t(font[1]) : fam, null, { title: '字体', lcss: `font-family:'${fam}'` })),
+        R(size(f.size || 11, () => this.bump(-1), () => this.bump(1), 'fsize', SIZES.map(s => I(String(s), () => this.setFontSize(s), { on: f.size === s }))),
+          sel('face', $t(faceNow[0]), face.map(([l, b, i]) => I(l, () => setFace(b, i), { on: faceNow[0] === l })), { w: 88, title: '字形' })),
+        R(seg([{ rich: 'B', css: 'font-size:14px;font-weight:700', title: '加粗', tip: '加粗 Ctrl+B', on: f.b, onClick: () => this.exec('bold') },
+          { rich: 'I', css: 'font-family:Georgia,serif;font-size:15px;font-style:italic', title: '斜体', tip: '斜体 Ctrl+I', on: f.i, onClick: () => this.exec('italic') },
+          { rich: 'U', css: 'font-size:14px;text-decoration:underline', title: '下划线', tip: '下划线 Ctrl+U', on: f.u, onClick: () => this.exec('underline') },
+          { rich: 'S', css: 'font-size:14px;text-decoration:line-through', title: '删除线', on: f.s, onClick: () => this.exec('strikeThrough') }]),
+        seg([{ rich: 'x<sup style="font-size:8.5px;font-style:normal">2</sup>', css: 'font-family:Georgia,serif;font-size:14px;font-style:italic', title: '上标', on: f.sup, onClick: () => this.exec('superscript') },
+          { rich: 'x<sub style="font-size:8.5px;font-style:normal">2</sub>', css: 'font-family:Georgia,serif;font-size:14px;font-style:italic', title: '下标', on: f.sub, onClick: () => this.exec('subscript') }], { w: 72 })),
+        R(sel('csp', $t('字符间距'), null), sel('fx', $t('文字效果'), null), sel('case', 'aA', null, { w: 58, title: '更改大小写' }))),
+      G('颜色', R(swatch('文字颜色', color, c2 => { this.setState({ lastColor: c2 }); this.exec('foreColor', c2); }, { value: color }),
+        swatch('高亮', st.lastHl, null, { id: 'hl', title: '高亮' }))),
+      G('对齐与缩进', R(seg([['left', 'alignLeft', '左对齐'], ['center', 'alignCenter', '居中'], ['right', 'alignRight', '右对齐'], ['justify', 'justify', '两端对齐'], ['distribute', 'distribute', '分散对齐']]
+          .map(([a, icon, title]) => ({ icon, title, on: f.align === a, onClick: () => this.align(a) })))),
+        R(seg([{ icon: 'outdent', title: '减少缩进', tip: '减少缩进 Shift+Tab', onClick: () => this.exec('outdent') }, { icon: 'indent', title: '增加缩进', tip: '增加缩进 Tab', onClick: () => this.exec('indent') }], { w: 72 }),
+          sel('indfirst', indLabel, [['', '首行不缩进'], ['2ch', '首行缩进 2 字符'], ['-2ch', '悬挂缩进 2 字符']].map(([v, l]) => I(l, () => this.para('indentFirst', v), { on: ind === v })).concat([I('段落…', () => this.paraDlg())]), { title: '首行缩进' }))),
+      G('间距', R(lab('行距'), sp(), sel('lh', lhLabel, null, { w: 120, title: '行距' })),
+        R(lab('段前'), num(spaceText(pat.spacebefore), d => this.para('spaceBefore', spaceStep(pat.spacebefore, d)), t => { const v = spaceParse(t); if (v != null) this.para('spaceBefore', v); }, { title: '段前' }), sp(),
+          lab('段后'), num(spaceText(pat.spaceafter), d => this.para('spaceAfter', spaceStep(pat.spaceafter, d)), t => { const v = spaceParse(t); if (v != null) this.para('spaceAfter', v); }, { title: '段后' }))),
+      G('列表', R(seg([{ icon: 'bullets', title: '项目符号', on: f.ul, onClick: () => this.exec('insertUnorderedList') },
+          { icon: 'numbers', title: '编号', on: f.ol && lk !== 'outline', onClick: () => f.ol && lk !== 'outline' ? this.exec('insertOrderedList') : this.setListKind(lk === 'chinese' ? 'chinese' : 'number') },
+          { icon: 'multilevel', title: '多级列表', on: lk === 'outline', onClick: () => lk === 'outline' ? this.exec('insertOrderedList') : this.setListKind('outline') }], { w: 108 }),
+        sel('ol', listLabel, null, { title: '编号样式' }))),
+      G('边框与底纹', R(sel('pbd', bdLabel, null, { title: '段落边框' }),
+        swatch('底纹', pat.fill ? '#' + pat.fill : '#FFFFFF', c2 => this.para('fill', c2.slice(1).toUpperCase()), { w: 104, title: '段落底纹' }))), // theme: keep (the shading it applies)
+      G('换行和分页', R(flow('段前分页', 'pageBreakBefore'), sp(), flow('与下段同页', 'keepNext')),
+        R(flow('段中不分页', 'keepLines'), sp(), chk('孤行控制', pat.widowcontrol ? pat.widowcontrol !== 'false' : !f.widowOff, v => this.para('widowControl', v === !f.widowOff ? '' : v ? 'true' : 'false'), { title: '避免段落的第一行或最后一行单独出现在页面顶端或底端' }))),
+      G('工具', R(btn('格式刷', 'painter', () => this.setState({ painter: st.painter ? null : { b: f.b, i: f.i, u: f.u, s: f.s, color: f.color, font: f.font, size: f.size } }), { on: !!st.painter, title: '复制格式后选择目标文字' }),
+        btn('清除格式', 'clear', () => this.exec('removeFormat'))),
+        R(btn('查找替换', 'search', () => this.openFind(), { title: '查找替换 Ctrl+F' }), btn('撤销', 'undo', () => this.exec('undo'), { title: '撤销 Ctrl+Z' })))
+    ];
+  }
+  panelInsert(k, c) {
+    const { G, grid, card, menuCard } = k;
+    return [
+      G('常用', grid(3, menuCard('table', '表格', 'table', null, { title: '插入表格：选择行列' }), card('图片', 'picture', () => { this.restore(); this.imgRef.current.click(); }),
+        menuCard('shapes', '形状', 'shape', null), card('图表', 'chart', () => this.insertChart(), { title: '插入柱状图图片' }),
+        card('文本框', 'textbox', () => this.insertShape('textbox'), { title: '插入文本框，可拖到页面任意位置' }), card('链接', 'link', () => this.linkDlg(), { title: '链接 Ctrl+K' }))),
+      G('页面', grid(3, card('页眉', 'header', () => this.enterHF('header', this.caretPage()), { title: '编辑页眉（也可双击页面顶部）' }),
+        card('页脚', 'footer', () => this.enterHF('footer', this.caretPage()), { title: '编辑页脚（也可双击页面底部）' }), menuCard('pagenum', '页码', 'pageNumber', null, { title: '在页脚插入页码' }),
+        card('分页符', 'pageBreak', () => this.insertHTML('<hr data-pb="1"><p><br></p>'), { title: '分页符 Ctrl+Enter' }), menuCard('cover', '封面', 'cover', null, { title: '在文档开头插入一页封面' }),
+        card('分隔线', 'rule', () => this.insertHTML('<hr><p><br></p>')))),
+      G('符号与批注', grid(3, card('公式', 'equation', () => this.eqDialog(), { title: '用 LaTeX 输入公式，保存为 Word 公式' }), menuCard('sym', '符号', 'symbol', null),
+        card('日期', 'date', () => this.insertDate()), menuCard('dropcap', '首字下沉', 'dropCap', null, { title: '段落的第一个字放大到三行高' }),
+        menuCard('bm', '书签', 'bookmark', null, { title: '给所在段落加上书签，交叉引用和链接可以跳到这里' }), card('批注', 'comment', () => this.addComment())))
+    ];
+  }
+  panelLayout(k, c) {
+    const { G, R, grid, sel, seg, num, chk, lab, sp, swatch } = k, { pg, d, I, HD } = c;
+    const sec = this.sectionOf(), sp0 = sec ? this.secPage(sec) : pg, setSec = patch => sec ? this.setSecPage(sec, patch) : this.change({ page: Object.assign({}, pg, patch) });
+    const own = sec ? { title: '应用于本节' } : {}, land = sp0.orient === 'landscape';
+    const paper = (size, orient) => { const [w, h] = PAPER_CM[size] || PAPER_CM.A4, [a, b] = orient === 'landscape' ? [h, w] : [w, h]; return $t('{size} · {w} × {h} 厘米', { size, w: a, h: b }); };
+    const mg = marginsCm(sp0.margin), preset = MARGIN_PRESETS.find(([key]) => key === sp0.margin);
+    const setMg = patch => setSec({ margin: marginText(Object.assign({}, mg, patch)) });
+    const side = (key, l) => num(this.FP.cmLabel(mg[key]), dd => setMg({ [key]: Math.max(0, this.FP.snap(mg[key] + dd * 0.1, 0.01)) }), t => { const v = this.FP.parseCm(t); if (v >= 0 && v < 30) setMg({ [key]: v }); }, { lab: l, labW: 14, w: 80, title: $t('{side}页边距', { side: $t(l) }) });
+    const brk = sec && sec.getAttribute('data-w-sectionbreak'), brkLabel = brk ? $t('分节符（{kind}）', { kind: $t((SECTION_BREAKS.find(x => x[0] === brk) || [, '下一页'])[1]) }) : $t('分页符');
+    return [
+      G('纸张', R(sel('size', paper(sp0.size, sp0.orient), Object.keys(PAPER_CM).map(s => I(paper(s, 'portrait'), () => setSec({ size: s }), { on: sp0.size === s })), own)),
+        R(lab('方向'), sp(), seg([{ label: '纵向', on: !land, onClick: () => setSec({ orient: 'portrait' }) }, { label: '横向', on: land, onClick: () => setSec({ orient: 'landscape' }) }], { w: 140 }))),
+      G('页边距', R(sel('margin', preset ? $t(preset[1]) : $t('自定义'), MARGIN_PRESETS.map(([key, l, hint]) => I(l, () => setSec({ margin: key }), { on: sp0.margin === key, hint })), own),
+          sel('margin-more', $t('自定义…'), [I('上下左右相同…', () => this.prompt('页边距', [{ key: 'v', label: '上下左右（厘米）', value: String(mg.top), first: true }], v => { const x = this.FP.parseCm(v.v); if (x >= 0 && x < 30) setMg({ top: x, bottom: x, left: x, right: x }); })),
+            I('上下对称、左右对称…', () => this.prompt('页边距', [{ key: 'tb', label: '上下（厘米）', value: String(mg.top), first: true }, { key: 'lr', label: '左右（厘米）', value: String(mg.left) }], v => { const a = this.FP.parseCm(v.tb), b = this.FP.parseCm(v.lr); if (a >= 0 && b >= 0) setMg({ top: a, bottom: a, left: b, right: b }); }))], { w: 92, title: '自定义页边距' })),
+        grid(2, side('top', '上'), side('bottom', '下'), side('left', '左'), side('right', '右'))),
+      G('分栏与分隔', R(seg([1, 2, 3].map(n => ({ label: ['一栏', '两栏', '三栏'][n - 1], on: +sp0.cols === n, onClick: () => setSec({ cols: n }) })))),
+        R(lab('分隔符'), sp(), sel('brk', brkLabel, null, { w: 132, title: '分页符与分节符：每节可以有自己的纸张、方向、页边距和分栏' }))),
+      G('页面', R(swatch('页面颜色', pg.color || '#FFFFFF', c2 => this.change({ page: Object.assign({}, pg, { color: c2 }) }), { value: pg.color || '#FFFFFF' }), // theme: keep (the paper colour it applies)
+          sel('wm', $t('水印：{w}', { w: pg.wm ? pg.wm : $t('无') }), null, { w: 112, title: '水印' })),
+        R(chk('行号', !!d.lineNumbers, v => this.change({ lineNumbers: v }), { title: '在页边显示行号（Word 中显示）' }), sp(),
+          chk('自动断字', !!d.hyphenation, v => this.change({ hyphenation: v }), { title: '英文单词在行尾自动断字（Word 中生效）' })))
+    ];
+  }
+  panelRefs(k, c) {
+    const { G, R, btn, menuBtn, sel, lab, sp } = k, { st, d, I, HD, notes } = c, EN = this.EN;
+    const targets = this.refTargets(), toc = this.edRef.current && this.edRef.current.querySelector('[data-toc]');
+    const kinds = [['heading', '标题'], ['caption', '题注'], ['bookmark', '书签']], kind = st.xrefKind || 'heading', capLabel = st.capLabel || CAPTIONS[0];
+    const list = targets.filter(t => t.kind === kind), marks = targets.filter(t => t.kind === 'bookmark' && !t.el.getAttribute('data-w-bookmark').startsWith('_'));
+    const tocStyle = toc ? toc.getAttribute('data-toc-style') || 'classic' : st.tocStyle || 'classic';
+    const nfmt = d.noteFormat || 'decimal';
+    return [
+      G('目录', R(btn('插入目录', 'toc', () => this.insertToc(), { title: '根据标题生成目录' }), btn('更新目录', 'refresh', () => this.insertToc(), { dis: !toc, title: '按现在的标题更新目录' })),
+        R(lab('样式'), sp(), sel('tocsty', $t((TOC_STYLES.find(x => x[0] === tocStyle) || TOC_STYLES[0])[1]), TOC_STYLES.map(([key, l]) => I(l, () => this.setTocStyle(key), { on: tocStyle === key })), { w: 132, title: '目录样式' }))),
+      G('脚注和尾注', R(btn('插入脚注', 'note', () => this.insertNote('footnote'), { title: '在光标处插入脚注，注释显示在页面底端' }), btn('插入尾注', 'note', () => this.insertNote('endnote'), { title: '在光标处插入尾注，注释显示在文档末尾' })),
+        R(lab('编号'), sp(), sel('nfmt', (NOTE_FORMATS.find(x => x[0] === nfmt) || NOTE_FORMATS[0])[1], NOTE_FORMATS.map(([key, l]) => I(l, () => this.setNoteFormat(key), { on: nfmt === key })), { w: 132, title: '脚注和尾注的编号样式' })),
+        notes.map(n => ({ items: [{ t: 'cmt', av: n.mark, avBg: 'var(--fp-accent)', head: n.label, text: n.text, on: st.activeNote === n.id, replies: [], resolveLabel: '', onResolve: e => e.stopPropagation(), onDelete: n.onDelete, onText: n.onText, onClick: n.onFocus, quote: '' }] }))),
+      G('题注', R(btn('插入题注', 'picture', () => this.insertCaption(capLabel), { title: '图、表、公式的题注，编号自动更新' }),
+        sel('caplab', $t('标签：{l}', { l: capLabel }), CAPTIONS.map(l => I(l, () => this.setState({ capLabel: l }), { on: capLabel === l })), { w: 120, title: '题注标签' }))),
+      G('交叉引用', R(sel('xkind', $t('引用：{k}', { k: $t(kinds.find(x => x[0] === kind)[1]) }), kinds.map(([key, l]) => I(l, () => this.setState({ xrefKind: key }), { on: kind === key })), { title: '引用的类型' }),
+        menuBtn('xref-go', '插入', 'link', list.length ? list.map(t => I(t.label, () => this.insertRef(t))) : [I('没有可引用的项目', () => { })], { title: '引用标题、题注或书签；在 Word 中按住 Ctrl 点击可跳转' }))),
+      G('书签', R(btn('添加书签', 'bookmark', () => this.addBookmark(), { title: '给所在段落加上书签，交叉引用和链接可以跳到这里' }),
+        menuBtn('bm-go', '跳转到…', 'down', (marks.length ? marks.map(t => I(t.label, () => this.focusEl(t.el), { hint: $t('定位') })) : [I('还没有书签', () => { })])
+          .concat([HD(''), I('删除所在段落的书签', () => { const b = this.caretBlock(); if (b && b.hasAttribute('data-w-bookmark')) { b.removeAttribute('data-w-bookmark'); this.after(); } })]))))
+    ];
+  }
+  panelReview(k, c) {
+    const { G, R, grid, btn, link, lab, sp, sel, sw, stat, input, empty } = k, { st, d, info, comments, moveComment } = c;
+    const n = x => Number(x || 0).toLocaleString($lang() === 'en' ? 'en-US' : 'zh-CN');
+    return [
+      G('字数统计', grid(4, stat(n(info.count), '字数'), stat(n(info.chars), '字符'), stat(n(info.paras), '段落'), stat(n(info.pages), '页'))),
+      G('批注', comments.map(cm => ({ items: [{ t: 'cmt', av: cm.av, avBg: cm.avBg, head: cm.head, text: cm.text, quote: cm.quote, on: st.activeCid === cm.id, done: cm.resolved,
+          resolveLabel: cm.resolveLabel, resolveTitle: cm.resolveTitle, onResolve: cm.onResolve, onDelete: cm.onDelete, onText: cm.onText, onClick: cm.onFocus,
+          replies: cm.replies.map(r => ({ av: r.av, avBg: r.avBg, head: r.head, text: r.text, onText: r.onText, onDelete: r.onDelete })), draft: cm.draft, onDraft: cm.onDraft, onReplyKey: cm.onReplyKey }] })),
+        !comments.length && R(empty($t('文档里还没有批注。选中文字后点「新建」添加。'))),
+        R(btn('新建', 'comment', () => this.addComment(), { title: '新建批注' }), btn('上一条', 'up', () => moveComment(-1), { dis: !comments.length }), btn('下一条', 'down', () => moveComment(1), { dis: !comments.length })),
+        R(link('删除所有批注', () => (d.comments || []).forEach(cm => this.delComment(cm.id)), { dis: !(d.comments || []).length }))),
+      G('修订', R(lab('记录修改'), sp(), sw(!!d.track, v => this.change({ track: v }), '开启后，插入与删除会被标记')),
+        R(lab('显示'), sp(), sel('markup', $t({ all: '所有标记', none: '无标记', original: '原始版本' }[st.markup || 'all']), null, { w: 132, title: '所有标记：修订和批注都显示；无标记：显示修改后的样子；原始版本：显示修改前的样子' })),
+        R(btn('全部接受', 'check', () => this.resolveTrack(true), { title: '接受所有修订' }), btn('全部拒绝', 'cross', () => this.resolveTrack(false), { title: '拒绝所有修订' }))),
+      G('查找与替换', R(input('查找', st.fq, e => this.setState({ fq: e.target.value, fcount: null }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } }, this.panelFindRef)),
+        R(input('替换为', st.fr, e => this.setState({ fr: e.target.value }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.replaceOne(); } })),
+        R(btn('下一个', 'search', () => this.findNext(), { title: '查找下一个' }), btn('替换', null, () => this.replaceOne(), { title: '替换这一处' }), btn('全部替换', null, () => this.replaceAll())),
+        st.fcount != null && R(empty(st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'))))
+    ];
+  }
+  panelView(k, c) {
+    const { G, R, seg, size, btn, chk, lab, sp } = k, { st, pg, I } = c, web = st.view === 'web', sv = st.view === 'side';
+    const zoomItems = [0.5, 0.75, 1, 1.25, 1.5, 2].map(z => I(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 })).concat([I('页宽', () => this.fitWidth()), I('整页', () => this.fitPage()), I('多页', () => this.sideBySide())]);
+    return [
+      G('视图', R(seg([{ label: '页面', on: !web, title: '分页显示，带页眉页脚', onClick: () => this.setState({ view: sv ? 'side' : 'page' }) }, { label: '网页', on: web, title: '连续阅读，不分页', onClick: () => this.setState({ view: 'web' }) },
+        { label: '阅读', title: '沉浸阅读 Ctrl+.', onClick: () => this.props.onPlay && this.props.onPlay() }]))),
+      G('缩放', R(size(Math.round(st.zoom * 100) + '%', () => this.setZoom(this.state.zoom - 0.1), () => this.setZoom(this.state.zoom + 0.1), 'zoom-p', zoomItems, { w: 124, minW: 44, title: '缩放', decTitle: '缩小 Ctrl+−', incTitle: '放大 Ctrl+＋' }),
+        btn('适应宽度', 'fit', () => this.fitWidth()))),
+      G('显示', R(chk('缩略图', this.props.showThumbs !== false, () => this.props.onToggleThumbs && this.props.onToggleThumbs()), sp(), chk('标尺', st.showRuler && !web, v => this.setState({ showRuler: v }), { dis: web || sv })),
+        R(chk('页眉页脚', pg.hf, v => this.change({ page: Object.assign({}, pg, { hf: v }) })), sp(), chk('网格线', !!st.showGrid, v => this.setState({ showGrid: v }), { dis: web }))),
+      G('翻页', R(lab('页面排列'), sp(), seg([{ label: '上下', on: !sv, onClick: () => this.setState({ view: 'page' }), title: '页面上下翻' }, { label: '左右', on: sv, onClick: () => this.sideBySide(), title: '页面并排左右翻' }], { w: 120, dis: web })))
+    ];
+  }
+  panelTable(k, c) {
+    const { G, R, grid, btn, menuBtn, seg, swatch, sel, num, chk, lab, sp, link, tsty } = k, { f, I } = c, t = f.tbl || {}, cell = f.cell || {}, row = f.row || {};
+    const styles = TABLE_STYLES.map(([key, label, look]) => tsty(look, key === 'none' ? t.borders === 'none' : (t.style || 'TableGrid') === key && t.borders !== 'none', () => this.tbl('style', key), label));
+    const ha = cell.align || 'left', va = cell.valign || 'top', rh = row.height ? parseFloat(row.height) : 0;
+    const setH = cm => this.tbl('height', cm > 0 ? +cm.toFixed(2) + 'cm' : '');
+    return [
+      G('表格样式', grid(3, styles), R(chk('标题行', t.header !== 'false', v => this.tbl('look', v ? 'true' : 'false'), { title: '第一行使用标题行的格式' }), sp(),
+        chk('标题行重复', row.header === 'true', () => this.tbl('header'), { title: '所在行在每页顶端重复' }))),
+      G('行和列', grid(2, btn('上方插入行', 'rowAbove', () => this.tbl('rowAbove')), btn('下方插入行', 'rowBelow', () => this.tbl('rowBelow')), btn('左侧插入列', 'colLeft', () => this.tbl('colLeft')),
+        btn('右侧插入列', 'colRight', () => this.tbl('colRight')), btn('删除行', 'trash', () => this.tbl('delRow')), btn('删除列', 'trash', () => this.tbl('delCol')))),
+      G('单元格', R(btn('合并右侧', 'merge', () => this.tbl('merge'), { title: '合并右侧单元格' }), btn('合并下方', 'merge', () => this.tbl('mergeDown'), { title: '合并下方单元格' }), btn('拆分', 'split', () => this.tbl('split'), { title: '把合并的单元格拆回一格一格' })),
+        R(seg([['left', 'alignLeft', '左'], ['center', 'alignCenter', '中'], ['right', 'alignRight', '右']].map(([a, icon, title]) => ({ icon, title: $t('{side}对齐', { side: $t(title) }), on: ha === a, onClick: () => this.tbl('calign', [a, va]) }))),
+          seg([['top', 'vTop', '顶端'], ['middle', 'vMiddle', '居中'], ['bottom', 'vBottom', '底端']].map(([v, icon, title]) => ({ icon, title: $t('{side}对齐', { side: $t(title) }), on: va === v, onClick: () => this.tbl('calign', [ha, v]) })))),
+        R(swatch('底纹', cell.fill ? '#' + cell.fill : '#FFFFFF', c2 => this.tbl('shade', c2), { value: cell.fill ? '#' + cell.fill : '#F5F5F7', title: '单元格底纹' }), // theme: keep (the shading it applies)
+          sel('cbd', $t('边框'), null, { w: 100, title: '单元格边框' })),
+        R(lab('行高'), sp(), num(rh ? this.FP.cmLabel(rh) : $t('自动'), dd => setH(Math.max(0, (rh || 0.8) + dd * 0.1)), txt => { const v = this.FP.parseCm(txt); if (!txt.trim() || txt.trim() === $t('自动')) setH(0); else if (v >= 0 && v < 30) setH(v); }, { w: 80, title: '行高' }))),
+      G('更多', R(menuBtn('tsort', '排序', 'sort', null, { title: '按所在列排序，数字按大小' }), btn('转文本', 'toText', () => this.tableToText(), { title: '转换为文本' }), btn('属性', 'gear', () => this.tableDlg(), { title: '表格属性…' })),
+        R(link('删除表格', () => this.tbl('delTable'))))
+    ];
+  }
+  panelImage(k, c) {
+    const img = this.selImg, tools = this.picTools(); if (!img || !tools || !this.P) return [];
+    const { G, R, sel, link } = k, { pg, I } = c, wrap = img.getAttribute('data-w-wrap') || 'inline';
+    const [pa, pb] = PAGES[pg.size] || PAGES.A4, mg = marginsPx(pg.margin), textW = (pg.orient === 'landscape' ? pb : pa) - mg.left - mg.right;
+    const size = x => { const w = Math.round(textW * x), fw = +img.getAttribute('data-fw') || img.naturalWidth || 1, fh = +img.getAttribute('data-fh') || img.naturalHeight || 1; tools.set({ width: w + 'px', height: Math.round(w * fh / fw) + 'px' }); };
+    const box = () => img && img.isConnected ? frameOf(img) : null;
+    return this.P.picturePanel(k, I, tools, this.picLook(img), this.state.picBusy).concat([
+      G('大小与位置', R(sel('pic-size-p', $t('大小'), [['25%', 0.25], ['50%', 0.5], ['75%', 0.75], ['100%', 1]].map(([l, x]) => I($t('版心宽度的 {pct}', { pct: l }), () => size(x))), { title: '大小' }),
+        sel('pic-wrap-p', $t({ inline: '嵌入型', square: '四周型', front: '浮于文字上方', behind: '衬于文字下方' }[wrap] || '环绕'), [['inline', '嵌入型'], ['square', '四周型'], ['front', '浮于文字上方'], ['behind', '衬于文字下方']].map(([m, l]) => I(l, () => this.setWrap(img, m), { on: wrap === m })), { title: '嵌入行内，或浮在页面上任意拖动' })),
+        R(link('删除图片', () => { const b = box(); this.pushPicUndo(); this.selectImg(null); if (b) { b.remove(); this.picDone(); } })))
+    ]);
+  }
+  panelShape(k, c) {
+    const el = this.selShape; if (!el || !this.EN) return [];
+    const { G, R, swatch, chk, sel, num, lab, sp, link } = k, { I } = c, a = this.shapeAttrs(el), set = (key, v) => this.setShape(el, key, v);
+    const cm = v => parseFloat(v) || 0, dim = (key, l) => num(this.FP.cmLabel(cm(a[key]) || (key === 'width' ? 4 : 2)), dd => { el.setAttribute('data-w-' + key, +Math.max(0.2, (cm(a[key]) || (key === 'width' ? 4 : 2)) + dd * 0.1).toFixed(2) + 'cm'); this.shapeDone(el); },
+      t => { const v = this.FP.parseCm(t); if (v > 0 && v < 60) { el.setAttribute('data-w-' + key, +v.toFixed(2) + 'cm'); this.shapeDone(el); } }, { lab: l, labW: 14, w: 80, title: l });
+    return [
+      G('填充与轮廓', R(swatch('填充', a.fill && a.fill !== 'none' ? '#' + a.fill : '#FFFFFF', c2 => set('fill', c2.slice(1).toUpperCase()), { title: '形状填充' }), chk('无填充', a.fill === 'none', v => set('fill', v ? 'none' : 'FFFFFF'))), // theme: keep (the colour it applies)
+        R(swatch('轮廓', a.line && a.line !== 'none' ? '#' + a.line : '#000000', c2 => set('line', c2.slice(1).toUpperCase()), { title: '形状轮廓' }), chk('无轮廓', a.line === 'none', v => set('line', v ? 'none' : '000000')))), // theme: keep (the colour it applies)
+      G('形状与排列', R(sel('sh-geom', $t((SHAPE_KINDS.find(([g]) => g === (a.geometry || 'rect')) || SHAPE_KINDS[0])[1]), null, { title: '形状' }),
+        sel('sh-wrap', $t({ square: '四周型', topBottom: '上下型', front: '浮于文字上方', behind: '衬于文字下方' }[a.wrap || 'square']), null, { title: '环绕' }))),
+      G('大小', k.grid(2, dim('width', '宽'), dim('height', '高'))),
+      G('', R(link('删除形状', () => { this.selectShape(null); el.remove(); this.after(); })))
+    ];
+  }
+  openFind() { this.setState({ tab: 'review', pop: null }, () => { const el = this.panelFindRef.current; if (el) { el.focus(); el.select(); } }); if (!this.props.formatOpen) { this.focusFind = true; this.setState({ showFind: true }); } }
+  insertDate() { this.restore(); document.execCommand('insertText', false, new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })); this.after(); }
   vals() {
     const st = this.state, f = st.fmt, pg = this.page, d = this.doc;
     const B = (label, onClick, o = {}) => { const l = $t(label); return { isBtn: true, label: l, onClick, title: o.title ? $t(o.title) : l, on: o.on ? '1' : '0', bg: o.on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit', color: o.dis ? 'var(--k63, #C7C7CC)' : 'var(--k7, #1D1D1F)' }; };
@@ -1490,10 +1721,15 @@ class Component extends DCLogic {
     const M = (id, label, items, title) => { this.menus[id] = items; const l = $t(label); return { isMenu: true, label: l, title: title ? $t(title) : l, bg: st.pop && st.pop.id === id ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
     const AL = (a, title) => ({ isAlign: true, label: $t(title), title: $t(title), on: f.align === a ? '1' : '0', bg: f.align === a ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', b1: '14px', b2: a === 'justify' || a === 'distribute' ? '14px' : '10px', b3: a === 'distribute' ? '10px' : '14px', b4: a === 'justify' || a === 'distribute' ? '14px' : '8px', onClick: () => this.align(a) });
     const SEP = { isSep: true };
-    const I = (label, onClick, o = {}) => ({ isItem: true, label: $t(label), onClick: () => { this.setState({ pop: null }); onClick(); }, font: o.font || 'inherit', css: o.css || '', hint: o.hint || '', bg: o.on ? 'var(--k12, #F2F2F7)' : 'transparent' });
+    const I = (label, onClick, o = {}) => ({ isItem: true, label: $t(label), onClick: () => { this.setState({ pop: null }); onClick(); }, font: o.font || 'inherit', css: o.css || '', hint: o.hint || '', onA: o.on ? '1' : '0', bg: o.on ? 'var(--k12, #F2F2F7)' : 'transparent' });
     const HD = label => ({ isHead: true, label });
     const presetPick = onPick => HF_PRESETS.map(tpl => I(hfFill(tpl, 1, st.info.pages), () => onPick(tpl)));
     this.menus = {};
+    // the style and size menus: the ribbon's, the panel's and the selection bar's
+    const styleItems = (g => [HD($t('段落样式')), ...g.filter(s => s.type !== 'character').map(s => I(s.label, () => this.applyStyle(s), { on: s.id === f.ps, css: this.EN ? this.EN.lookCss(Object.assign({}, s.look, { spaceBefore: '', spaceAfter: '', lineSpacing: '', indentFirst: '', align: '' })) : '' })),
+        HD($t('字符样式')), ...g.filter(s => s.type === 'character').map(s => I(s.label, () => this.applyStyle(s), { on: s.id === f.rs, css: this.EN ? this.EN.lookCss(s.look) : '' })), I('清除字符样式', () => this.charStyle('')),
+        HD(''), I('修改样式以匹配所选内容', () => this.updateStyle(), { hint: this.styleLabel(f.ps) }), I('新建样式…', () => this.newStyle())])(this.gallery());
+    this.menus.sty = styleItems; this.menus.fsize = SIZES.map(z => I(String(z), () => this.setFontSize(z), { on: f.size === z }));
     const setPage = patch => this.change({ page: Object.assign({}, pg, patch) });
     const tabsDef = [['home', '开始'], ['insert', '插入'], ['layout', '布局'], ['refs', '引用@@tab'], ['review', '审阅'], ['view', '视图']];
     if (f.inTable) tabsDef.push(['table', '表格']);
@@ -1516,9 +1752,7 @@ class Component extends DCLogic {
       M('csp', '字符间距', [['紧缩 1 磅', '-1pt'], ['标准', ''], ['加宽 1 磅', '1pt'], ['加宽 2 磅', '2pt'], ['加宽 3 磅', '3pt']].map(([l, v]) => I(l, () => this.inlineStyle({ 'letter-spacing': v })))),
       M('fx', '文字效果', [I('轮廓', () => this.inlineStyle({ '-webkit-text-stroke': '0.5px currentColor', '-webkit-text-fill-color': 'transparent', 'text-shadow': '' })), I('阴影', () => this.inlineStyle({ 'text-shadow': '1px 1px 0 #B3B3B3', '-webkit-text-stroke': '', '-webkit-text-fill-color': '' })), I('无', () => this.inlineStyle({ 'text-shadow': '', '-webkit-text-stroke': '', '-webkit-text-fill-color': '' }))]),
       M('case', 'Aa', [['sentence', '句首字母大写'], ['lower', '小写'], ['upper', '大写'], ['title', '每个单词首字母大写'], ['toggle', '切换大小写'], ['half', '半角'], ['full', '全角']].map(([k, l]) => I(l, () => this.caseChange(k))), '更改大小写'), SEP,
-      M('sty', this.styleLabel(f.ps), (g => [HD($t('段落样式')), ...g.filter(s => s.type !== 'character').map(s => I(s.label, () => this.applyStyle(s), { on: s.id === f.ps, css: this.EN ? this.EN.lookCss(Object.assign({}, s.look, { spaceBefore: '', spaceAfter: '', lineSpacing: '', indentFirst: '', align: '' })) : '' })),
-        HD($t('字符样式')), ...g.filter(s => s.type === 'character').map(s => I(s.label, () => this.applyStyle(s), { on: s.id === f.rs, css: this.EN ? this.EN.lookCss(s.look) : '' })), I('清除字符样式', () => this.charStyle('')),
-        HD(''), I('修改样式以匹配所选内容', () => this.updateStyle(), { hint: this.styleLabel(f.ps) }), I('新建样式…', () => this.newStyle())])(this.gallery()), '样式'), SEP,
+      M('sty', this.styleLabel(f.ps), styleItems, '样式'), SEP,
       AL('left', '左对齐'), AL('center', '居中'), AL('right', '右对齐'), AL('justify', '两端对齐'), AL('distribute', '分散对齐'), SEP,
       B('• 列表', () => this.exec('insertUnorderedList'), { on: f.ul }), B('1. 列表', () => this.exec('insertOrderedList'), { on: f.ol }),
       M('ol', '编号', [HD($t('编号库')), I('1. a. i.', () => this.setListKind('number'), { on: f.lk === 'number' }), I('1. 1.1 1.1.1', () => this.setListKind('outline'), { on: f.lk === 'outline' }), I('一、（一）1.', () => this.setListKind('chinese'), { on: f.lk === 'chinese' }), // i18n-ok — the galleries' own markers
@@ -1605,7 +1839,7 @@ class Component extends DCLogic {
       B('删除行', () => this.tbl('delRow')), B('删除列', () => this.tbl('delCol')), B('删除表格', () => this.tbl('delTable')), SEP,
       B('合并右侧单元格', () => this.tbl('merge')), B('合并下方单元格', () => this.tbl('mergeDown')), B('拆分单元格', () => this.tbl('split'), { title: '把合并的单元格拆回一格一格' }), SEP,
       C('底纹', '#F5F5F7', e => this.tbl('shade', e.target.value), '单元格底纹'), // theme: keep (the shading it applies; a var() would reset the picker to black)
-      M('tstyle', '表格样式', [['TableGrid', '网格'], ['PlainTable1', '简明表格（隔行底纹）'], ['GridTable4Accent1', '网格表 4（彩色标题行）'], ['ThreeLineTable', '三线表'], ['none', '无框线']].map(([k, l]) => I(l, () => this.tbl('style', k), { on: k === 'none' ? (f.tbl || {}).borders === 'none' : (f.tbl || {}).style === k && (f.tbl || {}).borders !== 'none' }))),
+      M('tstyle', '表格样式', TABLE_STYLES.map(([k, l]) => I(l, () => this.tbl('style', k), { on: k === 'none' ? (f.tbl || {}).borders === 'none' : (f.tbl || {}).style === k && (f.tbl || {}).borders !== 'none' }))),
       M('cbd', '单元格边框', [['top', '上框线'], ['bottom', '下框线'], ['left', '左框线'], ['right', '右框线'], ['all', '所有框线'], ['none', '无框线'], ['', '随表格']].map(([k, l]) => I(l, () => this.tbl('cborder', k), { on: k !== '' && k === (f.cell || {}).borders }))), SEP,
       M('calign', '对齐方式', [['left', 'top', '靠上左对齐'], ['center', 'top', '靠上居中'], ['right', 'top', '靠上右对齐'], ['left', 'middle', '中部左对齐'], ['center', 'middle', '中部居中'], ['right', 'middle', '中部右对齐'], ['left', 'bottom', '靠下左对齐'], ['center', 'bottom', '靠下居中'], ['right', 'bottom', '靠下右对齐']].map(([a, v, l]) => I(l, () => this.tbl('calign', [a, v]), { on: ((f.cell || {}).align || 'left') === a && ((f.cell || {}).valign || 'top') === v }))),
       M('rh', '行高', [['', '自动'], ['0.6cm', '0.6 cm'], ['0.8cm', '0.8 cm'], ['1cm', '1 cm'], ['1.5cm', '1.5 cm'], ['2cm', '2 cm']].map(([v, l]) => I(l, () => this.tbl('height', v), { on: ((f.row || {}).height || '') === v }))),
@@ -1617,7 +1851,7 @@ class Component extends DCLogic {
       const img = this.selImg, tools = this.picTools();
       const box = () => img && img.isConnected ? frameOf(img) : null;
       // a width of the text column, the height following the picture: one command, like every tool here
-      const [pa, pb] = PAGES[pg.size], textW = (pg.orient === 'landscape' ? pb : pa) - 2 * MARG[pg.margin][1];
+      const [pa, pb] = PAGES[pg.size] || PAGES.A4, textW = (pg.orient === 'landscape' ? pb : pa) - marginsPx(pg.margin).left - marginsPx(pg.margin).right;
       const size = f => { const w = Math.round(textW * f), fw = +img.getAttribute('data-fw') || img.naturalWidth || 1, fh = +img.getAttribute('data-fh') || img.naturalHeight || 1; tools.set({ width: w + 'px', height: Math.round(w * fh / fw) + 'px' }); };
       const wrap = img && (img.getAttribute('data-w-wrap') || 'inline');
       ribbon = tools ? this.P.pictureRibbon({ B, M, I, C, SEP }, tools, this.picLook(img), st.picBusy).concat([SEP,
@@ -1626,79 +1860,24 @@ class Component extends DCLogic {
         B('删除图片', () => { const b = box(); this.pushPicUndo(); this.selectImg(null); if (b) { b.remove(); this.picDone(); } })
       ]) : [];
     }
-    // Keep every existing ribbon command, while presenting the same actions in scrollable inspector groups.
-    const chunks = [[]];
-    for (const item of ribbon) { if (item.isSep) chunks.push([]); else chunks[chunks.length - 1].push(item); }
-    const names = {
-      home: ['工具', '格式', '字体', '文字格式与颜色', '样式', '对齐与缩进', '列表', '间距、边框与底纹', '查找'],
-      insert: ['常用', '形状与文本', '分隔', '页眉页脚', '符号与日期', '封面与书签', '目录与批注'],
-      layout: ['纸张与分栏', '页面', '段落', '段落设置'], refs: ['目录', '脚注与尾注', '题注与交叉引用'],
-      review: ['字数统计', '批注', '修订', '查找'], view: ['阅读方式', '显示', '缩放', '沉浸'],
-      table: ['插入行列', '删除', '单元格', '样式与边框', '对齐与行高', '标题行', '其它'],
-      image: ['图片', '大小与环绕', '删除'], shape: ['填充与轮廓', '形状与大小', '删除']
-    };
-    const panelGroups = chunks.filter(c => c.length).map((items, i) => ({ title: $t((names[tab] || [])[i] || '工具'), items }));
-    if (tab === 'home') {
-      const group = (title, items) => ({ title: $t(title), items });
-      const split = chunks[6].findIndex(it => it.title === $t('行距'));
-      const listItems = split < 0 ? chunks[6] : chunks[6].slice(0, split);
-      const spacingItems = split < 0 ? [] : chunks[6].slice(split);
-      const pat = f.pat || {};
-      spacingItems.push(
-        M('before-home', '段前', ['0pt', '6pt', '12pt', '18pt', '24pt'].map(v => I(v, () => this.para('spaceBefore', v), { on: pat.spacebefore === v }))),
-        M('after-home', '段后', ['0pt', '6pt', '8pt', '12pt', '18pt'].map(v => I(v, () => this.para('spaceAfter', v), { on: pat.spaceafter === v }))),
-        M('ind-home', '首行缩进', [['无', ''], ['2 字符', '2ch'], ['悬挂缩进 2 字符', '-2ch']].map(([l, v]) => I(l, () => this.para('indentFirst', v), { on: (pat.indentfirst || '') === v }))),
-        M('flow-home', '换行和分页', [['keepNext', '与下段同页'], ['keepLines', '段中不分页'], ['pageBreakBefore', '段前分页']].map(([k, l]) => I(l, () => this.para(k, pat[k.toLowerCase()] === 'true' ? 'false' : 'true'), { on: pat[k.toLowerCase()] === 'true' })))
-      );
-      panelGroups.splice(0, panelGroups.length,
-        group('样式', chunks[4]), group('字体', [chunks[2][0], { ...chunks[2][3], label: 'A−' }, chunks[2][1], { ...chunks[2][2], label: 'A+' }]), group('文字格式与颜色', chunks[3]),
-        group('对齐与缩进', chunks[5]), group('间距、边框与底纹', spacingItems), group('列表', listItems),
-        group('工具', chunks[1].concat(chunks[0], chunks[7])));
-      const shortcuts = [['Normal', '正文'], ['Heading1', '标题 1'], ['Heading2', '标题 2'], ['Quote', '引用']].map(([id, label]) => {
-        const style = this.gallery().find(s => s.id === id); return style ? B(label, () => this.applyStyle(style), { on: f.ps === id }) : null;
-      }).filter(Boolean);
-      panelGroups[0].items = panelGroups[0].items.concat(shortcuts);
-    }
-    if (tab === 'insert') {
-      const group = (title, items) => ({ title: $t(title), items });
-      panelGroups.splice(0, panelGroups.length,
-        group('常用', [chunks[0][0], chunks[0][1], chunks[1][1], chunks[1][2], chunks[1][0], chunks[0][2]]),
-        group('页面', [chunks[3][0], chunks[3][1], chunks[3][2], chunks[2][1], chunks[5][0], chunks[2][0]]),
-        group('符号与批注', [chunks[1][3], chunks[4][1], chunks[4][0], chunks[5][1], chunks[5][2], chunks[6][1], chunks[6][0]]));
-      for (const g of panelGroups) for (const item of g.items) {
-        const name = Object.keys(INSERT_ICONS).find(key => $t(key) === item.label);
-        if (name) item.icon = `./assets/doc/insert-${INSERT_ICONS[name]}.svg`;
-      }
-    }
-    // popover
-    if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
-    let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
-    if (st.pop) {
-      if (st.pop.id === 'table') {
-        popIsGrid = true; const h = st.gridHover || { r: 0, c: 0 };
-        gridLabel = st.gridHover ? $t('{r} × {c} 表格', { r: h.r, c: h.c }) : $t('插入表格');
-        for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) { const on = r <= h.r && c <= h.c; gridCells.push({ border: on ? 'var(--k59, #3F7D5C)' : 'var(--k10, #D1D1D6)', bg: on ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)', onEnter: () => this.setState({ gridHover: { r, c } }), onClick: () => this.insertTable(r, c) }); }
-        popItems = [I('自定义行列…', () => this.prompt('插入表格', [{ key: 'r', label: '行数', value: '3', first: true }, { key: 'c', label: '列数', value: '3' }], v => this.insertTable(Math.max(1, Math.min(50, +v.r || 3)), Math.max(1, Math.min(12, +v.c || 3))))),
-          I('文本转换成表格（按 Tab）', () => this.textToTable('tab')), I('文本转换成表格（按逗号）', () => this.textToTable('comma')), I('文本转换成表格（按空格）', () => this.textToTable('space'))];
-      } else popItems = this.menus[st.pop.id] || [];
-    }
-    const [pw0, ph0] = PAGES[pg.size], [PW, PH] = pg.orient === 'landscape' ? [ph0, pw0] : [pw0, ph0], m = MARG[pg.margin];
+    const [pw0, ph0] = PAGES[pg.size] || PAGES.A4, [PW, PH] = pg.orient === 'landscape' ? [ph0, pw0] : [pw0, ph0], m = marginsPx(pg.margin);
     const hue = a => AV_HUES[Array.from(a || '').reduce((h, ch) => (h * 31 + ch.codePointAt(0)) >>> 0, 7) % AV_HUES.length]; // by name: the same in every document
     const av = c => c.mine ? $t('我') : Array.from(c.initials || initialsOf(c.author)).slice(0, 2).join(''), avBg = c => c.mine ? AV_ME : `oklch(0.56 0.1 ${hue(c.author)})`;
     const setC = (id, patch, silent) => this.change({ comments: d.comments.map(x => x.id === id ? Object.assign({}, x, patch) : x) }, silent);
-    const comments = (d.comments || []).filter(c => !c.parent).map(c => ({ id: c.id, quote: c.quote || '', text: c.text, time: c.time || '', border: st.activeCid === c.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
+    const who = c => [c.mine ? $t('我') : c.author || '', c.time || ''].filter(Boolean).join(' · ');
+    const comments = (d.comments || []).filter(c => !c.parent).map(c => ({ id: c.id, quote: c.quote || '', text: c.text, time: c.time || '', head: who(c), resolved: !!c.resolved, border: st.activeCid === c.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
       av: av(c), avBg: avBg(c), op: c.resolved ? 0.55 : 1, resolveLabel: c.resolved ? $t('重新打开') : $t('解决'), resolveTitle: c.resolved ? $t('这条批注已解决，点击重新打开') : $t('标记为已解决'),
       onResolve: e => { e.stopPropagation(); setC(c.id, { resolved: !c.resolved }); },
       onText: e => setC(c.id, { text: e.target.value }, true),
       onDelete: e => { e.stopPropagation(); this.delComment(c.id); },
-      replies: (d.comments || []).filter(r => r.parent === c.id).map(r => ({ text: r.text, time: r.time || '', av: av(r), avBg: avBg(r), onText: e => setC(r.id, { text: e.target.value }, true), onDelete: e => { e.stopPropagation(); this.change({ comments: d.comments.filter(x => x.id !== r.id) }); } })),
+      replies: (d.comments || []).filter(r => r.parent === c.id).map(r => ({ text: r.text, time: r.time || '', head: who(r), av: av(r), avBg: avBg(r), onText: e => setC(r.id, { text: e.target.value }, true), onDelete: e => { e.stopPropagation(); this.change({ comments: d.comments.filter(x => x.id !== r.id) }); } })),
       draft: (st.replyDraft || {})[c.id] || '', onDraft: e => this.setState({ replyDraft: Object.assign({}, st.replyDraft, { [c.id]: e.target.value }) }),
       onReplyKey: e => { if (e.key === 'Enter' && !(e.nativeEvent && (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) { e.preventDefault(); this.replyTo(c, e.target.value); } },
       onFocus: () => { this.setState({ activeCid: c.id }); const el = this.edRef.current.querySelector(`[data-cid="${c.id}"]`); this.focusEl(el); } }));
     const moveComment = dir => { if (!comments.length) return; const i = comments.findIndex(c => c.id === st.activeCid); const next = comments[i < 0 ? (dir > 0 ? 0 : comments.length - 1) : (i + dir + comments.length) % comments.length]; next.onFocus(); };
     const ed0 = this.edRef.current, marks = ed0 && ed0.querySelectorAll ? Array.from(ed0.querySelectorAll('sup[data-fn]')) : null; // the notes whose marks are in the text, in their order
     const noteList = marks ? marks.map(m => (d.notes || []).find(x => x.id === m.getAttribute('data-fn'))).filter(Boolean) : d.notes || [];
-    const notes = noteList.map(x => { const m = marks && marks.find(y => y.getAttribute('data-fn') === x.id), n = m ? m.textContent : ''; return { label: $t(x.kind === 'endnote' ? '尾注 {n}' : '脚注 {n}', { n }), text: x.text || '', focus: st.focusNote === x.id, border: st.activeNote === x.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
+    const notes = noteList.map(x => { const m = marks && marks.find(y => y.getAttribute('data-fn') === x.id), n = m ? m.textContent : ''; return { id: x.id, mark: n, label: $t(x.kind === 'endnote' ? '尾注 {n}' : '脚注 {n}', { n }), text: x.text || '', focus: st.focusNote === x.id, border: st.activeNote === x.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
       onText: e => this.change({ notes: (d.notes || []).map(y => y.id === x.id ? Object.assign({}, y, { text: e.target.value }) : y) }, true),
       onDelete: e => { e.stopPropagation(); this.delNote(x.id); },
       onFocus: () => { this.setState({ activeNote: x.id, focusNote: null }); this.focusEl(m); } }; });
@@ -1706,19 +1885,19 @@ class Component extends DCLogic {
     const dlg = st.dlg;
     const info = st.info;
     const pure = !!this.props.pure, showTh = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the panel only when its 缩略图 asks, over the page
-    const tz = 140 / PW;
+    const tz = 128 / PW, curPage = this.caretPage();
     const pageThumbs = showTh && !web && st.view !== 'side' ? info.at.slice(0, 30).map(([top, bottom], i) => ({ // each page as the status bar counts it (pagesOf)
-      n: i + 1, w: '140px', h: Math.round(PH * tz) + 'px', top: Math.round(m[0] * tz) + 'px', ch: Math.floor((bottom - top) * tz) + 'px', pw: PW + 'px', tf: `scale(${tz})`, padH: m[1] + 'px', off: -top + 'px',
-      line: 'none', onClick: () => { const cv = this.cvRef.current; if (cv) cv.scrollTop = Math.max(0, CV_PAD[0] + (paged ? i * (PH + GAP) : m[0] + top) * st.zoom - 24); }
+      n: i + 1, onA: i === curPage ? '1' : '0', w: '128px', h: Math.round(PH * tz) + 'px', top: Math.round(m.top * tz) + 'px', ch: Math.floor((bottom - top) * tz) + 'px', pw: PW + 'px', tf: `scale(${tz})`, padH: m.left + 'px', padR: m.right + 'px', off: -top + 'px',
+      line: 'none', onClick: () => { const cv = this.cvRef.current; if (cv) cv.scrollTop = Math.max(0, this.cvTop + (paged ? i * (PH + GAP) : m.top + top) * st.zoom - 24); }
     })) : [];
     // the page view: a sheet per page, each with the header and footer it shows (the text is moved onto its page by pgCss)
-    const sv = st.view === 'side', paged = this.paged, n = paged || sv ? info.pages : 1, hf = sv ? null : st.hf, hfTop = Math.round(m[0] / 2 - 10) + 'px'; // 并排: no headers, footers or thumbnails (ponytail: they are laid out top to bottom)
+    const sv = st.view === 'side', paged = this.paged, n = paged || sv ? info.pages : 1, hf = sv ? null : st.hf, hfTop = Math.round(m.top / 2 - 10) + 'px', hfBot = Math.round(m.bottom / 2 - 10) + 'px'; // 并排: no headers, footers or thumbnails (ponytail: they are laid out top to bottom)
     const sheets = web ? [] : Array.from({ length: n }, (_, i) => ({ top: paged ? i * (PH + GAP) + 'px' : '0px', h: paged || sv ? PH + 'px' : '100%', left: sv ? i * (PW + GAP) + 'px' : '0px', w: sv ? PW + 'px' : '100%' }));
     const hfZones = web || sv || !(pg.hf || hf) ? [] : sheets.flatMap((s, i) => ['header', 'footer'].map(kind => {
       const head = kind === 'header', key = this.hfKey(kind, i), editing = !!hf && hf.kind === kind && hf.page === i, line = editing ? '1px dashed var(--k47, #C7C7CC)' : 'none';
       return { editing, showing: !editing, html: { __html: hfFill(hf && hf.key === key && st.hfLive != null ? st.hfLive : d[key], i + 1, n) },
-        top: head ? s.top : paged ? i * (PH + GAP) + PH - m[0] + 'px' : 'auto', bottom: head || paged ? 'auto' : '0px', h: m[0] + 'px',
-        bt: head ? hfTop : 'auto', bb: head ? 'auto' : hfTop, lineB: head ? line : 'none', lineT: head ? 'none' : line, lt: head ? 'auto' : '-19px', lb: head ? '-19px' : 'auto',
+        top: head ? s.top : paged ? i * (PH + GAP) + PH - m.bottom + 'px' : 'auto', bottom: head || paged ? 'auto' : '0px', h: (head ? m.top : m.bottom) + 'px',
+        bt: head ? hfTop : 'auto', bb: head ? 'auto' : hfBot, lineB: head ? line : 'none', lineT: head ? 'none' : line, lt: head ? 'auto' : '-19px', lb: head ? '-19px' : 'auto',
         label: key.startsWith('first') ? (head ? $t('首页页眉') : $t('首页页脚')) : (head ? $t('页眉') : $t('页脚')), title: head ? $t('双击编辑页眉') : $t('双击编辑页脚'),
         onDbl: e => { e.stopPropagation(); if (!editing) this.enterHF(kind, i); } };
     }));
@@ -1730,7 +1909,7 @@ class Component extends DCLogic {
     const zoneTop = hf ? (paged ? hf.page * (PH + GAP) : 0) : 0;
     // the ruler: the page's margins shaded, a tick every half centimetre of the text area, the caret paragraph's tab stops on it
     const CMPX = 96 / 2.54, TAB_GLYPH = { left: 'L', center: '⊥', right: '⅃', decimal: '⊥.' }; // i18n-ok — the marks Word draws for tab stops
-    const tabStops = st.showRuler && !web && this.EN ? this.EN.tabStopsOf((f.pat || {}).tabs).map(t => ({ x: Math.round(m[1] + t.cm * CMPX) + 'px', glyph: TAB_GLYPH[t.kind] || 'L', title: $t('制表位 {pos}（点击切换类型或移除）', { pos: t.cm + ' cm' }), onClick: e => { e.stopPropagation(); this.cycleTab(t.cm); } })) : [];
+    const tabStops = st.showRuler && !web && this.EN ? this.EN.tabStopsOf((f.pat || {}).tabs).map(t => ({ x: Math.round(m.left + t.cm * CMPX) + 'px', glyph: TAB_GLYPH[t.kind] || 'L', title: $t('制表位 {pos}（点击切换类型或移除）', { pos: t.cm + ' cm' }), onClick: e => { e.stopPropagation(); this.cycleTab(t.cm); } })) : [];
     const pageInk = /^#[0-9a-f]{6}$/i.test(pg.color) && this.EN ? { dark: '#1D1D1F', light: '#FFFFFF' }[this.EN.inkOn(pg.color.slice(1))] : 'var(--k1, #1D1D1F)'; // theme: keep — on a page colour, Word's automatic text colour for it
     // 纯净模式 selection bar: B I U | 标题 | 链接 | ✦ 改写 (the shell's onRewrite hands the selection to the assistant)
     const bb = (label, fn, o = {}) => ({ btn: true, label: $t(label), onClick: fn, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', star: !!o.star });
@@ -1738,28 +1917,41 @@ class Component extends DCLogic {
     const bubbleBtns = [bb('B', () => this.exec('bold'), { on: f.b, fw: 700 }), bb('I', () => this.exec('italic'), { on: f.i, fs: 'italic' }), bb('U', () => this.exec('underline'), { on: f.u }), SEPB,
       bb('标题@@sel', () => this.exec('formatBlock', heading ? '<p>' : '<h1>'), { on: heading }), SEPB, bb('链接', () => this.linkDlg())]
       .concat(this.props.onRewrite ? [SEPB, bb('改写', () => this.props.onRewrite(String(getSelection())), { star: true })] : []);
+    const formatOpen = !pure && !!this.props.formatOpen, panel = this.panelVals({ st, f, pg, d, tab, tabsDef, I, HD, info, comments, notes, moveComment, formatOpen });
+    // popover: after the panel, whose controls register their menus as it builds them
+    if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
+    let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
+    if (st.pop) {
+      if (st.pop.id === 'table') {
+        popIsGrid = true; const h = st.gridHover || { r: 0, c: 0 };
+        gridLabel = st.gridHover ? $t('{r} × {c} 表格', { r: h.r, c: h.c }) : $t('插入表格');
+        for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) { const on = r <= h.r && c <= h.c; gridCells.push({ border: on ? 'var(--k59, #3F7D5C)' : 'var(--k10, #D1D1D6)', bg: on ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)', onEnter: () => this.setState({ gridHover: { r, c } }), onClick: () => this.insertTable(r, c) }); }
+        popItems = [I('自定义行列…', () => this.prompt('插入表格', [{ key: 'r', label: '行数', value: '3', first: true }, { key: 'c', label: '列数', value: '3' }], v => this.insertTable(Math.max(1, Math.min(50, +v.r || 3)), Math.max(1, Math.min(12, +v.c || 3))))),
+          I('文本转换成表格（按 Tab）', () => this.textToTable('tab')), I('文本转换成表格（按逗号）', () => this.textToTable('comma')), I('文本转换成表格（按空格）', () => this.textToTable('space'))];
+      } else popItems = this.menus[st.pop.id] || [];
+    }
     return {
-      md, stop: e => e.stopPropagation(), tabs, ribbon, panelTabs: tabs.map(t => ({ ...t, onClick: t.onPanelClick })), panelGroups, panelCommentsOpen: tab === 'review' && comments.length > 0, panelNotesOpen: tab === 'refs' && notes.length > 0, prevComment: () => moveComment(-1), nextComment: () => moveComment(1), formatOpen: !pure && !!this.props.formatOpen, bubbleOpen: pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
+      md, stop: e => e.stopPropagation(), tabs, ribbon, panelTabs: panel.tabs, panelGroups: panel.groups, formatOpen, bubbleOpen: pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
       notPure: !pure, pure, showBar: pure && !!this.props.pureTools, rootBg: 'transparent', pageThumbs, addPageQuick: () => this.addPage(), thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
-      hasBubble: pure && !!st.selBub, hasWordSelection: !pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? st.selBub.y + 'px' : 0, selBelow: st.selBub && st.selBub.below ? '1' : '0', bubbleBtns,
-      selectionStyles: this.gallery().filter(s => s.type !== 'character').slice(0, 20).map(s => ({ id: s.id, label: $t(s.label) })), selectionStyle: f.ps || 'Normal', onSelectionStyle: e => { const s = this.gallery().find(x => x.id === e.target.value); if (s) this.applyStyle(s); },
-      selectionSizes: SIZES, selectionSize: SIZES.includes(f.size) ? f.size : 11, onSelectionSize: e => this.setFontSize(+e.target.value), selectionSmaller: () => this.bump(-1), selectionLarger: () => this.bump(1),
+      hasBubble: pure && !!st.selBub, hasWordSelection: !pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? st.selBub.y + 'px' : 0, selBelow: st.selBub && st.selBub.below ? '1' : '0', tailX: st.selBub ? `calc(50% + ${st.selBub.dx || 0}px)` : '50%', bubbleBtns,
+      selStyleLabel: this.styleLabel(f.ps || 'Normal'), selStyleMenu: e => this.openPop('sty', e), selSizeMenu: e => this.openPop('fsize', e), canRewrite: !!this.props.onRewrite,
+      selectionSize: f.size || 11, selectionSmaller: () => this.bump(-1), selectionLarger: () => this.bump(1),
       selectionBold: () => this.exec('bold'), selectionItalic: () => this.exec('italic'), selectionUnderline: () => this.exec('underline'), selectionBoldOn: f.b ? '1' : '0', selectionItalicOn: f.i ? '1' : '0', selectionUnderlineOn: f.u ? '1' : '0',
-      selectionColor: st.lastColor, onSelectionColor: e => { this.setState({ lastColor: e.target.value }); this.exec('foreColor', e.target.value); }, selectionHighlightColor: st.lastHl, selectionHighlight: () => this.exec('hiliteColor', st.lastHl), selectionLink: () => this.linkDlg(), selectionRewrite: () => this.props.onRewrite && this.props.onRewrite(String(getSelection())), rewriteLabel: $t('改写'),
+      selectionColor: rgbHex(f.color) || st.lastColor, onSelectionColor: e => { this.setState({ lastColor: e.target.value }); this.exec('foreColor', e.target.value); }, selectionHighlightColor: st.lastHl, hlTitle: $t('高亮（{c}）', { c: $t((HILITES.find(x => x[0] === st.lastHl) || [, '黄色'])[1]) }), selectionHighlight: () => this.exec('hiliteColor', st.lastHl), selectionLink: () => this.linkDlg(), selectionRewrite: () => this.props.onRewrite && this.props.onRewrite(String(getSelection())),
       showFind: st.showFind && !pure, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'),
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replaceOne(), replaceAll: () => this.replaceAll(), closeFind: () => this.setState({ showFind: false }),
-      bodyCols: [showTh && !pure ? '248px' : '0px', 'minmax(0,1fr)', !pure && this.props.formatOpen ? '320px' : side ? '272px' : null].filter(Boolean).join(' '),
-      showNav: showTh, navPages: st.navMode !== 'outline', navOutline: st.navMode === 'outline', thumbPagesClick: () => this.setState({ navMode: 'pages' }), thumbOutlineClick: () => this.setState({ navMode: 'outline' }), thumbPagesBg: st.navMode !== 'outline' ? 'var(--format-control)' : 'transparent', thumbOutlineBg: st.navMode === 'outline' ? 'var(--format-control)' : 'transparent', thumbPagesSh: st.navMode !== 'outline' ? 'var(--format-control-sh)' : 'none', thumbOutlineSh: st.navMode === 'outline' ? 'var(--format-control-sh)' : 'none', heads: st.navMode === 'outline' ? st.heads.map(h => ({ text: h.text, indent: (8 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.focusEl(this.edRef.current.querySelectorAll('h1,h2,h3')[h.i]) })) : [], noHeads: st.navMode === 'outline' && !st.heads.length,
+      bodyCols: [showTh && !pure ? '240px' : '0px', 'minmax(0,1fr)', formatOpen ? '312px' : side ? '272px' : null].filter(Boolean).join(' '),
+      showNav: showTh, navPages: st.navMode !== 'outline', navOutline: st.navMode === 'outline', navPagesA: st.navMode !== 'outline' ? '1' : '0', navOutlineA: st.navMode === 'outline' ? '1' : '0', thumbPagesClick: () => this.setState({ navMode: 'pages' }), thumbOutlineClick: () => this.setState({ navMode: 'outline' }), thumbPagesBg: st.navMode !== 'outline' ? 'var(--format-control)' : 'transparent', thumbOutlineBg: st.navMode === 'outline' ? 'var(--format-control)' : 'transparent', thumbPagesSh: st.navMode !== 'outline' ? 'var(--format-control-sh)' : 'none', thumbOutlineSh: st.navMode === 'outline' ? 'var(--format-control-sh)' : 'none', heads: st.navMode === 'outline' ? st.heads.map(h => ({ text: h.text, indent: (8 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.focusEl(this.edRef.current.querySelectorAll('h1,h2,h3')[h.i]) })) : [], noHeads: st.navMode === 'outline' && !st.heads.length,
       cvRef: this.cvRef, edRef: this.edRef, imgRef: this.imgRef,
       onCanvasDown: e => { if (e.target === this.cvRef.current) { e.preventDefault(); this.restore(); } },
       zoomV: st.zoom, pageW: web ? '100%' : sv ? n * PW + (n - 1) * GAP + 'px' : PW + 'px', sheetH: web ? 'auto' : sv ? PH + 'px' : n * PH + (n - 1) * GAP + 'px',
-      sideAttr: sv ? '1' : '0', edFlex: sv ? 'none' : '1', edW: sv ? PW - 2 * m[1] + 'px' : 'auto', edH: sv ? PH - 2 * m[0] + 'px' : 'auto', edCols: sv ? 'auto' : pg.cols, edColW: sv ? PW - 2 * m[1] + 'px' : 'auto', edGap: sv ? 2 * m[1] + GAP + 'px' : '32px', edFill: sv ? 'auto' : 'balance', pad: web ? '16px 56px 48px' : `${m[0]}px ${m[1]}px`, padH: m[1] + 'px', pageBg: pg.color || 'var(--kpage, #FFFFFF)', pageInk, cols: pg.cols,
-      cvPad: web ? `${CV_PAD[0]}px 0 72px` : `${CV_PAD[0]}px ${CV_PAD[1]}px 72px`, cvBg: web ? pg.color || 'var(--kpage, #FFFFFF)' : 'transparent', cvLight: web ? '1' : undefined, sheetBg: 'transparent', pageSh: 'var(--word-paper-sh)',
+      sideAttr: sv ? '1' : '0', edFlex: sv ? 'none' : '1', edW: sv ? PW - m.left - m.right + 'px' : 'auto', edH: sv ? PH - m.top - m.bottom + 'px' : 'auto', edCols: sv ? 'auto' : pg.cols, edColW: sv ? PW - m.left - m.right + 'px' : 'auto', edGap: sv ? m.left + m.right + GAP + 'px' : '32px', edFill: sv ? 'auto' : 'balance', pad: web ? '16px 56px 48px' : `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`, padH: m.left + 'px', padR: m.right + 'px', pageBg: pg.color || 'var(--kpage, #FFFFFF)', pageInk, cols: pg.cols,
+      cvPad: web ? `${this.cvTop}px 0 72px` : `${this.cvTop}px ${CV_PAD[1]}px 72px`, cvBg: web ? pg.color || 'var(--kpage, #FFFFFF)' : 'transparent', cvLight: web ? '1' : undefined, sheetBg: 'transparent', pageSh: 'var(--word-paper-sh)',
       hasWm: !web && !!pg.wm, wm: $t(pg.wm), sheets, pgId: this.pgId, hfZones, hfRef: this.hfRef, hfOp: hf ? 1 : 0.6, edOp: hf ? 0.4 : 1, edPe: hf ? 'none' : 'auto',
-      showRuler: st.showRuler && !web && !sv && !pure, cmPx: CMPX + 'px', halfCmPx: CMPX / 2 + 'px', tabStops, onRuler: e => this.rulerClick(e, m[1]), rulerTitle: $t('点击标尺添加制表位；点击制表位切换 左 / 居中 / 右 / 小数点，再点一次移除'),
-      hfOn: !!hf, hfBtns, hfBarTop: !hf ? 'auto' : hf.kind === 'header' ? zoneTop + m[0] + 26 + 'px' : paged ? zoneTop + PH - m[0] - 64 + 'px' : 'auto', hfBarBottom: hf && hf.kind === 'footer' && !paged ? m[0] + 26 + 'px' : 'auto', // clear of the 页眉 / 页脚 label
+      showRuler: st.showRuler && !web && !sv && !pure, cmPx: CMPX + 'px', halfCmPx: CMPX / 2 + 'px', tabStops, onRuler: e => this.rulerClick(e, m.left), rulerTitle: $t('点击标尺添加制表位；点击制表位切换 左 / 居中 / 右 / 小数点，再点一次移除'),
+      hfOn: !!hf, hfBtns, hfBarTop: !hf ? 'auto' : hf.kind === 'header' ? zoneTop + m.top + 26 + 'px' : paged ? zoneTop + PH - m.bottom - 64 + 'px' : 'auto', hfBarBottom: hf && hf.kind === 'footer' && !paged ? m.bottom + 26 + 'px' : 'auto', // clear of the 页眉 / 页脚 label
       onHfInput: () => this.hfInput(), onHfKey: e => { if (e.key === 'Escape') { e.preventDefault(); this.exitHF(); } },
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
       onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); }, // double-click the text: back to it
@@ -1786,7 +1978,7 @@ class Component extends DCLogic {
       markupAttr: st.markup || 'all', cmAttr: st.hideCm ? '0' : '1',
       hasComments: !pure && !st.hideCm && (d.comments || []).length > 0, comments, commentCount: (d.comments || []).length, hasSide: side, hasNotes: notes.length > 0, notes, noteCount: notes.length,
       pagesText: web ? $t('连续') : $t('共 {n} 页', { n: info.pages }), pagePositionText: web ? $t('连续') : $t('第 {n} / {total} 页', { n: this.caretPage() + 1, total: info.pages }), wordsText: $t('{n} 字', { n: (info.count || 0).toLocaleString() }), trackOn: !!d.track,
-      statusX: `calc(50% + ${((showTh && !pure ? 248 : 0) - (!pure && this.props.formatOpen ? 320 : side ? 272 : 0)) / 2}px)`,
+      statusX: `calc(50% + ${((showTh && !pure ? 240 : 0) - (formatOpen ? 312 : side ? 272 : 0)) / 2}px)`,
       zoomPct: Math.round(st.zoom * 100), onZoom: e => this.setZoom(+e.target.value / 100),
       zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1),
       zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
@@ -1798,7 +1990,8 @@ class Component extends DCLogic {
         else if (k === '-' || k === 'Subtract') { e.preventDefault(); this.setZoom(this.state.zoom - 0.1); }
         else if (k === '0') { e.preventDefault(); this.setZoom(1); }
       },
-      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : '0', popY: st.pop ? st.pop.y + 'px' : '0', popItems, popIsGrid, gridCells, gridLabel, gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null }),
+      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : '0', popY: st.pop ? st.pop.y + 'px' : '0', popMinW: Math.max(168, st.pop && st.pop.w || 0) + 'px',
+      popMaxH: st.pop ? `min(420px, ${st.pop.up ? st.pop.y - 8 + 'px' : `calc(100vh - ${st.pop.y + 8}px)`})` : '420px', popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) ${st.pop.up ? '-100%' : '0px'}` : 'none', popItems, popIsGrid, gridCells, gridLabel, gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null }),
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
       ...(eq => ({ hasEq: !!eq, eqTitle: eq && eq.el ? $t('编辑公式') : $t('插入公式'), eqLatex: eq ? eq.latex : '',
         eqPreview: { __html: eq && this.MD && eq.latex.trim() ? this.MD.renderMath(eq.latex, true) : '' }, eqError: eq && this.MD ? this.MD.mathError(eq.latex) : '',

@@ -15,9 +15,10 @@ test('page breaks: tree → block → html', () => {
   assert.equal(EN.blocksToHtml(blocks), '<p data-path="/body/paragraph[1]">one</p><hr data-pb="1" data-path="/body/pagebreak[1]"><ul><li data-path="/body/paragraph[2]">two</li></ul>');
 });
 
-test('pageOf maps engine props to the editor page, keeping unknown sizes in raw', () => {
-  assert.deepEqual(EN.pageOf({ page: 'Letter', orientation: 'landscape', margin: 'moderate', columns: '2' }), { size: 'Letter', orient: 'landscape', margin: 'normal', cols: 2, raw: { size: 'Letter', margin: 'moderate' } });
-  assert.deepEqual(EN.pageOf({ page: 'Legal', margin: '2cm 1cm 2cm 1cm' }), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, raw: { size: 'Legal', margin: '2cm 1cm 2cm 1cm' } });
+test('pageOf maps engine props to the editor page: the panel\'s papers and margin presets, custom margins as the engine prints them, other sizes kept in raw', () => {
+  assert.deepEqual(EN.pageOf({ page: 'Letter', orientation: 'landscape', margin: 'moderate', columns: '2' }), { size: 'Letter', orient: 'landscape', margin: 'moderate', cols: 2, raw: { size: 'Letter', margin: 'moderate' } });
+  assert.deepEqual(EN.pageOf({ page: 'Legal', margin: '2cm 1cm 2cm 1cm' }), { size: 'Legal', orient: 'portrait', margin: '2cm 1cm 2cm 1cm', cols: 1, raw: { size: 'Legal', margin: '2cm 1cm 2cm 1cm' } });
+  assert.deepEqual(EN.pageOf({ page: '18.4cm x 26cm', margin: 'mirrored' }), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, raw: { size: '18.4cm x 26cm', margin: 'mirrored' } });
   assert.deepEqual(EN.pageOf(undefined), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, raw: { size: '', margin: '' } });
 });
 
@@ -38,9 +39,17 @@ test('pageDiff emits only the changed set props, and a header or footer only onc
 });
 
 test('pageDiff leaves sizes and margins the editor cannot show alone', () => {
-  const orig = { page: { page: 'Legal', margin: 'moderate' } };
+  const orig = { page: { page: '18.4cm x 26cm', margin: '2.54cm 3.18cm 2.54cm 3.18cm' } };
   assert.deepEqual(EN.pageDiff(orig, { page: EN.pageOf(orig.page) }), {});
   assert.deepEqual(EN.pageDiff(orig, { page: Object.assign(EN.pageOf(orig.page), { size: 'A5' }) }), { page: 'A5' });
+  assert.deepEqual(EN.pageDiff(orig, { page: Object.assign(EN.pageOf(orig.page), { margin: '2.54cm 2cm 2.54cm 3.18cm' }) }), { margin: '2.54cm 2cm 2.54cm 3.18cm' });
+});
+
+test('pageDiff sends the notes\' numbering once it changes; none gives Word\'s own back', () => {
+  const orig = { page: {}, noteFormat: '' };
+  assert.deepEqual(EN.pageDiff(orig, { page: {}, noteFormat: 'lowerRoman' }), { noteFormat: 'lowerRoman' });
+  assert.deepEqual(EN.pageDiff({ page: {}, noteFormat: 'lowerRoman' }, { page: {}, noteFormat: '' }), { noteFormat: 'none' });
+  assert.deepEqual(EN.pageDiff({ page: {}, noteFormat: 'decimal' }, { page: {}, noteFormat: 'decimal' }), {});
 });
 
 test('Word tables and TOC keep their file paths and structural props in editor HTML', () => {

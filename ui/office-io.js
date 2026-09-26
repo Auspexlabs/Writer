@@ -471,16 +471,24 @@ export function slidesMarkdown(doc) {
 export function exportOutline(doc) { download(new Blob([slidesMarkdown(doc)], { type: 'text/markdown' }), (doc.title || 'slides') + '.md'); }
 
 export const DOC_CSS = `h1{font-size:26px;font-weight:700;margin:18px 0 8px;line-height:1.4}h2{font-size:20px;font-weight:600;margin:16px 0 6px}h3{font-size:16px;font-weight:600;margin:14px 0 4px}p{margin:0 0 8px}blockquote{margin:8px 0;padding:4px 14px;border-left:3px solid #D1D1D6;color:#6E6E73}pre{font-family:'IBM Plex Mono',monospace;background:#F5F5F7;padding:10px 12px;font-size:13px;white-space:pre-wrap}ul,ol{margin:0 0 8px;padding-left:1.6em}img{max-width:100%}a{color:#2F5D8A}ins{color:#3F7D5C;text-decoration:underline}del{color:#B5563A}[data-cid]{background:#F3E6C4}hr[data-pb]{border:none;border-top:1px dashed #C7C7CC;margin:24px 0;break-after:page}`;
-const PAGES = { A4: ['210mm', '297mm'], Letter: ['8.5in', '11in'], A5: ['148mm', '210mm'] };
-const MARG = { narrow: '12.7mm', normal: '25.4mm', wide: '38mm' };
+const PAGES = { A4: ['210mm', '297mm'], Letter: ['8.5in', '11in'], A5: ['148mm', '210mm'], B5: ['176mm', '250mm'], A3: ['297mm', '420mm'], Legal: ['8.5in', '14in'] };
+// 页边距: the engine's presets (DocxSection.Margins) in cm, top / sides; any other margins are the four lengths the engine prints
+const MARGIN_CM = { normal: [2.54, 2.54], narrow: [1.27, 1.27], moderate: [2.54, 1.91], wide: [2.54, 5.08] };
+/** A Word page's margins in cm, [top, right, bottom, left], from a preset's name or "2.54cm 3.18cm 2.54cm 3.18cm". */
+export function marginsCm(margin) {
+  const p = MARGIN_CM[margin]; if (p) return [p[0], p[1], p[0], p[1]];
+  const v = String(margin || '').trim().split(/[\s,]+/).map(x => { const m = /^(-?[\d.]+)\s*(cm|mm|in|pt)?$/i.exec(x); return m ? +m[1] * ({ mm: 0.1, in: 2.54, pt: 2.54 / 72 }[(m[2] || '').toLowerCase()] || 1) : NaN; });
+  const r = v.length === 4 ? v : v.length === 2 ? [v[0], v[1], v[0], v[1]] : v.length === 1 ? [v[0], v[0], v[0], v[0]] : [];
+  return r.length && r.every(x => x >= 0) ? r : marginsCm('normal');
+}
 /** The Noto aliases of assets/fonts/fonts.css (local() fonts only, nothing to fetch), for the pages the app writes out: prints and HTML exports. */
 export const fontFaces = () => [...document.styleSheets].filter(s => /\/fonts\.css$/.test(s.href)).flatMap(s => [...s.cssRules].map(r => r.cssText)).filter(t => t.includes('local(')).join('');
 export function printDoc(doc, ctx) {
   let css = '', body = '';
   const fonts = `<style>${fontFaces()}</style>`;
   if (doc.type === 'docx') {
-    const pg = doc.page || {}; const sz = PAGES[pg.size || 'A4']; const [w, h] = pg.orient === 'landscape' ? [sz[1], sz[0]] : sz;
-    css = `@page{size:${w} ${h};margin:${MARG[pg.margin || 'normal']}}body{margin:0;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;color:#1D1D1F}.hd,.ft{font-size:9pt;color:#8E8E93}.ed{column-count:${pg.cols || 1};column-gap:32px}` + DOC_CSS;
+    const pg = doc.page || {}; const sz = PAGES[pg.size] || PAGES.A4; const [w, h] = pg.orient === 'landscape' ? [sz[1], sz[0]] : sz;
+    css = `@page{size:${w} ${h};margin:${marginsCm(pg.margin).map(x => +x.toFixed(2) + 'cm').join(' ')}}body{margin:0;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;color:#1D1D1F}.hd,.ft{font-size:9pt;color:#8E8E93}.ed{column-count:${pg.cols || 1};column-gap:32px}` + DOC_CSS;
     body = (doc.header ? `<div class="hd">${doc.header}</div>` : '') + `<div class="ed">${doc.html}</div>` + (doc.footer ? `<div class="ft">${doc.footer}</div>` : ''); // header html as the engine gives it
   } else if (doc.type === 'xlsx') {
     const E = ctx.E, calc = new E.Calc(doc);
@@ -709,14 +717,14 @@ function download(blob, name) { const a = document.createElement('a'); a.href = 
 const CT = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 export async function exportDocx(doc) {
   const Z = await zipLib(); const z = new Z();
-  const pg = doc.page || {}; const sizes = { A4: [11906, 16838], Letter: [12240, 15840], A5: [8391, 11906] }; let [w, h] = sizes[pg.size || 'A4']; if (pg.orient === 'landscape') [w, h] = [h, w];
-  const m = { narrow: 720, normal: 1440, wide: 2160 }[pg.margin || 'normal'];
+  const pg = doc.page || {}; const sizes = { A4: [11906, 16838], Letter: [12240, 15840], A5: [8391, 11906], B5: [10319, 14571], A3: [16838, 23811], Legal: [12240, 20160] }; let [w, h] = sizes[pg.size] || sizes.A4; if (pg.orient === 'landscape') [w, h] = [h, w];
+  const [mt, mr, mb, ml] = marginsCm(pg.margin).map(x => Math.round(x * 1440 / 2.54));
   z.file('[Content_Types].xml', CT + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
   z.file('_rels/.rels', CT + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
   z.file('word/_rels/document.xml.rels', CT + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
   const hs = (id, name, sz) => `<w:style w:type="paragraph" w:styleId="${id}"><w:name w:val="${name}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/><w:outlineLvl w:val="${id.slice(-1) - 1}"/></w:pPr><w:rPr><w:b/><w:sz w:val="${sz}"/></w:rPr></w:style>`;
   z.file('word/styles.xml', CT + `<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Georgia" w:eastAsia="SimSun" w:hAnsi="Georgia"/><w:sz w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="360" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>${hs('Heading1', 'heading 1', 40)}${hs('Heading2', 'heading 2', 32)}${hs('Heading3', 'heading 3', 26)}<w:style w:type="paragraph" w:styleId="Quote"><w:name w:val="Quote"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:left="720"/></w:pPr><w:rPr><w:i/><w:color w:val="5C5850"/></w:rPr></w:style></w:styles>`);
-  z.file('word/document.xml', CT + `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${docxBody(doc.html || '')}<w:sectPr><w:pgSz w:w="${w}" w:h="${h}"${pg.orient === 'landscape' ? ' w:orient="landscape"' : ''}/><w:pgMar w:top="${m}" w:right="${m}" w:bottom="${m}" w:left="${m}" w:header="708" w:footer="708" w:gutter="0"/>${(pg.cols || 1) > 1 ? `<w:cols w:num="${pg.cols}" w:space="720"/>` : ''}</w:sectPr></w:body></w:document>`);
+  z.file('word/document.xml', CT + `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${docxBody(doc.html || '')}<w:sectPr><w:pgSz w:w="${w}" w:h="${h}"${pg.orient === 'landscape' ? ' w:orient="landscape"' : ''}/><w:pgMar w:top="${mt}" w:right="${mr}" w:bottom="${mb}" w:left="${ml}" w:header="708" w:footer="708" w:gutter="0"/>${(pg.cols || 1) > 1 ? `<w:cols w:num="${pg.cols}" w:space="720"/>` : ''}</w:sectPr></w:body></w:document>`);
   download(await z.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), doc.title + '.docx');
 }
 export async function exportXlsx(doc, E) {

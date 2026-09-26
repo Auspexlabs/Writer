@@ -54,14 +54,7 @@ test('the Word editor: in pure mode the toolbar shows only for the shell\'s 格�
   assert.equal(v.bubbleBtns[v.bubbleBtns.length - 1].star, true);
   assert.deepEqual(labels(ed({ pure: true }).bubbleBtns), ['B', 'I', 'U', '|', '标题', '|', '链接'], 'no 改写 without an assistant to send to');
   v = ed({ pure: false, showThumbs: true, formatOpen: true });
-  assert.deepEqual([v.showBar, v.showNav, v.formatOpen, v.bodyCols], [false, true, true, '248px minmax(0,1fr) 320px']);
-  assert.ok(v.panelGroups.some(g => g.items.some(it => it.title === '加粗 Ctrl+B')), 'existing formatting actions remain in the panel');
-  v = ed({ pure: false, formatOpen: true }, { tab: 'insert' });
-  assert.deepEqual(Array.from(v.panelGroups, g => g.title), ['常用', '页面', '符号与批注']);
-  assert.deepEqual(Array.from(v.panelGroups[0].items, item => item.label), ['表格', '图片', '形状', '图表', '文本框', '链接']);
-  assert.ok(v.panelGroups[0].items.every(item => item.icon), 'the design icons appear on all common insert cards');
-  v = ed({ pure: false, formatOpen: true, doc: { id: 'd', html: '', comments: [{ id: 'c1', quote: '摘录', text: '批注内容', mine: true }] } }, { tab: 'review' });
-  assert.equal(v.panelCommentsOpen, true); assert.equal(v.comments[0].text, '批注内容');
+  assert.deepEqual([v.showBar, v.showNav, v.formatOpen, v.bodyCols], [false, true, true, '240px minmax(0,1fr) 312px'], 'no toolbar over the page: the sidebar and the panel take their columns (format-panel.test.mjs has the panel)');
 });
 
 test('Word format and AI share one right panel', () => {
