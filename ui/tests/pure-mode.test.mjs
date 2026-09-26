@@ -1,5 +1,5 @@
 // node --test ui/tests/ — 纯净模式: the shell keeps its own panel flags (格式 / 缩略图 / AI 助手 open over the page and start closed
-// each time), Esc closes 格式 before it leaves, and the Word editor shows its toolbar over the page only while the shell asks.
+// each time), Esc closes 格式 before it leaves, and Aa controls the format panel for each editor.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -70,4 +70,19 @@ test('Word format and AI share one right panel', () => {
   c.toggleAIPanel(); assert.deepEqual([c.state.showAI, c.state.showFormat], [true, false]);
   c.toggleFormat(); assert.deepEqual([c.state.showAI, c.state.showFormat], [false, true]);
   c.toggleFormat(); assert.equal(c.state.showFormat, false);
+});
+
+test('Aa controls the shared format panel for every document type', () => {
+  const c = shell();
+  for (const type of ['docx', 'xlsx', 'pptx', 'md', 'mm', 'pdf']) {
+    Object.assign(c.state.docs[0], { type, sheets: [], slides: [], pages: [], map: { text: 'Root', children: [] } });
+    c.setState({ showFormat: true, showAI: false });
+    assert.equal(c.vals().formatOpen, true, `${type}: panel opens`);
+    c.toggleFormat();
+    assert.equal(c.vals().formatOpen, false, `${type}: Aa closes it`);
+    c.toggleFormat();
+    c.toggleAIPanel();
+    assert.deepEqual([c.vals().formatOpen, c.vals().aiOn], [false, true], `${type}: AI replaces it`);
+    c.toggleAIPanel();
+  }
 });

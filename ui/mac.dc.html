@@ -16,6 +16,7 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <link rel="stylesheet" href="./theme-page.css">
+<link rel="stylesheet" href="./editor-format.css">
 <link rel="icon" href="./assets/writer-logo-light.svg">
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
 <style>
@@ -187,7 +188,7 @@ class Component extends DCLogic {
     clearTimeout(this.rt);
     this.rt = setTimeout(() => {
       const sh = this.state.sh || {};
-      const s = { title: sh.isDoc ? docTitle(sh) : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: sh.type === 'docx' ? !sh.showFormat : this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
+      const s = { title: sh.isDoc ? docTitle(sh) : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: sh.isDoc && !sh.pure ? !sh.showFormat : this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
       const k = JSON.stringify(s); if (k === this._rk) return; this._rk = k; invoke('shell_state', s);
     }, 80);
   }
@@ -203,9 +204,9 @@ class Component extends DCLogic {
   undo(redo) { if (!this.sendKey(redo ? 'Z' : 'z', redo ? { shiftKey: true } : {})) document.execCommand(redo ? 'redo' : 'undo'); }
   barButtons() { const w = this.winRef.current; const b = w && w.querySelector('[data-glass-bar]'); return b ? Array.from(b.querySelectorAll('button')) : []; }
   press(label) { const w = this.winRef.current; const b = (w && w.querySelector(`[data-word-tab="${{ '开始': 'home', '插入': 'insert', '布局': 'layout', '引用': 'refs', '审阅': 'review', '视图': 'view' }[label] || ''}"]`)) || this.barButtons().find(x => x.textContent.trim() === $t(label)); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
-  quickPress() { const q = settings().quickTab || '开始'; if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }
+  quickPress() { const q = settings().quickTab || '开始', press = () => { if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }; if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(press, 50); } press(); }
   format(cmd) { const a = document.activeElement; if (a && a.isContentEditable) document.execCommand(cmd); else this.flash($t('先把光标放进文字里')); }
-  toggleBar() { if (this.state.sh && this.state.sh.isDoc && this.state.sh.type === 'docx' && !this.state.sh.pure) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
+  toggleBar() { if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
   cycle(dir) { const docs = ((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
   current() { const sh = this.state.sh; return sh && sh.docs.find(d => d.on); }
 
@@ -225,7 +226,7 @@ class Component extends DCLogic {
       case 'clearFormat': return this.format('removeFormat');
       case 'insertLink': return this.sendKey('k');
       case 'insertTable': case 'insertImage': case 'insertComment': case 'pageBreak': {
-        if (this.state.sh && this.state.sh.type === 'docx' && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(() => this.press('插入'), 50); }
+        if (this.state.sh && this.state.sh.isDoc && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(() => this.press('插入'), 50); }
         return this.press('插入') || this.flash($t('这个编辑器没有「{q}」', { q: $t('插入') }));
       }
       case 'toggleSidebar': return this.call('toggleThumbs');
@@ -333,7 +334,7 @@ class Component extends DCLogic {
     return {
       winRef: this.winRef, onShell: this.onShell, openPrefs: this.openPrefs, isFull: st.full,
       saveDialogProp: NATIVE ? this.saveDialog : null, recentProp: NATIVE ? this.recentFiles : null, openRecentProp: NATIVE ? this.openRecent : null, openDialogProp: NATIVE ? this.openDialog : null,
-      collapsedAttr: sh && sh.type === 'docx' && !sh.pure ? '0' : st.collapsed ? '1' : '0', pureAttr: sh && sh.pure ? '1' : '0',
+      collapsedAttr: sh && sh.isDoc && !sh.pure ? '0' : st.collapsed ? '1' : '0', pureAttr: sh && sh.pure ? '1' : '0',
       // lit while the window is key or the pointer is over them; grey otherwise, like macOS
       c1: lit ? '#FF5F57' : off, c2: lit ? '#FEBC2E' : off, c3: lit ? '#28C840' : off, lb: lit ? 'rgba(0,0,0,0.18)' : dark ? 'var(--k80, rgba(255,255,255,0.08))' : 'var(--k66, rgba(0,0,0,0.06))',
       lightsOn: () => this.setState({ lh: true }), lightsOff: () => this.setState({ lh: false }),
@@ -363,7 +364,7 @@ class Component extends DCLogic {
         };
       }),
       newTab: () => this.call('create'),
-      toggleBar: () => this.toggleBar(), barOn: sh && sh.type === 'docx' ? (sh.showFormat ? '1' : '0') : st.collapsed ? '0' : '1', barTitle: sh && sh.type === 'docx' ? $t('格式面板') : $t(st.collapsed ? '展开工具栏 ⌥⌘T' : '收起工具栏 ⌥⌘T'), immersive: () => this.call('play'),
+      toggleBar: () => this.toggleBar(), barOn: sh && sh.isDoc && !sh.pure ? (sh.showFormat ? '1' : '0') : st.collapsed ? '0' : '1', barTitle: sh && sh.isDoc && !sh.pure ? $t('格式面板') : $t(st.collapsed ? '展开工具栏 ⌥⌘T' : '收起工具栏 ⌥⌘T'), immersive: () => this.call('play'),
       aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiNow: sh && sh.showAI ? '1' : '0',
       moreOpen: !!st.more, moreOn: st.more ? '1' : '0', moreToggle: () => this.setState({ more: !st.more }), closeMore: () => this.setState({ more: false }),
       moreItems: more.map(m => ({ label: m.label, key: m.key, onClick: () => { this.setState({ more: false }); m.fn(); } })),

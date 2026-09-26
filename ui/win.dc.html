@@ -16,6 +16,7 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <link rel="stylesheet" href="./theme-page.css">
+<link rel="stylesheet" href="./editor-format.css">
 <link rel="icon" href="./assets/writer-logo-dark.svg">
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
 <style>
@@ -236,7 +237,7 @@ class Component extends DCLogic {
     clearTimeout(this.rt);
     this.rt = setTimeout(() => {
       const sh = this.state.sh || {};
-      const s = { title: sh.isDoc ? docTitle(sh) : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: sh.type === 'docx' ? !sh.showFormat : this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
+      const s = { title: sh.isDoc ? docTitle(sh) : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: sh.isDoc && !sh.pure ? !sh.showFormat : this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
       const k = JSON.stringify(s); if (k === this._rk) return; this._rk = k; invoke('shell_state', s);
     }, 80);
   }
@@ -252,8 +253,8 @@ class Component extends DCLogic {
   undo(redo) { if (!this.sendKey(redo ? 'Z' : 'z', redo ? { shiftKey: true } : {})) document.execCommand(redo ? 'redo' : 'undo'); }
   barButtons() { const w = this.winRef.current; const b = w && w.querySelector('[data-glass-bar]'); return b ? Array.from(b.querySelectorAll('button')) : []; }
   press(label) { const w = this.winRef.current; const b = (w && w.querySelector(`[data-word-tab="${{ '开始': 'home', '插入': 'insert', '布局': 'layout', '引用': 'refs', '审阅': 'review', '视图': 'view' }[label] || ''}"]`)) || this.barButtons().find(x => x.textContent.trim() === $t(label)); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
-  quickPress() { const q = settings().quickTab || '开始'; if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }
-  toggleBar() { if (this.state.sh && this.state.sh.isDoc && this.state.sh.type === 'docx' && !this.state.sh.pure) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
+  quickPress() { const q = settings().quickTab || '开始', press = () => { if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }; if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(press, 50); } press(); }
+  toggleBar() { if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
   cycle(dir) { const docs = ((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
   current() { const sh = this.state.sh; return sh && sh.docs.find(d => d.on); }
 
@@ -296,7 +297,7 @@ class Component extends DCLogic {
     const all = [
       I('＋', '新建…', 'Ctrl+N', 'new'), // i18n-ok: ＋ is the icon
       I('⧉', '新建标签页', 'Ctrl+T', 'newTab'), I('↗', '打开…', 'Ctrl+O', 'open'), I('↓', '存储', 'Ctrl+S', 'save'), I('⇪', '另存为…', 'Ctrl+Shift+S', 'saveAs'), I('⎙', '打印…', 'Ctrl+P', 'print'), S,
-      I('◐', dark ? '浅色模式' : '深色模式', 'Ctrl+Shift+L', 'toggleDark'), I('⌄', this.state.sh && this.state.sh.isDoc && this.state.sh.type === 'docx' && !this.state.sh.pure ? '格式面板' : this.state.collapsed ? '展开工具栏' : '收起工具栏', 'Ctrl+Alt+T', 'toggleToolbar'), S,
+      I('◐', dark ? '浅色模式' : '深色模式', 'Ctrl+Shift+L', 'toggleDark'), I('⌄', this.state.sh && this.state.sh.isDoc && !this.state.sh.pure ? '格式面板' : this.state.collapsed ? '展开工具栏' : '收起工具栏', 'Ctrl+Alt+T', 'toggleToolbar'), S,
       I('⚙︎', '设置', 'Ctrl+,', 'settings'), I('⌨︎', '键盘快捷键', '', 'shortcuts'), I('?', 'Writer 帮助', 'F1', 'help'), S,
       I('ⓘ', '关于 Writer', '', 'about'), ...((window.__WRITER_NATIVE__ || {}).updater ? [I('↻', '检查更新…', '', 'checkUpdate')] : []), I('⏻', '退出', 'Alt+F4', 'quit')
     ];
@@ -358,7 +359,7 @@ class Component extends DCLogic {
     return {
       winRef: this.winRef, qRef: this.qRef, onShell: this.onShell, openPrefs: this.openPrefs,
       saveDialogProp: NATIVE ? this.saveDialog : null, recentProp: NATIVE ? this.recentFiles : null, openRecentProp: NATIVE ? this.openRecent : null, openDialogProp: NATIVE ? this.openDialog : null,
-      collapsedAttr: sh && sh.type === 'docx' && !sh.pure ? '0' : st.collapsed ? '1' : '0', pureAttr: sh && sh.pure ? '1' : '0',
+      collapsedAttr: sh && sh.isDoc && !sh.pure ? '0' : st.collapsed ? '1' : '0', pureAttr: sh && sh.pure ? '1' : '0',
       appMenuToggle: () => this.setState({ menu: !st.menu, q: '' }), menuOn: st.menu ? '1' : '0',
       menuOpen: st.menu, menuItems: this.items(), q: st.q, onQ: e => this.setState({ q: e.target.value }), closeMenu: () => this.setState({ menu: false, q: '' }),
       onQKey: e => { if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const it = this.items().find(x => x.row && x.id); if (it) it.onClick(); },
@@ -381,7 +382,7 @@ class Component extends DCLogic {
         };
       }),
       newTab: () => this.call('create'),
-      toggleBar: () => this.toggleBar(), barOn: sh && sh.type === 'docx' ? (sh.showFormat ? '1' : '0') : st.collapsed ? '0' : '1', barTitle: sh && sh.type === 'docx' ? $t('格式面板') : $t(st.collapsed ? '展开工具栏 Ctrl+Alt+T' : '收起工具栏 Ctrl+Alt+T'), immersive: () => this.call('play'),
+      toggleBar: () => this.toggleBar(), barOn: sh && sh.isDoc && !sh.pure ? (sh.showFormat ? '1' : '0') : st.collapsed ? '0' : '1', barTitle: sh && sh.isDoc && !sh.pure ? $t('格式面板') : $t(st.collapsed ? '展开工具栏 Ctrl+Alt+T' : '收起工具栏 Ctrl+Alt+T'), immersive: () => this.call('play'),
       aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiNow: sh && sh.showAI ? '1' : '0',
       moreOpen: !!st.more, moreOn: st.more ? '1' : '0', moreToggle: () => this.setState({ more: !st.more, menu: false, snap: false }), closeMore: () => this.setState({ more: false }),
       moreItems: more.map(m => ({ label: m.label, key: m.key, onClick: () => { this.setState({ more: false }); m.fn(); } })),
