@@ -106,3 +106,21 @@ test('the title bar\'s tabs follow the order the documents were opened in', asyn
   c.emitShell();
   assert.deepEqual(info.docs.filter(d => d.open).sort((a, b) => a.seq - b.seq).map(d => d.id), ['a', 'p', 'x'], 'not the folder\'s order');
 });
+
+test('every open document keeps its editor: one shown, the others hidden with the props they last had, six at most, in the documents\' order', () => {
+  const c = shell();
+  c.state.docs = 'abcdefgh'.split('').map((id, i) => ({ id, type: ['docx', 'xlsx', 'pptx', 'md', 'mm', 'pdf', 'docx', 'md'][i], title: id, path: id, loaded: true, html: '', sheets: [], slides: [], pages: [], map: { text: 'Root', children: [] } }));
+  const show = id => { c.setState({ cur: id, view: 'doc' }); return c.renderVals(); };
+  let v; for (const id of 'abcdefgh') v = show(id);
+  assert.deepEqual(Array.from(v.live, L => L.id), ['c', 'd', 'e', 'f', 'g', 'h'], 'the six used last, in the documents\' order (a and b let go)');
+  assert.deepEqual(Array.from(v.live.filter(L => L.onA === '1'), L => L.id), ['h'], 'one shown');
+  assert.ok(v.live.filter(L => L.onA !== '1').every(L => /content-visibility:hidden|visibility:hidden/.test(L.vis)), 'the others hidden');
+  assert.deepEqual([v.live.find(L => L.id === 'g').isDocx, v.live.find(L => L.id === 'h').isMd], [true, true]);
+  // a panel opened over h: g, hidden, keeps what it had; shown again, it takes the current values
+  c.setState({ showFormat: false, showAI: false }); v = c.renderVals();
+  assert.equal(v.live.find(L => L.id === 'g').formatOpen, true, 'g still has the panel it was last shown with');
+  assert.equal(v.live.find(L => L.id === 'h').formatOpen, false);
+  v = show('g'); assert.equal(v.live.find(L => L.id === 'g').formatOpen, false, 'shown again: the current state');
+  c.setState({ docs: c.state.docs.map(d => d.id === 'e' ? Object.assign({}, d, { loaded: false }) : d) }); v = c.renderVals();
+  assert.ok(!Array.from(v.live, L => L.id).includes('e'), 'a closed document lets its editor go');
+});

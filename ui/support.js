@@ -642,6 +642,9 @@
   function walkFor(el, host) {
     const listGet = compileAttr(el.getAttribute("list") || "");
     const asName = el.getAttribute("as") || "item";
+    // Writer: key-by="id" keys each item by that field instead of its position, so an item that moves or loses a neighbour
+    // keeps its components (the shell's kept-alive editors) instead of being rebuilt
+    const keyBy = el.getAttribute("key-by");
     const hintN = parseInt(el.getAttribute("hint-placeholder-count") || "0", 10);
     const kids = walkChildren(el, host);
     const listSrc = el.getAttribute("list") || "";
@@ -669,7 +672,7 @@
           sub.$index = i;
           return h(
             getReact().Fragment,
-            { key: i },
+            { key: keyBy && item && item[keyBy] != null ? "k:" + item[keyBy] : i },
             kids.map((b, j) => b(sub, ctx, j))
           );
         })

@@ -177,24 +177,28 @@ button,input,select,textarea{font-family:inherit;color:inherit}
       </div>
       </sc-if>
       <div style="flex:1;min-height:0;position:relative">
-        <sc-if value="{{ isDocx }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="WordEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-revise="{{ onRevise }}" on-rewrite="{{ onRewrite }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
-        </sc-if>
-        <sc-if value="{{ isXlsx }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="SheetEditor" grid="{{ gridOn }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
-        </sc-if>
-        <sc-if value="{{ isPptx }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="SlideEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-ask="{{ askAI }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
-        </sc-if>
-        <sc-if value="{{ isMd }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="MarkdownEditor" auto-format="{{ mdAuto }}" on-rewrite="{{ onRewrite }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
-        </sc-if>
-        <sc-if value="{{ isMm }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="MindMapEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
-        </sc-if>
-        <sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="PdfEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
-        </sc-if>
+        <sc-for list="{{ live }}" as="L" key-by="id" hint-placeholder-count="0">
+          <div data-live="{{ L.onA }}" style="position:absolute;inset:0;{{ L.vis }}">
+          <sc-if value="{{ L.isDocx }}" hint-placeholder-val="{{ false }}">
+            <dc-import name="WordEditor" doc="{{ L.doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-revise="{{ onRevise }}" on-rewrite="{{ onRewrite }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          </sc-if>
+          <sc-if value="{{ L.isXlsx }}" hint-placeholder-val="{{ false }}">
+            <dc-import name="SheetEditor" grid="{{ L.gridOn }}" doc="{{ L.doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          </sc-if>
+          <sc-if value="{{ L.isPptx }}" hint-placeholder-val="{{ false }}">
+            <dc-import name="SlideEditor" doc="{{ L.doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-ask="{{ askAI }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" on-toggle-thumbs="{{ toggleThumbs }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          </sc-if>
+          <sc-if value="{{ L.isMd }}" hint-placeholder-val="{{ false }}">
+            <dc-import name="MarkdownEditor" auto-format="{{ L.mdAuto }}" on-rewrite="{{ onRewrite }}" doc="{{ L.doc }}" on-change="{{ onDocChange }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          </sc-if>
+          <sc-if value="{{ L.isMm }}" hint-placeholder-val="{{ false }}">
+            <dc-import name="MindMapEditor" doc="{{ L.doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          </sc-if>
+          <sc-if value="{{ L.isPdf }}" hint-placeholder-val="{{ false }}">
+            <dc-import name="PdfEditor" doc="{{ L.doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          </sc-if>
+          </div>
+        </sc-for>
       </div>
     </sc-if>
   </div>
@@ -430,9 +434,14 @@ const MAC_INSET = MAC_DESKTOP ? 68 : 0; // the title pill (and the xlsx toolbar 
 const MACOS = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || ''); // the shortcuts the 纯净模式 tooltips show
 let PERF = new URLSearchParams(location.search).get('perf'); try { PERF = PERF || localStorage.getItem('writerPerf'); } catch (e) { } // frame-time HUD, see perf.js
 
+/** The shell's values an editor takes that change with the shell's state (a hidden, kept-alive editor keeps the ones it had). */
+/** Whether this WebKit / Chromium skips a content-visibility:hidden subtree (Safari 18, Chrome 85 and later). */
+const CV_HIDDEN = typeof CSS !== 'undefined' && !!CSS.supports && CSS.supports('content-visibility', 'hidden');
+const LIVE_PROPS = ['formatOpen', 'panelOpen', 'panelEnter', 'aiOn', 'pure', 'showThumbs', 'barLeft', 'barRight', 'merged', 'leadW', 'gridOn', 'mdAuto'];
 class Component extends DCLogic {
   openSeqN = 0; // the order documents were opened in: the title bar's tabs follow it
   state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null };
+  liveIds = []; // the documents whose editors are kept alive, used last first (vals)
   prefs = {}; closed = new Set(); lastSel = '';
   chatRef = React.createRef(); rootRef = React.createRef(); leftPillRef = React.createRef(); rightPillRef = React.createRef(); fileRef = React.createRef(); hist = {}; sv = {}; _len = 0; _cards = 0; _h = 0;
   componentDidMount() {
@@ -783,7 +792,7 @@ class Component extends DCLogic {
     st.busy = true; this.setState({ saving: true });
     st.done = (async () => {
       try {
-        const root = this.state.cur === id && d.type === 'docx' ? document.querySelector('.wd-ed[contenteditable="true"]') : null;
+        const root = this.state.cur === id && d.type === 'docx' ? document.querySelector('[data-live="1"] .wd-ed[contenteditable="true"]') : null;
         const n = await this.EN.save(d, { root });
         if (n) { const cur = this.state.docs.find(x => x.id === id); if (cur) this.setDoc(this.EN.adopt(cur, d, true), false, { quiet: true }); }
         st.at = Date.now(); st.failed = null;
@@ -822,7 +831,7 @@ class Component extends DCLogic {
   toggleThumbsAnim() {
     if (this.state.pure) return; // 沉浸书写 shows the document alone
     if (!this.state.showThumbs) { this.setState({ showThumbs: true, closingThumbs: false }); return; }
-    const p = document.querySelector('[data-thumbpanel]');
+    const p = document.querySelector('[data-live="1"] [data-thumbpanel]');
     this.setState({ closingThumbs: true });
     const done = () => { if (this.state.showThumbs) this.setState({ showThumbs: false, closingThumbs: false }); };
     const calm = document.documentElement.getAttribute('data-motion') === 'reduce';
@@ -840,10 +849,10 @@ class Component extends DCLogic {
   /** The side panels (格式 / AI) are one card in one place. Opening, closing or swapping them, the content beside it slides by FLIP
    *  from where it was and a panel that closes fades out as a copy (glass.js): nothing animates a width, nothing lays out twice. */
   panelTo(update) {
-    const G = this.G, was = document.querySelector('[data-format-panel],[data-ai-panel]');
-    const play = G ? G.flip(document.querySelector('[data-edroot]')) : null, out = G && was ? G.ghost(was) : null;
+    const G = this.G, was = document.querySelector('[data-live="1"] [data-format-panel],[data-ai-panel]');
+    const play = G ? G.flip(document.querySelector('[data-live="1"] [data-edroot]')) : null, out = G && was ? G.ghost(was) : null;
     this.setState(update, () => Promise.resolve().then(() => { // after the nested updates of this commit (Word's fit, the slide's scale)
-      if (out && !document.querySelector('[data-format-panel],[data-ai-panel]')) out();
+      if (out && !document.querySelector('[data-live="1"] [data-format-panel],[data-ai-panel]')) out();
       if (play) play();
     }));
   }
@@ -975,15 +984,34 @@ class Component extends DCLogic {
   }
 
   /** Callbacks keep their identity across renders (memo.js), so an editor whose props did not change skips the render. */
-  renderVals() { return window.dcMemo ? dcMemo.stableAll(this, this.vals()) : this.vals(); }
+  renderVals() { const v = this.freezeLive(this.vals()); return window.dcMemo ? dcMemo.stableAll(this, v) : v; }
+  /** A hidden editor keeps the props it had when it was last shown, so it does not render again while hidden (toggling a panel
+   *  used to re-render every kept editor); shown again, it takes the current ones. */
+  freezeLive(v) {
+    if (!v.live) return v;
+    const now = {}; for (const k of LIVE_PROPS) now[k] = v[k];
+    const was = this.frozen || {}; this.frozen = {};
+    v.live = v.live.map(L => { const P = L.onA === '1' || !was[L.id] ? now : was[L.id]; this.frozen[L.id] = P; return Object.assign({}, L, P); });
+    return v;
+  }
   vals() {
     const st = this.state;
-    if (!st.ready) return { ...this.macVals(), lpLeft: MAC_DESKTOP ? '84px' : '12px', lpTop: '10px', lpMaxW: '320px', ttlMax: '160px', ttlOp: 1, ttlPad: '0 13px 0 11px', ttlDelay: '0s', lpOp: 1, lpBg: "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: "blur(10px) saturate(190%)", lpBd: "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", merged: true, leadW: 170, loading: true, notPure: true, rightPillDisp: 'flex', barTitle: '', leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, barLeft: '200px', aiOn: false, aiBtnBd: 'transparent', panelW: '304px', pillRight: '12px', panelOpen: false, panelEnter: 'open', showRightPill: true, thumbBtnBg: 'transparent', docsBtnBg: 'transparent', aiBtnBg: 'transparent', aiBtnSh: 'none', neverShow: false, hasDocs: false, cols: 'minmax(0,1fr)', docRows: [], isCreate: false, isDoc: false, showPanel: false, typeTabs: [], starters: [], genSteps: [], msgs: [], chips: [], menuItems: [], fileRef: this.fileRef, chatRef: this.chatRef, desktopMac: MAC_DESKTOP };
+    if (!st.ready) return { ...this.macVals(), lpLeft: MAC_DESKTOP ? '84px' : '12px', lpTop: '10px', lpMaxW: '320px', ttlMax: '160px', ttlOp: 1, ttlPad: '0 13px 0 11px', ttlDelay: '0s', lpOp: 1, lpBg: "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: "blur(10px) saturate(190%)", lpBd: "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", merged: true, leadW: 170, loading: true, notPure: true, rightPillDisp: 'flex', barTitle: '', leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, barLeft: '200px', aiOn: false, aiBtnBd: 'transparent', panelW: '304px', pillRight: '12px', panelOpen: false, panelEnter: 'open', live: [], showRightPill: true, thumbBtnBg: 'transparent', docsBtnBg: 'transparent', aiBtnBg: 'transparent', aiBtnSh: 'none', neverShow: false, hasDocs: false, cols: 'minmax(0,1fr)', docRows: [], isCreate: false, isDoc: false, showPanel: false, typeTabs: [], starters: [], genSteps: [], msgs: [], chips: [], menuItems: [], fileRef: this.fileRef, chatRef: this.chatRef, desktopMac: MAC_DESKTOP };
     const d = this.doc, isDoc = st.view === 'doc' && !!d, pure = isDoc && st.pure, ai = this.prefs.ai !== false;
     // one side panel at a time, in one place: 格式 (Aa) or the assistant, in 沉浸书写 as outside it; the one that opens slides in, the one
     // that takes the other's place only swaps its content (panelEnter, sticky while the same panel stays open)
     const showPanel = isDoc && ai && !!st.showAI, fmtOn = isDoc && !!st.showFormat && !showPanel, panelOpen = showPanel || fmtOn, kind = fmtOn ? 'fmt' : showPanel ? 'ai' : null;
     if (kind !== this.panelKind) { this.panelEnter = this.panelKind && kind ? 'swap' : 'open'; this.panelKind = kind; }
+    // Every open document keeps its editor (kept alive): switching tabs shows another one instead of building it again, with
+    // its scroll, selection and undo where they were. The six used last stay; they are drawn in the documents' own order
+    // (moving an editor in the DOM would lose its scroll), the others hidden and skipped by layout (content-visibility).
+    if (isDoc && d.loaded) { const i = this.liveIds.indexOf(d.id); if (i !== 0) { if (i > 0) this.liveIds.splice(i, 1); this.liveIds.unshift(d.id); } }
+    this.liveIds = this.liveIds.filter(id => st.docs.some(x => x.id === id && x.loaded)).slice(0, 6);
+    const HIDDEN = CV_HIDDEN ? 'content-visibility:hidden;pointer-events:none' : 'visibility:hidden;opacity:0;pointer-events:none'; // visibility inherits: showing it again restyled the whole editor
+    const live = st.docs.filter(x => this.liveIds.includes(x.id)).map(x => {
+      const on = isDoc && x.id === d.id, t = x.type;
+      return { id: x.id, doc: x, onA: on ? '1' : '0', vis: on ? '' : HIDDEN, isDocx: t === 'docx', isXlsx: t === 'xlsx', isPptx: t === 'pptx', isMd: t === 'md', isMm: t === 'mm', isPdf: t === 'pdf' };
+    });
     const ICO = t => `./assets/doc/doc-${({ docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' })[t] || 'word'}-32.png`;
     const menuItems = [];
     const MI = (label, fn, hint, color) => menuItems.push({ isItem: true, label: $t(label), hint: hint || '', color: color || 'var(--k1, #1D1D1F)', onClick: () => { this.setState({ menu: null }); fn(); } });
@@ -1009,7 +1037,7 @@ class Component extends DCLogic {
     const tpls = st.templates.filter(x => x.type === st.createType), tplCats = tpls.length ? [null, ...new Set(tpls.map(x => x.cat))] : []; // the gallery of the chosen type; null is 全部
     return {
       ...this.macVals(),
-      loading: false, notPure: !pure, pure, neverShow: false, panelW: '304px', panelOpen, panelEnter: this.panelEnter || 'open', pillRight: '12px', showRightPill: !isDoc, rightPillDisp: isDoc || !ai ? 'none' : 'flex', barRight: '12px', barLeft: (isDoc && !pure ? (st.showThumbs ? (d.type === 'xlsx' ? (st.barLeft || 200 + MAC_INSET) : 224) : 76 + MAC_INSET + (this.props.mac ? 66 : 0)) : 12) + 'px', lpLeft: (MAC_DESKTOP ? 84 : isDoc && !pure ? 16 : 12) + 'px', lpTop: (isDoc && !pure ? 16 : 10) + 'px', lpOp: 1, lpMaxW: (isDoc && !pure && st.showThumbs ? (MAC_DESKTOP ? 122 : this.props.mac ? 160 : 156) : 320 + (this.props.mac ? 66 : 0)) + 'px', merged: false, leadW: 40, ttlMax: !isDoc || (st.showThumbs && !st.closingThumbs) ? (this.props.mac && isDoc ? '84px' : '160px') : '0px', ttlOp: !isDoc || (st.showThumbs && !st.closingThumbs) ? 1 : 0, ttlPad: !isDoc || (st.showThumbs && !st.closingThumbs) ? '0 13px 0 11px' : '0', ttlDelay: '0s', lpBg: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'transparent' : "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "blur(10px) saturate(190%)", lpBd: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? '1px solid transparent' : "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, aiOn: showPanel, aiBtnBd: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
+      loading: false, live, notPure: !pure, pure, neverShow: false, panelW: '304px', panelOpen, panelEnter: this.panelEnter || 'open', pillRight: '12px', showRightPill: !isDoc, rightPillDisp: isDoc || !ai ? 'none' : 'flex', barRight: '12px', barLeft: (isDoc && !pure ? (st.showThumbs ? (d.type === 'xlsx' ? (st.barLeft || 200 + MAC_INSET) : 224) : 76 + MAC_INSET + (this.props.mac ? 66 : 0)) : 12) + 'px', lpLeft: (MAC_DESKTOP ? 84 : isDoc && !pure ? 16 : 12) + 'px', lpTop: (isDoc && !pure ? 16 : 10) + 'px', lpOp: 1, lpMaxW: (isDoc && !pure && st.showThumbs ? (MAC_DESKTOP ? 122 : this.props.mac ? 160 : 156) : 320 + (this.props.mac ? 66 : 0)) + 'px', merged: false, leadW: 40, ttlMax: !isDoc || (st.showThumbs && !st.closingThumbs) ? (this.props.mac && isDoc ? '84px' : '160px') : '0px', ttlOp: !isDoc || (st.showThumbs && !st.closingThumbs) ? 1 : 0, ttlPad: !isDoc || (st.showThumbs && !st.closingThumbs) ? '0 13px 0 11px' : '0', ttlDelay: '0s', lpBg: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'transparent' : "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "blur(10px) saturate(190%)", lpBd: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? '1px solid transparent' : "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, aiOn: showPanel, aiBtnBd: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
       desktopMac: MAC_DESKTOP, showThumbs: !pure && !!st.showThumbs, toggleThumbs: () => this.toggleThumbsAnim(), thumbBtnBg: st.showThumbs && isDoc ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent',
       barTitle: isDoc ? d.title : (this.loading ? $t('正在打开…') : $t('新建')), openDocs: () => this.setState({ docsOpen: !st.docsOpen, menu: null }), closeDocs: () => this.setState({ docsOpen: false }), hasDocs: !!st.docsOpen, docsBtnBg: st.docsOpen ? 'var(--k64, rgba(255,255,255,0.85))' : 'transparent',
       onFileMenu: r => this.setState({ menu: this.state.menu ? null : { x: r.left, y: r.bottom + 8 }, docsOpen: false }),

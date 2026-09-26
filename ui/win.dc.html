@@ -235,13 +235,13 @@ window.__writerDockHint = on => this.setState({ dockHint: !!on }); // a tab from
   flash(t) { this.setState({ toast: t }); clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: null }), 1800); }
 
   // ---- keyboard events forwarded to the editor, as in mac.dc.html ----
-  target() { const w = this.winRef.current; let t = document.activeElement; if (!t || !w || !w.contains(t)) t = (w && (w.querySelector('[contenteditable="true"]') || w.querySelector('[data-edroot]'))) || w || document.body; return t; }
+  target() { const w = this.winRef.current; let t = document.activeElement; if (!t || !w || !w.contains(t)) t = (w && (w.querySelector('[data-live="1"] [contenteditable="true"]') || w.querySelector('[data-live="1"] [data-edroot]') || w.querySelector('[data-edroot]'))) || w || document.body; return t; }
   sendKey(k, o = {}) {
     const t = this.target(); const ev = new KeyboardEvent('keydown', Object.assign({ key: k, ctrlKey: true, bubbles: true, cancelable: true }, o));
     t.dispatchEvent(ev); return ev.defaultPrevented;
   }
   undo(redo) { if (!this.sendKey(redo ? 'Z' : 'z', redo ? { shiftKey: true } : {})) document.execCommand(redo ? 'redo' : 'undo'); }
-  barButtons() { const w = this.winRef.current; const b = w && w.querySelector('[data-glass-bar]'); return b ? Array.from(b.querySelectorAll('button')) : []; }
+  barButtons() { const w = this.winRef.current; const b = w && (w.querySelector('[data-live="1"] [data-glass-bar]') || w.querySelector('[data-glass-bar]')); return b ? Array.from(b.querySelectorAll('button')) : []; }
   press(label) { const w = this.winRef.current; const b = (w && w.querySelector(`[data-panel-tab="${{ '开始': 'home', '插入': 'insert', '布局': 'layout', '引用': 'refs', '审阅': 'review', '视图': 'view' }[label] || ''}"]`)) || this.barButtons().find(x => x.textContent.trim() === $t(label)); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
   quickPress() { const q = settings().quickTab || '开始', press = () => { if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }; if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(press, 50); } press(); }
   toggleBar() { if (this.state.sh && this.state.sh.isDoc) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }

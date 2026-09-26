@@ -48,7 +48,7 @@ async function openDoc(path) { // that file, else the first document of the same
   const sh = window.__shell, d = sh.state.docs.find(x => x.path === path) || sh.state.docs.find(x => x.type === path.split('.').pop()); if (!d) return false;
   if (sh.doc && sh.doc.id === d.id) { sh.setState({ view: 'create' }); await sleep(400); } // measure a real switch, not a no-op
   const t0 = performance.now(); sh.open(d.id);
-  for (let i = 0; i < 400 && !(sh.doc && sh.doc.id === d.id && sh.state.view === 'doc' && document.querySelector('[data-edroot]')); i++) await sleep(10);
+  for (let i = 0; i < 400 && !(sh.doc && sh.doc.id === d.id && sh.state.view === 'doc' && (document.querySelector('[data-live="1"] [data-edroot]') || document.querySelector('[data-edroot]'))); i++) await sleep(10);
   await frame(); results.push({ name: d.type + ' open', ms: Math.round(performance.now() - t0) });
   await sleep(1200); return true;
 }
@@ -83,7 +83,7 @@ const S = {
     sc.scrollTop = 0; await sleep(200);
   },
   async rerender(pre) { // what one render of the open editor costs: renderVals + template + React commit, no layout
-    const host = document.querySelector('[data-edroot]'), k = host && Object.keys(host).find(x => x.startsWith('__reactFiber$'));
+    const host = (document.querySelector('[data-live="1"] [data-edroot]') || document.querySelector('[data-edroot]')), k = host && Object.keys(host).find(x => x.startsWith('__reactFiber$'));
     let f = k && host[k]; while (f && !(f.stateNode && f.stateNode.logic)) f = f.return;
     if (!f || !window.ReactDOM || !ReactDOM.flushSync) return;
     const ms = []; for (let i = 0; i < 7; i++) { const t = performance.now(); ReactDOM.flushSync(() => f.stateNode.forceUpdate()); ms.push(performance.now() - t); await frame(); }
