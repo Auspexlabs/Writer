@@ -21,7 +21,7 @@
 .mm-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:9px;height:9px;border-radius:50%;background:var(--ink-2, rgba(29,29,31,0.62));border:none}
 </style>
 </helmet>
-<div ref="{{ rootRef }}" data-edroot="1" tabIndex="-1" onKeyDown="{{ onKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;box-sizing:border-box;padding-right:{{ panelPad }};transition:padding-right .28s cubic-bezier(.2,.8,.2,1);outline:none;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
+<div ref="{{ rootRef }}" data-edroot="1" tabIndex="-1" onKeyDown="{{ onKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;box-sizing:border-box;padding-right:{{ panelPad }};outline:none;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
   <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
     <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
       <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
@@ -54,7 +54,7 @@
     </sc-if>
   </sc-if>
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
-    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
 
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ cols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
@@ -93,9 +93,8 @@
     </div>
   </div>
 
-  <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out">{{ statCount }}</div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;right:calc(18px + {{ panelPad }});transition:right .28s cubic-bezier(.2,.8,.2,1);bottom:12px;z-index:30;display:flex;align-items:center;gap:8px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap">
+    <div data-flip="1" style="position:absolute;right:calc(18px + {{ panelPad }});bottom:12px;z-index:30;display:flex;align-items:center;gap:8px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap">
       <span>{{ statCount }}</span>
       <button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" style="width:18px;height:18px;padding:0;border:none;border-radius:5px;background:transparent;font-size:13px;line-height:1;cursor:pointer;color:inherit;transition:color .2s" style-hover="color:var(--ink, #1D1D1F)">−</button>
       <input class="mm-range" type="range" min="20" max="400" step="1" value="{{ zPct }}" onChange="{{ onZoomSlide }}" title="缩放">
@@ -158,6 +157,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); const c = this.canvasRef.current; c && c.removeEventListener('wheel', this.onWheel); const ta = this.taRef.current; if (ta) { ta.removeEventListener('beforecopy', this.onBeforeCopy); ta.removeEventListener('beforecut', this.onBeforeCopy); } this.ro && this.ro.disconnect(); document.fonts && document.fonts.removeEventListener('loadingdone', this.refont); this.stopPan(); this.stopAuto(); clearTimeout(this.followT); }
   componentDidUpdate(pp) {
+    if (!!pp.panelOpen !== !!this.props.panelOpen) this.panelShift();
     if (pp.doc && this.props.doc && pp.doc.id !== this.props.doc.id) { this.needFit = true; this.setState({ sel: null, sels: [], editing: null, editText: '', local: null, menu: null, pop: null }); return; }
     if (this.needFit && this.state.box.w && this.M && this.doc && this.doc.map) { this.needFit = false; this.fit(1, false); }
     if (this.focusPop && this.popRef.current) { this.focusPop = false; const el = this.popRef.current; el.focus({ preventScroll: true }); if (el.tagName === 'INPUT') el.select(); }
@@ -169,6 +169,15 @@ class Component extends DCLogic {
       if (!this.composing) { if (all) el.select(); else el.setSelectionRange(el.value.length, el.value.length); }
     }
     this.follow();
+  }
+  /** The side panel opened or closed and the canvas narrowed or widened at once: measure it now (the ResizeObserver comes a frame
+   *  later) and slide the map by half the change with the view transition, so it keeps its middle smoothly. */
+  panelShift() {
+    const c = this.canvasRef.current, s = this.state; if (!c || !s.box.w) return;
+    const w = c.clientWidth, h = c.clientHeight; if (!w || Math.abs(w - s.box.w) < 0.5 && Math.abs(h - s.box.h) < 0.5) return;
+    this.stopPan(); this.manualAt = performance.now();
+    this.setState({ box: { w, h }, tx: s.tx + (w - s.box.w) / 2, ty: s.ty + (h - s.box.h) / 2, anim: true });
+    clearTimeout(this.shiftT); this.shiftT = setTimeout(() => this.setState({ anim: false }), 420);
   }
   refont = () => { this.mcache.clear(); this._layoutFor = null; this.forceUpdate(); };
   // ----- model access: the shell owns the doc; standalone (no onChange) the editor keeps its own copy -----
@@ -806,7 +815,7 @@ class Component extends DCLogic {
       export: [B($t('导出 PNG'), () => this.exportPng()), B($t('导出 SVG'), () => this.exportSvg()), B($t('导出 Markdown'), () => this.exportMd()), SEP, B($t('转为 Markdown 大纲'), () => this.props.onConvert && this.props.onConvert('md')), B($t('转为 Word'), () => this.props.onConvert && this.props.onConvert('docx')), B($t('转为演示'), () => this.props.onConvert && this.props.onConvert('pptx'))]
     };
     const tab = st.tab;
-    const formatOpen = !pure && !!this.props.formatOpen, panel = this.panelVals({ M, st, d, sel, selNode, ids, level1, notRoot, selRel, need, tgtId, curS, showOutline, has, mcol, PROG, tab, formatOpen });
+    const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ M, st, d, sel, selNode, ids, level1, notRoot, selRel, need, tgtId, curS, showOutline, has, mcol, PROG, tab, formatOpen });
     const tabs = [['home', $t('开始')], ['style', $t('样式')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => this.openTab(k, e) }; });
     const outline = []; M.walk(d.map, (n, p, depth) => outline.push({ text: n.text || $t('（空）'), indent: (10 + depth * 13) + 'px', fw: depth === 0 ? 600 : depth === 1 ? 500 : 400, bg: ids.includes(R(n.id)) ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', mark: n.collapsed && (n.children || []).length ? '▸' : '', onClick: () => { this.select(n.id); this.centreOn(n.id); } }));
     const { z, tx, ty } = st, dg = st.drag, ov = this.svgOverlay(L);
@@ -815,7 +824,7 @@ class Component extends DCLogic {
     // the popup hangs under its topic, or under the middle of its relationship line
     const pb = pop && (pop.kind === 'rel' ? (r => r && { x: r.mid.x - 132 / z, y: r.mid.y + 4 / z, h: 0, n: { text: this.F(d.map, r.from).text } })(L.rels.find(r => this.same(r.from, pop.id) && r.i === pop.i)) : this.box(pop.id));
     return Object.assign(base, {
-      tabs, tools: SETS[tab] || [], bubbleOpen: pure && !!st.bubble, ...(formatOpen ? { formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: '312px' } : {}), rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(820, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, outline,
+      tabs, tools: SETS[tab] || [], bubbleOpen: pure && !!st.bubble, ...(formatOpen ? { formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups } : {}), panelPad: panelOpen ? '312px' : '0px', panelEnter: this.props.panelEnter || 'open', rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(820, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, outline,
       svgMap: { __html: this.svgMap(L) }, svgOver: { __html: ov.over }, svgUnder: { __html: ov.under },
       tf: `translate(${tx}px,${ty}px) scale(${z})`, tfTr: st.anim ? 'transform .4s cubic-bezier(.2,1,.3,1)' : 'none', cursor: this.op && this.op.kind === 'pan' && this.op.moved ? 'grabbing' : dg ? 'grabbing' : st.relFrom ? 'crosshair' : 'default',
       // the field: over the topic while editing, otherwise an invisible caret at the selection (so an IME opens there)

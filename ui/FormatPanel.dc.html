@@ -14,7 +14,7 @@
    edge, then groups one under another, each a small grey title and rows of controls. The controls are the design's own:
    popup buttons with a double chevron, segmented controls, number fields with a stepper, swatches, checkboxes, a switch,
    white buttons and the insert tiles. Colours come from theme-dark.css (--fp-*), so dark follows. */
-.fp{position:absolute;inset:0;box-sizing:border-box;padding:12px 14px 0;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;background:var(--fp-bg);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--fp-sh);color:var(--fp-ink);font:12.5px/1.3 var(--font-ui);-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;cursor:default}
+.fp{position:absolute;inset:0;box-sizing:border-box;padding:12px 14px 0;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;background:var(--fp-bg);box-shadow:var(--fp-sh);color:var(--fp-ink);font:12.5px/1.3 var(--font-ui);-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;cursor:default}
 .fp button{font-family:var(--font-ui);color:var(--fp-ink);cursor:default;-webkit-tap-highlight-color:transparent}
 .fp svg{display:block;flex:none}
 .fp-tabs{display:flex;align-items:flex-end;justify-content:space-between;margin:-12px -14px 2px;padding:0 16px;box-shadow:inset 0 -.5px 0 var(--fp-line);flex:none}
@@ -129,7 +129,7 @@
 .fp-empty{font-size:12px;color:var(--fp-title);line-height:1.6}
 </style>
 </helmet>
-<aside class="fp" data-format-panel="1" aria-label="格式面板">
+<aside class="fp" data-format-panel="1" data-enter="{{ enter }}" aria-label="格式面板">
   <nav class="fp-tabs" aria-label="格式标签">
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6"><button class="fp-tab" data-panel-tab="{{ t.key }}" data-on="{{ t.onA }}" data-ctx="{{ t.ctxA }}" onMouseDown="{{ keep }}" onClick="{{ t.onClick }}">{{ t.label }}</button></sc-for>
   </nav>
@@ -366,7 +366,7 @@ class Component extends DCLogic {
   renderVals() {
     const p = this.props;
     return {
-      keep, scrollKey: p.tab || '',
+      keep, scrollKey: p.tab || '', enter: p.enter || 'open', // how it came in: slid in, or in the AI panel's place (theme-dark.css)
       tabs: (p.tabs || []).map(t => ({ ...t, onA: t.on ? '1' : '0', ctxA: t.ctx ? '1' : '0' })),
       groups: (p.groups || []).filter(Boolean).map(g => ({ title: g.title || '', rows: (g.rows || []).filter(r => r && r.items && r.items.length).map(r => ({ grid: r.grid ? String(r.grid) : undefined, wrap: r.wrap ? '1' : undefined, tight: (r.grid || r.items.filter(Boolean).length) >= 3 && r.items.some(it => it && it.t === 'btn') ? '1' : undefined, css: (r.grid ? `--cols:${r.grid};` : '') + (r.css || ''), items: r.items.filter(Boolean).map(it => this.item(it)) })) }))
     };

@@ -54,33 +54,12 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 *:hover{scrollbar-color:var(--k4, rgba(0,0,0,0.22)) transparent}
 @keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
 .wd-ed [data-ai]{background:var(--k46, #DCEBDF);box-shadow:0 0 0 3px var(--k46, #DCEBDF);border-radius:2px}
-/* 纯净模式 (vals().pure): the document alone on a quiet ground. The shell's chrome is one pointer-events:none layer (.pr) whose
-   buttons are its only targets, so nothing sits over the page. data-near / data-typing go on the shell root straight from the
-   mouse and key listeners (onMove / onKey), never through a render; the editors' status line ([data-pure-status]) dims with it. The Mac / Windows lights and title strip: mac.dc.html, win.dc.html. */
-[data-pure="1"]{background:#FFFFFF!important;--pr-ink:rgba(0,0,0,0.34)} /* theme: keep */
-html[data-theme="dark"] [data-pure="1"]{background:#1B1B1D!important;--pr-ink:rgba(245,245,247,0.36)} /* theme: keep */
-.pr{position:absolute;inset:0;z-index:60;pointer-events:none;--pr-ink2:rgba(0,0,0,0.72);--pr-hov:rgba(0,0,0,0.06);--pr-pill:linear-gradient(180deg,rgba(255,255,255,0.86),rgba(255,255,255,0.66));--pr-bd:rgba(0,0,0,0.07);--pr-sh:0 6px 20px rgba(0,0,0,0.08)} /* theme: keep */
-html[data-theme="dark"] .pr{--pr-ink2:rgba(245,245,247,0.8);--pr-hov:rgba(255,255,255,0.08);--pr-pill:rgba(44,44,46,0.72);--pr-bd:rgba(255,255,255,0.08);--pr-sh:0 6px 20px rgba(0,0,0,0.32)} /* theme: keep */
-.pr>*{transition:opacity .18s ease-out}
-[data-pure="1"][data-typing="1"] :is(.pr>*,[data-pure-status]){opacity:.15}
-.pr-name{position:absolute;top:12px;left:150px;right:150px;text-align:center;font-size:12px;line-height:16px;color:var(--pr-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pr-pill{position:absolute;top:6px;right:8px;display:flex;gap:2px;padding:3px;border-radius:999px;pointer-events:auto;border:1px solid transparent;transition:background .18s ease-out,border-color .18s ease-out,box-shadow .18s ease-out}
-[data-pure="1"][data-near="1"] .pr-pill{background:var(--pr-pill);border-color:var(--pr-bd);box-shadow:var(--pr-sh);backdrop-filter:blur(12px) saturate(180%);-webkit-backdrop-filter:blur(12px) saturate(180%)}
-.pr-btn{position:relative;width:30px;height:30px;padding:0;border:none;border-radius:999px;background:transparent;color:var(--pr-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .18s ease-out,background .18s ease-out}
-[data-pure="1"][data-near="1"] .pr-btn,.pr-btn[data-on="1"]{color:var(--pr-ink2)}
-.pr-btn:hover,.pr-btn[data-on="1"]{background:var(--pr-hov)}
-.pr-btn svg{display:block}
-.pr-tip{position:absolute;top:36px;right:0;display:flex;gap:6px;padding:4px 8px;border-radius:7px;background:rgba(29,29,31,0.92);color:#FFFFFF;font-size:11px;line-height:14px;white-space:nowrap;opacity:0;transform:translateY(-2px);pointer-events:none;transition:opacity .15s ease-out,transform .15s ease-out} /* theme: keep */
-.pr-tip>span:empty{display:none}
-.pr-tip>span+span{color:rgba(255,255,255,0.55)} /* theme: keep */
-.pr-btn:hover .pr-tip{opacity:1;transform:none}
-/* 格式: the editor's own toolbar (its tools prop), moved under the cluster while it is open; its ribbon bubble follows */
-[data-pure="1"] [data-edroot]>div:has(>[data-glass-bar]){top:46px!important;justify-content:flex-end!important}
-[data-pure="1"] [data-edroot]>div:has(>[data-bubble]){top:94px!important}
+/* 沉浸书写 (vals().pure): the document alone. The shell drops its thumbnails and the editors their count and status pills; the
+   host keeps only the Aa / 沉浸 / AI pill (mac.dc.html, win.dc.html), and its 格式 and AI panels are the same as outside it. */
 </style>
 </helmet>
 <div ref="{{ rootRef }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" data-pure="{{ pureAttr }}" style="height:{{ rootH }};min-width:720px;position:relative;overflow:hidden;background:var(--bg, #FFFFFF)">
-  <div style="position:absolute;top:0;left:0;bottom:0;right:{{ edRight }};display:flex;flex-direction:column;min-width:0;transition:right .55s cubic-bezier(.2,1,.3,1)">
+  <div style="position:absolute;top:0;left:0;bottom:0;right:0;display:flex;flex-direction:column;min-width:0">
   <sc-if value="{{ neverShow }}" hint-placeholder-val="{{ false }}">
 
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
@@ -199,35 +178,22 @@ html[data-theme="dark"] .pr{--pr-ink2:rgba(245,245,247,0.8);--pr-hov:rgba(255,25
       </sc-if>
       <div style="flex:1;min-height:0;position:relative">
         <sc-if value="{{ isDocx }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="WordEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-revise="{{ onRevise }}" on-rewrite="{{ onRewrite }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" pure-tools="{{ pTools }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          <dc-import name="WordEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-revise="{{ onRevise }}" on-rewrite="{{ onRewrite }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
         </sc-if>
         <sc-if value="{{ isXlsx }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="SheetEditor" grid="{{ gridOn }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" pure-tools="{{ pTools }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          <dc-import name="SheetEditor" grid="{{ gridOn }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
         </sc-if>
         <sc-if value="{{ isPptx }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="SlideEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-ask="{{ askAI }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" pure-tools="{{ pTools }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          <dc-import name="SlideEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-ask="{{ askAI }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" on-toggle-thumbs="{{ toggleThumbs }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
         </sc-if>
         <sc-if value="{{ isMd }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="MarkdownEditor" auto-format="{{ mdAuto }}" on-rewrite="{{ onRewrite }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" pure-tools="{{ pTools }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          <dc-import name="MarkdownEditor" auto-format="{{ mdAuto }}" on-rewrite="{{ onRewrite }}" doc="{{ doc }}" on-change="{{ onDocChange }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
         </sc-if>
         <sc-if value="{{ isMm }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="MindMapEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" pure-tools="{{ pTools }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+          <dc-import name="MindMapEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
         </sc-if>
         <sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}">
-          <dc-import name="PdfEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" pure-tools="{{ pTools }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
-        </sc-if>
-        <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}">
-          <div data-pure-chrome="1" class="pr">
-            <div class="pr-name">{{ pureName }}</div>
-            <div class="pr-pill">
-              <button class="pr-btn" data-on="{{ pToolsOn }}" onMouseDown="{{ pMd }}" onClick="{{ toggleTools }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 3h9M8 3v8.5"></path><path d="M3 14h10" opacity="0.55"></path></svg><span class="pr-tip"><span>格式</span><span></span></span></button>
-              <sc-if value="{{ pHasThumbs }}" hint-placeholder-val="{{ true }}">
-              <button class="pr-btn" data-on="{{ pThumbsOn }}" onMouseDown="{{ pMd }}" onClick="{{ toggleThumbs }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="2.2"></rect><path d="M6.2 3v10"></path></svg><span class="pr-tip"><span>缩略图</span><span>{{ pKeyThumbs }}</span></span></button>
-              </sc-if>
-              <button class="pr-btn" data-ai-btn="1" data-on="{{ pAIOn }}" onMouseDown="{{ pMd }}" onClick="{{ toggleAI }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.6c.5 3.3 3.1 5.9 6.4 6.4-3.3.5-5.9 3.1-6.4 6.4-.5-3.3-3.1-5.9-6.4-6.4C4.9 7.5 7.5 4.9 8 1.6z"></path></svg><span class="pr-tip"><span>AI 助手</span><span>{{ pKeyAI }}</span></span></button>
-              <button class="pr-btn" onMouseDown="{{ pMd }}" onClick="{{ exitPure }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2.5l4 4M3 6.5h3.5V3M13.5 2.5l-4 4M13 6.5H9.5V3M2.5 13.5l4-4M3 9.5h3.5V13M13.5 13.5l-4-4M13 9.5H9.5V13"></path></svg><span class="pr-tip"><span>退出纯净模式</span><span>Esc</span></span></button>
-            </div>
-          </div>
+          <dc-import name="PdfEditor" doc="{{ doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-convert="{{ onConvert }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ barRight }}" bar-left="{{ barLeft }}" merged="{{ merged }}" lead-w="{{ leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ showThumbs }}" format-open="{{ formatOpen }}" pure="{{ pure }}" panel-open="{{ panelOpen }}" panel-enter="{{ panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
         </sc-if>
       </div>
     </sc-if>
@@ -303,7 +269,7 @@ html[data-theme="dark"] .pr{--pr-ink2:rgba(245,245,247,0.8);--pr-hov:rgba(255,25
   </sc-if>
 
   <sc-if value="{{ showPanel }}" hint-placeholder-val="{{ false }}">
-    <div data-pop="right" style="position:absolute;top:10px;right:8px;bottom:8px;width:{{ panelW }};z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:18px;overflow:hidden;background:var(--format-panel-bg);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--format-panel-sh)">
+    <div data-ai-panel="1" data-enter="{{ panelEnter }}" style="position:absolute;top:6px;right:8px;bottom:8px;width:304px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:18px;overflow:hidden;background:var(--format-panel-bg);box-shadow:var(--format-panel-sh)">
       <div style="height:46px;flex:none;display:flex;align-items:center;padding:0 10px 0 18px;gap:8px;font-size:13px">
         <span style="font-size:12px">✦</span><span style="font-size:14px;font-weight:600">AI</span>
         <div style="flex:1"></div>
@@ -466,11 +432,11 @@ let PERF = new URLSearchParams(location.search).get('perf'); try { PERF = PERF |
 
 class Component extends DCLogic {
   openSeqN = 0; // the order documents were opened in: the title bar's tabs follow it
-  state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null, pTools: false, pThumbs: false, pAI: false };
+  state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null };
   prefs = {}; closed = new Set(); lastSel = '';
   chatRef = React.createRef(); rootRef = React.createRef(); leftPillRef = React.createRef(); rightPillRef = React.createRef(); fileRef = React.createRef(); hist = {}; sv = {}; _len = 0; _cards = 0; _h = 0;
   componentDidMount() {
-    import('./select-sync.js'); import('./glass.js');
+    import('./select-sync.js'); import('./glass.js').then(m => { this.G = m; });
     if (PERF) { window.__shell = this; import('./perf.js'); }
     Promise.all([import('./office-io.js'), import('./sheet-engine.js'), import('./md.js'), import('./pdf-kit.js'), import('./engine.js'), import('./prefs.js')]).then(async ([K, E, MD, PK, EN, P]) => {
       this.K = K; this.E = E; this.MD = MD; this.PK = PK; this.EN = EN; this.P = P; this.applyTheme();
@@ -479,12 +445,11 @@ class Component extends DCLogic {
       const solo = !!(window.__WRITER_NATIVE__ || {}).solo; // a tab torn off another window: the host sends the one document it shows
       const p = this.prefs, s = solo ? {} : P.loadSession(), L = P.launch(files, p, s), layout = P.loadLayout();
       this.closed = new Set(p.restore !== false ? (s.closed || []).filter(x => files.some(f => f.path === x)) : []);
-      this.setState({ ready: true, docs: L.docs, chatOn: EN.state.chat, model: EN.state.model, view: L.open || solo ? 'doc' : 'create', showThumbs: layout.showThumbs, showAI: layout.showAI });
+      this.setState({ ready: true, docs: L.docs, chatOn: EN.state.chat, model: EN.state.model, view: L.open || solo ? 'doc' : 'create', showThumbs: layout.showThumbs, showAI: layout.showAI, showFormat: !layout.showAI }); // one panel at a time
       if (solo) return;
       if (L.open) this.open(L.open.id); else if (L.blank) this.createBlank(L.blank);
     });
     window.addEventListener('keydown', this.onKey);
-    window.addEventListener('mousemove', this.onMove, { passive: true }); document.addEventListener('mousedown', this.onDocDown, true); // 纯净模式
     this.applyTheme(); window.addEventListener('writer-settings', this.applyTheme); window.addEventListener('storage', this.onStorage); window.addEventListener('writer-ai', this.onAi); window.addEventListener('focus', this.onAi);
     this.mqDark = matchMedia('(prefers-color-scheme: dark)'); this.mqDark.addEventListener('change', this.applyTheme); this.mqMotion = matchMedia('(prefers-reduced-motion: reduce)'); this.mqMotion.addEventListener('change', this.applyTheme);
     document.addEventListener('focusin', this.onFocusIn, true); document.addEventListener('beforeinput', this.onBeforeInput, true); document.addEventListener('compositionend', this.onCompEnd, true);
@@ -501,7 +466,7 @@ class Component extends DCLogic {
     this.loadRecent(); this.loadTemplates(); this._viewWas = this.state.view;
   }
   componentWillUnmount() {
-    window.removeEventListener('keydown', this.onKey); window.removeEventListener('mousemove', this.onMove); document.removeEventListener('mousedown', this.onDocDown, true); window.removeEventListener('writer-settings', this.applyTheme); window.removeEventListener('storage', this.onStorage); window.removeEventListener('writer-ai', this.onAi); window.removeEventListener('focus', this.onAi);
+    window.removeEventListener('keydown', this.onKey); window.removeEventListener('writer-settings', this.applyTheme); window.removeEventListener('storage', this.onStorage); window.removeEventListener('writer-ai', this.onAi); window.removeEventListener('focus', this.onAi);
     this.mqDark && this.mqDark.removeEventListener('change', this.applyTheme); this.mqMotion && this.mqMotion.removeEventListener('change', this.applyTheme);
     document.removeEventListener('focusin', this.onFocusIn, true); document.removeEventListener('beforeinput', this.onBeforeInput, true); document.removeEventListener('compositionend', this.onCompEnd, true);
     document.removeEventListener('selectionchange', this.onSelChange); document.removeEventListener('select', this.onSelChange, true);
@@ -561,8 +526,7 @@ class Component extends DCLogic {
   };
   /** The 新建 page (⌘N, ⌘T, 文件 › 新建…): the templates and blanks to start a document from, outside 沉浸书写. */
   openNew = () => { if (this.state.pure) this.setPure(false); this.setState({ view: 'create', docsOpen: false }); };
-  toggleFormat = () => this.setState(s => ({ showFormat: !s.showFormat, showAI: s.showFormat ? s.showAI : false }));
-  shellApi = { toggleThumbs: () => this.toggleThumbsAnim(), open: id => this.open(id), openPath: async rel => { await this.refreshFiles(); const d = this.state.docs.find(x => x.path === rel); if (d) await this.open(d.id); else await this.addLazy(this.EN.lazy(rel), true); return true; }, /* a file the folder listing leaves out (.txt) still opens: the engine reads and writes it by path */ close: id => this.closeDoc(id), detach: (id, host) => this.detach(id, host), create: () => this.openNew(), openFileMenu: () => this.setState({ menu: this.state.menu ? null : { x: 16, y: 52 }, docsOpen: false }), toggleAI: () => this.toggleAIPanel(), toggleFormat: () => this.toggleFormat(), showFormat: () => this.setState({ showFormat: true, showAI: false }), play: () => this.setState({ pure: true }), toggleDark: () => this.toggleDark(), saveAs: () => this.saveAs(), confirmClose: () => this.confirmClose() };
+  shellApi = { toggleThumbs: () => this.toggleThumbsAnim(), open: id => this.open(id), openPath: async rel => { await this.refreshFiles(); const d = this.state.docs.find(x => x.path === rel); if (d) await this.open(d.id); else await this.addLazy(this.EN.lazy(rel), true); return true; }, /* a file the folder listing leaves out (.txt) still opens: the engine reads and writes it by path */ close: id => this.closeDoc(id), detach: (id, host) => this.detach(id, host), create: () => this.openNew(), openFileMenu: () => this.setState({ menu: this.state.menu ? null : { x: 16, y: 52 }, docsOpen: false }), toggleAI: () => this.toggleAIPanel(), toggleFormat: () => this.toggleFormat(), showFormat: () => this.panelTo({ showFormat: true, showAI: false }), play: () => { if (this.state.view === 'doc' && this.doc) this.setPure(true); }, togglePure: () => { if (this.state.pure) this.setPure(false); else if (this.state.view === 'doc' && this.doc) this.setPure(true); }, toggleDark: () => this.toggleDark(), saveAs: () => this.saveAs(), confirmClose: () => this.confirmClose() };
   /** Tells the host (props.onShell) what the shell shows whenever that changes: onShell(info, api). */
   emitShell() {
     if (!this.props.onShell || !this.state.ready) return;
@@ -609,19 +573,16 @@ class Component extends DCLogic {
   }
   onKey = e => {
     if (e.key === 'Escape' && this.state.ask) { this.state.ask.res('cancel'); return; }
-    const pr = this.pureRef(); // 纯净模式: typing dims the chrome (onMove wakes it)
-    if (pr && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key.length === 1 || /^(Backspace|Delete|Enter|Process)$/.test(e.key)) && !pr.dataset.typing) pr.dataset.typing = '1';
     const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
     if (ctrl && e.shiftKey && k === 'l') { e.preventDefault(); this.toggleDark(); return; }
     if (ctrl && e.key === ',') { e.preventDefault(); this.openSettings(); return; }
     if (e.key === 'Escape' && this.state.ov) { this.setState({ ov: null }); return; }
-    if (e.key === 'Escape' && this.state.view === 'doc' && this.doc && !this.state.pure && this.state.showFormat && !this.state.showAI) { e.preventDefault(); this.setState({ showFormat: false }); return; }
+    if (e.key === 'Escape' && this.state.view === 'doc' && this.doc && this.state.showFormat && !this.state.showAI) { e.preventDefault(); this.panelTo({ showFormat: false }); return; }
     if (ctrl && e.metaKey && e.ctrlKey && k === 's') { e.preventDefault(); this.toggleThumbsAnim(); return; }
     if (ctrl && !e.shiftKey && !e.altKey && k === 'n') { e.preventDefault(); this.openNew(); return; } // ⌘N: the 新建 page, as 文件 › 新建… does
     if (ctrl && !e.shiftKey && !e.altKey && k === 't') { e.preventDefault(); this.openNew(); return; }
     if (ctrl && !e.shiftKey && k === 'j') { e.preventDefault(); this.toggleAIPanel(); return; }
-    if (e.key === 'Escape' && this.state.pure) { // 格式 closes first; a text selection keeps Esc for the editor
-      if (this.state.pTools) { e.preventDefault(); this.setState({ pTools: false }); return; }
+    if (e.key === 'Escape' && this.state.pure) { // after 格式 (above); a text selection keeps Esc for the editor
       const a = document.activeElement; if (!(a && a.isContentEditable && getSelection().toString())) { e.preventDefault(); this.setPure(false); }
     }
     if (ctrl && e.key === '.' && this.state.view === 'doc') { e.preventDefault(); this.setPure(!this.state.pure); }
@@ -859,7 +820,7 @@ class Component extends DCLogic {
     this.scheduleSave(d.id);
   }
   toggleThumbsAnim() {
-    if (this.state.pure) { this.setState(s => ({ pThumbs: !s.pThumbs })); return; } // 纯净模式: the panel over the page, no grid column to animate
+    if (this.state.pure) return; // 沉浸书写 shows the document alone
     if (!this.state.showThumbs) { this.setState({ showThumbs: true, closingThumbs: false }); return; }
     const p = document.querySelector('[data-thumbpanel]');
     this.setState({ closingThumbs: true });
@@ -869,17 +830,29 @@ class Component extends DCLogic {
     else done();
   }
   // ---- 纯净模式: the document alone; 格式 / 缩略图 / AI 助手 open over it and start closed each time ----
-  setPure(on) { const el = this.rootRef.current; if (el) { delete el.dataset.typing; delete el.dataset.near; } this.setState({ pure: !!on, pTools: false, pThumbs: false, pAI: false }); }
-  /** The shell root while in 纯净模式 (it carries data-pure, data-near and data-typing), else null. */
-  pureRef() { const el = this.rootRef.current; return el && el.dataset.pure === '1' ? el : null; }
-  /** The assistant panel: beside the document, or over it in 纯净模式. */
-  toggleAIPanel() { if (this.prefs.ai === false) return; this.setState(s => s.pure ? { pAI: !s.pAI } : { showAI: !s.showAI, showFormat: s.showAI ? s.showFormat : false }); }
+  /** 沉浸书写: the document alone. Going in closes the side panels (the Aa / AI pill brings back the same ones); coming out
+   *  restores the panels that were open before. */
+  setPure(on) {
+    on = !!on; if (on === !!this.state.pure) return;
+    if (on) { this.prePure = { showFormat: this.state.showFormat, showAI: this.state.showAI }; this.setState({ pure: true, showFormat: false, showAI: false }); return; }
+    const p = this.prePure || {}; this.prePure = null; this.setState({ pure: false, showFormat: !!p.showFormat, showAI: !!p.showAI });
+  }
+  /** The side panels (格式 / AI) are one card in one place. Opening, closing or swapping them, the content beside it slides by FLIP
+   *  from where it was and a panel that closes fades out as a copy (glass.js): nothing animates a width, nothing lays out twice. */
+  panelTo(update) {
+    const G = this.G, was = document.querySelector('[data-format-panel],[data-ai-panel]');
+    const play = G ? G.flip(document.querySelector('[data-edroot]')) : null, out = G && was ? G.ghost(was) : null;
+    this.setState(update, () => Promise.resolve().then(() => { // after the nested updates of this commit (Word's fit, the slide's scale)
+      if (out && !document.querySelector('[data-format-panel],[data-ai-panel]')) out();
+      if (play) play();
+    }));
+  }
+  /** Aa: the format panel, in place of the assistant when that is open; again, closed. */
+  toggleFormat = () => this.panelTo(s => (s.showFormat && !s.showAI ? { showFormat: false } : { showFormat: true, showAI: false }));
+  /** The assistant panel, in the same place; closing it brings back the format panel if that was open under it. */
+  toggleAIPanel() { if (this.prefs.ai === false) return; this.panelTo(s => ({ showAI: !s.showAI, showFormat: s.showAI ? s.showFormat : false })); }
   /** ✦ 改写 in the selection bar: the selected text goes to the assistant, its panel open. */
-  rewrite(text) { text = String(text || '').trim(); if (!text) return; this.setState(s => s.pure ? { pAI: true } : { showAI: true, showFormat: false }); this.send($t('改写这段文字，保持原意，让它更通顺简洁：') + '\n' + text); }
-  /** Mouse movement wakes the chrome layer; the pill fills in near the top-right cluster. Attributes only, no render. */
-  onMove = e => { const pr = this.pureRef(); if (!pr) return; if (pr.dataset.typing) delete pr.dataset.typing; const near = window.innerWidth - e.clientX < 270 && e.clientY < 165 ? '1' : ''; if ((pr.dataset.near || '') !== near) pr.dataset.near = near; };
-  /** 格式 (the editor's toolbar over the page) closes on a click anywhere outside it and its menus. */
-  onDocDown = e => { if (this.state.pTools && !(e.target.closest && e.target.closest('[data-glass-bar],[data-bubble],[data-menu],[data-dlg],[data-pure-chrome]'))) this.setState({ pTools: false }); };
+  rewrite(text) { text = String(text || '').trim(); if (!text) return; this.panelTo({ showAI: true, showFormat: false }); this.send($t('改写这段文字，保持原意，让它更通顺简洁：') + '\n' + text); }
   print() { const d = this.doc; if (!d) return; if (d.type === 'mm') return this.toastMsg($t('思维导图请在「导出」标签导出 PNG')); if (d.type === 'md') return this.download('mdprint'); if (d.type === 'pdf') return this.download('pdfprint'); this.K.printDoc(d, { E: this.E }); }
   async download(kind) {
     const d = this.doc; if (!d) return; this.setState({ menu: null });
@@ -1005,9 +978,12 @@ class Component extends DCLogic {
   renderVals() { return window.dcMemo ? dcMemo.stableAll(this, this.vals()) : this.vals(); }
   vals() {
     const st = this.state;
-    if (!st.ready) return { ...this.macVals(), lpLeft: MAC_DESKTOP ? '84px' : '12px', lpTop: '10px', lpMaxW: '320px', ttlMax: '160px', ttlOp: 1, ttlPad: '0 13px 0 11px', ttlDelay: '0s', lpOp: 1, lpBg: "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: "blur(10px) saturate(190%)", lpBd: "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", merged: true, leadW: 170, loading: true, notPure: true, rightPillDisp: 'flex', barTitle: '', leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, barLeft: '200px', aiOn: false, aiBtnBd: 'transparent', panelW: '300px', pillRight: '12px', edRight: '0px', showRightPill: true, thumbBtnBg: 'transparent', docsBtnBg: 'transparent', aiBtnBg: 'transparent', aiBtnSh: 'none', neverShow: false, hasDocs: false, cols: 'minmax(0,1fr)', docRows: [], isCreate: false, isDoc: false, showPanel: false, typeTabs: [], starters: [], genSteps: [], msgs: [], chips: [], menuItems: [], fileRef: this.fileRef, chatRef: this.chatRef, desktopMac: MAC_DESKTOP };
+    if (!st.ready) return { ...this.macVals(), lpLeft: MAC_DESKTOP ? '84px' : '12px', lpTop: '10px', lpMaxW: '320px', ttlMax: '160px', ttlOp: 1, ttlPad: '0 13px 0 11px', ttlDelay: '0s', lpOp: 1, lpBg: "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: "blur(10px) saturate(190%)", lpBd: "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", merged: true, leadW: 170, loading: true, notPure: true, rightPillDisp: 'flex', barTitle: '', leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, barLeft: '200px', aiOn: false, aiBtnBd: 'transparent', panelW: '304px', pillRight: '12px', panelOpen: false, panelEnter: 'open', showRightPill: true, thumbBtnBg: 'transparent', docsBtnBg: 'transparent', aiBtnBg: 'transparent', aiBtnSh: 'none', neverShow: false, hasDocs: false, cols: 'minmax(0,1fr)', docRows: [], isCreate: false, isDoc: false, showPanel: false, typeTabs: [], starters: [], genSteps: [], msgs: [], chips: [], menuItems: [], fileRef: this.fileRef, chatRef: this.chatRef, desktopMac: MAC_DESKTOP };
     const d = this.doc, isDoc = st.view === 'doc' && !!d, pure = isDoc && st.pure, ai = this.prefs.ai !== false;
-    const pTools = pure && !!st.pTools, pThumbs = pure && !!st.pThumbs, pAI = pure && !!st.pAI, showPanel = isDoc && ai && (pure ? pAI : st.showAI); // 纯净模式 keeps its own panel flags
+    // one side panel at a time, in one place: 格式 (Aa) or the assistant, in 沉浸书写 as outside it; the one that opens slides in, the one
+    // that takes the other's place only swaps its content (panelEnter, sticky while the same panel stays open)
+    const showPanel = isDoc && ai && !!st.showAI, fmtOn = isDoc && !!st.showFormat && !showPanel, panelOpen = showPanel || fmtOn, kind = fmtOn ? 'fmt' : showPanel ? 'ai' : null;
+    if (kind !== this.panelKind) { this.panelEnter = this.panelKind && kind ? 'swap' : 'open'; this.panelKind = kind; }
     const ICO = t => `./assets/doc/doc-${({ docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' })[t] || 'word'}-32.png`;
     const menuItems = [];
     const MI = (label, fn, hint, color) => menuItems.push({ isItem: true, label: $t(label), hint: hint || '', color: color || 'var(--k1, #1D1D1F)', onClick: () => { this.setState({ menu: null }); fn(); } });
@@ -1033,14 +1009,13 @@ class Component extends DCLogic {
     const tpls = st.templates.filter(x => x.type === st.createType), tplCats = tpls.length ? [null, ...new Set(tpls.map(x => x.cat))] : []; // the gallery of the chosen type; null is 全部
     return {
       ...this.macVals(),
-      loading: false, notPure: !pure, pure, neverShow: false, panelW: isDoc && d.type === 'docx' ? '304px' : (this.panelW = Math.max(260, Math.min(310, Math.round((window.innerWidth || 1200) * 0.26)))) + 'px', edRight: showPanel && !pure ? (d.type === 'docx' ? '320px' : (this.panelW + 20) + 'px') : '0px', pillRight: '12px', showRightPill: !isDoc, rightPillDisp: isDoc || !ai ? 'none' : 'flex', barRight: '12px', barLeft: (isDoc && !pure ? (st.showThumbs ? (d.type === 'xlsx' ? (st.barLeft || 200 + MAC_INSET) : 224) : 76 + MAC_INSET + (this.props.mac ? 66 : 0)) : 12) + 'px', lpLeft: (MAC_DESKTOP ? 84 : isDoc && !pure ? 16 : 12) + 'px', lpTop: (isDoc && !pure ? 16 : 10) + 'px', lpOp: 1, lpMaxW: (isDoc && !pure && st.showThumbs ? (MAC_DESKTOP ? 122 : this.props.mac ? 160 : 156) : 320 + (this.props.mac ? 66 : 0)) + 'px', merged: false, leadW: 40, ttlMax: !isDoc || (st.showThumbs && !st.closingThumbs) ? (this.props.mac && isDoc ? '84px' : '160px') : '0px', ttlOp: !isDoc || (st.showThumbs && !st.closingThumbs) ? 1 : 0, ttlPad: !isDoc || (st.showThumbs && !st.closingThumbs) ? '0 13px 0 11px' : '0', ttlDelay: '0s', lpBg: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'transparent' : "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "blur(10px) saturate(190%)", lpBd: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? '1px solid transparent' : "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, aiOn: !!((pure ? pAI : st.showAI) && isDoc), aiBtnBd: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
-      desktopMac: MAC_DESKTOP, showThumbs: pure ? pThumbs : st.showThumbs, toggleThumbs: () => this.toggleThumbsAnim(), thumbBtnBg: st.showThumbs && isDoc ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent',
+      loading: false, notPure: !pure, pure, neverShow: false, panelW: '304px', panelOpen, panelEnter: this.panelEnter || 'open', pillRight: '12px', showRightPill: !isDoc, rightPillDisp: isDoc || !ai ? 'none' : 'flex', barRight: '12px', barLeft: (isDoc && !pure ? (st.showThumbs ? (d.type === 'xlsx' ? (st.barLeft || 200 + MAC_INSET) : 224) : 76 + MAC_INSET + (this.props.mac ? 66 : 0)) : 12) + 'px', lpLeft: (MAC_DESKTOP ? 84 : isDoc && !pure ? 16 : 12) + 'px', lpTop: (isDoc && !pure ? 16 : 10) + 'px', lpOp: 1, lpMaxW: (isDoc && !pure && st.showThumbs ? (MAC_DESKTOP ? 122 : this.props.mac ? 160 : 156) : 320 + (this.props.mac ? 66 : 0)) + 'px', merged: false, leadW: 40, ttlMax: !isDoc || (st.showThumbs && !st.closingThumbs) ? (this.props.mac && isDoc ? '84px' : '160px') : '0px', ttlOp: !isDoc || (st.showThumbs && !st.closingThumbs) ? 1 : 0, ttlPad: !isDoc || (st.showThumbs && !st.closingThumbs) ? '0 13px 0 11px' : '0', ttlDelay: '0s', lpBg: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'transparent' : "linear-gradient(180deg,var(--k15, rgba(255,255,255,0.62)),var(--k16, rgba(255,255,255,0.34)))", lpBf: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "blur(10px) saturate(190%)", lpBd: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? '1px solid transparent' : "1px solid var(--k17, rgba(0,0,0,0.07))", lpSh: isDoc && !pure && st.showThumbs && d.type !== 'xlsx' ? 'none' : "inset 0 1px 0 var(--k31, rgba(255,255,255,0.95)),inset 0 -1px 1px var(--k49, rgba(255,255,255,0.3)),0 12px 32px var(--k36, rgba(0,0,0,0.12)),0 1px 3px var(--k29, rgba(0,0,0,0.1))", leftPillRef: this.leftPillRef, rightPillRef: this.rightPillRef, aiOn: showPanel, aiBtnBd: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
+      desktopMac: MAC_DESKTOP, showThumbs: !pure && !!st.showThumbs, toggleThumbs: () => this.toggleThumbsAnim(), thumbBtnBg: st.showThumbs && isDoc ? 'var(--k41, rgba(255,255,255,0.85))' : 'transparent',
       barTitle: isDoc ? d.title : (this.loading ? $t('正在打开…') : $t('新建')), openDocs: () => this.setState({ docsOpen: !st.docsOpen, menu: null }), closeDocs: () => this.setState({ docsOpen: false }), hasDocs: !!st.docsOpen, docsBtnBg: st.docsOpen ? 'var(--k64, rgba(255,255,255,0.85))' : 'transparent',
       onFileMenu: r => this.setState({ menu: this.state.menu ? null : { x: r.left, y: r.bottom + 8 }, docsOpen: false }),
       aiBtnSh: st.showAI && isDoc ? '0 1px 4px var(--k36, rgba(0,0,0,0.12)), inset 0 1px 0 var(--k51, #fff)' : 'none',
       enterPure: () => this.setPure(true), exitPure: () => this.setPure(false), pureAttr: pure ? '1' : '0',
-      rootRef: this.rootRef, pureName: isDoc ? String(d.path || d.title).split(/[\\/]/).pop() : '', pTools, toggleTools: () => this.setState(s => ({ pTools: !s.pTools })), pToolsOn: pTools ? '1' : '', pThumbsOn: pThumbs ? '1' : '', pAIOn: pAI ? '1' : '',
-      pHasThumbs: isDoc && d.type !== 'xlsx', pKeyThumbs: MACOS ? '⌃⌘S' : 'Ctrl+\\', pKeyAI: MACOS ? '⌘J' : 'Ctrl+J', pMd: e => e.preventDefault(), onRewrite: text => this.rewrite(text),
+      rootRef: this.rootRef, onRewrite: text => this.rewrite(text),
       isMd: isDoc && d.type === 'md', isPdf: isDoc && d.type === 'pdf', isMm: isDoc && d.type === 'mm', onConvert: (k, p) => this.convert(k, p),
       docRows: st.docs.map(x => { const on = isDoc && x.id === d.id; return { icon: ICO(x.type), tag: TAG[x.type].l, tagBg: TAG[x.type].bg, title: x.title, bg: on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', hover: on ? 'var(--k0, #FFFFFF)' : 'var(--k6, #E5E5EA)', sh: on ? '0 0 0 1px #E5E5EA' : 'none', fw: on ? 500 : 400, onClick: () => this.open(x.id),
         onMid: e => { if (e.button === 1) { e.preventDefault(); this.closeDoc(x.id); } }, onClose: e => { e.stopPropagation(); this.closeDoc(x.id); } }; }),
@@ -1069,9 +1044,9 @@ class Component extends DCLogic {
       toggleAI: () => this.toggleAIPanel(), aiBtnBg: st.showAI && isDoc ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent',
       doShare: () => { const u = location.origin + '/app/index.dc.html'; if (navigator.clipboard) navigator.clipboard.writeText(u).catch(() => { }); this.toastMsg($t('本地地址已复制：{url}', { url: u })); },
       doDownload: () => this.download(d.type === 'pdf' ? 'pdfdoc' : 'file'), dlLabel: $t('下载'),
-      isDocx: isDoc && d.type === 'docx', formatOpen: isDoc && st.showFormat && !st.showAI && !pure, isXlsx: isDoc && d.type === 'xlsx', isPptx: isDoc && d.type === 'pptx',
+      isDocx: isDoc && d.type === 'docx', formatOpen: fmtOn, isXlsx: isDoc && d.type === 'xlsx', isPptx: isDoc && d.type === 'pptx',
       onDocChange: (nd, opts) => this.setDoc(nd, !(opts && opts.silent)), onUndo: () => this.undo(false), onRedo: () => this.undo(true), onRevise: accept => this.revise(accept), toastFn: m => this.toastMsg(m),
-      askAI: text => { this.setState({ showAI: true, showFormat: false }); this.send(text); }, // an editor's own AI button (幻灯片 ✦ 美化): the panel opens and the request goes as a message
+      askAI: text => { this.panelTo({ showAI: true, showFormat: false }); this.send(text); }, // an editor's own AI button (幻灯片 ✦ 美化): the panel opens and the request goes as a message
       showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? $t(WELCOME[d.type]) + (st.model ? $t('（') + st.model + $t('）') : '') : $t(NO_CHAT)) : '', thinking: st.thinking,
       needsModel: !st.chatOn, openAiSettings: () => this.openSettings('ai'),
       msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', html: { __html: m.text ? (this.MD ? this.MD.mdToHtml(m.text, { safe: true }) : escHtml(m.text)) : '' }, setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: $t('执行了 {n} 条命令', { n: (m.steps || []).length }), stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? $t('{n} 处修改', { n: ch.items.length }) : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: $t(ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复'), onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),

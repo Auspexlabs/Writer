@@ -7,7 +7,7 @@
 </head>
 <body>
 <x-dc>
-<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F);padding-top:{{ sheetTopPad }};padding-right:{{ panelPad }};transition:padding-right .28s cubic-bezier(.2,.8,.2,1);outline:none">
+<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F);padding-top:{{ sheetTopPad }};padding-right:{{ panelPad }};outline:none">
   <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
   <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
     <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
@@ -53,9 +53,9 @@
 
   </sc-if>
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
-    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
-  <div style="flex:none;height:34px;width:min(760px,calc(100% - 48px));box-sizing:border-box;margin:4px auto 10px;display:grid;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:12px;background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-size:12.5px;overflow:hidden">
+  <div data-flip="1" style="flex:none;height:34px;width:min(760px,calc(100% - 48px));box-sizing:border-box;margin:4px auto 10px;display:grid;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:12px;background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-size:12.5px;overflow:hidden">
     <input value="{{ nameBox }}" onChange="{{ onNameBox }}" onKeyDown="{{ onNameKey }}" onFocus="{{ onNameFocus }}" onBlur="{{ onNameBlur }}" style="height:100%;border:none;padding:0 14px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px;font-weight:500;outline:none;color:var(--ink, #1D1D1F);background:linear-gradient(var(--line, rgba(0,0,0,0.1)),var(--line, rgba(0,0,0,0.1))) right center/1px 16px no-repeat">
     <button onMouseDown="{{ md }}" onClick="{{ openFx }}" title="插入函数" style="height:100%;border:none;background:transparent;color:var(--ink-3, rgba(29,29,31,0.36));font-family:Georgia,serif;font-style:italic;cursor:pointer;font-size:13px">fx</button>
     <div style="position:relative;height:100%;min-width:0">
@@ -1288,7 +1288,7 @@ class Component extends DCLogic {
         onSel: e => { e.stopPropagation(); if (st.picSel !== im.id) this.setState({ picSel: im.id, chartSel: null, pop: null }); } };
     });
     // popover
-    const formatOpen = !this.props.pure && !!this.props.formatOpen, panel = this.panelVals({ st, sh, cs, s0, R, tab, tabsDef, pic, picLook, fmtLabel, I, formatOpen });
+    const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ st, sh, cs, s0, R, tab, tabsDef, pic, picLook, fmtLabel, I, formatOpen });
     let popItems = [];
     if (st.pop) {
       if (st.pop.id.startsWith('flt')) {
@@ -1323,7 +1323,7 @@ class Component extends DCLogic {
     const dlg = st.dlg;
     return {
       md, loading: false, neverThumbs: false, sheetTopPad: this.props.pure ? (this.props.pureTools ? '58px' : '0px') : '2px', /* the formula bar's top lines up with the format panel's */ showBar: !!this.props.pure && !!this.props.pureTools, fxML: '12px', tabs, ribbon, bubbleOpen: !!this.props.pure && !!st.bubble,
-      formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: formatOpen ? '312px' : '0px', /* the format panel (the Word 定稿 style): the grid gives it its width */
+      formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: panelOpen ? '312px' : '0px', panelEnter: this.props.panelEnter || 'open', /* the format panel (the Word 定稿 style): the grid gives it its width */
       rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), notPure: !this.props.pure,
       showThumbs: !this.props.pure && this.props.showThumbs !== false, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       sheetThumbs: d.sheets.map((s, i) => { const u = E.usedRange(s); return { name: s.name, fw: i === this.si ? 600 : 400, bg: i === this.si ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', meta: (u ? $t('{range} · {n} 个单元格', { range: `${E.A(u.r1, u.c1)}:${E.A(u.r2, u.c2)}`, n: Object.keys(s.cells).length }) : $t('空')) + ((s.charts || []).length ? $t(' · {n} 图表', { n: s.charts.length }) : ''), onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); } } }; }),

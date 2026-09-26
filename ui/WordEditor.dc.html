@@ -96,7 +96,7 @@
 .wd-side-n[data-on="1"]{font-weight:600;color:#007AFF}
 .wd-side-new{margin-top:10px;height:30px;padding:0 14px;border:none;border-radius:999px;background:var(--fp-ctl);box-shadow:0 0 0 .5px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.05);color:var(--fp-title);font:12.5px var(--font-ui);display:flex;align-items:center;gap:6px;cursor:default}
 /* the count under the page (the design's 字数 pill): words · page, then the zoom; it follows the page as panels open and close */
-.wd-count{position:absolute;transform:translateX(-50%);bottom:21px;z-index:30;height:26px;box-sizing:border-box;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:10px;font:11.5px var(--font-ui);color:var(--pill-dim);font-variant-numeric:tabular-nums;white-space:nowrap;background:var(--pill-bg);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:var(--pill-sh);transition:left .55s cubic-bezier(.2,1,.3,1)}
+.wd-count{position:absolute;transform:translateX(-50%);bottom:21px;z-index:30;height:26px;box-sizing:border-box;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:10px;font:11.5px var(--font-ui);color:var(--pill-dim);font-variant-numeric:tabular-nums;white-space:nowrap;background:var(--pill-bg);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:var(--pill-sh)}
 .wd-count-sep{width:1px;height:12px;background:var(--fp-line)}
 .wd-count button{padding:0;border:none;background:transparent;color:inherit;font:inherit;cursor:default}
 .wd-count button:hover{color:var(--fp-ink)}
@@ -179,7 +179,7 @@
 
   </sc-if>
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ true }}">
-    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
   <sc-if value="{{ showFind }}" hint-placeholder-val="{{ false }}">
     <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:58px;left:50%;margin-left:-330px;width:660px;z-index:38;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 8px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px">
@@ -194,7 +194,7 @@
     </div>
   </sc-if>
 
-  <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ bodyCols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ bodyCols }}">
     <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
       <div data-thumbpanel="1" data-pop="left" class="wd-side"><div style="height:48px;flex:none"></div>
         <div class="wd-side-seg" role="tablist"><button role="tab" aria-selected="{{ navPages }}" data-on="{{ navPagesA }}" onClick="{{ thumbPagesClick }}">页面</button><button role="tab" aria-selected="{{ navOutline }}" data-on="{{ navOutlineA }}" onClick="{{ thumbOutlineClick }}">大纲</button></div>
@@ -223,7 +223,7 @@
       </div>
     </sc-if>
     <div ref="{{ cvRef }}" data-light="{{ cvLight }}" onMouseDown="{{ onCanvasDown }}" style="grid-column:2;overflow:auto;padding:{{ cvPad }};min-width:0;background:{{ cvBg }}">
-      <div style="zoom:{{ zoomV }};width:{{ pageW }};margin:0 auto">
+      <div data-flip="scale" style="zoom:{{ zoomV }};width:{{ pageW }};margin:0 auto">
         <sc-if value="{{ showRuler }}" hint-placeholder-val="{{ false }}">
           <div data-light="1" onClick="{{ onRuler }}" title="{{ rulerTitle }}" style="position:relative;height:18px;margin:0 0 6px;border-radius:4px;background:var(--kpage, #FFFFFF);box-shadow:0 0 0 1px var(--kpageb, rgba(0,0,0,0.06));cursor:pointer;overflow:hidden">
             <div style="position:absolute;left:0;right:0;top:0;bottom:0;background:linear-gradient(90deg,var(--k12, #F2F2F7) 0 {{ padH }},transparent {{ padH }} calc(100% - {{ padR }}),var(--k12, #F2F2F7) calc(100% - {{ padR }}))"></div>
@@ -299,9 +299,8 @@
     </sc-if>
   </div>
 
-  <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out"><span>{{ wordsText }}</span><span> · </span><span>{{ pagesText }}</span></div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-  <div data-word-status="1" class="wd-count" style="left:{{ statusX }}">
+  <div data-word-status="1" data-flip="1" class="wd-count" style="left:{{ statusX }}">
     <span>{{ wordsText }} · {{ pagePositionText }}</span><span class="wd-count-sep"></span>
     <span style="display:flex;align-items:center;gap:8px"><button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" aria-label="缩小">−</button><input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" aria-label="缩放比例"><button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" aria-label="放大">＋</button></span>
   </div>
@@ -460,8 +459,7 @@ const md = e => e.preventDefault();
 const frameOf = img => img.closest('figure[data-pic]') || img; // what frames a picture: its figure once it has a look, else the img
 const PIC_BLOCKS = 'p,h1,h2,h3,li,blockquote'; // the blocks a picture can sit in
 const OUTLINE = '2px solid var(--k59, #3F7D5C)';
-const CV_PAD = [18, 24]; // canvas padding top / left: the scroll anchor when zooming (纯净模式 keeps PURE_TOP above the page)
-const PURE_TOP = 76;
+const CV_PAD = [18, 24]; // canvas padding top / left: the scroll anchor when zooming
 // 100% is the page as the design (定稿) draws it, A4 680px wide: st.zoom is the page's CSS zoom, the zoom shown is it against Z100
 const Z100 = 680 / 794, ZMIN = 0.2 * Z100, ZMAX = 4 * Z100;
 const pctOf = z => Math.round(z / Z100 * 100);
@@ -522,7 +520,7 @@ class Component extends DCLogic {
     if (this.cvRef.current) this.cvRef.current.addEventListener('scroll', this.onCvScroll, { passive: true });
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) { }
     this.autoFit = true;
-    const fit = () => { const cv = this.cvRef.current; if (!cv || !this.autoFit || this.state.view === 'web') return; const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; const z = Math.max(ZMIN, Math.min(1, Math.floor((cv.clientWidth - 48) / (W * Z100) * 20) / 20) * Z100); if (Math.abs(z - this.state.zoom) > 1e-6) this.setState({ zoom: z }); }; // in 5% steps of the zoom shown, 100% at most
+    const fit = this.fit = () => { const cv = this.cvRef.current; if (!cv || !this.autoFit || this.state.view === 'web') return; const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; const z = Math.max(ZMIN, Math.min(1, Math.floor((cv.clientWidth - 48) / (W * Z100) * 20) / 20) * Z100); if (Math.abs(z - this.state.zoom) > 1e-6) this.setState({ zoom: z }); }; // in 5% steps of the zoom shown, 100% at most
     this.fitRO = new ResizeObserver(() => { fit(); clearTimeout(this.riT); this.riT = setTimeout(() => this.refreshInfo(), 200); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.refreshInfo()); if (this.cvRef.current) this.fitRO.observe(this.cvRef.current);
     this.attachWheel();
@@ -557,6 +555,7 @@ class Component extends DCLogic {
   componentDidUpdate(pp) {
     this.attachWheel(); this.attachFollow(); this.hb && this.hb.layout(); this.shb && this.shb.layout();
     if (pp.formatOpen && !this.props.formatOpen && this.state.pop) this.setState({ pop: null });
+    if (!!pp.panelOpen !== !!this.props.panelOpen && this.fit) this.fit(); // the side panel's track changed at once: fit now, in this commit, not a frame later
     if (this.state.hf && !this.hfRef.current) this.setState({ hf: null, hfLive: null }); // its page went (web view, columns): back to the text
     const d = this.props.doc, o = pp.doc || {};
     if (o.styles !== d.styles) this.styleSheet();
@@ -874,7 +873,7 @@ class Component extends DCLogic {
   }
   /** Where typing and the ribbon go: the header or footer being edited, else the text. */
   /** The canvas's padding above the page: under the title bar, or in 纯净模式 clear of the lights. */
-  get cvTop() { return this.props.pure ? PURE_TOP : CV_PAD[0]; }
+  get cvTop() { return CV_PAD[0]; } // 沉浸书写 keeps the page where it is: only the chrome around it goes
   get root() { return (this.state.hf && this.hfRef.current) || this.edRef.current; }
   onSel = () => {
     const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) { if (this.state.selBub) this.setState({ selBub: null }); return; }
@@ -1917,7 +1916,7 @@ class Component extends DCLogic {
       onText: e => this.change({ notes: (d.notes || []).map(y => y.id === x.id ? Object.assign({}, y, { text: e.target.value }) : y) }, true),
       onDelete: e => { e.stopPropagation(); this.delNote(x.id); },
       onFocus: () => { this.setState({ activeNote: x.id, focusNote: null }); this.focusEl(m); } }; });
-    const side = !this.props.pure && !this.props.formatOpen && !this.props.aiOn && ((!st.hideCm && (d.comments || []).length > 0) || notes.length > 0);
+    const side = !this.props.pure && !this.props.formatOpen && !this.props.panelOpen && !this.props.aiOn && ((!st.hideCm && (d.comments || []).length > 0) || notes.length > 0);
     const dlg = st.dlg;
     const info = st.info;
     const pure = !!this.props.pure, showTh = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the panel only when its 缩略图 asks, over the page
@@ -1954,7 +1953,7 @@ class Component extends DCLogic {
       bb('标题@@sel', () => this.exec('formatBlock', heading ? '<p>' : '<h1>'), { on: heading }), SEPB, bb('链接', () => this.linkDlg())]
       .concat(this.props.onRewrite ? [SEPB, bb('改写', () => this.props.onRewrite(String(getSelection())), { star: true })] : []);
     const tbx = !pure && !st.hf && f.inTable ? st.tblBox || null : null; // the table the caret is in: its letters, numbers and frame
-    const formatOpen = !pure && !!this.props.formatOpen, panel = this.panelVals({ st, f, pg, d, tab, tabsDef, I, HD, info, comments, notes, moveComment, formatOpen });
+    const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ st, f, pg, d, tab, tabsDef, I, HD, info, comments, notes, moveComment, formatOpen });
     // popover: after the panel, whose controls register their menus as it builds them
     if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
     let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
@@ -1968,7 +1967,7 @@ class Component extends DCLogic {
       } else popItems = this.menus[st.pop.id] || [];
     }
     return {
-      md, stop: e => e.stopPropagation(), tabs, ribbon, panelTabs: panel.tabs, panelGroups: panel.groups, formatOpen, bubbleOpen: pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
+      md, stop: e => e.stopPropagation(), tabs, ribbon, panelTabs: panel.tabs, panelGroups: panel.groups, formatOpen, panelEnter: this.props.panelEnter || 'open', bubbleOpen: pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
       notPure: !pure, pure, showBar: pure && !!this.props.pureTools, rootBg: 'transparent', pageThumbs, addPageQuick: () => this.addPage(), thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       hasBubble: pure && !!st.selBub, hasWordSelection: !pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? st.selBub.y + 'px' : 0, selBelow: st.selBub && st.selBub.below ? '1' : '0', tailX: st.selBub ? `calc(50% + ${st.selBub.dx || 0}px)` : '50%', bubbleBtns,
       selStyleLabel: this.styleLabel(f.ps || 'Normal'), selStyleMenu: e => this.openPop('sty', e), selSizeMenu: e => this.openPop('fsize', e), canRewrite: !!this.props.onRewrite,
@@ -1979,7 +1978,7 @@ class Component extends DCLogic {
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replaceOne(), replaceAll: () => this.replaceAll(), closeFind: () => this.setState({ showFind: false }),
-      bodyCols: [showTh && !pure ? '240px' : '0px', 'minmax(0,1fr)', formatOpen ? '312px' : side ? '272px' : null].filter(Boolean).join(' '),
+      bodyCols: [showTh && !pure ? '240px' : '0px', 'minmax(0,1fr)', panelOpen ? '312px' : side ? '272px' : '0px'].join(' '), // three tracks always: the side one changes at once (FLIP moves the page)
       showNav: showTh, navPages: st.navMode !== 'outline', navOutline: st.navMode === 'outline', navPagesA: st.navMode !== 'outline' ? '1' : '0', navOutlineA: st.navMode === 'outline' ? '1' : '0', thumbPagesClick: () => this.setState({ navMode: 'pages' }), thumbOutlineClick: () => this.setState({ navMode: 'outline' }), thumbPagesBg: st.navMode !== 'outline' ? 'var(--format-control)' : 'transparent', thumbOutlineBg: st.navMode === 'outline' ? 'var(--format-control)' : 'transparent', thumbPagesSh: st.navMode !== 'outline' ? 'var(--format-control-sh)' : 'none', thumbOutlineSh: st.navMode === 'outline' ? 'var(--format-control-sh)' : 'none', heads: st.navMode === 'outline' ? st.heads.map(h => ({ text: h.text, indent: (8 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.focusEl(this.edRef.current.querySelectorAll('h1,h2,h3')[h.i]) })) : [], noHeads: st.navMode === 'outline' && !st.heads.length,
       cvRef: this.cvRef, edRef: this.edRef, imgRef: this.imgRef,
       onCanvasDown: e => { if (e.target === this.cvRef.current) { e.preventDefault(); this.restore(); } },
@@ -2017,7 +2016,7 @@ class Component extends DCLogic {
       markupAttr: st.markup || 'all', cmAttr: st.hideCm ? '0' : '1',
       hasComments: !pure && !st.hideCm && (d.comments || []).length > 0, comments, commentCount: (d.comments || []).length, hasSide: side, hasNotes: notes.length > 0, notes, noteCount: notes.length,
       pagesText: web ? $t('连续') : $t('共 {n} 页', { n: info.pages }), pagePositionText: web ? $t('连续') : $t('第 {n} / {total} 页', { n: this.caretPage() + 1, total: info.pages }), wordsText: $t('{n} 字', { n: (info.count || 0).toLocaleString() }), trackOn: !!d.track,
-      statusX: `calc(50% + ${((showTh && !pure ? 240 : 0) - (formatOpen ? 312 : side ? 272 : 0)) / 2}px)`,
+      statusX: `calc(50% + ${((showTh && !pure ? 240 : 0) - (panelOpen ? 312 : side ? 272 : 0)) / 2}px)`,
       zoomPct: pctOf(st.zoom), onZoom: e => this.setZoom(+e.target.value / 100 * Z100),
       zoomIn: () => this.setZoom(this.state.zoom + 0.1 * Z100), zoomOut: () => this.setZoom(this.state.zoom - 0.1 * Z100),
       zoomText: st.zoomEdit != null ? st.zoomEdit : pctOf(st.zoom) + '%',

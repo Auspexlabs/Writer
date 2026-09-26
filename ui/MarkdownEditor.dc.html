@@ -70,7 +70,7 @@
 .pt-src::placeholder{color:var(--k63, #C7C7CC)}
 </style>
 </helmet>
-<div data-edroot="1" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;box-sizing:border-box;padding-right:{{ panelPad }};transition:padding-right .28s cubic-bezier(.2,.8,.2,1);font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
+<div data-edroot="1" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;box-sizing:border-box;padding-right:{{ panelPad }};font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
   <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
     <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
       <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
@@ -99,7 +99,7 @@
     </sc-if>
   </sc-if>
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
-    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
 
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ cols }};padding-top:{{ gridPT }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
@@ -113,20 +113,19 @@
       </div></div>
     </sc-if>
     <div ref="{{ scRef }}" onMouseDown="{{ onScDown }}" onScroll="{{ onScroll }}" style="grid-column:2;min-width:0;min-height:0;overflow:auto;position:relative">
-      <div ref="{{ edRef }}" class="{{ edCls }}" data-empty-hint="{{ emptyHint }}" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" onDrop="{{ onDropImg }}" onMouseDown="{{ onColDown }}" onMouseMove="{{ onColMove }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
+      <div ref="{{ edRef }}" data-flip="1" class="{{ edCls }}" data-empty-hint="{{ emptyHint }}" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" onDrop="{{ onDropImg }}" onMouseDown="{{ onColDown }}" onMouseMove="{{ onColMove }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
       <sc-if value="{{ isSrc }}" hint-placeholder-val="{{ false }}">
-        <textarea ref="{{ taRef }}" class="pt-src" data-pop="center" value="{{ text }}" onChange="{{ onText }}" onKeyDown="{{ onSrcKey }}" onPaste="{{ onSrcPaste }}" onDrop="{{ onDropImg }}" onSelect="{{ onSelect }}" spellCheck="false" placeholder="# 标题" style="display:block;width:100%;max-width:760px;margin:0 auto;min-height:100%;border:none;outline:none;resize:none;background:transparent;padding:{{ pad }};box-sizing:border-box;font-family:'IBM Plex Mono','Noto Sans SC',monospace;font-size:14.5px;line-height:1.85;color:var(--k9, #3A3A3C);tab-size:2;field-sizing:content"></textarea>
+        <textarea ref="{{ taRef }}" data-flip="1" class="pt-src" data-pop="center" value="{{ text }}" onChange="{{ onText }}" onKeyDown="{{ onSrcKey }}" onPaste="{{ onSrcPaste }}" onDrop="{{ onDropImg }}" onSelect="{{ onSelect }}" spellCheck="false" placeholder="# 标题" style="display:block;width:100%;max-width:760px;margin:0 auto;min-height:100%;border:none;outline:none;resize:none;background:transparent;padding:{{ pad }};box-sizing:border-box;font-family:'IBM Plex Mono','Noto Sans SC',monospace;font-size:14.5px;line-height:1.85;color:var(--k9, #3A3A3C);tab-size:2;field-sizing:content"></textarea>
       </sc-if>
     </div>
   </div>
 
-  <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:52px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out"><span>{{ statWords }}</span><span> · </span><span>约 {{ statMin }} 分钟读完</span></div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;right:calc(52px + {{ panelPad }});transition:right .28s cubic-bezier(.2,.8,.2,1);bottom:12px;z-index:30;display:flex;align-items:center;gap:12px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap;pointer-events:none">
+    <div data-flip="1" style="position:absolute;right:calc(52px + {{ panelPad }});bottom:12px;z-index:30;display:flex;align-items:center;gap:12px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap;pointer-events:none">
       <span>纯文本</span><span>{{ statWords }}</span><span>{{ statChars }}</span><span>约 {{ statMin }} 分钟读完</span>
     </div>
   </sc-if>
-  <button onMouseDown="{{ md }}" onClick="{{ toggleMode }}" title="{{ modeTitle }}" style="position:absolute;right:calc(12px + {{ panelPad }});transition:right .28s cubic-bezier(.2,.8,.2,1);bottom:7px;z-index:31;min-width:28px;height:24px;padding:0 6px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:{{ modeFs }};font-weight:600;font-family:{{ modeFont }};color:var(--ink-3, rgba(29,29,31,0.36));transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><span data-pop="center" data-k="{{ modeIcon }}">{{ modeIcon }}</span></button>
+  <button data-flip="1" onMouseDown="{{ md }}" onClick="{{ toggleMode }}" title="{{ modeTitle }}" style="position:absolute;right:calc(12px + {{ panelPad }});bottom:7px;z-index:31;min-width:28px;height:24px;padding:0 6px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:{{ modeFs }};font-weight:600;font-family:{{ modeFont }};color:var(--ink-3, rgba(29,29,31,0.36));transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><span data-pop="center" data-k="{{ modeIcon }}">{{ modeIcon }}</span></button>
 
   <sc-if value="{{ hasSelBar }}" hint-placeholder-val="{{ false }}">
     <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ sbx }};top:{{ sby }};z-index:80;display:flex;align-items:center;gap:1px;padding:4px;margin-left:{{ sbML }};border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
@@ -606,11 +605,11 @@ class Component extends DCLogic {
       BB($t('左'), $t('左对齐'), T('align', 'left'), blk.al === 'left'), BB($t('中'), $t('居中'), T('align', 'center'), blk.al === 'center'), BB($t('右'), $t('右对齐'), T('align', 'right'), blk.al === 'right'), SEP,
       BB($t('－行'), $t('删除行'), T('delRow')), BB($t('－列'), $t('删除列'), T('delCol')), BB('✕', $t('删除表格'), T('delTable'))];
     const langs = [{ v: '', label: $t('纯文本') }].concat(LANGS.map(([v, label]) => ({ v, label })));
-    const formatOpen = !pure && !!this.props.formatOpen, panel = this.panelVals({ st, d, text, rich, tab, formatOpen });
+    const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ st, d, text, rich, tab, formatOpen });
     if (blk && blk.lang && !LANGS.some(x => x[0] === blk.lang)) langs.push({ v: blk.lang, label: blk.lang });
     return {
       md, notPure: !pure, pure, showBar: pure && !!this.props.pureTools, tabs, tools: SETS[tab] || [], bubbleOpen: !!st.bubble,
-      formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: formatOpen ? '312px' : '0px', /* the format panel (the Word 定稿 style): the text gives it its width */ rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab,
+      formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: panelOpen ? '312px' : '0px', panelEnter: this.props.panelEnter || 'open', /* the format panel (the Word 定稿 style): the text gives it its width */ rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab,
       barL: pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !pure ? '48px' : '0px', spD: this.props.merged && !pure ? 'flex' : 'none', barR: this.props.barRight || '12px',
       fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
       aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(),

@@ -24,6 +24,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   'AI 助手 ⌘J': 'Assistant ⌘J',
   'AI 助手 Ctrl+J': 'Assistant Ctrl+J',
   '沉浸书写 ⌘.': 'Focus mode ⌘.',
+  '退出沉浸书写 ⌘.': 'Exit focus mode ⌘.', '退出沉浸书写 Ctrl+.': 'Exit focus mode Ctrl+.',
   '沉浸书写 Ctrl+.': 'Focus mode Ctrl+.',
   '关闭 Alt+F4': 'Close Alt+F4',
   '展开工具栏 ⌥⌘T': 'Expand toolbar ⌥⌘T',
