@@ -55,7 +55,11 @@ test('dragging a tab selects no text: the press is cancelled and selectstart / d
   assert.ok(doc.m.has('dragstart'));
   win.m.get('pointerup')({ type: 'pointerup', clientX: 12, clientY: 12 });
   assert.deepEqual([doc.m.has('selectstart'), doc.m.has('dragstart'), win.m.has('pointermove')], [false, false, false], 'all taken off when it is let go');
-  for (const page of ['mac.dc.html', 'win.dc.html']) assert.match(readFileSync(new URL('../' + page, import.meta.url), 'utf8'), /<img src="\{\{ t\.icon \}\}" alt="" draggable="false"/, page + ': the tab icon is no image drag');
+  for (const page of ['mac.dc.html', 'win.dc.html']) { // the tab icon is a background: nothing to drag, and the page's raw template asks for no image at "{{ t.icon }}"
+    const src = readFileSync(new URL('../' + page, import.meta.url), 'utf8');
+    assert.match(src, /<span aria-hidden="true" style="[^"]*background:url\('\{\{ t\.icon \}\}'\)/, page);
+    assert.doesNotMatch(src.slice(src.indexOf('<x-dc>'), src.indexOf('</x-dc>')), /<img[^>]*src="\{\{/, page + ': no <img src="{{ … }}"> in the page itself');
+  }
 });
 
 test('with the desktop bridge: a window\'s only tab carries its window and moves into the window whose tab strip it is let go on; elsewhere a tab tears off as before', async () => {

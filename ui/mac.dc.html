@@ -58,7 +58,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
             </sc-if>
             <sc-if value="{{ single }}" hint-placeholder-val="{{ true }}">
             <div style="position:absolute;left:50%;top:0;height:52px;transform:translateX(-50%);max-width:42%;display:flex;align-items:center;gap:8px;pointer-events:none;font-size:13px;color:var(--tab-dim)">
-              <img src="{{ fileIcon }}" alt="" style="width:16px;height:16px;flex:none;display:{{ sqDisp }}">
+              <span aria-hidden="true" style="width:16px;height:16px;flex:none;display:{{ sqDisp }};background:url('{{ fileIcon }}') center / contain no-repeat"></span>
               <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fileName }}</span>
             </div>
             <div data-tauri-drag-region style="flex:1;align-self:stretch"></div>
@@ -68,7 +68,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
                 <div style="display:flex;align-items:center;gap:2px;min-width:0;max-width:100%">
                   <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
                     <div role="tab" aria-selected="{{ t.on }}" onClick="{{ t.onClick }}" onPointerDown="{{ t.onDown }}" onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" title="{{ t.title }}" class="tb-tab" data-on="{{ t.onA }}" style="width:{{ t.width }};background:{{ t.bg }};box-shadow:{{ t.sh }};transform:{{ t.tf }};opacity:{{ t.op }}">
-                      <img src="{{ t.icon }}" alt="" draggable="false" style="width:16px;height:16px;flex:none;object-fit:contain">
+                      <span aria-hidden="true" style="width:16px;height:16px;flex:none;background:url('{{ t.icon }}') center / contain no-repeat"></span>
                       <span style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ t.title }}</span>
                       <button class="tb-x" onClick="{{ t.onClose }}" title="关闭标签页 ⌘W" aria-label="关闭标签页" style="opacity:{{ t.xOp }}"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"></path></svg></button>
                     </div>
