@@ -152,7 +152,7 @@ Writer.embed('#doc', { mode: 'docx', aiModel: 'claude-sonnet-5',
   ai: Writer.ai.anthropic({ url: '/api/anthropic/v1/messages', model: 'claude-sonnet-5' }) });
 ```
 
-适配器的选项：`url`（接口地址）、`model`、`headers`（额外的请求头）、`credentials`（默认 `'same-origin'`）；Anthropic 的还有 `maxTokens`（默认 8192）。
+适配器的选项：`url`（接口地址）、`model`、`completeModel`（自动补全用的模型，见下文）、`headers`（额外的请求头）、`credentials`（默认 `'same-origin'`）；Anthropic 的还有 `maxTokens`（默认 8192）。
 
 **不要把 API Key 写进网页。** 网页里的一切访问者都看得到。`url` 应该指向你自己后端的一个转发地址，由后端加上密钥再转给模型服务商，顺便做登录校验和用量限制。只有自己试用时，才可以直接填模型服务商的地址、在 `headers` 里放密钥（直接调用 `api.anthropic.com` 时，适配器会自动加上浏览器直连需要的请求头）。
 
@@ -160,7 +160,8 @@ Writer.embed('#doc', { mode: 'docx', aiModel: 'claude-sonnet-5',
 
 ```js
 ai: async (request, { onDelta, signal }) => {
-  // request: { system, messages, tools }
+  // request: { system, messages, tools, purpose }
+  //   purpose: 'chat'（助手对话）或 'complete'（自动补全：没有工具，只要几个词，适合交给更快的模型）
   //   messages 的格式和模型服务商无关：
   //     { role: 'user', content }
   //     { role: 'assistant', content, toolCalls: [{ id, name, input }] }
@@ -172,6 +173,14 @@ ai: async (request, { onDelta, signal }) => {
 ```
 
 助手每轮最多调用模型 24 次，工具在组件里执行，结果自动接到下一次调用。
+
+### 自动补全
+
+接入了模型之后，访问者打字时停顿片刻，光标后面会出现灰色的建议文字：按 Tab 接受，按 Esc 或继续打字忽略。Word 正文、表格单元格、幻灯片文本框、Markdown、思维导图、PDF 批注等所有写内容的地方都有。每次补全也经过 `ai` 函数，`request.purpose` 是 `'complete'`：没有工具，只要一小段文字，建议交给更快、更便宜的模型。两个适配器可以用 `completeModel` 单独指定：
+
+```js
+ai: Writer.ai.openai({ url: '/api/llm/chat/completions', model: 'gpt-6-sol', completeModel: 'gpt-6-luna' })
+```
 
 ### 网站自己的智能体
 
