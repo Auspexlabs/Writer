@@ -559,8 +559,10 @@ class Component extends DCLogic {
     const sel = getSelection(), n = sel && sel.anchorNode, el = n && (n.nodeType === 1 ? n : n.parentElement);
     if (el && el.closest && el.closest('[data-edroot]')) this.lastSel = sel.isCollapsed ? '' : sel.toString();
   };
+  /** The 新建 page (⌘N, ⌘T, 文件 › 新建…): the templates and blanks to start a document from, outside 沉浸书写. */
+  openNew = () => { if (this.state.pure) this.setPure(false); this.setState({ view: 'create', docsOpen: false }); };
   toggleFormat = () => this.setState(s => ({ showFormat: !s.showFormat, showAI: s.showFormat ? s.showAI : false }));
-  shellApi = { toggleThumbs: () => this.toggleThumbsAnim(), open: id => this.open(id), openPath: async rel => { await this.refreshFiles(); const d = this.state.docs.find(x => x.path === rel); if (d) await this.open(d.id); else await this.addLazy(this.EN.lazy(rel), true); return true; }, /* a file the folder listing leaves out (.txt) still opens: the engine reads and writes it by path */ close: id => this.closeDoc(id), detach: (id, host) => this.detach(id, host), create: () => this.setState({ view: 'create', docsOpen: false }), openFileMenu: () => this.setState({ menu: this.state.menu ? null : { x: 16, y: 52 }, docsOpen: false }), toggleAI: () => this.toggleAIPanel(), toggleFormat: () => this.toggleFormat(), showFormat: () => this.setState({ showFormat: true, showAI: false }), play: () => this.setState({ pure: true }), toggleDark: () => this.toggleDark(), saveAs: () => this.saveAs(), confirmClose: () => this.confirmClose() };
+  shellApi = { toggleThumbs: () => this.toggleThumbsAnim(), open: id => this.open(id), openPath: async rel => { await this.refreshFiles(); const d = this.state.docs.find(x => x.path === rel); if (d) await this.open(d.id); else await this.addLazy(this.EN.lazy(rel), true); return true; }, /* a file the folder listing leaves out (.txt) still opens: the engine reads and writes it by path */ close: id => this.closeDoc(id), detach: (id, host) => this.detach(id, host), create: () => this.openNew(), openFileMenu: () => this.setState({ menu: this.state.menu ? null : { x: 16, y: 52 }, docsOpen: false }), toggleAI: () => this.toggleAIPanel(), toggleFormat: () => this.toggleFormat(), showFormat: () => this.setState({ showFormat: true, showAI: false }), play: () => this.setState({ pure: true }), toggleDark: () => this.toggleDark(), saveAs: () => this.saveAs(), confirmClose: () => this.confirmClose() };
   /** Tells the host (props.onShell) what the shell shows whenever that changes: onShell(info, api). */
   emitShell() {
     if (!this.props.onShell || !this.state.ready) return;
@@ -615,8 +617,8 @@ class Component extends DCLogic {
     if (e.key === 'Escape' && this.state.ov) { this.setState({ ov: null }); return; }
     if (e.key === 'Escape' && this.state.view === 'doc' && this.doc && !this.state.pure && this.state.showFormat && !this.state.showAI) { e.preventDefault(); this.setState({ showFormat: false }); return; }
     if (ctrl && e.metaKey && e.ctrlKey && k === 's') { e.preventDefault(); this.toggleThumbsAnim(); return; }
-    if (ctrl && !e.shiftKey && !e.altKey && k === 'n') { e.preventDefault(); this.createBlank(this.prefs.newType || 'docx'); return; }
-    if (ctrl && !e.shiftKey && !e.altKey && k === 't') { e.preventDefault(); this.setState({ view: 'create', docsOpen: false }); return; }
+    if (ctrl && !e.shiftKey && !e.altKey && k === 'n') { e.preventDefault(); this.openNew(); return; } // ⌘N: the 新建 page, as 文件 › 新建… does
+    if (ctrl && !e.shiftKey && !e.altKey && k === 't') { e.preventDefault(); this.openNew(); return; }
     if (ctrl && !e.shiftKey && k === 'j') { e.preventDefault(); this.toggleAIPanel(); return; }
     if (e.key === 'Escape' && this.state.pure) { // 格式 closes first; a text selection keeps Esc for the editor
       if (this.state.pTools) { e.preventDefault(); this.setState({ pTools: false }); return; }
@@ -1042,7 +1044,7 @@ class Component extends DCLogic {
       isMd: isDoc && d.type === 'md', isPdf: isDoc && d.type === 'pdf', isMm: isDoc && d.type === 'mm', onConvert: (k, p) => this.convert(k, p),
       docRows: st.docs.map(x => { const on = isDoc && x.id === d.id; return { icon: ICO(x.type), tag: TAG[x.type].l, tagBg: TAG[x.type].bg, title: x.title, bg: on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', hover: on ? 'var(--k0, #FFFFFF)' : 'var(--k6, #E5E5EA)', sh: on ? '0 0 0 1px #E5E5EA' : 'none', fw: on ? 500 : 400, onClick: () => this.open(x.id),
         onMid: e => { if (e.button === 1) { e.preventDefault(); this.closeDoc(x.id); } }, onClose: e => { e.stopPropagation(); this.closeDoc(x.id); } }; }),
-      openCreate: () => this.setState({ view: 'create', docsOpen: false }), newBg: isDoc ? 'var(--k0, #FFFFFF)' : '#EFEFF4', openFile: () => { this.setState({ docsOpen: false }); this.openDialog(); },
+      openCreate: () => this.openNew(), newBg: isDoc ? 'var(--k0, #FFFFFF)' : '#EFEFF4', openFile: () => { this.setState({ docsOpen: false }); this.openDialog(); },
       fileRef: this.fileRef, accept: this.EN ? this.EN.accept() : '', onFilePick: e => { const f = e.target.files; this.importFiles(f); e.target.value = ''; },
       onDragOver: e => { if (Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); if (!st.dragging) this.setState({ dragging: true }); } },
       onDragLeave: e => { if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget)) this.setState({ dragging: false }); },

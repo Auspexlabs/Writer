@@ -54,8 +54,10 @@ button,input,select,textarea{font-family:inherit;color:inherit}
               <button data-light="1" onClick="{{ doMin }}" title="最小化" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c2 }};cursor:default;display:flex;align-items:center;justify-content:center" style-active="filter:brightness(0.8)"><svg width="12" height="12" viewBox="0 0 12 12" style="display:block;flex:none;opacity:{{ gOp }}"><path d="M3 6H9" stroke="#995700" stroke-width="1.2" stroke-linecap="round"></path></svg></button>
               <button data-light="1" onClick="{{ doZoom }}" title="{{ zoomTitle }}" style="width:12px;height:12px;padding:0;border-radius:50%;border:0.5px solid {{ lb }};background:{{ c3 }};cursor:default;display:flex;align-items:center;justify-content:center" style-active="filter:brightness(0.8)"><svg width="12" height="12" viewBox="0 0 12 12" style="display:block;flex:none;opacity:{{ gOp }}"><path d="M3.3 3.3H7L3.3 7ZM8.7 8.7H5L8.7 5Z" fill="#006500" style="display:{{ fsOut }}"></path><path d="M6.6 5.4V2.3L3.5 5.4ZM5.4 6.6V9.7L8.5 6.6Z" fill="#006500" style="display:{{ fsIn }}"></path></svg></button>
             </div>
+            <sc-if value="{{ docBar }}" hint-placeholder-val="{{ true }}">
             <button class="tb-btn tb-side" data-on="{{ sideOn }}" onClick="{{ sideToggle }}" title="{{ sideTitle }}" aria-label="{{ sideTitle }}" style="transform:{{ sideShift }}"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.8" y="2.8" width="12.4" height="10.4" rx="2.4"></rect><path d="M6.1 2.8v10.4"></path><path d="M3.5 5.3h1.1M3.5 7.1h1.1M3.5 8.9h1.1"></path></svg></button>
             <div class="tb-pill" style="margin-left:{{ historyShift }}"><button class="tb-btn" onClick="{{ goBack }}" title="撤销 ⌘Z" aria-label="撤销"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.9 3.4 3 6.3l2.9 2.9"></path><path d="M3.3 6.3h6.4a3.4 3.4 0 0 1 0 6.8H8.3"></path></svg></button><button class="tb-btn" onClick="{{ goFwd }}" title="重做 ⇧⌘Z" aria-label="重做"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.1 3.4 13 6.3l-2.9 2.9"></path><path d="M12.7 6.3H6.3a3.4 3.4 0 0 0 0 6.8h1.4"></path></svg></button></div>
+            </sc-if>
             <sc-if value="{{ single }}" hint-placeholder-val="{{ true }}">
             <div style="position:absolute;left:50%;top:0;height:52px;transform:translateX(-50%);max-width:42%;display:flex;align-items:center;gap:8px;pointer-events:none;font-size:13px;color:var(--tab-dim)">
               <img src="{{ fileIcon }}" alt="" style="width:16px;height:16px;flex:none;display:{{ sqDisp }}">
@@ -78,20 +80,10 @@ button,input,select,textarea{font-family:inherit;color:inherit}
                 </div>
               </div>
             </sc-if>
+            <sc-if value="{{ docBar }}" hint-placeholder-val="{{ true }}">
             <div class="tb-pill"><button class="tb-btn" data-on="{{ barOn }}" onClick="{{ toggleBar }}" title="{{ barTitle }}" aria-label="{{ barTitle }}"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 12.5 5 3.5h.3l3.5 9"></path><path d="M2.7 9.5h5"></path><path d="M10.3 8.5c.4-.6 1-.9 1.8-.9 1.2 0 1.9.7 1.9 1.9v3"></path><path d="M14 10.3h-1.9c-1.2 0-1.9.5-1.9 1.2s.6 1.2 1.4 1.2c1.3 0 2.4-.8 2.4-2.1"></path></svg></button><button class="tb-btn" onClick="{{ immersive }}" title="沉浸阅读 ⌘." aria-label="沉浸阅读"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2.5h4v4"></path><path d="M13.5 2.5 9.3 6.7"></path><path d="M6.5 13.5h-4v-4"></path><path d="M2.5 13.5l4.2-4.2"></path></svg></button><sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}"><button class="tb-btn" data-on="{{ aiNow }}" onClick="{{ ai }}" title="AI 助手 ⌘J" aria-label="AI 助手"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg></button></sc-if></div>
-            <button class="tb-btn tb-more" data-on="{{ moreOn }}" onClick="{{ moreToggle }}" title="更多" aria-label="更多"><svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="3.3" cy="8" r="1.2"></circle><circle cx="8" cy="8" r="1.2"></circle><circle cx="12.7" cy="8" r="1.2"></circle></svg></button>
+            </sc-if>
           </div>
-  <sc-if value="{{ moreOpen }}" hint-placeholder-val="{{ false }}">
-    <div onMouseDown="{{ closeMore }}" style="position:absolute;inset:0;z-index:64"></div>
-    <div data-pop="menu" style="position:absolute;top:50px;right:12px;z-index:65;min-width:220px;padding:6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, rgba(255,255,255,0.9));border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);display:flex;flex-direction:column;font-size:13px">
-      <sc-for list="{{ moreItems }}" as="it" hint-placeholder-count="2">
-        <button onClick="{{ it.onClick }}" style="height:30px;display:flex;align-items:center;gap:10px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:13px;color:var(--ink, #1D1D1F);cursor:default;text-align:left;transition:background .12s" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
-          <span style="flex:1;white-space:nowrap">{{ it.label }}</span>
-          <span style="font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap;padding-left:20px">{{ it.key }}</span>
-        </button>
-      </sc-for>
-    </div>
-  </sc-if>
   <sc-if value="{{ hasOverlay }}" hint-placeholder-val="{{ false }}">
     <div onMouseDown="{{ closeOvBg }}" style="position:absolute;inset:0;z-index:60;background:rgba(0,0,0,0.12);display:flex;align-items:flex-start;justify-content:center;padding-top:{{ ovTop }}">
       <div data-pop="center" onMouseDown="{{ stop }}">
@@ -139,7 +131,7 @@ const win = (cmd, args) => invoke('plugin:window|' + cmd, Object.assign({ label:
 /** The tabs in the order the documents were opened (the shell's seq), a new one at the end. */
 const tabOrder = docs => docs.slice().sort((a, b) => (a.seq || 0) - (b.seq || 0));
 class Component extends DCLogic {
-  state = { sh: null, collapsed: store.get().collapsed !== false, lh: false, ov: null, prefsTab: null, toast: null, hovTab: null, active: document.hasFocus(), full: false, askDefault: null, more: false };
+  state = { sh: null, collapsed: store.get().collapsed !== false, lh: false, ov: null, prefsTab: null, toast: null, hovTab: null, active: document.hasFocus(), full: false, askDefault: null };
   winRef = React.createRef(); api = null; workspace = null;
 
   onShell = (info, api) => { this.api = api; this.setState({ sh: info }, () => this.report()); };
@@ -281,7 +273,6 @@ class Component extends DCLogic {
 
   key(e) {
     if (e.key === 'Escape' && this.state.ov) { e.preventDefault(); this.setState({ ov: null, prefsTab: null }); return; }
-    if (e.key === 'Escape' && this.state.more) { e.preventDefault(); this.setState({ more: false }); return; }
     if (e.key === 'Escape' && this.state.askDefault) { e.preventDefault(); this.answerDefault(false); return; }
     if (NATIVE) return; // in the app the native menu owns the shortcuts
     const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
@@ -329,7 +320,6 @@ class Component extends DCLogic {
     const multi = openDocs.length > 0 && !(sh && sh.pure);
     const quickTab = set.quickTab || '开始';
     const on = 'var(--tab-bg, rgba(255,255,255,0.92))', onSh = 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))';
-    const more = [{ label: $t('沉浸书写'), key: '⌘.', fn: () => this.call('play') }];
     return {
       winRef: this.winRef, onShell: this.onShell, openPrefs: this.openPrefs, isFull: st.full,
       saveDialogProp: NATIVE ? this.saveDialog : null, recentProp: NATIVE ? this.recentFiles : null, openRecentProp: NATIVE ? this.openRecent : null, openDialogProp: NATIVE ? this.openDialog : null,
@@ -350,6 +340,7 @@ class Component extends DCLogic {
       // one document: its file icon and name; the start page: just 新建
       fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', sqDisp: sh && sh.isDoc ? 'inline-flex' : 'none',
       fileIcon: sh && sh.isDoc ? DOC_ICON(sh.type) : '',
+      docBar: !!(sh && sh.isDoc), // the 新建 page has no document: no sidebar, undo / redo or Aa / 沉浸 / AI
       tabs: openDocs.map((x, i, arr) => {
         const hv = st.hovTab === x.id, dr = st.drag && st.drag.id === x.id ? st.drag : null;
         return {
@@ -368,8 +359,6 @@ class Component extends DCLogic {
       newTab: () => this.call('create'),
       toggleBar: () => this.toggleBar(), barOn: sh && sh.isDoc && !sh.pure ? (sh.showFormat ? '1' : '0') : st.collapsed ? '0' : '1', barTitle: sh && sh.isDoc && !sh.pure ? $t('格式面板') : $t(st.collapsed ? '展开工具栏 ⌥⌘T' : '收起工具栏 ⌥⌘T'), immersive: () => this.call('play'),
       aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiNow: sh && sh.showAI ? '1' : '0',
-      moreOpen: !!st.more, moreOn: st.more ? '1' : '0', moreToggle: () => this.setState({ more: !st.more }), closeMore: () => this.setState({ more: false }),
-      moreItems: more.map(m => ({ label: m.label, key: m.key, onClick: () => { this.setState({ more: false }); m.fn(); } })),
       hasOverlay: !!st.ov, ovPrefs: st.ov === 'prefs', ovAbout: st.ov === 'about', ovGestures: st.ov === 'gestures',
       ovTop: st.ov === 'about' ? '120px' : '56px', prefsTab: st.prefsTab || 'general',
       closeOv: () => this.setState({ ov: null, prefsTab: null }), closeOvBg: () => this.setState({ ov: null, prefsTab: null }), stop: e => e.stopPropagation(),
