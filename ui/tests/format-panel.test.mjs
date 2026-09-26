@@ -177,3 +177,22 @@ test('Markdown and PDF: the same panel, their own tabs and groups', () => {
   assert.deepEqual(Array.from(pv('out').groups, g => g.title), ['导出', '转换', '打开方式']);
 });
 
+
+test('Markdown and PDF: right-click, not a selection, brings their bars (Markdown\'s format bar with ✦ 改写; the PDF page\'s menu without text selected)', () => {
+  const md = componentOf('MarkdownEditor.dc.html'), ev = { clientX: 500, clientY: 300, target: {}, preventDefault() { this.prevented = true; } };
+  md.edRef.current = { contains: () => true }; md.state.mode = 'rich';
+  md.onCtx(ev);
+  assert.equal(ev.prevented, true, 'no system menu');
+  assert.deepEqual(Object.assign({}, md.state.selBar), { x: 500, y: 254 }, 'at the pointer');
+  md.ctxAway({ button: 0, target: { closest: () => null } }); assert.equal(md.state.selBar, null, 'a press elsewhere closes it');
+  md.onCtx(ev); md.ctxKey({ key: 'x' }); assert.equal(md.state.selBar, null, 'typing closes it');
+  md.onCtx(ev); md.ctxKey({ key: 'b', metaKey: true }); assert.notEqual(md.state.selBar, null, '⌘B keeps it');
+  const pc = base(); pc.window.getSelection = () => ({ isCollapsed: true }); // no text selected
+  vm.runInNewContext(scriptOf('PdfEditor.dc.html') + '\nglobalThis.C = Component;', pc);
+  const pdf = new pc.C(); pdf.FP = FP; pdf.props = { toast() { } };
+  pdf.rootEl = { getBoundingClientRect: () => ({ left: 100, top: 50 }) }; pdf.state.tool = 'select';
+  const pe = { clientX: 400, clientY: 300, target: { closest: () => ({ getAttribute: () => 'p2' }) }, preventDefault() { this.prevented = true; } };
+  pdf.onPdfCtx(pe);
+  assert.equal(pe.prevented, true);
+  assert.deepEqual([Object.assign({}, pdf.state.pgPop), pdf.state.cur], [{ x: 300, y: 204 }, 'p2'], 'the page menu at the pointer, on the page right-clicked');
+});

@@ -319,4 +319,5 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '打开方式': 'Open With',
   '批注颜色': 'Annotation colour',
   '提取与合并': 'Extract & Merge',
+  '顺时针旋转': 'Rotate Right', '逆时针旋转': 'Rotate Left', '全选本页文字': 'Select Page Text', // the PDF page's right-click menu
 });

@@ -86,7 +86,7 @@
       </div></div>
     </sc-if>
     <div ref="{{ scRef }}" onMouseDown="{{ onScDown }}" onScroll="{{ onScroll }}" style="grid-column:2;min-width:0;min-height:0;overflow:auto;position:relative">
-      <div ref="{{ edRef }}" data-flip="1" class="{{ edCls }}" data-empty-hint="{{ emptyHint }}" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" onDrop="{{ onDropImg }}" onMouseDown="{{ onColDown }}" onMouseMove="{{ onColMove }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
+      <div ref="{{ edRef }}" data-flip="1" onContextMenu="{{ onCtx }}" class="{{ edCls }}" data-empty-hint="{{ emptyHint }}" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onRichInput }}" onKeyDown="{{ onRichKey }}" onClick="{{ onRichClick }}" onPaste="{{ onRichPaste }}" onDrop="{{ onDropImg }}" onMouseDown="{{ onColDown }}" onMouseMove="{{ onColMove }}" style="display:{{ richDisp }};max-width:720px;margin:0 auto;padding:{{ pad }};min-height:100%;box-sizing:border-box"></div>
       <sc-if value="{{ isSrc }}" hint-placeholder-val="{{ false }}">
         <textarea ref="{{ taRef }}" data-flip="1" class="pt-src" data-pop="center" value="{{ text }}" onChange="{{ onText }}" onKeyDown="{{ onSrcKey }}" onPaste="{{ onSrcPaste }}" onDrop="{{ onDropImg }}" onSelect="{{ onSelect }}" spellCheck="false" placeholder="# 标题" style="display:block;width:100%;max-width:760px;margin:0 auto;min-height:100%;border:none;outline:none;resize:none;background:transparent;padding:{{ pad }};box-sizing:border-box;font-family:'IBM Plex Mono','Noto Sans SC',monospace;font-size:14.5px;line-height:1.85;color:var(--k9, #3A3A3C);tab-size:2;field-sizing:content"></textarea>
       </sc-if>
@@ -101,7 +101,7 @@
   <button data-flip="1" onMouseDown="{{ md }}" onClick="{{ toggleMode }}" title="{{ modeTitle }}" style="position:absolute;right:calc(12px + {{ panelPad }});bottom:7px;z-index:31;min-width:28px;height:24px;padding:0 6px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:{{ modeFs }};font-weight:600;font-family:{{ modeFont }};color:var(--ink-3, rgba(29,29,31,0.36));transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><span data-pop="center" data-k="{{ modeIcon }}">{{ modeIcon }}</span></button>
 
   <sc-if value="{{ hasSelBar }}" hint-placeholder-val="{{ false }}">
-    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ sbx }};top:{{ sby }};z-index:80;display:flex;align-items:center;gap:1px;padding:4px;margin-left:{{ sbML }};border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
+    <div data-menu="1" data-md-selbar="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ sbx }};top:{{ sby }};z-index:80;display:flex;align-items:center;gap:1px;padding:4px;margin-left:{{ sbML }};border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
       <sc-for list="{{ selBtns }}" as="b" hint-placeholder-count="0">
         <sc-if value="{{ b.sep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:16px;margin:0 4px;flex:none;background:var(--line, rgba(0,0,0,0.1))"></span></sc-if>
         <sc-if value="{{ b.btn }}" hint-placeholder-val="{{ true }}"><button onMouseDown="{{ md }}" onClick="{{ b.onClick }}" title="{{ b.title }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:13px;font-weight:{{ b.fw }};font-style:{{ b.fs }};text-decoration:{{ b.td }};font-family:{{ b.font }};cursor:pointer;color:var(--ink, #1D1D1F);white-space:nowrap;display:flex;align-items:center;gap:5px;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.9)"><sc-if value="{{ b.star }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;line-height:1">✦</span></sc-if>{{ b.label }}</button></sc-if>
@@ -163,7 +163,7 @@ class Component extends DCLogic {
     import('./picture.js').then(m => { this.P = m; }); // dragging and resizing pictures
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./glass.js');
-    document.addEventListener('selectionchange', this.onSel);
+    document.addEventListener('selectionchange', this.onSel); document.addEventListener('mousedown', this.ctxAway, true); document.addEventListener('keydown', this.ctxKey, true);
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) { }
     import('./follow.js').then(F => { this.F = F; this.attachFollow(); });
     if (this.edRef.current) this.edRef.current.addEventListener('pointerdown', this.onPicDown);
@@ -220,7 +220,7 @@ class Component extends DCLogic {
     let n = s.getRangeAt(0).startContainer; if (!ed.contains(n) || n === ed) return; while (n.parentNode !== ed) n = n.parentNode;
     if (n === this.curEl) return; if (this.curEl && this.curEl.isConnected) this.curEl.classList.remove('md-cur'); this.curEl = n; n.classList.add('md-cur');
   }
-  componentWillUnmount() { document.removeEventListener('selectionchange', this.onSel); if (this.syncT) { clearTimeout(this.syncT); this.flush(); } this.unOut && this.unOut(); this.gone = true; this.follow && this.follow.detach(); this.dropMathOutside(); this.hb && this.hb.remove(); this.mmObs && this.mmObs.disconnect(); }
+  componentWillUnmount() { document.removeEventListener('selectionchange', this.onSel); document.removeEventListener('mousedown', this.ctxAway, true); document.removeEventListener('keydown', this.ctxKey, true); if (this.syncT) { clearTimeout(this.syncT); this.flush(); } this.unOut && this.unOut(); this.gone = true; this.follow && this.follow.detach(); this.dropMathOutside(); this.hb && this.hb.remove(); this.mmObs && this.mmObs.disconnect(); }
   /** load() below replaces the whole editor DOM (a doc switch, an external edit, or coming back to rich mode) — drop
    *  any math block's outside-click listener first, or it leaks and keeps watching for clicks near a detached node. */
   dropMathOutside() { if (this._mathOutside) { document.removeEventListener('mousedown', this._mathOutside, true); this._mathOutside = null; this._mathWrap = null; } this._openInlineText = null; }
@@ -447,11 +447,17 @@ class Component extends DCLogic {
     if (inside && this.state.focus) this.markCur();
     const blk = inside ? this.blockBarAt(r) : null; // the block bar (a table's or a code block's tools) while the caret sits in such a block; a real selection shows the format bar instead
     if (JSON.stringify(blk) !== JSON.stringify(this.state.blk || null)) this.setState({ blk });
-    if (!inside || r.collapsed) { if (this.state.selBar) this.setState({ selBar: null }); return; }
-    const rc = r.getBoundingClientRect(); if (!rc.width) return;
-    const sb = { x: Math.round(rc.left + rc.width / 2), y: Math.max(64, Math.round(rc.top - 46)) };
-    if (!this.state.selBar || this.state.selBar.x !== sb.x || this.state.selBar.y !== sb.y) this.setState({ selBar: sb });
   };
+  /** Right-click in the text: the format bar at the pointer, in place of the system menu (in 沉浸书写 too). WebKit has already put
+   *  the caret or selected the word there, which the bar's commands act on. */
+  onCtx = e => {
+    const ed = this.edRef.current; if (this.state.mode !== 'rich' || !ed || !ed.contains(e.target)) return;
+    e.preventDefault();
+    this.setState({ selBar: { x: Math.round(e.clientX), y: Math.max(64, Math.round(e.clientY - 46)) } });
+  };
+  /** The bar goes on a press anywhere else (not in it, its menus or a dialog), on typing and on Esc; ⌘ shortcuts keep it. */
+  ctxAway = e => { if (this.state.selBar && e.button !== 2 && !(e.target.closest && e.target.closest('[data-md-selbar],[data-menu],[data-dlg]'))) this.setState({ selBar: null }); };
+  ctxKey = e => { if (this.state.selBar && !e.metaKey && !e.ctrlKey && !/^(Shift|Alt|Meta|Control)$/.test(e.key)) this.setState({ selBar: null }); };
   blockBarAt(r) {
     if (!r.collapsed) return null;
     let n = r.startContainer; n = n.nodeType === 3 ? n.parentNode : n; if (!n || !n.closest) return null;
@@ -569,9 +575,6 @@ class Component extends DCLogic {
     const stats = M ? M.wordStats(text) : { words: 0, minutes: 1 };
     const sb = st.selBar;
     const SB = (label, kind, o = {}) => ({ btn: true, label, title: o.title || label, onClick: () => this.cmd(kind), fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit' });
-    // 纯净模式 selection bar: B I S | 标题 | 链接 | ✦ 改写 (the shell's onRewrite hands the selection to the assistant)
-    const pureSel = [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), { sep: true }, SB($t('标题@@sel'), 'h1', { fw: 600 }), { sep: true }, SB($t('链接'), 'link')]
-      .concat(this.props.onRewrite ? [{ sep: true }, Object.assign(SB($t('改写'), 'link'), { star: true, onClick: () => this.props.onRewrite(String(getSelection())) })] : []);
     const blk = st.blk, BB = (label, title, fn, on) => ({ isBtn: true, label, title, onClick: fn, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent' }), T = (op, v) => () => this.tableOp(op, v);
     const blkBtns = !blk ? [] : blk.kind === 'code' ? [BB($t('复制'), $t('复制代码'), () => this.copyCode()), BB($t('换行'), $t('长行折行显示'), () => { setPref('wrap', !st.wrap); this.setState({ wrap: !st.wrap }); }, st.wrap)]
       : [BB($t('↑行'), $t('上方插入行'), T('rowAbove')), BB($t('↓行'), $t('下方插入行'), T('rowBelow')), BB($t('←列'), $t('左侧插入列'), T('colLeft')), BB($t('→列'), $t('右侧插入列'), T('colRight')), SEP,
@@ -669,11 +672,12 @@ class Component extends DCLogic {
       onSelect: () => { },
       toggleMode: () => this.toggleMode(),
       modeIcon: rich ? '</>' : 'A', modeTitle: rich ? $t('查看源代码') : $t('返回排版视图'), modeFs: rich ? '11px' : '13px', modeFont: rich ? "'IBM Plex Mono',monospace" : "'Noto Serif SC',serif",
-      hasSelBar: !!sb && rich, sbx: sb ? sb.x + 'px' : 0, sby: sb ? sb.y + 'px' : 0, sbML: pure ? '-130px' : '-160px',
-      hasBlk: !!blk && rich, blx: blk ? blk.x + 'px' : 0, bly: blk ? blk.y + 'px' : 0, blkBtns, onScroll: () => { if (!this.scrollT) this.scrollT = requestAnimationFrame(() => { this.scrollT = 0; this.onSel(); }); },
+      hasSelBar: !!sb && rich, sbx: sb ? sb.x + 'px' : 0, sby: sb ? sb.y + 'px' : 0, sbML: this.props.onRewrite ? '-196px' : '-160px',
+      hasBlk: !!blk && rich, blx: blk ? blk.x + 'px' : 0, bly: blk ? blk.y + 'px' : 0, blkBtns, onScroll: () => { if (this.state.selBar) this.setState({ selBar: null }); if (!this.scrollT) this.scrollT = requestAnimationFrame(() => { this.scrollT = 0; this.onSel(); }); },
       blkCode: !!blk && blk.kind === 'code', codeLang: blk ? blk.lang || '' : '', langs, onLang: e => this.setLang(e.target.value), stop: e => e.stopPropagation(), edCls: 'pt-ed' + (st.wrap ? ' code-wrap' : '') + (st.focus ? ' md-focus' : ''),
       onColDown: this.onColDown, onColMove: this.onColMove,
-      selBtns: pure ? pureSel : [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), SB('</>', 'code', { font: "'IBM Plex Mono',monospace", title: $t('行内代码') }), SB($t('高亮'), 'mark'), SB($t('链接'), 'link'), SB('H1', 'h1', { fw: 600 }), SB('H2', 'h2', { fw: 600 }), SB($t('引用'), 'quote')],
+      selBtns: [SB('B', 'bold', { fw: 700 }), SB('I', 'italic', { fs: 'italic', font: "'Noto Serif SC',serif" }), SB('S', 'strike', { td: 'line-through' }), SB('</>', 'code', { font: "'IBM Plex Mono',monospace", title: $t('行内代码') }), SB($t('高亮'), 'mark'), SB($t('链接'), 'link'), SB('H1', 'h1', { fw: 600 }), SB('H2', 'h2', { fw: 600 }), SB($t('引用'), 'quote')]
+        .concat(this.props.onRewrite ? [{ sep: true }, Object.assign(SB($t('改写'), 'link'), { star: true, onClick: () => this.props.onRewrite(String(getSelection())) })] : []), // the same bar in 沉浸书写
       onImg: e => { const f = e.target.files[0]; e.target.value = ''; if (f) this.addImage(f); },
       onSrcPaste: e => { const f = this.imageIn(e.clipboardData); if (f) { e.preventDefault(); this.addImage(f); } },
       onDropImg: e => { const f = this.imageIn(e.dataTransfer); if (f) { e.preventDefault(); e.stopPropagation(); this.addImage(f); } }, // a picture dropped on the text goes into the document, not to the shell as a file to open

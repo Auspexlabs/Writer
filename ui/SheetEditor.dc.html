@@ -111,7 +111,7 @@
           </div>
         </sc-for>
         <sc-for list="{{ cells }}" as="c" hint-placeholder-count="0">
-          <div onMouseDown="{{ c.onMD }}" onMouseEnter="{{ c.onME }}" onMouseLeave="{{ c.onML }}" onDoubleClick="{{ c.onDbl }}" title="{{ c.tip }}" style="grid-row:{{ c.gr }};grid-column:{{ c.gc }};position:{{ c.pos }};top:{{ c.top }};left:{{ c.left }};z-index:{{ c.z }};background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};font-style:{{ c.fst }};text-decoration:{{ c.td }};font-size:{{ c.fs }};font-family:{{ c.ff }};justify-content:{{ c.justify }};align-items:{{ c.ai }};white-space:{{ c.ws }};border-top:{{ c.bt }};border-left:{{ c.bl }};border-right:{{ c.br }};border-bottom:{{ c.bb }};padding:{{ c.pad }};display:flex;gap:4px;overflow:hidden;min-width:0;font-variant-numeric:tabular-nums;cursor:{{ c.cursor }};line-height:1.35">
+          <div onMouseDown="{{ c.onMD }}" onContextMenu="{{ c.onCtx }}" onMouseEnter="{{ c.onME }}" onMouseLeave="{{ c.onML }}" onDoubleClick="{{ c.onDbl }}" title="{{ c.tip }}" style="grid-row:{{ c.gr }};grid-column:{{ c.gc }};position:{{ c.pos }};top:{{ c.top }};left:{{ c.left }};z-index:{{ c.z }};background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};font-style:{{ c.fst }};text-decoration:{{ c.td }};font-size:{{ c.fs }};font-family:{{ c.ff }};justify-content:{{ c.justify }};align-items:{{ c.ai }};white-space:{{ c.ws }};border-top:{{ c.bt }};border-left:{{ c.bl }};border-right:{{ c.br }};border-bottom:{{ c.bb }};padding:{{ c.pad }};display:flex;gap:4px;overflow:hidden;min-width:0;font-variant-numeric:tabular-nums;cursor:{{ c.cursor }};line-height:1.35">
             <span style="overflow:hidden;min-width:0;flex:{{ c.flex }};text-align:{{ c.ta }};opacity:{{ c.op }};transform:{{ c.tr }}">{{ c.text }}</span>
             <sc-if value="{{ c.hasF }}" hint-placeholder-val="{{ false }}">
               <button onMouseDown="{{ c.onF }}" style="flex:none;width:18px;height:18px;border:1px solid var(--k10, #D1D1D6);border-radius:3px;background:{{ c.fbg }};font-size:9px;color:var(--k11, #6E6E73);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">▼</button>
@@ -472,6 +472,17 @@ class Component extends DCLogic {
       if ((v === '' || v == null) && !Object.keys(s).length) delete sh.cells[a]; else sh.cells[a] = Object.keys(s).length ? { v, s } : { v };
     }));
   }
+  /** Right-click on a cell: the selection stays when the cell is in it, else that cell is selected; then the cell menu at the pointer. */
+  cellCtx(e, r, c) {
+    e.preventDefault();
+    if (this.state.edit) this.commitEdit(0, 0);
+    const R = this.rng(); if (!(r >= R.r1 && r <= R.r2 && c >= R.c1 && c <= R.c2)) { const m = this.mergeAt(r, c); this.setState({ anc: { r, c }, sel: m ? { r: m.r + m.rs - 1, c: m.c + m.cs - 1 } : { r, c } }); }
+    this.wantFocus = true; this.setState({ chartSel: null, picSel: null, pop: { id: 'cellctx', x: e.clientX, y: e.clientY } });
+  }
+  /** Copy or cut from a menu: the cells go to the app's clipboard and their text to the system's (the keys use the copy event). */
+  clipOut(cut) { const t = this.copy(cut); try { navigator.clipboard.writeText(t).catch(() => { }); } catch (x) { } }
+  /** Paste from a menu: the system clipboard's text, or the app's own cells when that cannot be read. */
+  clipIn() { const go = t => this.paste(t); try { navigator.clipboard.readText().then(go, () => go(null)); } catch (x) { go(null); } }
   copy(cut) {
     const E = this.E, R = this.rng(), calc = new E.Calc(this.doc), cells = [], lines = [];
     for (let r = R.r1; r <= R.r2; r++) { const row = [], line = []; for (let c = R.c1; c <= R.c2; c++) { const x = this.sh.cells[E.A(r, c)]; row.push(x ? structuredClone(x) : null); line.push(E.fmt(calc.value(this.si, r, c), x && x.s)); } cells.push(row); lines.push(line.join('\t')); }
@@ -1194,7 +1205,8 @@ class Component extends DCLogic {
             this.op = { kind: 'sel' }; this.wantFocus = true; this.setState({ chartSel: null, picSel: null, pop: null });
           },
           onME: e => { if (!this.op) { if (s.note) this.setState({ noteAt: { r, c } }); return; } if (this.op.kind === 'sel') this.setState({ sel: { r, c } }); if (this.op.kind === 'fill') this.setState({ fillTo: { r, c, copy: e.ctrlKey || e.metaKey } }); if (this.op.kind === 'point') this.dragPt(r, c); },
-          onDbl: () => { this.setState({ sel: { r, c }, anc: { r, c } }, () => this.startEdit(null, 'edit')); }
+          onDbl: () => { this.setState({ sel: { r, c }, anc: { r, c } }, () => this.startEdit(null, 'edit')); },
+          onCtx: e => this.cellCtx(e, r, c)
         });
       }
     }
@@ -1268,6 +1280,15 @@ class Component extends DCLogic {
         popItems = [I(col ? $t('插入列') : $t('插入行'), () => this.insDel(axis, col ? R.c1 : R.r1, n), { hint: n > 1 ? String(n) : '' }), I(col ? $t('删除列') : $t('删除行'), () => this.insDel(axis, col ? R.c1 : R.r1, -n)), I($t('清除内容'), () => this.clear('v')), IS]
           .concat(col ? [I($t('列宽…'), () => this.sizeDialog('c')), I($t('自动调整列宽'), () => this.fitCols())] : [I($t('行高…'), () => this.sizeDialog('r'))],
             [IS, I($t('隐藏'), () => this.hideLines(axis, true)), I($t('取消隐藏'), () => this.hideLines(axis, false))]);
+      } else if (st.pop.id === 'cellctx') {
+        // the cell menu: the clipboard, rows and columns, clearing and merging, sorting and filtering, notes and links
+        const nr = R.r2 - R.r1 + 1, nc = R.c2 - R.c1 + 1, K = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || '') ? '⌘' : 'Ctrl+', merged = this.mergeAt(R.r1, R.c1);
+        popItems = [I($t('剪切'), () => this.clipOut(true), { hint: K + 'X' }), I($t('复制'), () => this.clipOut(false), { hint: K + 'C' }), I($t('粘贴'), () => this.clipIn(), { hint: K + 'V' }), IS,
+          I(nr > 1 ? $t('在上方插入 {n} 行', { n: nr }) : $t('在上方插入行'), () => this.insDel('r', R.r1, nr)), I(nc > 1 ? $t('在左侧插入 {n} 列', { n: nc }) : $t('在左侧插入列'), () => this.insDel('c', R.c1, nc)),
+          I(nr > 1 ? $t('删除 {n} 行', { n: nr }) : $t('删除行'), () => this.insDel('r', R.r1, -nr)), I(nc > 1 ? $t('删除 {n} 列', { n: nc }) : $t('删除列'), () => this.insDel('c', R.c1, -nc)), IS,
+          I($t('清除内容'), () => this.clear('v'), { hint: 'Delete' })].concat(nr * nc > 1 || merged ? [I(merged ? $t('取消合并') : $t('合并单元格'), () => this.merge())] : [],
+          [IS, I($t('升序排序'), () => this.sort([{ c: R.c1, asc: true }])), I($t('降序排序'), () => this.sort([{ c: R.c1, asc: false }])), I(sh.filter ? $t('取消筛选') : $t('筛选'), () => this.toggleFilter()), IS,
+            I(cs && cs.note ? $t('编辑批注…') : $t('插入批注…'), () => this.setNote()), I($t('超链接…'), () => this.setLink())]);
       } else if (st.pop.id === 'tabctx') {
         const i = st.pop.i, s = d.sheets[i];
         popItems = [I($t('重命名'), () => this.renameSheet(i)), I($t('复制工作表'), () => this.copySheet(i)), I($t('左移'), () => this.moveSheet(i, i - 1)), I($t('右移'), () => this.moveSheet(i, i + 1)), IS, HD($t('工作表标签颜色'))]

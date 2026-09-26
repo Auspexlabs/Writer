@@ -79,7 +79,7 @@
     </sc-if>
 
     <div style="grid-column:2;display:flex;flex-direction:column;min-width:0;min-height:0;padding-top:58px">
-      <div ref="{{ stageRef }}" onMouseDown="{{ onStageDown }}" style="flex:1;min-height:0;position:relative;overflow:auto;display:flex">
+      <div ref="{{ stageRef }}" onMouseDown="{{ onStageDown }}" onContextMenu="{{ onStageCtx }}" style="flex:1;min-height:0;position:relative;overflow:auto;display:flex">
         <div ref="{{ slideRef }}" data-flip="scale" style="position:relative;width:{{ stW }};height:{{ stH }};flex:none;margin:auto;box-shadow:var(--paper-sh, 0 0 0 1px rgba(0,0,0,0.05),0 10px 34px rgba(0,0,0,0.06))">
           <div style="position:absolute;left:0;top:0;width:1600px;height:{{ H }};transform:{{ scale }};transform-origin:0 0;background:{{ sBg }};overflow:hidden">
             <sc-for list="{{ objs }}" as="o" hint-placeholder-count="0">
@@ -301,6 +301,11 @@ class Component extends DCLogic {
   patchSel(patch) { const o = this.obj; if (o) this.patchObj(o.id, patch); }
   /** The same change on every selected object. */
   patchSels(patch) { const ids = this.sels.map(o => o.id); if (ids.length) this.commit((d, s) => s.objs.forEach(o => { if (ids.includes(o.id)) Object.assign(o, typeof patch === 'function' ? patch(o) : patch); })); }
+  /** The object clipboard from a menu, as ⌘C / ⌘X / ⌘V use it: objects stay in the app (they are shapes, not text). */
+  copySels(cut) { if (!this.sels.length) return; this.clip = this.sels.map(x => this.clipOf(x)); if (cut) this.deleteSels(); }
+  pasteSels() { const d = this.doc; if (!this.clip || !this.clip.length) return; const same = this.clipDoc === d.id; this.clip.forEach(c => this.dup(same ? c : Object.assign({}, c, { from: null }), 24)); this.clip = this.clip.map(c => Object.assign({}, c, this.moveKids(c, { x: c.x + 24, y: c.y + 24 }))); }
+  /** Right-click on the slide: the objects' menu when some are selected (the press selected the one under it), else the slide's. */
+  onStageCtx = e => { e.preventDefault(); if (this.state.editing) return; this.setState({ pop: { id: 'stagectx', x: e.clientX, y: Math.min(e.clientY, window.innerHeight - 380) } }); };
   deleteSels() { const ids = this.sels.map(o => o.id); if (!ids.length) return; this.commit((d, s) => { s.objs = s.objs.filter(x => !ids.includes(x.id)); }); this.setState({ sel: null, sels: [] }); }
   /** 组合 Ctrl+G: the selected objects become one group where the topmost of them was; 取消组合 puts a group's members back. */
   groupSels() { const ids = this.sels.map(o => o.id); if (ids.length < 2) return this.toast($t('先选中两个以上的对象')); let g; this.commit((d, s) => { const kids = s.objs.filter(o => ids.includes(o.id)); g = this.K.group(kids); const at = Math.max(...kids.map(k => s.objs.indexOf(k))); s.objs.splice(at + 1, 0, g); s.objs = s.objs.filter(o => !ids.includes(o.id)); }); this.setState({ sel: g.id, sels: [g.id] }); }
@@ -868,6 +873,14 @@ class Component extends DCLogic {
           I('复制', () => this.copySlide(false), { hint: 'Ctrl+C' }), I('剪切', () => this.copySlide(true), { hint: 'Ctrl+X' }), ...(window.__writerSlideClip ? [I('粘贴', () => this.pasteSlide(), { hint: 'Ctrl+V' })] : []), IS,
           sl.sec ? I('删除节', () => this.commit(dd => { dd.slides[i].sec = ''; })) : I('新增节', () => this.addSection(i)), IS, I('删除幻灯片', () => this.deleteSlide(i))];
       }
+      else if (st.pop.id === 'stagectx') {
+        const K = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || '') ? '⌘' : 'Ctrl+', many = this.sels.length, clip = !!(this.clip && this.clip.length), o = this.obj;
+        popItems = many ? [I('剪切', () => this.copySels(true), { hint: K + 'X' }), I('复制', () => this.copySels(false), { hint: K + 'C' }), ...(clip ? [I('粘贴', () => this.pasteSels(), { hint: K + 'V' })] : []),
+          I('复制一份', () => this.sels.forEach(x => this.dup(x)), { hint: K + 'D' }), I('删除', () => this.deleteSels(), { hint: '⌫' }), IS,
+          I('置于顶层', () => this.arrange('front')), I('上移一层', () => this.arrange('up')), I('下移一层', () => this.arrange('down')), I('置于底层', () => this.arrange('back')),
+          ...(many > 1 ? [IS, I('组合', () => this.groupSels(), { hint: K + 'G' })] : o && o.t === 'group' ? [IS, I('取消组合', () => this.ungroup())] : [])]
+          : [...(clip ? [I('粘贴', () => this.pasteSels(), { hint: K + 'V' }), IS] : []), HD('新建幻灯片'), ...layoutItems(key => this.addSlide(key, this.ci + 1)), IS, I('从此页放映', () => this.startShow(this.ci))];
+      }
       else popItems = this.menus[st.pop.id] || [];
     }
     const lives = st.lives || {}, live = x => { const lv = lives[x.id]; return lv ? Object.assign({}, x, lv, this.moveKids(x, lv)) : x; };
@@ -890,6 +903,7 @@ class Component extends DCLogic {
           onMD: e => { if (!isSel) return; e.stopPropagation(); if (e.shiftKey && st.cell) { e.preventDefault(); this.setState({ cellSel: { r: c.r, c: c.c } }); return; } if (!editing) { e.preventDefault(); this.setState({ editing: x.id, cell: { r: c.r, c: c.c }, cellSel: null }); this.focusEdit = c.key; this.selectAll = false; } else this.setState({ cell: { r: c.r, c: c.c }, cellSel: null }); }
         })),
         onMD: e => {
+          if (e.button === 2) { e.stopPropagation(); if (!editing && !this.state.sels.includes(x.id)) this.select(x.id, false); return; } // right-click: select it for the menu, move nothing
           if (editing) { e.stopPropagation(); return; } e.stopPropagation(); e.preventDefault(); this.endEdit(); this.thumbFocus = false;
           const inSel = this.state.sels.includes(x.id); if (e.shiftKey || !inSel) this.select(x.id, e.shiftKey); else this.setState({ sel: x.id, editing: null, pop: null });
           let objs = e.shiftKey ? [] : (inSel ? this.sels : [x]);
@@ -1025,7 +1039,7 @@ class Component extends DCLogic {
       showBlank: !!(sh && sh.blank), blankBg: sh && sh.blank || '#000', hasJump: !!st.jump, jumpText: $t('跳转到第 {n} 张', { n: st.jump || '' }),
       presenterIn: !!(sh && sh.pv), presenterHtml: { __html: sh && sh.pv ? K.presenterHtml(d, sh.i, this.clock()) : '' },
       onPresenterClick: e => { e.stopPropagation(); const a = e.target.closest && e.target.closest('[data-act]'); if (a) this.presenterAct(a.getAttribute('data-act')); },
-      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) 0px` : 'none', popItems, popIsGrid, gridCells, gridLabel, popIsGallery, gallery, galleryLabel,
+      onStageCtx: this.onStageCtx, hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) 0px` : 'none', popItems, popIsGrid, gridCells, gridLabel, popIsGallery, gallery, galleryLabel,
       gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null })
     };
   }

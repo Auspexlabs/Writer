@@ -89,3 +89,25 @@ test('groups: the box around the members, kids drawn at their offsets; moving or
   c.insertShape('wedgeRectCallout');
   assert.equal(doc.slides[0].objs[doc.slides[0].objs.length - 1].shape, 'wedgeRectCallout');
 });
+
+test('right-click on the slide: the selected objects\' menu (clipboard, order, grouping), or the slide\'s when nothing is selected', () => {
+  const html = readFileSync(new URL('../SlideEditor.dc.html', import.meta.url), 'utf8'), code = html.match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
+  const ctx = { window: { innerWidth: 1360, innerHeight: 860 }, document: {}, React: { createRef: () => ({ current: null }) }, structuredClone,
+    $t: (s, v) => { const i = String(s).indexOf('@@'), bare = i < 0 ? String(s) : String(s).slice(0, i); return v ? bare.replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : bare; }, $lang: () => 'zh',
+    DCLogic: class { setState(u, cb) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); if (cb) cb(); } forceUpdate() { } } };
+  vm.runInNewContext(code + '\nglobalThis.SlideEditor = Component;', ctx);
+  const a = K.shape({ id: 'a', shape: 'rect', x: 100, y: 100, w: 200, h: 100 }), b = K.shape({ id: 'b', shape: 'ellipse', x: 400, y: 100, w: 200, h: 100 });
+  let doc = { id: 'd', type: 'pptx', ratio: '16:9', slides: [{ id: 's1', layout: 'blank', decor: [], objs: [a, b], notes: '', trans: 'none', hidden: false, bg: null }] };
+  const c = new ctx.SlideEditor(); c.props = { get doc() { return doc; }, onChange: d => { doc = d; }, toast() { } }; c.K = K;
+  const right = () => { const e = { clientX: 300, clientY: 200, preventDefault() { this.prevented = true; } }; c.onStageCtx(e); return e.prevented; };
+  const items = () => Array.from(c.renderVals().popItems).filter(i => i.isItem !== false && i.label && !i.isHead && !i.head).map(i => i.label);
+  c.setState({ sel: 'a', sels: ['a'] });
+  assert.equal(right(), true, 'no system menu'); assert.equal(c.state.pop.id, 'stagectx');
+  let l = items(); for (const k of ['剪切', '复制', '复制一份', '删除', '置于顶层', '置于底层']) assert.ok(l.includes(k), k);
+  assert.ok(!l.includes('粘贴') && !l.includes('组合'), 'nothing to paste yet, one object');
+  Array.from(c.renderVals().popItems).find(i => i.label === '复制').onClick();
+  right(); assert.ok(items().includes('粘贴'), 'after 复制');
+  c.setState({ sel: 'b', sels: ['a', 'b'] }); right(); assert.ok(items().includes('组合'), 'two objects group');
+  c.setState({ sel: null, sels: [] }); right(); l = items();
+  assert.ok(l.includes('从此页放映') && l.includes('粘贴') && !l.includes('删除'), 'the slide\'s menu: ' + l.join(' '));
+});

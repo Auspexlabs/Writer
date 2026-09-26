@@ -34,6 +34,14 @@
       <button onMouseDown="{{ md }}" onClick="{{ closeFind }}" title="关闭" style="width:26px;height:26px;padding:0;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink-2, rgba(29,29,31,0.62))">✕</button>
     </div>
   </sc-if>
+  <sc-if value="{{ pgPopOn }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="sel" onMouseDown="{{ md }}" style="position:absolute;left:{{ ppX }};top:{{ ppY }};translate:-50% 0;z-index:42;height:36px;display:flex;align-items:center;gap:1px;padding:0 4px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));white-space:nowrap">
+      <button onClick="{{ rotCw }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">顺时针旋转</button>
+      <button onClick="{{ rotCcw }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">逆时针旋转</button>
+      <span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span>
+      <button onClick="{{ selPage }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">全选本页文字</button>
+    </div>
+  </sc-if>
   <sc-if value="{{ selPopOn }}" hint-placeholder-val="{{ false }}">
     <div data-pop="sel" onMouseDown="{{ md }}" style="position:absolute;left:{{ spX }};top:{{ spY }};translate:-50% 0;z-index:42;height:36px;display:flex;align-items:center;gap:1px;padding:0 4px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));white-space:nowrap">
       <button onClick="{{ markHl }}" style="height:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:12.5px;color:var(--ink, #1D1D1F);cursor:pointer" style-hover="background:var(--fill, rgba(0,0,0,0.07))">高亮</button>
@@ -70,7 +78,7 @@
       </sc-if>
       </div>
     </sc-if>
-    <div ref="{{ scRef }}" onScroll="{{ onScroll }}" style="grid-column:2;overflow:auto;min-width:0;position:relative">
+    <div ref="{{ scRef }}" onScroll="{{ onScroll }}" onContextMenu="{{ onPdfCtx }}" style="grid-column:2;overflow:auto;min-width:0;position:relative">
       <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}"><div style="padding:40px;text-align:center;font-size:13px;color:var(--ink-3, rgba(29,29,31,0.36))">{{ loadText }}</div></sc-if>
       <div data-flip="1" style="display:flex;flex-direction:column;align-items:center;justify-content:{{ scJ }};gap:20px;padding:{{ scPad }};min-width:max-content;min-height:{{ scMinH }};box-sizing:border-box">
         <sc-for list="{{ mainPages }}" as="p" hint-placeholder-count="0">
@@ -268,6 +276,14 @@ class Component extends DCLogic {
     const b = s.getRangeAt(0).getBoundingClientRect(), rr = root.getBoundingClientRect();
     this.setState({ selPop: { pages, x: b.left + b.width / 2 - rr.left, y: Math.max(8, b.top - rr.top - 46) } });
   }
+  /** Right-click: over selected text (WebKit selects the word under the pointer) its marks and 复制, else the page's menu. */
+  onPdfCtx = e => {
+    e.preventDefault(); const s = window.getSelection(), root = this.rootEl; if (!root) return;
+    if (this.state.tool === 'select' && s && !s.isCollapsed) { this.setState({ pgPop: null }); this.checkSelection(); return; }
+    const rr = root.getBoundingClientRect(), pg = e.target.closest && e.target.closest('[data-page]');
+    if (pg) this.setState({ cur: pg.getAttribute('data-page') });
+    this.setState({ selPop: null, pgPop: { x: e.clientX - rr.left, y: Math.max(8, e.clientY - rr.top - 46) } });
+  };
   markSel(t) {
     const sp = this.state.selPop; if (!sp) return; const color = t === 'hl' ? this.state.mk : this.state.color;
     this.change(d => sp.pages.forEach(p => { const rs = p.rects, x = Math.min(...rs.map(r => r.x)), y = Math.min(...rs.map(r => r.y)); d.annots.push({ id: this.newId(), page: p.id, t, quads: rs.map(r => [+r.x.toFixed(2), +r.y.toFixed(2), +r.w.toFixed(2), +r.h.toFixed(2)]), x, y, w: Math.max(...rs.map(r => r.x + r.w)) - x, h: Math.max(...rs.map(r => r.y + r.h)) - y, color }); }));
@@ -323,7 +339,7 @@ class Component extends DCLogic {
   };
   onWU = () => {
     const op = this.op; this.op = null;
-    if (!op) { if (this.state.tool === 'select') setTimeout(() => this.checkSelection(), 0); return; }
+    if (!op) { if (this.state.pgPop) this.setState({ pgPop: null }); return; } // the text's marks come with a right-click (onPdfCtx)
     const lv = this.state.live; this.setState({ live: null });
     if (op.kind === 'draw' && lv && lv.w > 4 && lv.h > 4) this.addAnnot({ id: this.newId(), page: op.page, t: op.t, x: lv.x, y: lv.y, w: lv.w, h: lv.h, color: op.t === 'hl' ? '#FFE066' : this.state.color, sw: 2 });
     if (op.kind === 'ink' && op.pts.length > 1) this.addAnnot({ id: this.newId(), page: op.page, t: 'ink', pts: op.pts, color: this.state.color, sw: 2.5 });
@@ -441,7 +457,7 @@ class Component extends DCLogic {
           const r = e.currentTarget.getBoundingClientRect(), x = (e.clientX - r.left) / sc, y = (e.clientY - r.top) / sc, t = st.tool;
           this.setState({ cur: pg.id });
           e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true });
-          if (t === 'select' || t === 'edit') { this.setState({ sel: null, editing: null, selPop: null }); return; }
+          if (t === 'select' || t === 'edit') { this.setState({ sel: null, editing: null, selPop: null, pgPop: null }); return; }
           e.preventDefault();
           if (t === 'note') { this.addAnnot({ id: this.newId(), page: pg.id, t: 'note', x: x - 10, y: y - 10, w: 20, h: 20, text: '', color: '#FFD54A' }, {}); this.setState({ tool: 'select' }); return; } // theme: keep
           if (t === 'text') { const fs = st.fs; this.addAnnot({ id: this.newId(), page: pg.id, t: 'text', x, y: y - fs * 0.7, w: Math.min(260, inf.w - x - 10), h: fs * 1.6, text: '', fs, color: st.color }, {}); return; }
@@ -471,10 +487,12 @@ class Component extends DCLogic {
       loading: !K || !Object.keys(st.infos).length || !!st.err, loadText: st.err || $t('正在加载 PDF…'),
       mergeRef: this.mergeRef, onMergePick: e => { const files = Array.from(e.target.files || []); e.target.value = ''; if (files.length) this.merge(files); },
       selPopOn: !!st.selPop, spX: st.selPop ? st.selPop.x + 'px' : 0, spY: st.selPop ? st.selPop.y + 'px' : 0, stop,
+      pgPopOn: !!st.pgPop, ppX: st.pgPop ? st.pgPop.x + 'px' : 0, ppY: st.pgPop ? st.pgPop.y + 'px' : 0, onPdfCtx: this.onPdfCtx,
+      rotCw: () => { this.setState({ pgPop: null }); this.rotatePage(1); }, rotCcw: () => { this.setState({ pgPop: null }); this.rotatePage(-1); }, selPage: () => { this.setState({ pgPop: null }); this.selectPageText(); },
       markHl: () => this.markSel('hl'), markUl: () => this.markSel('ul'), markSo: () => this.markSel('so'),
       swatches: SWATCHES.map(([c, n]) => ({ color: c, title: $t(n), ring: st.mk === c ? '0 0 0 2px var(--k7, #1D1D1F)' : 'inset 0 0 0 1px var(--k45, rgba(0,0,0,0.2))', onClick: () => this.setState({ mk: c }) })),
       copySel: () => { const s = window.getSelection(); if (s && navigator.clipboard) navigator.clipboard.writeText(s.toString()).catch(() => { }); },
-      onScroll: e => { if (st.selPop) this.setState({ selPop: null }); if (single) return; const sc2 = e.currentTarget; const els = Array.from(sc2.querySelectorAll('[data-page]')); const mid = sc2.scrollTop + sc2.clientHeight / 3; let cur = els[0]; els.forEach(el => { if (el.offsetTop <= mid) cur = el; }); if (cur && cur.getAttribute('data-page') !== st.cur) this.setState({ cur: cur.getAttribute('data-page') }); },
+      onScroll: e => { if (st.selPop || st.pgPop) this.setState({ selPop: null, pgPop: null }); if (single) return; const sc2 = e.currentTarget; const els = Array.from(sc2.querySelectorAll('[data-page]')); const mid = sc2.scrollTop + sc2.clientHeight / 3; let cur = els[0]; els.forEach(el => { if (el.offsetTop <= mid) cur = el; }); if (cur && cur.getAttribute('data-page') !== st.cur) this.setState({ cur: cur.getAttribute('data-page') }); },
       findOpen: st.findOpen, findTop: pure ? '12px' : '58px', findRight: pure ? '110px' : '14px', findRef: this.findRef, findQ: st.findQ, onFindInput: e => this.runFind(e.target.value),
       findCount: st.find && st.find.q ? (st.find.hits.length ? (st.find.cur + 1) + ' / ' + st.find.hits.length : $t('无结果')) : '',
       findNext: () => this.gotoHit((st.find ? st.find.cur : 0) + 1), findPrev: () => this.gotoHit((st.find ? st.find.cur : 0) - 1), closeFind: () => this.closeFind(),
@@ -497,7 +515,7 @@ class Component extends DCLogic {
         if (ctrl && k === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); return; }
         if (ctrl && k === 'p') { e.preventDefault(); this.save(true); return; }
         if ((e.key === 'Delete' || e.key === 'Backspace') && (selA || selF)) { e.preventDefault(); this.removeSel(); return; }
-        if (e.key === 'Escape') { this.setState({ sel: null, tool: 'select', findOpen: false, find: null, selPop: null }); return; }
+        if (e.key === 'Escape') { this.setState({ sel: null, tool: 'select', findOpen: false, find: null, selPop: null, pgPop: null }); return; }
         if (!ctrl) { const m = TOOLS.find(x => x[2].toLowerCase() === k); if (m) setTool(m[0]); }
       }
     };

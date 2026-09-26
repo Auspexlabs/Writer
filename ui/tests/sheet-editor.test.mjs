@@ -456,3 +456,27 @@ test('the format panel: the Word 定稿 panel with the sheet\'s own tabs and gro
   assert.deepEqual([v.formatOpen, v.panelTabs.length, v.panelPad], [false, 0, '0px'], 'closed: the grid has the width back');
 });
 
+
+test('right-click on cells: the selection stays when the cell is in it, else that cell is selected; the menu copies, pastes, inserts, deletes, clears, merges, sorts, filters, notes and links', () => {
+  const x = editor([{ name: 'Data', path: '/sheet[1]', cells: { A1: { v: '3' }, A2: { v: '1' }, B1: { v: 'x' } } }]), c = x.component;
+  Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 1, c: 1 } });
+  const ev = { preventDefault() { this.prevented = true; }, clientX: 120, clientY: 90 };
+  c.cellCtx(ev, 1, 1);
+  assert.equal(ev.prevented, true, 'no system menu');
+  assert.deepEqual(plain([c.state.anc, c.state.sel, c.state.pop.id]), [{ r: 0, c: 0 }, { r: 1, c: 1 }, 'cellctx'], 'inside the selection: it stays');
+  const labels = () => plain(c.renderVals().popItems.filter(i => i.isItem).map(i => i.label));
+  assert.deepEqual(labels(), ['剪切', '复制', '粘贴', '在上方插入 2 行', '在左侧插入 2 列', '删除 2 行', '删除 2 列', '清除内容', '合并单元格', '升序排序', '降序排序', '筛选', '插入批注…', '超链接…']);
+  c.cellCtx(ev, 5, 3);
+  assert.deepEqual(plain([c.state.anc, c.state.sel]), [{ r: 5, c: 3 }, { r: 5, c: 3 }], 'outside it: that cell');
+  assert.deepEqual(labels().slice(3, 7), ['在上方插入行', '在左侧插入列', '删除行', '删除列']);
+  assert.ok(!labels().includes('合并单元格'), 'one cell: nothing to merge');
+  // 复制 then 粘贴 from the menu (no system clipboard here: the app's own)
+  Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 1, c: 0 } }); c.cellCtx(ev, 0, 0);
+  c.renderVals().popItems.find(i => i.label === '复制').onClick(); assert.equal(c.clip.tsv, '3\n1');
+  Object.assign(c.state, { anc: { r: 4, c: 2 }, sel: { r: 4, c: 2 } }); c.cellCtx(ev, 4, 2);
+  c.renderVals().popItems.find(i => i.label === '粘贴').onClick();
+  assert.deepEqual([x.doc.sheets[0].cells.C5.v, x.doc.sheets[0].cells.C6.v], ['3', '1']);
+  Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 0, c: 1 } }); c.cellCtx(ev, 0, 0);
+  c.renderVals().popItems.find(i => i.label === '合并单元格').onClick(); assert.equal(x.doc.sheets[0].merges.length, 1);
+  c.cellCtx(ev, 0, 0); assert.ok(labels().includes('取消合并'), 'a merged cell offers to split');
+});

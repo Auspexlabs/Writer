@@ -426,4 +426,8 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '自动求和、平均值、计数…': 'AutoSum, average, count…',
   '行列与工作表': 'Rows, Columns & Sheets',
   '边框与样式': 'Borders & Styles',
+  // the cell menu (right-click on cells)
+  '在上方插入 {n} 行': 'Insert {n} Rows Above', '在上方插入行': 'Insert Row Above', '在左侧插入 {n} 列': 'Insert {n} Columns Left', '在左侧插入列': 'Insert Column Left',
+  '删除 {n} 行': 'Delete {n} Rows', '删除 {n} 列': 'Delete {n} Columns', '升序排序': 'Sort Ascending', '降序排序': 'Sort Descending', '取消筛选': 'Turn Off Filter',
+  '编辑批注…': 'Edit Note…', '插入批注…': 'Insert Note…', '超链接…': 'Link…',
 });

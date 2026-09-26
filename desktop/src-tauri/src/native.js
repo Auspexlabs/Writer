@@ -44,6 +44,11 @@
     remount();
   };
 
+  // No system context menu over the interface (its 重新加载 would reload the window): right-click belongs to the editors'
+  // own menus (Word's and Markdown's format bar, the sheet's cell menu, the slide's and the PDF's); text fields keep the
+  // system's editing menu.
+  document.addEventListener('contextmenu', e => { const t = e.target; if (!(t && t.closest && t.closest('input,textarea'))) e.preventDefault(); });
+
   if (N.kind === 'main') {
     // ⌘O belongs to the native 文件 › 打开… panel, which opens the file in place; the shell's own ⌘O uploads a copy.
     // Stopping the event here (without preventDefault) leaves it unhandled, so WebKit hands it to the menu bar.

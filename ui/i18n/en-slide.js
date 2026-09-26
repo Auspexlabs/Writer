@@ -175,4 +175,5 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '计时': 'Timing',
   '起点': 'Start',
   '隐藏本页': 'Hide This Slide',
+  '复制一份': 'Duplicate', // the slide's right-click menu
 });

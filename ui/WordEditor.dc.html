@@ -178,7 +178,7 @@
         </div>
       </div>
     </sc-if>
-    <div ref="{{ cvRef }}" data-light="{{ cvLight }}" onMouseDown="{{ onCanvasDown }}" style="grid-column:2;overflow:auto;padding:{{ cvPad }};min-width:0;background:{{ cvBg }}">
+    <div ref="{{ cvRef }}" data-light="{{ cvLight }}" onMouseDown="{{ onCanvasDown }}" onContextMenu="{{ onCtx }}" style="grid-column:2;overflow:auto;padding:{{ cvPad }};min-width:0;background:{{ cvBg }}">
       <div data-flip="scale" style="zoom:{{ zoomV }};width:{{ pageW }};margin:0 auto">
         <sc-if value="{{ showRuler }}" hint-placeholder-val="{{ false }}">
           <div data-light="1" onClick="{{ onRuler }}" title="{{ rulerTitle }}" style="position:relative;height:18px;margin:0 0 6px;border-radius:4px;background:var(--kpage, #FFFFFF);box-shadow:0 0 0 1px var(--kpageb, rgba(0,0,0,0.06));cursor:pointer;overflow:hidden">
@@ -260,14 +260,6 @@
     <span>{{ wordsText }} · {{ pagePositionText }}</span><span class="wd-count-sep"></span>
     <span style="display:flex;align-items:center;gap:8px"><button onClick="{{ zoomOut }}" title="缩小 Ctrl+−" aria-label="缩小">−</button><input value="{{ zoomText }}" onChange="{{ onZoomText }}" onKeyDown="{{ onZoomKey }}" onFocus="{{ onZoomFocus }}" onBlur="{{ onZoomBlur }}" title="输入缩放比例后回车（20–400）" aria-label="缩放比例"><button onClick="{{ zoomIn }}" title="放大 Ctrl+＋" aria-label="放大">＋</button></span>
   </div>
-  </sc-if>
-  <sc-if value="{{ hasBubble }}" hint-placeholder-val="{{ false }}">
-    <div data-menu="1" onMouseDown="{{ md }}" style="position:fixed;left:{{ bx }};top:{{ by }};transform:translate(-50%,-100%);z-index:80;display:flex;align-items:center;gap:2px;padding:3px;border-radius:14px;background:linear-gradient(180deg,var(--k39, rgba(255,255,255,0.84)),var(--k40, rgba(255,255,255,0.66)));backdrop-filter:blur(12px) saturate(190%);-webkit-backdrop-filter:blur(12px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:0 6px 20px var(--k53, rgba(0,0,0,0.08))">
-      <sc-for list="{{ bubbleBtns }}" as="b" hint-placeholder-count="0">
-        <sc-if value="{{ b.sep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:16px;margin:0 3px;flex:none;background:var(--k36, rgba(0,0,0,0.12))"></span></sc-if>
-        <sc-if value="{{ b.btn }}" hint-placeholder-val="{{ true }}"><button onMouseDown="{{ md }}" onClick="{{ b.onClick }}" style="height:28px;min-width:28px;padding:0 9px;border:none;border-radius:12px;background:{{ b.bg }};color:var(--k1, #1D1D1F);font-size:12.5px;font-weight:{{ b.fw }};font-style:{{ b.fs }};cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px" style-hover="background:var(--k20, rgba(255,255,255,0.7))"><sc-if value="{{ b.star }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;line-height:1">✦</span></sc-if>{{ b.label }}</button></sc-if>
-      </sc-for>
-    </div>
   </sc-if>
   <sc-if value="{{ hasWordSelection }}" hint-placeholder-val="{{ false }}">
     <div class="wd-qbar" data-word-selection="1" data-below="{{ selBelow }}" onMouseDown="{{ md }}" style="left:{{ bx }};top:{{ by }};--tail:{{ tailX }}">
@@ -468,7 +460,7 @@ class Component extends DCLogic {
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./md.js').then(m => { this.MD = m; this.drawEqs(); }); // KaTeX, for the equations
     this.load();
-    document.addEventListener('selectionchange', this.onSel);
+    document.addEventListener('selectionchange', this.onSel); document.addEventListener('mousedown', this.ctxAway, true); document.addEventListener('keydown', this.ctxKey, true);
     const ed = this.edRef.current;
     ed.addEventListener('beforeinput', this.onBI);
     ed.addEventListener('compositionstart', this.onCS);
@@ -487,13 +479,25 @@ class Component extends DCLogic {
   /** Ctrl/⌘ + wheel and trackpad pinch zoom the document instead of the browser page: a native non-passive listener on the editor root. */
   attachWheel() { if (this.rootEl) return; const el = this.cvRef.current && this.cvRef.current.closest('[data-edroot]'); if (el) { this.rootEl = el; el.addEventListener('wheel', this.onWheel, { passive: false }); } }
   componentWillUnmount() {
-    document.removeEventListener('selectionchange', this.onSel);
+    document.removeEventListener('selectionchange', this.onSel); document.removeEventListener('mousedown', this.ctxAway, true); document.removeEventListener('keydown', this.ctxKey, true);
     if (this.rootEl) this.rootEl.removeEventListener('wheel', this.onWheel);
     if (this.syncT) { clearTimeout(this.syncT); this.flush(); }
     this.commitHF(); this.pgCss && this.pgCss.remove(); this.stCss && this.stCss.remove();
     this.gone = true; this.follow && this.follow.detach(); this.hb && this.hb.remove(); this.shb && this.shb.remove();
   }
-  onCvScroll = () => { this.hb && this.hb.layout(); this.shb && this.shb.layout(); };
+  onCvScroll = () => { this.hb && this.hb.layout(); this.shb && this.shb.layout(); if (this.state.ctxBar) this.setState({ ctxBar: null }); };
+  /** Right-click in the page: the design's selection bar at the pointer, in place of the system menu (in 沉浸书写 too). WebKit
+   *  has already put the caret or selected the word there; the bar's commands act on that range (onSel keeps it). */
+  onCtx = e => {
+    const ed = this.root; if (!ed || !ed.contains(e.target)) return;
+    e.preventDefault(); this.onSel();
+    const rootEl = ed.closest('[data-edroot]'), top = rootEl ? rootEl.getBoundingClientRect().top : 0, W = window.innerWidth;
+    const half = Math.min(255, (W - 16) / 2), x = Math.max(half + 8, Math.min(W - half - 8, e.clientX)), below = e.clientY - 56 < top + 8;
+    this.setState({ ctxBar: { x: Math.round(x), y: Math.round(below ? e.clientY + 12 : e.clientY - 12), below, dx: Math.max(-half + 16, Math.min(half - 16, Math.round(e.clientX - x))) } });
+  };
+  /** The bar goes on a press anywhere else (not in it, its menus or a dialog), on typing and on Esc; ⌘ shortcuts keep it. */
+  ctxAway = e => { if (this.state.ctxBar && e.button !== 2 && !(e.target.closest && e.target.closest('[data-word-selection],.wd-menu,[data-menu],[data-dlg]'))) this.setState({ ctxBar: null }); };
+  ctxKey = e => { if (this.state.ctxBar && !e.metaKey && !e.ctrlKey && !/^(Shift|Alt|Meta|Control)$/.test(e.key)) this.setState({ ctxBar: null }); };
   /** Continuous zoom, 20%–400% as shown (z is the page's CSS zoom, Z100 at 100%); `at` (client coords) is the point that stays put, default the canvas centre. */
   setZoom(z, at) {
     z = Math.max(ZMIN, Math.min(ZMAX, z)); this.autoFit = false;
@@ -832,8 +836,8 @@ class Component extends DCLogic {
   get cvTop() { return CV_PAD[0]; } // 沉浸书写 keeps the page where it is: only the chrome around it goes
   get root() { return (this.state.hf && this.hfRef.current) || this.edRef.current; }
   onSel = () => {
-    const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) { if (this.state.selBub) this.setState({ selBub: null }); return; }
-    const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) { if (this.state.selBub) this.setState({ selBub: null }); return; }
+    const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) return;
+    const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return;
     this.range = r.cloneRange();
     const q = c => { try { return document.queryCommandState(c); } catch (e) { return false; } };
     let el = r.startContainer; if (el.nodeType === 3) el = el.parentNode;
@@ -855,11 +859,6 @@ class Component extends DCLogic {
     if (JSON.stringify(f) !== JSON.stringify(this.state.fmt)) next.fmt = f;
     if (f.inTable && !this.state.fmt.inTable && !this.state.imgSel && !this.state.shapeSel) next.tab = 'table';
     else if (!f.inTable && this.state.tab === 'table') next.tab = 'home';
-    const rc = r.getBoundingClientRect(), rootEl = ed.closest && ed.closest('[data-edroot]'), top = rootEl ? rootEl.getBoundingClientRect().top : 0, below = rc.top - 56 < top + 8, rawX = rc.left + rc.width / 2;
-    const half = this.props.pure ? 0 : Math.min(255, (window.innerWidth - 16) / 2);
-    const x = Math.max(half + 8, Math.min(window.innerWidth - half - 8, rawX));
-    const selBar = r.collapsed || !rc.width ? null : { x: Math.round(x), y: Math.round(below ? rc.bottom + 10 : rc.top - 10), below, dx: Math.max(-half + 16, Math.min(half - 16, Math.round(rawX - x))) };
-    if (JSON.stringify(selBar) !== JSON.stringify(this.state.selBub || null)) next.selBub = selBar;
     const tb = tblEl && ed === this.edRef.current ? this.tableBox(tblEl) : null;
     if (JSON.stringify(tb) !== JSON.stringify(this.state.tblBox || null)) next.tblBox = tb;
     if (Object.keys(next).length) this.setState(next);
@@ -1902,12 +1901,6 @@ class Component extends DCLogic {
     const CMPX = 96 / 2.54, TAB_GLYPH = { left: 'L', center: '⊥', right: '⅃', decimal: '⊥.' }; // i18n-ok — the marks Word draws for tab stops
     const tabStops = st.showRuler && !web && this.EN ? this.EN.tabStopsOf((f.pat || {}).tabs).map(t => ({ x: Math.round(m.left + t.cm * CMPX) + 'px', glyph: TAB_GLYPH[t.kind] || 'L', title: $t('制表位 {pos}（点击切换类型或移除）', { pos: t.cm + ' cm' }), onClick: e => { e.stopPropagation(); this.cycleTab(t.cm); } })) : [];
     const pageInk = /^#[0-9a-f]{6}$/i.test(pg.color) && this.EN ? { dark: '#1D1D1F', light: '#FFFFFF' }[this.EN.inkOn(pg.color.slice(1))] : 'var(--k1, #1D1D1F)'; // theme: keep — on a page colour, Word's automatic text colour for it
-    // 纯净模式 selection bar: B I U | 标题 | 链接 | ✦ 改写 (the shell's onRewrite hands the selection to the assistant)
-    const bb = (label, fn, o = {}) => ({ btn: true, label: $t(label), onClick: fn, bg: o.on ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', fw: o.fw || 400, fs: o.fs || 'normal', star: !!o.star });
-    const heading = /^h[1-3]$/.test(f.block), SEPB = { sep: true };
-    const bubbleBtns = [bb('B', () => this.exec('bold'), { on: f.b, fw: 700 }), bb('I', () => this.exec('italic'), { on: f.i, fs: 'italic' }), bb('U', () => this.exec('underline'), { on: f.u }), SEPB,
-      bb('标题@@sel', () => this.exec('formatBlock', heading ? '<p>' : '<h1>'), { on: heading }), SEPB, bb('链接', () => this.linkDlg())]
-      .concat(this.props.onRewrite ? [SEPB, bb('改写', () => this.props.onRewrite(String(getSelection())), { star: true })] : []);
     const tbx = !pure && !st.hf && f.inTable ? st.tblBox || null : null; // the table the caret is in: its letters, numbers and frame
     const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ st, f, pg, d, tab, tabsDef, I, HD, info, comments, notes, moveComment, formatOpen });
     // popover: after the panel, whose controls register their menus as it builds them
@@ -1925,7 +1918,7 @@ class Component extends DCLogic {
     return {
       md, stop: e => e.stopPropagation(), tabs, ribbon, panelTabs: panel.tabs, panelGroups: panel.groups, formatOpen, panelEnter: this.props.panelEnter || 'open', bubbleOpen: pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
       notPure: !pure, pure, showBar: pure && !!this.props.pureTools, rootBg: 'transparent', pageThumbs, addPageQuick: () => this.addPage(), thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
-      hasBubble: pure && !!st.selBub, hasWordSelection: !pure && !!st.selBub, bx: st.selBub ? st.selBub.x + 'px' : 0, by: st.selBub ? st.selBub.y + 'px' : 0, selBelow: st.selBub && st.selBub.below ? '1' : '0', tailX: st.selBub ? `calc(50% + ${st.selBub.dx || 0}px)` : '50%', bubbleBtns,
+      hasWordSelection: !!st.ctxBar, bx: st.ctxBar ? st.ctxBar.x + 'px' : 0, by: st.ctxBar ? st.ctxBar.y + 'px' : 0, selBelow: st.ctxBar && st.ctxBar.below ? '1' : '0', tailX: st.ctxBar ? `calc(50% + ${st.ctxBar.dx || 0}px)` : '50%', onCtx: this.onCtx,
       selStyleLabel: this.styleLabel(f.ps || 'Normal'), selStyleMenu: e => this.openPop('sty', e), selSizeMenu: e => this.openPop('fsize', e), canRewrite: !!this.props.onRewrite,
       selectionSize: f.size || 11, selectionSmaller: () => this.bump(-1), selectionLarger: () => this.bump(1),
       selectionBold: () => this.exec('bold'), selectionItalic: () => this.exec('italic'), selectionUnderline: () => this.exec('underline'), selectionBoldOn: f.b ? '1' : '0', selectionItalicOn: f.i ? '1' : '0', selectionUnderlineOn: f.u ? '1' : '0',
@@ -1949,7 +1942,7 @@ class Component extends DCLogic {
       onHfInput: () => this.hfInput(), onHfKey: e => { if (e.key === 'Escape') { e.preventDefault(); this.exitHF(); } },
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
       onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); }, // double-click the text: back to it
-      onInput: () => { if (this.selImg) this.selectImg(null); if (this.state.selBub) this.setState({ selBub: null }); this.sync(); },
+      onInput: () => { if (this.selImg) this.selectImg(null); if (this.state.ctxBar) this.setState({ ctxBar: null }); this.sync(); },
       onEdClick: e => {
         const t = e.target;
         if (t.tagName === 'IMG') { if (t !== this.selImg) this.selectImg(t); }

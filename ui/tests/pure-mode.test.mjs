@@ -56,20 +56,23 @@ test('the side panels: one at a time in one place; opening slides in, taking the
   assert.deepEqual([d.state.showFormat, d.state.showAI], [true, false]);
 });
 
-test('the Word editor: in pure mode the toolbar shows only for the shell\'s 格式, thumbnails overlay without a column, the bar ends in ✦ 改写', () => {
-  const ctx = base(); ctx.getComputedStyle = () => ({ marginBottom: '28px' });
+test('the Word editor: the selection bar comes with a right-click, at the pointer, in 沉浸书写 as outside it; a press elsewhere or typing takes it away', () => {
+  const ctx = base(); ctx.getComputedStyle = () => ({ marginBottom: '28px' }); ctx.window.getSelection = () => ({ rangeCount: 0 });
   vm.runInNewContext(script('WordEditor.dc.html') + '\nglobalThis.WordEditor = Component;', ctx);
-  const ed = (props, state = {}) => { const c = new ctx.WordEditor(); c.props = Object.assign({ doc: { id: 'd', html: '' }, onChange() { } }, props); Object.assign(c.state, state); c.pgCss = { textContent: '' }; c.edRef.current = { innerText: '', children: [], querySelectorAll: () => [] }; c.refreshInfo(); return c.renderVals(); };
-  let v = ed({ pure: true, showThumbs: true, pureTools: false });
-  assert.deepEqual([v.showBar, v.notPure, v.showNav, v.bodyCols.startsWith('0px'), v.rootBg], [false, false, true, true, 'transparent']);
-  v = ed({ pure: true, showThumbs: false, pureTools: true, onRewrite() { } });
-  assert.deepEqual([v.showBar, v.showNav], [true, false]);
-  const labels = btns => Array.from(btns, b => b.sep ? '|' : b.label); // arrays from the editor's realm, compared by value
-  assert.deepEqual(labels(v.bubbleBtns), ['B', 'I', 'U', '|', '标题', '|', '链接', '|', '改写']);
-  assert.equal(v.bubbleBtns[v.bubbleBtns.length - 1].star, true);
-  assert.deepEqual(labels(ed({ pure: true }).bubbleBtns), ['B', 'I', 'U', '|', '标题', '|', '链接'], 'no 改写 without an assistant to send to');
-  v = ed({ pure: false, showThumbs: true, formatOpen: true });
-  assert.deepEqual([v.showBar, v.showNav, v.formatOpen, v.bodyCols], [false, true, true, '240px minmax(0,1fr) 312px'], 'no toolbar over the page: the sidebar and the panel take their columns (format-panel.test.mjs has the panel)');
+  const make = props => { const c = new ctx.WordEditor(); c.props = Object.assign({ doc: { id: 'd', html: '' }, onChange() { } }, props); c.pgCss = { textContent: '' }; c.edRef.current = { innerText: '', children: [], querySelectorAll: () => [], contains: () => true, closest: () => null }; c.refreshInfo(); return c; };
+  const right = c => { const e = { target: {}, clientX: 400, clientY: 300, preventDefault() { this.prevented = true; } }; c.onCtx(e); return e.prevented; };
+  for (const pure of [false, true]) {
+    const c = make({ pure, onRewrite() { } });
+    assert.equal(c.renderVals().hasWordSelection, false, 'no bar for a selection by itself');
+    assert.equal(right(c), true, 'the system menu gives way');
+    let v = c.renderVals(); assert.deepEqual([v.hasWordSelection, v.bx, v.by, v.selBelow], [true, '400px', '288px', '0'], 'the bar above the pointer');
+    c.ctxAway({ button: 0, target: { closest: () => null } }); assert.equal(c.renderVals().hasWordSelection, false, 'a press elsewhere');
+    right(c); c.ctxAway({ button: 0, target: { closest: s => /data-word-selection/.test(s) ? {} : null } }); assert.equal(c.renderVals().hasWordSelection, true, 'a press on the bar keeps it');
+    c.ctxKey({ key: 'b', metaKey: true }); assert.equal(c.renderVals().hasWordSelection, true, '⌘B keeps it');
+    c.ctxKey({ key: 'a' }); assert.equal(c.renderVals().hasWordSelection, false, 'typing');
+  }
+  const v = make({ pure: false, showThumbs: true, formatOpen: true }).renderVals();
+  assert.deepEqual([v.showNav, v.formatOpen, v.bodyCols], [true, true, '240px minmax(0,1fr) 312px'], 'the sidebar and the panel take their columns (format-panel.test.mjs has the panel)');
 });
 
 test('Word format and AI share one right panel', () => {
