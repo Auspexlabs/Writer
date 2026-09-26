@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+
+  <!-- The writer engine compiled to WebAssembly, for the editor embedded in a web page (docs/embed.md): the same commands as
+       the CLI, the same answers as `writer serve`, with the documents in the page's memory. Publish it with
+       `dotnet publish src/Writer.Browser -c Release -o <dir>`; <dir>/wwwroot/_framework is the engine the page loads. -->
+  <PropertyGroup>
+    <AssemblyName>Writer.Browser</AssemblyName>
+    <RootNamespace>Writer.Browser</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);WRITER_BROWSER</DefineConstants>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- the assemblies packed as .wasm files (Webcil): hosts, firewalls and proxies that refuse .dll downloads pass them -->
+    <WasmEnableWebcil>true</WasmEnableWebcil>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Writer.Core/Writer.Core.csproj" />
+    <ProjectReference Include="../Writer.Formats/Writer.Formats.csproj" />
+    <!-- the CLI's commands, without its servers (Commands.cs refuses mcp / serve / watch / app under WRITER_BROWSER) -->
+    <Compile Include="../Writer.Cli/Cli.cs;../Writer.Cli/Commands.cs;../Writer.Cli/Args.cs;../Writer.Cli/Edits.cs;../Writer.Cli/Help.cs;../Writer.Cli/Assistant.cs" LinkBase="Cli" />
+  </ItemGroup>
+
+</Project>

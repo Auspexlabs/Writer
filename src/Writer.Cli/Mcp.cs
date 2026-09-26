@@ -10,18 +10,9 @@ namespace Writer.Cli;
 /// One contract for agents and the CLI: the tool's output is exactly what the command line prints.</summary>
 public static class Mcp
 {
-    public const string ToolName = "writer";
-
-    public const string ToolDescription =
-        "Run a writer command against a document (docx, xlsx, pptx, md read/write; pdf read). "
-        + "Same syntax as the CLI without the program name, e.g. \"view report.docx outline\", "
-        + "\"set report.docx /body/paragraph[2] --prop text=\\\"New text\\\"\", \"help docx paragraph\". "
-        + "Returns the command's JSON or text. Start with \"help\" and \"view <file> outline\".";
-
-    public const string Instructions =
-        "Workflow: `view <file> outline` to see every element with its path, `query` or `get` to inspect, "
-        + "`add`/`set`/`remove`/`move`/`copy` to change, `view <file> html` to check the result, `export` to convert. "
-        + "When unsure about a property, run `help <format> <element>` instead of guessing.";
+    public const string ToolName = Assistant.ToolName;
+    public const string ToolDescription = Assistant.ToolDescription;
+    public const string Instructions = Assistant.Instructions;
 
     public static async Task ServeAsync(CancellationToken cancellationToken = default)
     {
@@ -62,56 +53,6 @@ public static class Mcp
         return new CallToolResult { Content = [new TextContentBlock { Text = text.TrimEnd('\n') }], IsError = code != 0 };
     }
 
-    /// <summary>Shell-style splitting: whitespace separates, single and double quotes group, backslash escapes inside double quotes.</summary>
-    public static string[] Tokenize(string command)
-    {
-        var args = new List<string>();
-        var current = new StringBuilder();
-        var pending = false;
-        char? quote = null;
-        for (var i = 0; i < command.Length; i++)
-        {
-            var c = command[i];
-            if (quote is null)
-            {
-                if (char.IsWhiteSpace(c))
-                {
-                    if (pending) args.Add(current.ToString());
-                    current.Clear();
-                    pending = false;
-                    continue;
-                }
-                if (c is '"' or '\'')
-                {
-                    quote = c;
-                    pending = true;
-                    continue;
-                }
-                if (c == '\\' && i + 1 < command.Length)
-                {
-                    current.Append(command[++i]);
-                    pending = true;
-                    continue;
-                }
-                current.Append(c);
-                pending = true;
-                continue;
-            }
-            if (c == quote)
-            {
-                quote = null;
-                continue;
-            }
-            if (quote == '"' && c == '\\' && i + 1 < command.Length && command[i + 1] is '"' or '\\')
-            {
-                current.Append(command[++i]);
-                continue;
-            }
-            current.Append(c);
-        }
-        if (quote is not null)
-            throw new WriterException(ErrorCode.Usage, "Unterminated quote in command", "Close the quote, e.g. --prop text=\"Hello\"");
-        if (pending) args.Add(current.ToString());
-        return args.ToArray();
-    }
+    /// <summary>Shell-style splitting (Args.Tokenize), kept here for the callers that know it by this name.</summary>
+    public static string[] Tokenize(string command) => Args.Tokenize(command);
 }

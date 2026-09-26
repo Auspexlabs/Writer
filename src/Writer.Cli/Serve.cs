@@ -601,7 +601,7 @@ public sealed class Serve : IDisposable
             if (root.TryGetProperty("argv", out var array) && array.ValueKind == JsonValueKind.Array)
                 argv = array.EnumerateArray().Select(e => e.GetString() ?? "").ToArray();
             else if (root.TryGetProperty("command", out var command) && command.ValueKind == JsonValueKind.String)
-                argv = Mcp.Tokenize(command.GetString()!);
+                argv = Args.Tokenize(command.GetString()!);
             else throw new WriterException(ErrorCode.Usage, "Body must have \"command\" or \"argv\"", "Example: {\"command\":\"view report.docx outline\"}");
         }
         catch (JsonException ex)

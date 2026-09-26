@@ -462,7 +462,7 @@ static class Edits
             File.Copy(file, tmp);
             for (var i = 0; i < runs.Count; i++)
             {
-                var argv = Mcp.Tokenize(runs[i]);
+                var argv = Args.Tokenize(runs[i]);
                 if (argv.Length > 0 && argv[0] == "writer") argv = argv[1..];
                 if (argv.Length < 2 || argv[0] is "batch" or "create" or "export" or "mcp" or "serve" or "watch" or "app" or "help")
                     throw new WriterException(ErrorCode.Usage, $"Command {i + 1} cannot run in a batch: {runs[i]}", "A batch takes get, query, view, search, section, replace, formula, add, set, remove, move and copy on the batch's file.");

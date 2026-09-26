@@ -26,10 +26,15 @@ static class Commands
         "formula" => Edits.Formula(a),
         "batch" => Edits.Batch(a),
         "export" => Export(a),
+#if WRITER_BROWSER
+        // the engine inside a web page (src/Writer.Browser): the page is the server
+        "mcp" or "serve" or "watch" or "app" => throw new WriterException(ErrorCode.Usage, $"'{a.Verb}' does not run in the browser", "Run a document command."),
+#else
         "mcp" => ServeMcp(),
         "serve" => ServeHttp(a, null, app: false),
         "watch" => ServeHttp(a, a.Need(0, "file"), app: false),
         "app" => ServeHttp(a, null, app: true),
+#endif
         _ => throw new WriterException(ErrorCode.Usage, $"Unknown command '{a.Verb}'", "Run 'writer help'."),
     };
 
@@ -165,6 +170,7 @@ static class Commands
         };
     }
 
+#if !WRITER_BROWSER
     static string ServeMcp()
     {
         Mcp.ServeAsync().GetAwaiter().GetResult();
@@ -205,6 +211,7 @@ static class Commands
         server.RunAsync().GetAwaiter().GetResult();
         return "";
     }
+#endif
 
     static string Export(Args a)
     {

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Globalization;
 using Writer.Core;
 
@@ -93,5 +94,58 @@ public sealed class Args
             list.Add(value);
         }
         return args;
+    }
+
+    /// <summary>A command line as one string, split shell-style: whitespace separates, single and double quotes group, backslash escapes inside double quotes.</summary>
+    public static string[] Tokenize(string command)
+    {
+        var args = new List<string>();
+        var current = new StringBuilder();
+        var pending = false;
+        char? quote = null;
+        for (var i = 0; i < command.Length; i++)
+        {
+            var c = command[i];
+            if (quote is null)
+            {
+                if (char.IsWhiteSpace(c))
+                {
+                    if (pending) args.Add(current.ToString());
+                    current.Clear();
+                    pending = false;
+                    continue;
+                }
+                if (c is '"' or '\'')
+                {
+                    quote = c;
+                    pending = true;
+                    continue;
+                }
+                if (c == '\\' && i + 1 < command.Length)
+                {
+                    current.Append(command[++i]);
+                    pending = true;
+                    continue;
+                }
+                current.Append(c);
+                pending = true;
+                continue;
+            }
+            if (c == quote)
+            {
+                quote = null;
+                continue;
+            }
+            if (quote == '"' && c == '\\' && i + 1 < command.Length && command[i + 1] is '"' or '\\')
+            {
+                current.Append(command[++i]);
+                continue;
+            }
+            current.Append(c);
+        }
+        if (quote is not null)
+            throw new WriterException(ErrorCode.Usage, "Unterminated quote in command", "Close the quote, e.g. --prop text=\"Hello\"");
+        if (pending) args.Add(current.ToString());
+        return args.ToArray();
     }
 }
