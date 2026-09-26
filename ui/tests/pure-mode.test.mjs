@@ -1,5 +1,5 @@
 // node --test ui/tests/ — 纯净模式: the shell keeps its own panel flags (格式 / 缩略图 / AI 助手 open over the page and start closed
-// each time), Esc closes 格式 before it leaves, and the Word editor shows its toolbar over the page only while the shell asks.
+// each time), Esc closes 格式 before it leaves, and Aa controls the format panel for each editor.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -44,7 +44,7 @@ test('the shell: Esc closes 格式 first, then leaves; ⌘. toggles; 改写 open
 test('the Word editor: in pure mode the toolbar shows only for the shell\'s 格式, thumbnails overlay without a column, the bar ends in ✦ 改写', () => {
   const ctx = base(); ctx.getComputedStyle = () => ({ marginBottom: '28px' });
   vm.runInNewContext(script('WordEditor.dc.html') + '\nglobalThis.WordEditor = Component;', ctx);
-  const ed = props => { const c = new ctx.WordEditor(); c.props = Object.assign({ doc: { id: 'd', html: '' }, onChange() { } }, props); c.pgCss = { textContent: '' }; c.edRef.current = { innerText: '', children: [], querySelectorAll: () => [] }; c.refreshInfo(); return c.renderVals(); };
+  const ed = (props, state = {}) => { const c = new ctx.WordEditor(); c.props = Object.assign({ doc: { id: 'd', html: '' }, onChange() { } }, props); Object.assign(c.state, state); c.pgCss = { textContent: '' }; c.edRef.current = { innerText: '', children: [], querySelectorAll: () => [] }; c.refreshInfo(); return c.renderVals(); };
   let v = ed({ pure: true, showThumbs: true, pureTools: false });
   assert.deepEqual([v.showBar, v.notPure, v.showNav, v.bodyCols.startsWith('0px'), v.rootBg], [false, false, true, true, 'transparent']);
   v = ed({ pure: true, showThumbs: false, pureTools: true, onRewrite() { } });
@@ -53,6 +53,36 @@ test('the Word editor: in pure mode the toolbar shows only for the shell\'s 格�
   assert.deepEqual(labels(v.bubbleBtns), ['B', 'I', 'U', '|', '标题', '|', '链接', '|', '改写']);
   assert.equal(v.bubbleBtns[v.bubbleBtns.length - 1].star, true);
   assert.deepEqual(labels(ed({ pure: true }).bubbleBtns), ['B', 'I', 'U', '|', '标题', '|', '链接'], 'no 改写 without an assistant to send to');
-  v = ed({ pure: false, showThumbs: true });
-  assert.deepEqual([v.showBar, v.showNav, v.bodyCols.startsWith('224px')], [true, true, true], 'the normal view is as before');
+  v = ed({ pure: false, showThumbs: true, formatOpen: true });
+  assert.deepEqual([v.showBar, v.showNav, v.formatOpen, v.bodyCols], [false, true, true, '248px minmax(0,1fr) 320px']);
+  assert.ok(v.panelGroups.some(g => g.items.some(it => it.title === '加粗 Ctrl+B')), 'existing formatting actions remain in the panel');
+  v = ed({ pure: false, formatOpen: true }, { tab: 'insert' });
+  assert.deepEqual(Array.from(v.panelGroups, g => g.title), ['常用', '页面', '符号与批注']);
+  assert.deepEqual(Array.from(v.panelGroups[0].items, item => item.label), ['表格', '图片', '形状', '图表', '文本框', '链接']);
+  assert.ok(v.panelGroups[0].items.every(item => item.icon), 'the design icons appear on all common insert cards');
+  v = ed({ pure: false, formatOpen: true, doc: { id: 'd', html: '', comments: [{ id: 'c1', quote: '摘录', text: '批注内容', mine: true }] } }, { tab: 'review' });
+  assert.equal(v.panelCommentsOpen, true); assert.equal(v.comments[0].text, '批注内容');
+});
+
+test('Word format and AI share one right panel', () => {
+  const c = shell();
+  assert.equal(c.state.showFormat, true);
+  c.toggleAIPanel(); assert.deepEqual([c.state.showAI, c.state.showFormat], [true, false]);
+  c.toggleFormat(); assert.deepEqual([c.state.showAI, c.state.showFormat], [false, true]);
+  c.toggleFormat(); assert.equal(c.state.showFormat, false);
+});
+
+test('Aa controls the shared format panel for every document type', () => {
+  const c = shell();
+  for (const type of ['docx', 'xlsx', 'pptx', 'md', 'mm', 'pdf']) {
+    Object.assign(c.state.docs[0], { type, sheets: [], slides: [], pages: [], map: { text: 'Root', children: [] } });
+    c.setState({ showFormat: true, showAI: false });
+    assert.equal(c.vals().formatOpen, true, `${type}: panel opens`);
+    c.toggleFormat();
+    assert.equal(c.vals().formatOpen, false, `${type}: Aa closes it`);
+    c.toggleFormat();
+    c.toggleAIPanel();
+    assert.deepEqual([c.vals().formatOpen, c.vals().aiOn], [false, true], `${type}: AI replaces it`);
+    c.toggleAIPanel();
+  }
 });

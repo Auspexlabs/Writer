@@ -16,6 +16,7 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <link rel="stylesheet" href="./theme-page.css">
+<link rel="stylesheet" href="./editor-format.css">
 <link rel="icon" href="./assets/writer-logo-dark.svg">
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
 <style>
@@ -39,14 +40,14 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 </style>
 </helmet>
 <div data-mactest="1" data-collapsed="{{ collapsedAttr }}" data-pure="{{ pureAttr }}" style="position:fixed;inset:0;overflow:hidden;background:var(--bg, #F6F6F7)">
-  <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:48px">
+  <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:52px">
     <dc-import name="index" mac="{{ true }}" on-shell="{{ onShell }}" on-prefs="{{ openPrefs }}" on-save-dialog="{{ saveDialogProp }}" recent-files="{{ recentProp }}" on-open-recent="{{ openRecentProp }}" on-open-dialog="{{ openDialogProp }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
   </div>
-  <div data-tauri-drag-region="deep" style="position:absolute;left:0;right:0;top:0;height:48px;z-index:59;background:var(--bg, #F6F6F7);display:flex;align-items:center;gap:6px;padding-left:12px">
+  <div data-tauri-drag-region="deep" style="position:absolute;left:0;right:0;top:0;height:52px;z-index:59;background:var(--bg, #F6F6F7);display:flex;align-items:center;gap:6px;padding-left:12px">
     <button data-ctl="1" data-on="{{ menuOn }}" onClick="{{ appMenuToggle }}" title="Writer 菜单 (F1)" style="margin-right:2px"><img src="./assets/writer-glyph.svg" alt="Writer" style="width:18px;height:18px;display:block;filter:var(--gmark, none)"></button>
     <button data-ctl="1" data-on="{{ sideOn }}" onClick="{{ sideToggle }}" title="显示/隐藏侧边栏 Ctrl+\"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3" width="11" height="10" rx="2"></rect><path d="M6.5 3v10"></path></svg></button>
-    <button data-ctl="1" onClick="{{ goBack }}" title="撤销 Ctrl+Z"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 4.5 2.5 7.5l3 3"></path><path d="M2.8 7.5H10a3.5 3.5 0 0 1 0 7H7.5"></path></svg></button>
-    <button data-ctl="1" onClick="{{ goFwd }}" title="重做 Ctrl+Y"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 4.5l3 3-3 3"></path><path d="M13.2 7.5H6a3.5 3.5 0 0 0 0 7h2.5"></path></svg></button>
+    <div class="doc-history"><button data-ctl="1" onClick="{{ goBack }}" title="撤销 Ctrl+Z"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 4.5 2.5 7.5l3 3"></path><path d="M2.8 7.5H10a3.5 3.5 0 0 1 0 7H7.5"></path></svg></button>
+    <button data-ctl="1" onClick="{{ goFwd }}" title="重做 Ctrl+Y"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 4.5l3 3-3 3"></path><path d="M13.2 7.5H6a3.5 3.5 0 0 0 0 7h2.5"></path></svg></button></div>
     <sc-if value="{{ single }}" hint-placeholder-val="{{ true }}">
       <div style="position:absolute;left:50%;top:0;height:48px;transform:translateX(-50%);max-width:40%;display:flex;align-items:center;gap:7px;pointer-events:none;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62))">
         <span data-sq="1" style="background:{{ sqBg }};display:{{ sqDisp }}">{{ sq }}</span>
@@ -55,11 +56,11 @@ button,input,select,textarea{font-family:inherit;color:inherit}
       <div style="flex:1;align-self:stretch"></div>
     </sc-if>
     <sc-if value="{{ multi }}" hint-placeholder-val="{{ false }}">
-      <div style="flex:1;min-width:0;height:48px;margin:0 8px;display:flex;align-items:center;justify-content:center">
+      <div style="flex:1;min-width:0;height:52px;margin:0 8px;display:flex;align-items:center;justify-content:flex-start;overflow:hidden">
         <div style="display:flex;align-items:center;gap:4px;min-width:0;max-width:100%">
           <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
-            <div role="tab" onClick="{{ t.onClick }}" onPointerDown="{{ t.onDown }}" onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" title="{{ t.title }}" style="flex:0 1 auto;max-width:200px;min-width:64px;height:30px;padding:0 7px 0 9px;display:flex;align-items:center;gap:7px;border-radius:var(--tab-r, 9px);background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.color }};font-size:12.5px;font-weight:{{ t.fw }};transform:{{ t.tf }};opacity:{{ t.op }};user-select:none;-webkit-user-select:none;cursor:default;transition:background .2s,color .2s">
-              <span data-sq="1" style="background:{{ t.sqBg }}">{{ t.sq }}</span>
+            <div role="tab" onClick="{{ t.onClick }}" onPointerDown="{{ t.onDown }}" onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" title="{{ t.title }}" style="flex:0 1 auto;width:{{ t.width }};max-width:{{ t.width }};min-width:64px;height:32px;padding:0 7px 0 9px;display:flex;align-items:center;gap:7px;border-radius:10px;background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.color }};font-size:13px;font-weight:{{ t.fw }};transform:{{ t.tf }};opacity:{{ t.op }};user-select:none;-webkit-user-select:none;cursor:default;transition:background .2s,color .2s">
+              <img src="{{ t.icon }}" alt="" style="width:16px;height:16px;flex:none;object-fit:contain">
               <span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ t.title }}</span>
               <button onClick="{{ t.onClose }}" title="关闭标签页 Ctrl+W" style="width:18px;height:18px;flex:none;padding:0;border:none;border-radius:4px;background:transparent;color:var(--ink-3, rgba(29,29,31,0.36));cursor:default;display:flex;align-items:center;justify-content:center;opacity:{{ t.xOp }};transition:opacity .15s" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)"><svg width="8" height="8" viewBox="0 0 10 10" style="display:block"><path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.3"></path></svg></button>
             </div>
@@ -68,8 +69,9 @@ button,input,select,textarea{font-family:inherit;color:inherit}
         </div>
       </div>
     </sc-if>
-    <button data-ctl="1" data-on="{{ barOn }}" onClick="{{ toggleBar }}" title="{{ barTitle }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3.5h10"></path><path d="M8 3.5v8.5"></path><path d="M4.5 14h7"></path></svg></button>
-    <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}"><button data-ctl="1" data-on="{{ aiNow }}" onClick="{{ ai }}" title="AI 助手 Ctrl+J" style="width:auto;padding:0 11px 0 9px;border-radius:999px"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button></sc-if>
+    <div class="doc-actions"><button data-ctl="1" data-on="{{ barOn }}" onClick="{{ toggleBar }}" title="{{ barTitle }}" aria-label="{{ barTitle }}" style="font-size:16px;font-weight:600">Aa</button>
+    <button data-ctl="1" onClick="{{ immersive }}" title="沉浸书写" aria-label="沉浸书写"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 2H2v4M10 2h4v4M2 10v4h4M14 10v4h-4"></path></svg></button>
+    <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}"><button data-ctl="1" data-on="{{ aiNow }}" onClick="{{ ai }}" title="AI 助手 Ctrl+J" aria-label="AI 助手" style="font-size:17px">✦</button></sc-if></div>
     <button data-ctl="1" data-on="{{ moreOn }}" onClick="{{ moreToggle }}" title="更多"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="3.5" cy="8" r="1" fill="currentColor"></circle><circle cx="8" cy="8" r="1" fill="currentColor"></circle><circle cx="12.5" cy="8" r="1" fill="currentColor"></circle></svg></button>
     <div style="display:flex;align-self:flex-start;flex:none;margin-left:6px;color:{{ capColor }}">
       <button onClick="{{ doMin }}" title="最小化" style="width:46px;height:48px;padding:0;border:none;background:transparent;color:inherit;cursor:default;display:flex;align-items:center;justify-content:center;transition:background .12s" style-hover="background:var(--fill, rgba(0,0,0,0.07))"><svg width="10" height="10" viewBox="0 0 10 10" style="display:block"><path d="M0 5.5H10" stroke="currentColor" stroke-width="1"></path></svg></button>
@@ -163,6 +165,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 const NATIVE = /[?&]native=1(&|$)/.test(location.search) || !!window.__TAURI_INTERNALS__;
 const EXT = { docx: '.docx', xlsx: '.xlsx', pptx: '.pptx', md: '.md', pdf: '.pdf', mm: '.mm' };
 const SQ = { docx: ['W', 'var(--type-w, #2F6BD1)'], xlsx: ['X', 'var(--type-x, #1E8A52)'], pptx: ['P', 'var(--type-p, #D0592E)'], md: ['M', 'var(--type-m, #3A3A3C)'], mm: ['T', 'var(--type-t, #7A5CC4)'], pdf: ['P', 'var(--type-f, #B5563A)'] }; // the type squares: letter and colour
+const DOC_ICON = type => './assets/doc/doc-' + ({ docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', mm: 'mindmap', pdf: 'pdf' }[type] || 'word') + '-32.png';
 /** The window title: the file name, marked 未存储 while it is a draft. */
 const docTitle = sh => { const name = sh.title + (EXT[sh.type] || ''); return sh.draft ? $t('{name} — 未存储', { name }) : name; };
 // the design's four snap layouts, zones as fractions of the screen's work area: [x, y, w, h]
@@ -234,7 +237,7 @@ class Component extends DCLogic {
     clearTimeout(this.rt);
     this.rt = setTimeout(() => {
       const sh = this.state.sh || {};
-      const s = { title: sh.isDoc ? docTitle(sh) : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
+      const s = { title: sh.isDoc ? docTitle(sh) : 'Writer', path: sh.path || null, docs: (sh.docs || []).length, showThumbs: !!sh.showThumbs, showAI: !!sh.showAI, collapsed: sh.isDoc && !sh.pure ? !sh.showFormat : this.state.collapsed, dark: document.documentElement.dataset.theme === 'dark' };
       const k = JSON.stringify(s); if (k === this._rk) return; this._rk = k; invoke('shell_state', s);
     }, 80);
   }
@@ -249,9 +252,9 @@ class Component extends DCLogic {
   }
   undo(redo) { if (!this.sendKey(redo ? 'Z' : 'z', redo ? { shiftKey: true } : {})) document.execCommand(redo ? 'redo' : 'undo'); }
   barButtons() { const w = this.winRef.current; const b = w && w.querySelector('[data-glass-bar]'); return b ? Array.from(b.querySelectorAll('button')) : []; }
-  press(label) { const b = this.barButtons().find(x => x.textContent.trim() === $t(label)); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
-  quickPress() { const q = settings().quickTab || '开始'; if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }
-  toggleBar() { const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
+  press(label) { const w = this.winRef.current; const b = (w && w.querySelector(`[data-word-tab="${{ '开始': 'home', '插入': 'insert', '布局': 'layout', '引用': 'refs', '审阅': 'review', '视图': 'view' }[label] || ''}"]`)) || this.barButtons().find(x => x.textContent.trim() === $t(label)); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
+  quickPress() { const q = settings().quickTab || '开始', press = () => { if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }; if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(press, 50); } press(); }
+  toggleBar() { if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
   cycle(dir) { const docs = ((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
   current() { const sh = this.state.sh; return sh && sh.docs.find(d => d.on); }
 
@@ -294,7 +297,7 @@ class Component extends DCLogic {
     const all = [
       I('＋', '新建…', 'Ctrl+N', 'new'), // i18n-ok: ＋ is the icon
       I('⧉', '新建标签页', 'Ctrl+T', 'newTab'), I('↗', '打开…', 'Ctrl+O', 'open'), I('↓', '存储', 'Ctrl+S', 'save'), I('⇪', '另存为…', 'Ctrl+Shift+S', 'saveAs'), I('⎙', '打印…', 'Ctrl+P', 'print'), S,
-      I('◐', dark ? '浅色模式' : '深色模式', 'Ctrl+Shift+L', 'toggleDark'), I('⌄', this.state.collapsed ? '展开工具栏' : '收起工具栏', 'Ctrl+Alt+T', 'toggleToolbar'), S,
+      I('◐', dark ? '浅色模式' : '深色模式', 'Ctrl+Shift+L', 'toggleDark'), I('⌄', this.state.sh && this.state.sh.isDoc && !this.state.sh.pure ? '格式面板' : this.state.collapsed ? '展开工具栏' : '收起工具栏', 'Ctrl+Alt+T', 'toggleToolbar'), S,
       I('⚙︎', '设置', 'Ctrl+,', 'settings'), I('⌨︎', '键盘快捷键', '', 'shortcuts'), I('?', 'Writer 帮助', 'F1', 'help'), S,
       I('ⓘ', '关于 Writer', '', 'about'), ...((window.__WRITER_NATIVE__ || {}).updater ? [I('↻', '检查更新…', '', 'checkUpdate')] : []), I('⏻', '退出', 'Alt+F4', 'quit')
     ];
@@ -347,17 +350,16 @@ class Component extends DCLogic {
     const st = this.state, sh = st.sh, set = settings(), dark = document.documentElement.dataset.theme === 'dark';
     // tabs are the documents opened in this window, not every file of the folder
     const openDocs = sh ? sh.docs.filter(d => d.open || d.on) : [];
-    const multi = openDocs.length > 1 && !(sh && sh.pure);
+    const multi = openDocs.length > 0 && !(sh && sh.pure);
     const quickTab = set.quickTab || '开始';
     const S = t => SQ[t] || SQ.docx, on = 'var(--tab-bg, rgba(255,255,255,0.92))', onSh = 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))';
-    // ⋯ holds what has no button of its own in the bar: 快捷打开 while the toolbar is collapsed, and 沉浸书写
-    const more = [...(st.collapsed ? [{ label: $t('快捷打开：{tab}', { tab: $t(quickTab) }), key: '', fn: () => this.quickPress() }] : []), { label: $t('沉浸书写'), key: 'Ctrl+.', fn: () => this.call('play') }];
+    const more = [{ label: $t('沉浸书写'), key: 'Ctrl+.', fn: () => this.call('play') }];
     const zoneGeo = ([fx, fy, fw, fh]) => { const P = 3, IW = 70, IH = 44, g = 1.5; const x = P + fx * IW + (fx > 0 ? g : 0), y = P + fy * IH + (fy > 0 ? g : 0); const w = fw * IW - (fx > 0 ? g : 0) - (fx + fw < 0.999 ? g : 0), h = fh * IH - (fy > 0 ? g : 0) - (fy + fh < 0.999 ? g : 0); return { x: x + 'px', y: y + 'px', w: w + 'px', h: h + 'px' }; };
     const snapTo = ([x, y, w, h]) => { clearTimeout(this.snapT); clearTimeout(this.hideT); this.setState({ snap: false }); if (NATIVE) invoke('snap_window', { x, y, w, h }); else this.flash($t('贴靠布局在 Windows 应用里生效')); };
     return {
       winRef: this.winRef, qRef: this.qRef, onShell: this.onShell, openPrefs: this.openPrefs,
       saveDialogProp: NATIVE ? this.saveDialog : null, recentProp: NATIVE ? this.recentFiles : null, openRecentProp: NATIVE ? this.openRecent : null, openDialogProp: NATIVE ? this.openDialog : null,
-      collapsedAttr: st.collapsed ? '1' : '0', pureAttr: sh && sh.pure ? '1' : '0',
+      collapsedAttr: sh && sh.isDoc && !sh.pure ? '0' : st.collapsed ? '1' : '0', pureAttr: sh && sh.pure ? '1' : '0',
       appMenuToggle: () => this.setState({ menu: !st.menu, q: '' }), menuOn: st.menu ? '1' : '0',
       menuOpen: st.menu, menuItems: this.items(), q: st.q, onQ: e => this.setState({ q: e.target.value }), closeMenu: () => this.setState({ menu: false, q: '' }),
       onQKey: e => { if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const it = this.items().find(x => x.row && x.id); if (it) it.onClick(); },
@@ -369,7 +371,7 @@ class Component extends DCLogic {
       tabs: openDocs.map((x, i, arr) => {
         const hv = st.hovTab === x.id, dr = st.drag && st.drag.id === x.id ? st.drag : null;
         return {
-          title: x.title, sq: S(x.type)[0], sqBg: S(x.type)[1],
+          title: x.title, icon: DOC_ICON(x.type), width: x.on ? '196px' : '148px', sq: S(x.type)[0], sqBg: S(x.type)[1],
           bg: dr || x.on ? on : hv ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent',
           // dragged, the tab lifts off the bar and follows the pointer (tabs.js); torn off, it waits hidden (tearOff)
           sh: dr ? '0 6px 18px var(--k22, rgba(0,0,0,0.1)),0 0 0 1px var(--k17, rgba(0,0,0,0.07))' : x.on ? onSh : 'none', tf: dr ? `translate(${dr.dx}px,${dr.dy}px)` : 'none', op: st.tearing === x.id ? 0 : 1,
@@ -380,7 +382,7 @@ class Component extends DCLogic {
         };
       }),
       newTab: () => this.call('create'),
-      toggleBar: () => this.toggleBar(), barOn: st.collapsed ? '0' : '1', barTitle: $t(st.collapsed ? '展开工具栏 Ctrl+Alt+T' : '收起工具栏 Ctrl+Alt+T'),
+      toggleBar: () => this.toggleBar(), barOn: sh && sh.isDoc && !sh.pure ? (sh.showFormat ? '1' : '0') : st.collapsed ? '0' : '1', barTitle: sh && sh.isDoc && !sh.pure ? $t('格式面板') : $t(st.collapsed ? '展开工具栏 Ctrl+Alt+T' : '收起工具栏 Ctrl+Alt+T'), immersive: () => this.call('play'),
       aiOn: set.ai !== false, ai: () => this.menu('toggleAI'), aiNow: sh && sh.showAI ? '1' : '0',
       moreOpen: !!st.more, moreOn: st.more ? '1' : '0', moreToggle: () => this.setState({ more: !st.more, menu: false, snap: false }), closeMore: () => this.setState({ more: false }),
       moreItems: more.map(m => ({ label: m.label, key: m.key, onClick: () => { this.setState({ more: false }); m.fn(); } })),

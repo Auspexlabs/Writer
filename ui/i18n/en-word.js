@@ -22,6 +22,13 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
 
   // tabs
   '开始': 'Home', '插入': 'Insert', '布局': 'Layout', '审阅': 'Review', '视图': 'View', '表格': 'Table', '图片': 'Picture',
+  '格式面板': 'Format panel', '格式标签': 'Format tabs', '大纲': 'Outline', '上一条': 'Previous', '下一条': 'Next', '第 {n} / {total} 页': v => `Page ${v.n} of ${v.total}`,
+  '工具': 'Tools', '文字格式与颜色': 'Text formatting and color', '对齐与缩进': 'Alignment and indentation', '列表': 'Lists', '间距、边框与底纹': 'Spacing, borders and shading',
+  '常用': 'Common', '形状与文本': 'Shapes and text', '分隔': 'Breaks', '符号与日期': 'Symbols and date', '封面与书签': 'Cover and bookmarks', '目录与批注': 'Contents and comments',
+  '符号与批注': 'Symbols and comments', '图表': 'Chart', '插入图表': 'Insert Chart', '插入柱状图图片': 'Insert a bar chart image', '数据标签（逗号分隔）': 'Data labels (comma separated)', '数值（逗号分隔）': 'Values (comma separated)', '请为每个标签输入一个非负数值': 'Enter one nonnegative value for each label',
+  '纸张与分栏': 'Paper and columns', '段落设置': 'Paragraph settings', '脚注与尾注': 'Footnotes and endnotes', '题注与交叉引用': 'Captions and cross references',
+  '阅读方式': 'Reading mode', '沉浸': 'Immersive', '插入行列': 'Insert rows and columns', '单元格': 'Cells', '样式与边框': 'Styles and borders', '对齐与行高': 'Alignment and row height', '其它': 'Other',
+  '大小与环绕': 'Size and wrapping', '填充与轮廓': 'Fill and outline', '形状与大小': 'Shape and size',
 
   // home ribbon
   '撤销 Ctrl+Z': 'Undo Ctrl+Z', '重做 Ctrl+Y': 'Redo Ctrl+Y',

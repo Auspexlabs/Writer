@@ -21,14 +21,14 @@
 .mm-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:9px;height:9px;border-radius:50%;background:var(--ink-2, rgba(29,29,31,0.62));border:none}
 </style>
 </helmet>
-<div ref="{{ rootRef }}" data-edroot="1" tabIndex="-1" onKeyDown="{{ onKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
+<div ref="{{ rootRef }}" data-edroot="1" data-format-open="{{ formatAttr }}" tabIndex="-1" onKeyDown="{{ onKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
   <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
+    <div data-editor-bar="1" style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
       <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
         <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
           <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));background:transparent;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
           <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
-            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;color:{{ t.fg }};background:{{ t.bg }};transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
+            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" data-on="{{ t.active }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;color:{{ t.fg }};background:{{ t.bg }};transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
           </sc-for>
         </div>
         <div style="display:flex;align-items:center;flex:none">
@@ -39,10 +39,10 @@
       </div>
     </div>
     <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-      <div style="position:absolute;top:60px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px">
+      <div data-editor-tools="1" style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px">
         <sc-for list="{{ tools }}" as="it" hint-placeholder-count="0">
-          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
-          <sc-if value="{{ it.isLbl }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 5px 0 4px;flex:none">{{ it.label }}</span></sc-if>
+          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span data-editor-sep="1" style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
+          <sc-if value="{{ it.isLbl }}" hint-placeholder-val="{{ false }}"><span data-editor-label="1" style="font-size:11.5px;color:var(--ink-3, rgba(29,29,31,0.36));padding:0 5px 0 4px;flex:none">{{ it.label }}</span></sc-if>
           <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
             <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:{{ it.fs }};font-weight:{{ it.fw }};font-style:{{ it.fst }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none;transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.92)">{{ it.label }}</button>
           </sc-if>
@@ -687,11 +687,11 @@ class Component extends DCLogic {
     return out.join('\n') + '\n';
   }
   exportMd() { this.download(new Blob([this.mdOutline()], { type: 'text/markdown' }), 'md'); this.toast($t('已导出 Markdown')); }
-  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0, width: 900 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); }
+  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0, width: 900 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: this.props.formatOpen ? true : !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); }
   renderVals() {
     const M = this.M, st = this.state, d = this.doc, pure = !!this.props.pure, showOutline = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the outline only when its 缩略图 asks, over the map
     const base = {
-      md, stop: e => e.stopPropagation(), notPure: !pure, pure, showBar: !pure || !!this.props.pureTools, rootRef: this.rootRef, canvasRef: this.canvasRef, taRef: this.taRef, onKey: this.onKey,
+      md, stop: e => e.stopPropagation(), notPure: !pure, pure, formatAttr: this.props.formatOpen && !pure ? '1' : '0', showBar: !!this.props.formatOpen || (pure && !!this.props.pureTools), rootRef: this.rootRef, canvasRef: this.canvasRef, taRef: this.taRef, onKey: this.onKey,
       barL: pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !pure ? '48px' : '0px', spD: this.props.merged && !pure ? 'flex' : 'none', barR: this.props.barRight || '12px',
       fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
       aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(),
@@ -748,7 +748,7 @@ class Component extends DCLogic {
       export: [B($t('导出 PNG'), () => this.exportPng()), B($t('导出 SVG'), () => this.exportSvg()), B($t('导出 Markdown'), () => this.exportMd()), SEP, B($t('转为 Markdown 大纲'), () => this.props.onConvert && this.props.onConvert('md')), B($t('转为 Word'), () => this.props.onConvert && this.props.onConvert('docx')), B($t('转为演示'), () => this.props.onConvert && this.props.onConvert('pptx'))]
     };
     const tab = st.tab;
-    const tabs = [['home', $t('开始')], ['style', $t('样式')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => this.openTab(k, e) }; });
+    const tabs = [['home', $t('开始')], ['style', $t('样式')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = (st.bubble || this.props.formatOpen) && tab === k; return { label: l, active: on ? '1' : '0', bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => this.openTab(k, e) }; });
     const outline = []; M.walk(d.map, (n, p, depth) => outline.push({ text: n.text || $t('（空）'), indent: (10 + depth * 13) + 'px', fw: depth === 0 ? 600 : depth === 1 ? 500 : 400, bg: ids.includes(R(n.id)) ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', mark: n.collapsed && (n.children || []).length ? '▸' : '', onClick: () => { this.select(n.id); this.centreOn(n.id); } }));
     const { z, tx, ty } = st, dg = st.drag, ov = this.svgOverlay(L);
     const ed = st.editing && this.box(st.editing), es = ed && ed.s, anchor = ed || this.box(sel);
@@ -756,7 +756,7 @@ class Component extends DCLogic {
     // the popup hangs under its topic, or under the middle of its relationship line
     const pb = pop && (pop.kind === 'rel' ? (r => r && { x: r.mid.x - 132 / z, y: r.mid.y + 4 / z, h: 0, n: { text: this.F(d.map, r.from).text } })(L.rels.find(r => this.same(r.from, pop.id) && r.i === pop.i)) : this.box(pop.id));
     return Object.assign(base, {
-      tabs, tools: SETS[tab] || [], bubbleOpen: st.bubble && !pure, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(820, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, outline,
+      tabs, tools: SETS[tab] || [], bubbleOpen: !!this.props.formatOpen, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(820, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, outline,
       svgMap: { __html: this.svgMap(L) }, svgOver: { __html: ov.over }, svgUnder: { __html: ov.under },
       tf: `translate(${tx}px,${ty}px) scale(${z})`, tfTr: st.anim ? 'transform .4s cubic-bezier(.2,1,.3,1)' : 'none', cursor: this.op && this.op.kind === 'pan' && this.op.moved ? 'grabbing' : dg ? 'grabbing' : st.relFrom ? 'crosshair' : 'default',
       // the field: over the topic while editing, otherwise an invisible caret at the selection (so an IME opens there)
