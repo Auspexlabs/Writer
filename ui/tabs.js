@@ -11,10 +11,16 @@ export function tornOff(p, strip, view, tabs) {
  *  is let go, then onTear() when it was let go off the strip. */
 export function dragTab(e, tabs, onMove, onTear) {
   if (e.button !== 0 || e.target.closest('button')) return;
+  // No text selection and no native drag while a tab moves: WebKit arms a drag-selection on the press even over
+  // user-select:none and extends it into the page below once the tab leaves the strip. The click still comes.
+  e.preventDefault();
+  const quiet = ev => ev.preventDefault();
+  document.addEventListener('selectstart', quiet, true); document.addEventListener('dragstart', quiet, true);
   const el = e.currentTarget, strip = el.parentElement.getBoundingClientRect(), x0 = e.clientX, y0 = e.clientY;
   const move = ev => onMove(ev.clientX - x0, ev.clientY - y0);
   const end = ev => {
     window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', end);
+    document.removeEventListener('selectstart', quiet, true); document.removeEventListener('dragstart', quiet, true);
     onMove(0, 0);
     if (ev.type !== 'pointerup' || !tornOff({ x: ev.clientX, y: ev.clientY }, strip, { w: innerWidth, h: innerHeight }, tabs)) return;
     const eat = c => c.stopPropagation(); // the click that may follow would bring the tab to the front here again

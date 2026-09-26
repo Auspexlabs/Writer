@@ -41,3 +41,19 @@ test('detach saves the document first, closes a draft without the 存储 questio
   assert.equal(await f.detach('d', async () => assert.fail('nothing opens after a failed save')), false);
   assert.deepEqual(f.state.docs.map(d => d.id), ['d', 'a']);
 });
+
+test('dragging a tab selects no text: the press is cancelled and selectstart / dragstart are held off until the tab is let go', async () => {
+  const { dragTab } = await import('../tabs.js');
+  const L = () => { const m = new Map(); return { m, addEventListener: (t, f) => m.set(t, f), removeEventListener: (t, f) => { if (m.get(t) === f) m.delete(t); } }; };
+  const win = L(), doc = L(); Object.assign(globalThis, { window: win, document: doc, innerWidth: 1280, innerHeight: 800 });
+  let prevented = false;
+  const el = { parentElement: { getBoundingClientRect: () => ({ bottom: 40 }) }, setPointerCapture() { }, addEventListener() { }, removeEventListener() { } };
+  dragTab({ button: 0, target: { closest: () => null }, currentTarget: el, clientX: 10, clientY: 10, pointerId: 1, preventDefault() { prevented = true; } }, 2, () => { }, () => { });
+  assert.equal(prevented, true, 'the press starts no selection');
+  const sel = { prevented: false, preventDefault() { this.prevented = true; } };
+  doc.m.get('selectstart')(sel); assert.equal(sel.prevented, true, 'no selection while it moves');
+  assert.ok(doc.m.has('dragstart'));
+  win.m.get('pointerup')({ type: 'pointerup', clientX: 12, clientY: 12 });
+  assert.deepEqual([doc.m.has('selectstart'), doc.m.has('dragstart'), win.m.has('pointermove')], [false, false, false], 'all taken off when it is let go');
+  for (const page of ['mac.dc.html', 'win.dc.html']) assert.match(readFileSync(new URL('../' + page, import.meta.url), 'utf8'), /<img src="\{\{ t\.icon \}\}" alt="" draggable="false"/, page + ': the tab icon is no image drag');
+});
