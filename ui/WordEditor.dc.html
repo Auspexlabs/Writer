@@ -134,50 +134,6 @@
 </style>
 </helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:{{ rootBg }};position:relative;outline:none">
-  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
-  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
-    <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
-    <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
-    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
-      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:{{ t.color }};transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};font-weight:{{ t.weight }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
-    </sc-for>
-    </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:28px;height:28px;flex:none;border:none;border-radius:var(--ctl-r, 8px);background:transparent;padding:0;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"></circle><path d="M6.6 5.6v4.8L10.6 8z" fill="currentColor" stroke="none"></path></svg></button></div>
-  </div></div>
-  <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);color:var(--ink, #1D1D1F);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;transform-origin:top left">
-      <sc-for list="{{ ribbon }}" as="it" hint-placeholder-count="12">
-        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
-        <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">{{ it.label }}</button>
-        </sc-if>
-        <sc-if value="{{ it.isAlign }}" hint-placeholder-val="{{ false }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;width:28px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:{{ it.ai }};gap:2.5px;padding:0 8px;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
-            <span style="height:1.6px;width:{{ it.b1 }};background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:{{ it.b2 }};background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:{{ it.b3 }};background:var(--k7, #1D1D1F)"></span><span style="height:1.6px;width:{{ it.b4 }};background:var(--k7, #1D1D1F)"></span>
-          </button>
-        </sc-if>
-        <sc-if value="{{ it.isSel }}" hint-placeholder-val="{{ false }}">
-          <select data-val="{{ it.value }}" title="{{ it.title }}" value="{{ it.value }}" onChange="{{ it.onChange }}" style="height:28px;padding:0 4px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;width:{{ it.w }};flex:none;margin:0 2px">
-            <sc-for list="{{ it.options }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.l }}</option></sc-for>
-          </select>
-        </sc-if>
-        <sc-if value="{{ it.isColor }}" hint-placeholder-val="{{ false }}">
-          <label title="{{ it.title }}" onMouseDown="{{ it.onPre }}" style="position:relative;height:28px;min-width:28px;padding:0 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--ctl-r, 8px);cursor:pointer;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
-            <span style="font-size:13px;line-height:1.1;font-weight:{{ it.fw }}">{{ it.label }}</span>
-            <span style="width:18px;height:3.5px;border-radius:1px;background:{{ it.swatch }};margin-top:2px;box-shadow:inset 0 0 0 0.5px var(--k45, rgba(0,0,0,0.2))"></span>
-            <input type="color" value="{{ it.value }}" onChange="{{ it.onChange }}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">
-          </label>
-        </sc-if>
-        <sc-if value="{{ it.isMenu }}" hint-placeholder-val="{{ false }}">
-          <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onToggle }}" style="height:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:4px" style-hover="background:var(--fill, rgba(0,0,0,0.07))">{{ it.label }}<span style="font-size:8px;color:var(--ink-3, rgba(29,29,31,0.36))">▼</span></button>
-        </sc-if>
-        <sc-if value="{{ it.isRange }}" hint-placeholder-val="{{ false }}">
-          <label title="{{ it.title }}" style="height:28px;display:flex;align-items:center;gap:6px;padding:0 6px;font-size:12.5px;color:var(--ink-2, rgba(29,29,31,0.62));flex:none;white-space:nowrap">{{ it.label }}<input type="range" min="{{ it.min }}" max="{{ it.max }}" step="1" value="{{ it.value }}" onChange="{{ it.onChange }}" style="width:84px;accent-color:var(--k1, #1D1D1F)"><span style="min-width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--k1, #1D1D1F)">{{ it.text }}</span></label>
-        </sc-if>
-      </sc-for>
-    </div></div>
-  </sc-if>
-
-  </sc-if>
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ true }}">
     <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>

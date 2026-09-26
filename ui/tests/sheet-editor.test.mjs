@@ -241,7 +241,7 @@ test('the grid\'s layers and panes: what scrolls passes under the frozen rows an
     ['its frames and picture', [...inCorner, picZ(v, v.pics[2])]],
     ['row and column headers', [...v.colHeads, ...v.rowHeads].map(h => h.z)],
     ['corner', [z('onMouseDown="{{ selAll }}"', v)]],
-    ['cell editor, fill hint, note card, find bar, ribbon, menus', ['ref="{{ inMirRef }}"', 'ref="{{ inRef }}"', 'ref="{{ tipRef }}"', 'data-note="1"', 'top:104px;right:24px', 'data-bubble="1"', 'data-menu="1"'].map(m => z(m, v))]];
+    ['cell editor, fill hint, note card, find bar, menus', ['ref="{{ inMirRef }}"', 'ref="{{ inRef }}"', 'ref="{{ tipRef }}"', 'data-note="1"', 'top:104px;right:24px', 'data-menu="1"'].map(m => z(m, v))]];
   const zs = t => [...new Set(t[1])].join();
   for (let i = 1; i < tiers.length; i++) assert.ok(Math.max(...tiers[i - 1][1]) < Math.min(...tiers[i][1]), `${tiers[i - 1][0]} (${zs(tiers[i - 1])}) go under ${tiers[i][0]} (${zs(tiers[i])})`);
   // sticking: every frame and object sits in a zero-size wrapper, sticky along the frozen axes it lies in (objects by their top-left corner)
