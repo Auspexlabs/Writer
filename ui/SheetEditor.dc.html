@@ -7,6 +7,12 @@
 </head>
 <body>
 <x-dc>
+<helmet>
+<style>
+/* a cell: what every cell has; the rest is inline, per cell */
+.sh-cell{display:flex;gap:4px;overflow:hidden;min-width:0;font-variant-numeric:tabular-nums;line-height:1.35}
+</style>
+</helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F);padding-top:{{ sheetTopPad }};padding-right:{{ panelPad }};outline:none">
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
     <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
@@ -110,8 +116,8 @@
             <span onMouseDown="{{ h.onResize }}" style="position:absolute;left:0;right:0;bottom:-4px;height:8px;cursor:row-resize;z-index:2"></span>
           </div>
         </sc-for>
-        <sc-for list="{{ cells }}" as="c" hint-placeholder-count="0">
-          <div onMouseDown="{{ c.onMD }}" onContextMenu="{{ c.onCtx }}" onMouseEnter="{{ c.onME }}" onMouseLeave="{{ c.onML }}" onDoubleClick="{{ c.onDbl }}" title="{{ c.tip }}" style="grid-row:{{ c.gr }};grid-column:{{ c.gc }};position:{{ c.pos }};top:{{ c.top }};left:{{ c.left }};z-index:{{ c.z }};background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};font-style:{{ c.fst }};text-decoration:{{ c.td }};font-size:{{ c.fs }};font-family:{{ c.ff }};justify-content:{{ c.justify }};align-items:{{ c.ai }};white-space:{{ c.ws }};border-top:{{ c.bt }};border-left:{{ c.bl }};border-right:{{ c.br }};border-bottom:{{ c.bb }};padding:{{ c.pad }};display:flex;gap:4px;overflow:hidden;min-width:0;font-variant-numeric:tabular-nums;cursor:{{ c.cursor }};line-height:1.35">
+        <sc-for list="{{ cells }}" as="c" memo="1" hint-placeholder-count="0">
+          <div onMouseDown="{{ c.onMD }}" onContextMenu="{{ c.onCtx }}" onMouseEnter="{{ c.onME }}" onMouseLeave="{{ c.onML }}" onDoubleClick="{{ c.onDbl }}" title="{{ c.tip }}" class="sh-cell" style="grid-row:{{ c.gr }};grid-column:{{ c.gc }};position:{{ c.pos }};top:{{ c.top }};left:{{ c.left }};z-index:{{ c.z }};background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};font-style:{{ c.fst }};text-decoration:{{ c.td }};font-size:{{ c.fs }};font-family:{{ c.ff }};justify-content:{{ c.justify }};align-items:{{ c.ai }};white-space:{{ c.ws }};border-top:{{ c.bt }};border-left:{{ c.bl }};border-right:{{ c.br }};border-bottom:{{ c.bb }};padding:{{ c.pad }};cursor:{{ c.cursor }}">
             <span style="overflow:hidden;min-width:0;flex:{{ c.flex }};text-align:{{ c.ta }};opacity:{{ c.op }};transform:{{ c.tr }}">{{ c.text }}</span>
             <sc-if value="{{ c.hasF }}" hint-placeholder-val="{{ false }}">
               <button onMouseDown="{{ c.onF }}" style="flex:none;width:18px;height:18px;border:1px solid var(--k10, #D1D1D6);border-radius:3px;background:{{ c.fbg }};font-size:9px;color:var(--k11, #6E6E73);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">▼</button>
@@ -191,6 +197,8 @@ const HEAD_ON = 'linear-gradient(var(--k50, rgba(255,255,255,0.9)),var(--k50, rg
 // under the next pane's cells. So what scrolls passes under the frozen rows and columns, as in Excel, and what is anchored in those
 // sticks with them (see the wrappers in the template). Above the panes the sticky headers and the corner; on top the cell editor
 // (its frame reaches over the headers' edge), the fill hint and the note card.
+/** A cell's fields (what it shows) as at the last render: every field but the handlers, which the new object does not have yet. */
+const sameCell = (was, o) => { for (const k in o) if (was[k] !== o[k]) return false; return true; };
 const Z = { cell: [1, 5, 9], mark: [2, 6, 10], handle: [3, 7, 11], object: [4, 8, 12],
   rowHead: 13, frozenRowHead: 14, colHead: 15, frozenColHead: 16, corner: 17, mirror: 18, editor: 19, popover: 20 };
 const PAL = ['#3F7D5C', '#E3B25A', '#2F5D8A', '#B5563A', '#7A6A9A', '#5C8A8A'];
@@ -269,7 +277,7 @@ class Component extends DCLogic {
     this.syncMirror();
   }
   // ---- formula reference colouring / point mode ----
-  edEl() { const ed = this.state.edit; return ed && ed.mode === 'bar' ? this.fxRef.current : this.inRef.current; }  syncMirror() { [[this.inRef, this.inMirRef], [this.fxRef, this.fxMirRef]].forEach(([a, b]) => { if (a.current && b.current) b.current.scrollLeft = a.current.scrollLeft; }); }
+  edEl() { const ed = this.state.edit; return ed && ed.mode === 'bar' ? this.fxRef.current : this.inRef.current; }  syncMirror() { if (!this.state.edit) return; [[this.inRef, this.inMirRef], [this.fxRef, this.fxMirRef]].forEach(([a, b]) => { if (a.current && b.current) b.current.scrollLeft = a.current.scrollLeft; }); } // the formula's coloured copy under the box, only while one is edited: reading scrollLeft lays the whole grid out
   refsOf(val) { // every reference in a formula text, coloured by order of first appearance (same range ⇒ same colour, like Excel)
     const E = this.E, out = [], keys = new Map(); if (!val || val[0] !== '=') return out;
     const re = refRe(E); re.lastIndex = 0; let m;
@@ -1127,7 +1135,7 @@ class Component extends DCLogic {
       return false; // bars and scales colour by value; icon sets, formulas and time periods are kept for the file, not drawn
     };
     const inR = (r, c) => r >= R.r1 && r <= R.r2 && c >= R.c1 && c <= R.c2;
-    const colHeads = [], rowHeads = [], cells = [];
+    const colHeads = [], rowHeads = []; let cells = [];
     // a right-click on a header opens its menu for the whole line, selecting it first unless it is already inside the selection
     const headCtx = (axis, i) => e => { e.preventDefault(); const inSel = axis === 'c' ? i >= R.c1 && i <= R.c2 && R.r1 === 0 && R.r2 === E.NR - 1 : i >= R.r1 && i <= R.r2 && R.c1 === 0 && R.c2 === E.NC - 1; if (!inSel) this.setState(axis === 'c' ? { anc: { r: 0, c: i }, sel: { r: E.NR - 1, c: i } } : { anc: { r: i, c: 0 }, sel: { r: i, c: E.NC - 1 } }); this.setState({ pop: { id: axis === 'c' ? 'colctx' : 'rowctx', x: e.clientX, y: e.clientY } }); };
     for (let c = 0; c < E.NC; c++) { if (hiddenC.has(c)) continue; const on = c >= R.c1 && c <= R.c2; colHeads.push({ l: E.colName(c), gc: c + 2, left: c < (sh.frC || 0) ? RHW + xs[c] + 'px' : 'auto', z: c < (sh.frC || 0) ? Z.frozenColHead : Z.colHead, bg: on ? HEAD_ON : 'var(--k48, #F5F5F7)', color: on ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: on ? 600 : 400,
@@ -1142,6 +1150,13 @@ class Component extends DCLogic {
     // fill-handle preview: ghost values are computed on a patched copy of the sheet, never written to the model until drop
     const fpv = st.fillTo ? this.previewFill(sh.cells, R, st.fillTo, st.fillTo.copy) : null; let ghost = null, calc2 = null;
     if (fpv) { const c2 = Object.assign({}, sh.cells); ghost = new Map(); fpv.items.forEach(i => { const a = E.A(i.r, i.c); ghost.set(a, i.cell); if (i.cell) c2[a] = i.cell; else delete c2[a]; }); calc2 = new E.Calc({ sheets: d.sheets.map((s2, i) => i === this.si ? Object.assign({}, s2, { cells: c2 }) : s2) }); }
+    // The cells show the file, not the selection: while only the selection moves they are the last render's (each click worked
+    // out all 1,600 again, their values, formats and rules). What else they show is in the key: the grid's geometry (a column
+    // dragged wider moves the frozen cells), the gridlines, a fill being dragged, the active cell's list arrow, the language.
+    const dv0 = !ed && this.dvAt(s0.r, s0.c), cellKey = [this.si, gl, xs.join(), ys.join(), fpv ? JSON.stringify([R, st.fillTo]) : '', dv0 && dv0.type === 'list' ? s0.r + ':' + s0.c : '', typeof $lang === 'function' ? $lang() : ''].join('|');
+    const reuse = !!this.cellsFor && this.cellsFor.d === d && this.cellsFor.key === cellKey;
+    if (reuse) cells = this.cellsFor.cells;
+    const cellsNow = new Map();
     for (let r = 0; r < E.NR; r++) {
       if (hidden.has(r)) continue;
       const onR = r >= R.r1 && r <= R.r2;
@@ -1150,6 +1165,7 @@ class Component extends DCLogic {
         onME: () => { if (this.op && this.op.kind === 'rowsel') this.setState({ sel: { r, c: E.NC - 1 } }); },
         onCtx: headCtx('r', r),
         onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'rowh', r, y0: e.clientY, h0: this.rowH(r) }; } });
+      if (reuse) continue;
       for (let c = 0; c < E.NC; c++) {
         if (covered.has(r + ':' + c) || hiddenC.has(c)) continue;
         const a = E.A(r, c), m = merges.find(mm => mm.r === r && mm.c === c);
@@ -1183,15 +1199,22 @@ class Component extends DCLogic {
         const al = s.align || (isNum ? 'right' : E.isErr(v) || typeof v === 'boolean' ? 'center' : 'left');
         const frozenR = r < (sh.frR || 0), frozenC = c < (sh.frC || 0), ind = (s.indent || 0) * 10;
         const isF = flt && r === flt.r && c >= flt.c1 && c <= flt.c2, dvRule = !isF && !ed && r === s0.r && c === s0.c ? this.dvAt(r, c) : null, isDv = !!dvRule && dvRule.type === 'list'; // Excel shows a list's arrow on the active cell only
-        cells.push({
+        // what the cell shows, and nothing else: a cell that shows the same as at the last render is that render's object, whose
+        // elements the grid's memo list keeps (a click re-rendered all 1,600 cells). The handlers below read what can change
+        // from this.state, and what they take from here (r, c, the merge, the link, the note, the filter arrow) is in the fields.
+        const o = {
           gr: m ? `${r + 2} / span ${m.rs}` : String(r + 2), gc: m ? `${c + 2} / span ${m.cs}` : String(c + 2),
           pos: frozenR || frozenC ? 'sticky' : 'relative', top: frozenR ? CHH + ys[r] + 'px' : 'auto', left: frozenC ? RHW + xs[c] + 'px' : 'auto', z: Z.cell[(frozenR ? 1 : 0) + (frozenC ? 1 : 0)],
           text, bg, color, fw: s.b || cfB ? 700 : 400, fst: s.i || cfI ? 'italic' : 'normal', td: [s.u || s.link ? 'underline' : '', s.st ? 'line-through' : ''].join(' ').trim() || 'none', fs: (s.fs || d.fs || 11) * 1.2 + 'px', ff: s.font || d.font ? `'${s.font || d.font}','IBM Plex Sans','Noto Sans SC',sans-serif` : 'inherit', tr: s.rotate ? `rotate(${-s.rotate}deg)` : 'none',
           justify: al === 'right' ? 'flex-end' : al === 'center' ? 'center' : 'flex-start', ta: al, ai: s.va === 'top' ? 'flex-start' : s.va === 'bottom' ? 'flex-end' : 'center', ws: s.wrap ? 'normal' : 'nowrap', flex: isF || isDv ? '1' : '0 1 auto',
           bt: side('top', 'none'), bl: side('left', 'none'), br: side('right', '1px solid ' + gl), bb: side('bottom', '1px solid ' + gl), pad: `0 ${6 + (al === 'right' ? ind : 0)}px 0 ${6 + (al === 'right' ? 0 : ind)}px`,
-          tip: s.link ? s.link + $t('（Ctrl+点击打开）') : '', hasN: !!s.note, cursor: s.link ? 'pointer' : 'cell',
-          onML: () => { if (st.noteAt && st.noteAt.r === r && st.noteAt.c === c) this.setState({ noteAt: null }); },
-          op, hasF: !!isF || isDv, fbg: isF && filters[E.colName(c)] ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)',
+          tip: s.link ? s.link + $t('（Ctrl+点击打开）') : '', link: s.link || '', hasN: !!s.note, cursor: s.link ? 'pointer' : 'cell',
+          op, hasF: !!isF || isDv, isF: !!isF, fbg: isF && filters[E.colName(c)] ? 'var(--k46, #DCEBDF)' : 'var(--k0, #FFFFFF)'
+        };
+        const was = this.cellsWere && this.cellsWere.get(a);
+        if (was && sameCell(was, o)) { cells.push(was); cellsNow.set(a, was); continue; }
+        cells.push(Object.assign(o, {
+          onML: () => { const n = this.state.noteAt; if (n && n.r === r && n.c === c) this.setState({ noteAt: null }); },
           onF: e => { e.preventDefault(); e.stopPropagation(); const rc = e.currentTarget.getBoundingClientRect(); this.setState({ pop: { id: isF ? 'flt' + c : 'dv', x: rc.left, y: rc.bottom + 4 } }); },
           onMD: e => {
             if (e.button === 2) return;
@@ -1207,9 +1230,11 @@ class Component extends DCLogic {
           onME: e => { if (!this.op) { if (s.note) this.setState({ noteAt: { r, c } }); return; } if (this.op.kind === 'sel') this.setState({ sel: { r, c } }); if (this.op.kind === 'fill') this.setState({ fillTo: { r, c, copy: e.ctrlKey || e.metaKey } }); if (this.op.kind === 'point') this.dragPt(r, c); },
           onDbl: () => { this.setState({ sel: { r, c }, anc: { r, c } }, () => this.startEdit(null, 'edit')); },
           onCtx: e => this.cellCtx(e, r, c)
-        });
+        }));
+        cellsNow.set(a, o);
       }
     }
+    if (!reuse) { this.cellsWere = cellsNow; this.cellsFor = { d, key: cellKey, cells }; }
     // overlays
     const mA = this.mergeAt(R.r1, R.c1);
     const sr2 = mA && R.r1 === R.r2 && R.c1 === R.c2 ? mA.r + mA.rs - 1 : R.r2, sc2 = mA && R.r1 === R.r2 && R.c1 === R.c2 ? mA.c + mA.cs - 1 : R.c2;

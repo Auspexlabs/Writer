@@ -47,6 +47,22 @@ test('stable: one identity per key and owner, always calling the latest function
   assert.notEqual(stable({}, 'onChange', () => 0), a);
 });
 
+test('sc-for memo="1": an item that is the same object as at the last render keeps its elements; another component keeps its own', () => {
+  const src = rt.slice(rt.indexOf('  function walkFor(el, host) {'), rt.indexOf('  function walkIf(el, host) {')), drawn = [];
+  const walkFor = new Function('compileAttr', 'walkChildren', 'h', 'getReact', 'warnUnresolved', src + '\nreturn walkFor;')(compileAttr,
+    () => [sub => { drawn.push(sub.c.v); return { v: sub.c.v }; }], (type, props, kids) => ({ type, key: props.key, kids }), () => ({ Fragment: 'F' }), () => { });
+  const el = attrs => ({ getAttribute: k => (k in attrs ? attrs[k] : null), hasAttribute: k => k in attrs });
+  const list = walkFor(el({ list: '{{ cells }}', as: 'c', memo: '1' }), {}), a = { v: 'a' }, b = { v: 'b' }, owner = {};
+  const r1 = list({ cells: [a, b] }, owner, 'k'), r2 = list({ cells: [a, { v: 'b2' }] }, owner, 'k');
+  assert.equal(r2.kids[0], r1.kids[0], 'the same item, the same element: React skips it');
+  assert.notEqual(r2.kids[1], r1.kids[1]);
+  assert.deepEqual(drawn, ['a', 'b', 'b2'], 'only the changed item is drawn again');
+  list({ cells: [a] }, {}, 'k'); assert.deepEqual(drawn.slice(3), ['a'], 'another instance of the component draws its own');
+  const plainList = walkFor(el({ list: '{{ cells }}', as: 'c' }), {}); drawn.length = 0;
+  plainList({ cells: [a] }, owner, 'k'); plainList({ cells: [a] }, owner, 'k');
+  assert.deepEqual(drawn, ['a', 'a'], 'without memo every render draws every item');
+});
+
 test('compiled template expressions give exactly what resolve() gives', () => {
   const vals = { a: { b: { c: 3 }, b1: 'x', 0: 'zero', 1: 'one' }, n: 0, s: '', t: true, arr: ['p', 'q'], i: 1, obj: { k: 'v' }, nul: null, $index: 4, 'true': 'shadow' };
   const exprs = ['a', ' a ', 'a.b', 'a.b.c', 'a.0', 'a.b1', 'a.1b', 'missing', 'missing.x', 'nul.x', 'n', 's', '$index', 'true', 'false', 'null',

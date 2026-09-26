@@ -24,6 +24,22 @@ function editor(sheets) {
   return { component, get doc() { return doc; }, get changed() { return changed; }, messages };
 }
 
+test('a click moves only the selection: the cells are the last render\'s; an edit makes new only the cells it changed', () => {
+  const x = editor([{ name: 'Data', cells: { A1: { v: 1 }, A2: { v: 2 }, A3: { v: '=A1+A2' }, B1: { v: 'x' } } }]);
+  const v1 = x.component.renderVals();
+  x.component.setState({ anc: { r: 4, c: 2 }, sel: { r: 6, c: 3 } });
+  assert.equal(x.component.renderVals().cells, v1.cells, 'the same list: no cell worked out again (a click re-worked all 1,600)');
+  x.component.commit(sh => { sh.cells.A1 = { v: 5 }; });
+  const v3 = x.component.renderVals(), at = v => new Map(Array.from(v.cells, c => [c.gr + '/' + c.gc, c]));
+  const was = at(v1), now = at(v3);
+  assert.equal(now.get('3/2'), was.get('3/2'), 'A2 as it was: the same object, whose elements the grid\'s memo list keeps');
+  assert.equal(now.get('2/3'), was.get('2/3'), 'and B1');
+  assert.deepEqual([now.get('2/2').text, now.get('4/2').text], ['5', '7'], 'A1, and A3 whose formula reads it, are new');
+  assert.equal(Array.from(v3.cells).filter(c => !Array.from(v1.cells).includes(c)).length, 2);
+  assert.match(html, /<sc-for list="\{\{ cells \}\}" as="c" memo="1"/, 'the grid keeps the elements of a cell that is the same object');
+  x.component.state.noteAt = { r: 0, c: 0 }; now.get('2/2').onML(); assert.equal(x.component.state.noteAt, null, 'a kept cell\'s handlers read the state as it is now');
+});
+
 test('inserting a row preserves cells shifted past the 80-row viewport and adjusts references', () => {
   const x = editor([
     { name: 'Data', cells: { A1: { v: '=A80' }, A80: { v: 'last visible' }, A81: { v: 'already offscreen' } } },

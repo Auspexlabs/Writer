@@ -405,8 +405,12 @@
     }
     return html;
   }
+  // Writer perf patch: the few hundred CSS property and attribute names, converted once (a sheet's 1,600 cells each named the same 22)
+  var CAMEL_CACHE = /* @__PURE__ */ new Map();
   function kebabToCamel(s) {
-    return s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    let v = CAMEL_CACHE.get(s);
+    if (v === void 0) { v = s.replace(/-([a-z])/g, (_, c) => c.toUpperCase()); if (CAMEL_CACHE.size < 5e3) CAMEL_CACHE.set(s, v); }
+    return v;
   }
   // Writer perf patch: an inline style string parses to the same (never mutated) object on every render, so React
   // skips diffing an unchanged style. Bounded: cleared once it holds 20k distinct strings.
@@ -646,9 +650,13 @@
     // keeps its components (the shell's kept-alive editors) instead of being rebuilt
     const keyBy = el.getAttribute("key-by");
     const hintN = parseInt(el.getAttribute("hint-placeholder-count") || "0", 10);
+    // Writer: memo="1": each item is drawn from the item alone (no outer values, no $index), so an item that is the same object as at the
+    // component's last render keeps the elements made for it then and React skips it; for a long list of which a render changes
+    // a few items (a sheet's cells). Not for a list inside another list: the elements are kept per component, per list
+    const memo = el.hasAttribute("memo");
     const kids = walkChildren(el, host);
     const listSrc = el.getAttribute("list") || "";
-    return (vals, ctx, key) => {
+    return function forList(vals, ctx, key) {
       let list = listGet(vals);
       if (!Array.isArray(list)) {
         if (!ctx?.__streamingNow) {
@@ -663,20 +671,21 @@
           list = hintN > 0 ? Array(hintN).fill(void 0) : [];
         }
       }
-      return h(
-        getReact().Fragment,
-        { key },
-        list.map((item, i) => {
-          const sub = Object.create(vals); // Writer perf patch: inherit the outer values instead of copying them per item
-          sub[asName] = item;
-          sub.$index = i;
-          return h(
-            getReact().Fragment,
-            { key: keyBy && item && item[keyBy] != null ? "k:" + item[keyBy] : i },
-            kids.map((b, j) => b(sub, ctx, j))
-          );
-        })
-      );
+      const cache = memo && ctx && typeof ctx === "object" ? ctx.__forMemo || (ctx.__forMemo = /* @__PURE__ */ new WeakMap()) : null;
+      const was = cache && cache.get(forList), now = cache ? /* @__PURE__ */ new Map() : null;
+      const out = list.map((item, i) => {
+        const k = keyBy && item && item[keyBy] != null ? "k:" + item[keyBy] : i;
+        const p = was && item && was.get(k);
+        if (p && p.item === item) { now.set(k, p); return p.el; }
+        const sub = Object.create(vals); // Writer perf patch: inherit the outer values instead of copying them per item
+        sub[asName] = item;
+        sub.$index = i;
+        const e = h(getReact().Fragment, { key: k }, kids.map((b, j) => b(sub, ctx, j)));
+        if (now && item) now.set(k, { item, el: e });
+        return e;
+      });
+      if (cache) cache.set(forList, now);
+      return h(getReact().Fragment, { key }, out);
     };
   }
   function walkIf(el, host) {
