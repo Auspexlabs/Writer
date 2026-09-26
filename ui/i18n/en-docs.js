@@ -218,7 +218,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '点击修改这段文字': 'Click to edit this text',
   '上一页 PageUp': 'Previous Page PageUp',
   '下一页 PageDown': 'Next Page PageDown',
-  '放大 Ctrl+＋': 'Zoom In Ctrl+＋',
+  '放大 Ctrl+＋': 'Zoom In Ctrl+＋', // i18n-ok: the full-width plus is the key's
   '缩放比例': 'Zoom',
   '输入页码后回车': 'Enter a page number and press Return',
   '第': 'Page',

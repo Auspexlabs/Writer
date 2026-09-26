@@ -5,7 +5,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '查找': 'Find', '替换为': 'Replace With', '查找下一个': 'Find Next', '替换': 'Replace', '全部替换': 'Replace All', '关闭': 'Close',
   '＋ 新页面': '+ New Page', '标题': 'Headings', '用「标题 1/2/3」样式的段落会显示在这里。': 'Paragraphs styled "Heading 1/2/3" will appear here.',
   '中文（简体）': 'Chinese (Simplified)', '＋': '＋', '取消': 'Cancel', '确定': 'OK',
-  '缩小 Ctrl+−': 'Zoom Out Ctrl+−', '放大 Ctrl+＋': 'Zoom In Ctrl+＋', '输入缩放比例后回车（20–400）': 'Type a zoom percentage and press Return (20–400)',
+  '缩小 Ctrl+−': 'Zoom Out Ctrl+−', '放大 Ctrl+＋': 'Zoom In Ctrl+＋', '输入缩放比例后回车（20–400）': 'Type a zoom percentage and press Return (20–400)', // i18n-ok: the full-width plus is the key's
   '（空标题）': '(Untitled Heading)',
 
   // style-picker labels (font list, block styles, highlight colors)
@@ -69,7 +69,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '点击标尺添加制表位；点击制表位切换 左 / 居中 / 右 / 小数点，再点一次移除': 'Click the ruler to add a tab stop; click a stop to cycle left / center / right / decimal, once more to remove it',
   '• 列表': '• List', '1. 列表': '1. List', '减少缩进 Shift+Tab': 'Decrease Indent Shift+Tab', '增加缩进 Tab': 'Increase Indent Tab', '行距': 'Line Spacing',
   '编号': 'Numbering', '编号库': 'Numbering Library', '重新开始编号': 'Restart Numbering', '继续编号': 'Continue Numbering',
-  '编号样式：1. a. i.、1. 1.1 1.1.1、一、（一）1.；Tab / Shift+Tab 升降级': 'Numbering styles: 1. a. i., 1. 1.1 1.1.1, 一、（一）1.; Tab / Shift+Tab change the level',
+  '编号样式：1. a. i.、1. 1.1 1.1.1、一、（一）1.；Tab / Shift+Tab 升降级': 'Numbering styles: 1. a. i., 1. 1.1 1.1.1, 一、（一）1.; Tab / Shift+Tab change the level', // i18n-ok: Chinese numbering, shown as it is
   '查找替换': 'Find & Replace',
 
   // insert ribbon

@@ -30,7 +30,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '＋': '+',
   '新建工作表': 'New Sheet',
   '缩小 Ctrl+−': 'Zoom Out Ctrl+−',
-  '放大 Ctrl+＋': 'Zoom In Ctrl+＋',
+  '放大 Ctrl+＋': 'Zoom In Ctrl+＋', // i18n-ok: the full-width plus is the key's
   '输入缩放比例后回车（20–400）': 'Type a zoom percentage and press Return (20–400)',
 
   // Dialog buttons
