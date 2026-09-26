@@ -1,6 +1,6 @@
 /* The design's tokens (light here, dark below) — the window chrome, the shell and the editors build on these; the --kN
    below them are the older per-literal variables and stay as they are. Glass alphas follow 设置 › 外观 › 玻璃通透度 (--gt). */
-:root{--bg:#F6F6F7;--ink:#1D1D1F;--ink-2:rgba(29,29,31,0.62);--ink-3:rgba(29,29,31,0.36);--fill:rgba(0,0,0,0.07);--line:rgba(0,0,0,0.1);
+:root{--bg:#FFFFFF;--ink:#1D1D1F;--ink-2:rgba(29,29,31,0.62);--ink-3:rgba(29,29,31,0.36);--fill:rgba(0,0,0,0.07);--line:rgba(0,0,0,0.1);
 --glass-bg:linear-gradient(180deg,rgba(255,255,255,clamp(0.03,calc(1 - 0.1 * var(--gt, 1)),1)),rgba(255,255,255,clamp(0.03,calc(1 - 0.28 * var(--gt, 1)),1)));--glass-bd:rgba(0,0,0,0.07);--glass-sh:0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95);--glass-r:14px;
 --panel-bg:linear-gradient(180deg,rgba(255,255,255,clamp(0.03,calc(1 - 0.16 * var(--gt, 1)),1)),rgba(255,255,255,clamp(0.03,calc(1 - 0.3 * var(--gt, 1)),1)));--panel-bd:rgba(0,0,0,0.06);--panel-sh:0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95);--panel-r:16px;
 --tab-bg:#fff;--tab-sh:0 0 0 .5px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.06),0 4px 10px rgba(0,0,0,.04);--tab-r:10px;--ctl-r:8px;--tab-ink:#1D1D1F;--tab-dim:rgba(0,0,0,.55);--tab-x:rgba(0,0,0,.32);
@@ -22,6 +22,10 @@ html[data-theme="dark"]{--word-paper-sh:0 0 0 .5px rgba(0,0,0,.4),0 4px 10px rgb
 --fp-ctl:rgba(255,255,255,.1);--fp-ctl-sh:0 0 0 .5px rgba(255,255,255,.12);--fp-chev:rgba(235,235,245,.32);--fp-step:rgba(235,235,245,.6);--fp-seg:rgba(255,255,255,.08);--fp-on:rgba(255,255,255,.2);--fp-on-sh:0 1px 2px rgba(0,0,0,.3);--fp-soft:rgba(255,255,255,.08);--fp-cmtb:transparent;
 --fp-card-sh:0 0 0 .5px rgba(255,255,255,.12);--fp-swb:rgba(255,255,255,.2);--fp-tstyb:rgba(255,255,255,.2);--fp-sw:rgba(255,255,255,.16);--fp-ring:rgba(10,132,255,.4);--fp-accent:#0A84FF;--fp-danger:#FF6961;--fp-tail:rgba(52,52,56,.96);--fp-tail-sh:.5px .5px 0 rgba(255,255,255,.12);--fp-press:rgba(255,255,255,.14);
 --pill-bg:rgba(58,58,62,.62);--pill-sh:0 0 0 .5px rgba(255,255,255,.1),0 6px 18px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08);--pill-ink:rgba(255,255,255,.78);--pill-on:rgba(255,255,255,.14);--pill-on-ink:#F5F5F7;--pill-dim:rgba(235,235,245,.6);--sel-hl:rgba(10,132,255,.32)}
+/* The interface is not text: dragging across buttons, tabs, panels and menus selects nothing. Only what is written or read
+   as a document selects: editable text, inputs, the PDF text layer (.pt-tl) and the assistant's conversation. */
+html{-webkit-user-select:none;user-select:none}
+input,textarea,[contenteditable="true"],[contenteditable=""],[contenteditable="plaintext-only"],.ai-md,[data-select="text"]{-webkit-user-select:text;user-select:text}
 /* The title bar (the design's 定稿): glass pills of 36×30 icon buttons, the ⋯ circle, the document tabs (the current one a white card) */
 .tb-pill{height:34px;box-sizing:border-box;padding:0 2px;border-radius:999px;display:flex;align-items:center;flex:none;background:var(--pill-bg);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:var(--pill-sh)}
 .tb-btn{width:36px;height:30px;padding:0;border:none;border-radius:999px;background:transparent;color:var(--pill-ink);display:flex;align-items:center;justify-content:center;flex:none;cursor:default;transition:background .15s,color .15s,transform .35s cubic-bezier(.2,1,.3,1)}

@@ -19,7 +19,7 @@
 <link rel="icon" href="./assets/writer-logo-light.svg">
 <link rel="stylesheet" href="./assets/fonts/fonts.css">
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bg, #F6F6F7);color:var(--ink, #1D1D1F);font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);-webkit-font-smoothing:antialiased}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg, #FFFFFF);color:var(--ink, #1D1D1F);font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
 button,input,select,textarea{font-family:inherit;color:inherit}
 /* The Mac window (the design's Doc boards): the 48px title strip — lights, sidebar / undo / redo, the document tabs as pills
@@ -44,7 +44,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 [data-mactest][data-pure="1"] div:has(> [data-bubble]){top:94px!important}
 </style>
 </helmet>
-<div data-mactest="1" data-collapsed="{{ collapsedAttr }}" data-pure="{{ pureAttr }}" style="position:fixed;inset:0;overflow:hidden;background:var(--bg, #F6F6F7)">
+<div data-mactest="1" data-collapsed="{{ collapsedAttr }}" data-pure="{{ pureAttr }}" style="position:fixed;inset:0;overflow:hidden;background:var(--bg, #FFFFFF)">
   <div ref="{{ winRef }}" style="position:absolute;left:0;right:0;bottom:0;top:52px">
     <dc-import name="index" mac="{{ true }}" mac-full="{{ isFull }}" on-shell="{{ onShell }}" on-prefs="{{ openPrefs }}" on-save-dialog="{{ saveDialogProp }}" recent-files="{{ recentProp }}" on-open-recent="{{ openRecentProp }}" on-open-dialog="{{ openDialogProp }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
   </div>
@@ -344,7 +344,7 @@ class Component extends DCLogic {
       // green: full screen; with ⌥ it zooms the window instead, as in macOS
       doZoom: e => { if (!NATIVE) return; if (e && e.altKey) { win('toggle_maximize'); return; } win('is_fullscreen').then(full => win('set_fullscreen', { value: full !== true }).then(() => this.setState({ full: full !== true }))); },
       zoomWin: () => { if (NATIVE) invoke('toggle_zoom', {}); },
-      sideToggle: () => this.call('toggleThumbs'), sideOn: sh && sh.showThumbs && sh.isDoc && !side ? '1' : '0', sideShift: side ? 'translateX(116px)' : 'none', historyShift: side ? '132px' : '0px', sideTitle: $t(sh && sh.showThumbs ? '隐藏缩略图 ⌃⌘S' : '缩略图 ⌃⌘S'), titleBg: side ? 'transparent' : 'var(--bg, #F6F6F7)',
+      sideToggle: () => this.call('toggleThumbs'), sideOn: sh && sh.showThumbs && sh.isDoc && !side ? '1' : '0', sideShift: side ? 'translateX(116px)' : 'none', historyShift: side ? '132px' : '0px', sideTitle: $t(sh && sh.showThumbs ? '隐藏缩略图 ⌃⌘S' : '缩略图 ⌃⌘S'), titleBg: side ? 'transparent' : 'var(--bg, #FFFFFF)',
       goBack: () => this.undo(false), goFwd: () => this.undo(true),
       single: !multi, multi,
       // one document: its file icon and name; the start page: just 新建
