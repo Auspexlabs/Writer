@@ -16,6 +16,7 @@
   // The desktop app hands over the system's preferred language: WKWebView's navigator.language is the app's own localization.
   var sys = w.__WRITER_SYS_LANG || (w.navigator && w.navigator.language) || 'zh';
   var lang = stored === 'English' ? 'en' : stored === '简体中文' ? 'zh' : /^zh/i.test(sys) ? 'zh' : 'en'; // i18n-ok
+  if (w.__WRITER_LANG === 'en' || w.__WRITER_LANG === 'zh') lang = w.__WRITER_LANG; // embedded in a site: the language it asked for (ui/embed.dc.html)
 
   var en = function (key) { return lang === 'en' && has(w.I18N_EN, key) ? w.I18N_EN[key] : undefined; };
   var fill = function (s, vars) { return vars ? String(s).replace(/\{(\w+)\}/g, function (m, k) { return has(vars, k) ? vars[k] : m; }) : s; };

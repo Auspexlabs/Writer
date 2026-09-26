@@ -123,6 +123,21 @@ test('the 图片 ribbon: sliders carry the look\'s values, a running tool says s
   assert.ok(items.find(i => i.id === 'pic-width').items.find(i => i.label === '3 磅').o.on);
 });
 
+test('embedded in a site, the 图片 tools leave out 抠图 and 压缩: they need the desktop app\'s helper', () => {
+  const k = { B: (label) => ({ label }), M: (id, label) => ({ id, label }), I: (label) => ({ label }), C: (label) => ({ label }), SEP: { isSep: true } };
+  const kit = { G: (title, ...rows) => ({ title, rows }), R: (...items) => items.flat().filter(Boolean).map(i => i.label), btn: label => ({ label }), menuBtn: (id, label) => ({ label }), range: label => ({ label }), chk: label => ({ label }), swatch: label => ({ label }), sel: (id, label) => ({ label }), sp: () => null };
+  const labels = () => [P.pictureRibbon(k, host({}).tools, {}, null).map(i => i.label), P.picturePanel(kit, k.I, host({}).tools, {}, null).flatMap(g => g.rows.flat())];
+  const [ribbon, panel] = labels();
+  assert.ok(ribbon.includes('抠图') && ribbon.includes('压缩图片') && panel.includes('抠图') && panel.includes('压缩'));
+  globalThis.__WRITER_EMBED__ = { mode: 'docx' };
+  try {
+    const [r, p] = labels();
+    assert.deepEqual([r.includes('抠图'), r.includes('压缩图片'), p.includes('抠图'), p.includes('压缩')], [false, false, false, false]);
+    assert.deepEqual(r.filter(x => x !== undefined).length, ribbon.filter(x => x !== undefined).length - 2);
+    assert.ok(r.includes('裁剪') && p.includes('替换'), 'the rest stay');
+  } finally { delete globalThis.__WRITER_EMBED__; }
+});
+
 test('setPicture runs one set per tool, after a save of the same file that is under way, reading the path when its turn comes', async () => {
   const order = [];
   let release;

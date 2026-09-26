@@ -11,6 +11,8 @@ const num = (v, d = 0) => { const n = parseFloat(v); return isFinite(n) ? n : d;
 const pct = v => +(v * 100).toFixed(3) + '%';
 // $t under node (this module is node-tested): falls back to the Chinese, vars filled the same way.
 const T = (s, v) => globalThis.$t ? globalThis.$t(s, v) : v ? String(s).replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : s;
+/** 抠图 and 压缩 run writer-vision, the helper the desktop app ships next to the engine: a page embedding Writer has none. */
+const helper = () => !globalThis.__WRITER_EMBED__;
 
 /** The crop as left, top, right, bottom fractions of the whole picture. */
 export function cropOf(look) { const c = String((look && look.crop) || '').split(',').map(v => num(v) / 100); return c.length === 4 ? c : [0, 0, 0, 0]; }
@@ -172,7 +174,7 @@ export function pictureRibbon(k, tools, look, busy) {
   const R = (label, value, min, max, key) => ({ isRange: true, label: T(label), title: T(label), min, max, value, text: String(value), onChange: e => tools.set({ [key]: String(Math.round(+e.target.value)) }, true) });
   const line = look.line && look.line !== 'none' ? '#' + look.line : '';
   return [
-    B(busy === 'cutout' ? '抠图中…' : '抠图', () => { if (!busy) tools.cutout(); }, { title: '移除背景，只留下主体（Apple Vision，macOS 14 以上）', dis: !!busy }),
+    helper() && B(busy === 'cutout' ? '抠图中…' : '抠图', () => { if (!busy) tools.cutout(); }, { title: '移除背景，只留下主体（Apple Vision，macOS 14 以上）', dis: !!busy }),
     M('pic-crop', '裁剪', [I('拖动裁剪…', () => tools.crop(), { hint: '拖边角' })].concat(RATIOS.map(([r, l]) => I(l, () => tools.ratio(r))), [I('取消裁剪', () => tools.set({ crop: '0,0,0,0' }), { on: !look.crop })]), '裁剪到比例，或拖动边角'),
     M('pic-shape', '形状', SHAPES.map(([g, l]) => I(l, () => tools.set({ geometry: g }), { on: (look.geometry || 'rect') === g })), '裁剪为形状'), SEP,
     B('旋转 90°', () => tools.set({ rotation: String((rot + 90) % 360) }), { title: '向右旋转 90°' }),
@@ -185,10 +187,10 @@ export function pictureRibbon(k, tools, look, busy) {
     M('pic-width', '粗细', WIDTHS.map(([w, l]) => I(l, () => tools.set(w === 'none' ? { line: 'none' } : { lineWidth: w, line: look.line || '1D1D1F' }), { on: w === 'none' ? !line : !!line && num(look.lineWidth, 0.75) === num(w) })), '边框粗细'),
     B('阴影', () => tools.set({ shadow: on('shadow') ? 'false' : 'true' }), { on: on('shadow') }),
     B('圆角', () => tools.set({ geometry: look.geometry === 'roundRect' ? 'rect' : 'roundRect' }), { on: look.geometry === 'roundRect' }), SEP,
-    M('pic-compress', busy === 'compress' ? '压缩中…' : '压缩图片', COMPRESS.map(([v, l]) => I(l, () => { if (!busy) tools.compress(v); })), '按显示尺寸重新编码，并删除裁掉的部分'),
+    helper() && M('pic-compress', busy === 'compress' ? '压缩中…' : '压缩图片', COMPRESS.map(([v, l]) => I(l, () => { if (!busy) tools.compress(v); })), '按显示尺寸重新编码，并删除裁掉的部分'),
     B(busy === 'reset' ? '重置中…' : '重置图片', () => { if (!busy) tools.reset(); }, { title: '去掉所有调整，恢复原图', dis: !!busy }),
     B(busy === 'replace' ? '替换中…' : '替换图片', () => { if (!busy) tools.replace(); }, { title: '换一张图片，保留宽度与位置', dis: !!busy }),
-  ];
+  ].filter(Boolean);
 }
 
 /** The 图片 tab of the format panel, with panel.js's kit k and the editor's menu item maker I: the same tools as the ribbon's, in
@@ -200,7 +202,7 @@ export function picturePanel(k, I, tools, look, busy) {
   const set = key => v => tools.set({ [key]: String(Math.round(v)) }, true);
   return [
     k.G('图片',
-      k.R(k.btn(busy === 'cutout' ? '抠图中…' : '抠图', null, () => { if (!busy) tools.cutout(); }, { title: '移除背景，只留下主体（Apple Vision，macOS 14 以上）', dis: !!busy }),
+      k.R(helper() && k.btn(busy === 'cutout' ? '抠图中…' : '抠图', null, () => { if (!busy) tools.cutout(); }, { title: '移除背景，只留下主体（Apple Vision，macOS 14 以上）', dis: !!busy }),
         k.menuBtn('pic-crop', '裁剪', 'crop', [I('拖动裁剪…', () => tools.crop(), { hint: '拖边角' })].concat(RATIOS.map(([r, l]) => I(l, () => tools.ratio(r))), [I('取消裁剪', () => tools.set({ crop: '0,0,0,0' }), { on: !look.crop })]), { title: '裁剪到比例，或拖动边角' }),
         k.menuBtn('pic-shape', '形状', 'shape', SHAPES.map(([g, l]) => I(l, () => tools.set({ geometry: g }), { on: (look.geometry || 'rect') === g })), { title: '裁剪为形状' })),
       k.R(k.btn('旋转 90°', 'rotate', () => tools.set({ rotation: String((rot + 90) % 360) }), { title: '向右旋转 90°' }),
@@ -217,7 +219,7 @@ export function picturePanel(k, I, tools, look, busy) {
       k.R(k.chk('阴影', on('shadow'), v => tools.set({ shadow: v ? 'true' : 'false' })), k.sp(),
         k.chk('圆角', look.geometry === 'roundRect', v => tools.set({ geometry: v ? 'roundRect' : 'rect' })))),
     k.G('文件',
-      k.R(k.menuBtn('pic-compress', busy === 'compress' ? '压缩中…' : '压缩', null, COMPRESS.map(([v, l]) => I(l, () => { if (!busy) tools.compress(v); })), { title: '按显示尺寸重新编码，并删除裁掉的部分' }),
+      k.R(helper() && k.menuBtn('pic-compress', busy === 'compress' ? '压缩中…' : '压缩', null, COMPRESS.map(([v, l]) => I(l, () => { if (!busy) tools.compress(v); })), { title: '按显示尺寸重新编码，并删除裁掉的部分' }),
         k.btn(busy === 'reset' ? '重置中…' : '重置', null, () => { if (!busy) tools.reset(); }, { title: '去掉所有调整，恢复原图', dis: !!busy }),
         k.btn(busy === 'replace' ? '替换中…' : '替换', null, () => { if (!busy) tools.replace(); }, { title: '换一张图片，保留宽度与位置', dis: !!busy })))
   ];

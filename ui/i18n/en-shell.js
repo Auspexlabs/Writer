@@ -191,6 +191,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '保存中…': 'Saving…',
   '已保存': 'Saved',
   '正在打开…': 'Opening…',
+  '没有要显示的文档': 'No document to show',
   '已接受所有修订': 'All tracked changes accepted',
   '已拒绝所有修订': 'All tracked changes rejected',
   '修订处理失败：{msg}': 'Failed to process the tracked changes: {msg}',

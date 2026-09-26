@@ -26,7 +26,8 @@ export function applyTo(el, p, matches = q => globalThis.matchMedia(q).matches) 
 }
 
 const read = (storage, key) => { try { return JSON.parse(storage.getItem(key) || 'null'); } catch (e) { return null; } };
-export function load(storage = globalThis.localStorage) { return { ...DEF, ...(storage && read(storage, KEY)) }; }
+/** The settings: the defaults, what 设置 saved, and, embedded in a site, what the site set (ui/embed.dc.html: __WRITER_PREFS). */
+export function load(storage = globalThis.localStorage) { return { ...DEF, ...(storage && read(storage, KEY)), ...(globalThis.__WRITER_PREFS || {}) }; }
 export function loadSession(storage = globalThis.localStorage) { return (storage && read(storage, SESSION)) || {}; }
 export function saveSession(s, storage = globalThis.localStorage) { try { storage.setItem(SESSION, JSON.stringify(s)); } catch (e) { } }
 

@@ -73,8 +73,11 @@ export function lazy(path, format) {
   return { id: idOf(path), type: editorOf(path) || format || 'md', title: titleOf(path), path, loaded: false };
 }
 
-export const fileUrl = path => '/file?file=' + enc(path);
-const binaryUrl = (path, node) => '/binary?file=' + enc(path) + '&path=' + enc(node);
+// embedded in another site (ui/embed/server.js) the engine is in the page: an <img> or a download link, which the page loads
+// without fetch, gets a blob: URL from it instead
+const pageUrl = globalThis.__writerUrl;
+export const fileUrl = path => pageUrl ? pageUrl('file', path) : '/file?file=' + enc(path);
+const binaryUrl = (path, node) => pageUrl ? pageUrl('binary', path, node) : '/binary?file=' + enc(path) + '&path=' + enc(node);
 
 /** { path, mtime, size } of a file on disk — cheap enough to poll, to notice another program (the MCP server, an agent's
  *  CLI calls) changing it outside this window. mtime is milliseconds since the epoch, the same unit PUT /file returns. */

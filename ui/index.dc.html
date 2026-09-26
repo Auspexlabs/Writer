@@ -58,7 +58,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
    host keeps only the Aa / 沉浸 / AI pill (mac.dc.html, win.dc.html), and its 格式 and AI panels are the same as outside it. */
 </style>
 </helmet>
-<div ref="{{ rootRef }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" data-pure="{{ pureAttr }}" style="height:{{ rootH }};min-width:720px;position:relative;overflow:hidden;background:var(--bg, #FFFFFF)">
+<div ref="{{ rootRef }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" data-pure="{{ pureAttr }}" style="height:{{ rootH }};min-width:{{ rootMinW }};position:relative;overflow:hidden;background:var(--bg, #FFFFFF)">
   <div style="position:absolute;top:0;left:0;bottom:0;right:0;display:flex;flex-direction:column;min-width:0">
   <sc-if value="{{ neverShow }}" hint-placeholder-val="{{ false }}">
 
@@ -437,6 +437,7 @@ let PERF = new URLSearchParams(location.search).get('perf'); try { PERF = PERF |
 /** The shell's values an editor takes that change with the shell's state (a hidden, kept-alive editor keeps the ones it had). */
 /** Whether this WebKit / Chromium skips a content-visibility:hidden subtree (Safari 18, Chrome 85 and later). */
 const CV_HIDDEN = typeof CSS !== 'undefined' && !!CSS.supports && CSS.supports('content-visibility', 'hidden');
+const EMBED = !!globalThis.__WRITER_EMBED__; // embedded in a site (ui/embed.dc.html)
 const LIVE_PROPS = ['formatOpen', 'panelOpen', 'panelEnter', 'aiOn', 'pure', 'showThumbs', 'barLeft', 'barRight', 'merged', 'leadW', 'gridOn', 'mdAuto'];
 class Component extends DCLogic {
   openSeqN = 0; // the order documents were opened in: the title bar's tabs follow it
@@ -451,10 +452,12 @@ class Component extends DCLogic {
       this.K = K; this.E = E; this.MD = MD; this.PK = PK; this.EN = EN; this.P = P; this.applyTheme();
       let files = [];
       try { files = await EN.files(); } catch (e) { this.toastMsg($t('无法连接引擎：{msg}', { msg: $t(e.message) })); }
-      const solo = !!(window.__WRITER_NATIVE__ || {}).solo; // a tab torn off another window: the host sends the one document it shows
+      // a tab torn off another window: the host sends the one document it shows. Embedded in a site (ui/embed/host.js) too: the
+      // site says what opens, and nothing of an earlier visit comes back; with nothing to open yet, the 新建 page
+      const embed = EMBED, solo = !!(window.__WRITER_NATIVE__ || {}).solo || embed;
       const p = this.prefs, s = solo ? {} : P.loadSession(), L = P.launch(files, p, s), layout = P.loadLayout();
       this.closed = new Set(p.restore !== false ? (s.closed || []).filter(x => files.some(f => f.path === x)) : []);
-      this.setState({ ready: true, docs: L.docs, chatOn: EN.state.chat, model: EN.state.model, view: L.open || solo ? 'doc' : 'create', showThumbs: layout.showThumbs, showAI: layout.showAI, showFormat: !layout.showAI }); // one panel at a time
+      this.setState({ ready: true, docs: L.docs, chatOn: EN.state.chat, model: EN.state.model, view: L.open || (solo && !embed) ? 'doc' : 'create', showThumbs: layout.showThumbs, showAI: layout.showAI, showFormat: !layout.showAI }); // one panel at a time
       if (solo) return;
       if (L.open) this.open(L.open.id); else if (L.blank) this.createBlank(L.blank);
     });
@@ -488,7 +491,7 @@ class Component extends DCLogic {
   applyTheme = () => {
     const h = document.documentElement;
     if (this.P) { this.prefs = this.P.load(); this.P.applyTo(h, this.prefs); this.applySpell(); }
-    else { let t = 'light'; try { t = JSON.parse(localStorage.getItem('writer-settings') || '{}').theme || 'light'; } catch (e) { } if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; h.dataset.theme = t; }
+    else { let t = 'light'; try { t = (globalThis.__WRITER_PREFS || {}).theme || JSON.parse(localStorage.getItem('writer-settings') || '{}').theme || 'light'; } catch (e) { } if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; h.dataset.theme = t; }
     if (this.state.ready) this.forceUpdate();
   };
   onStorage = e => { if (!e.key || e.key === 'writer-settings') this.applyTheme(); if (!e.key || e.key === 'writer-ai') this.onAi(); };
@@ -559,7 +562,7 @@ class Component extends DCLogic {
   macVals() {
     const p = this.props, off = p.macActive === false, h = this.state.macHover;
     return {
-      rootH: p.mac ? '100%' : '100vh', notMac: !p.mac, hasMac: !!p.mac,
+      rootH: p.mac ? '100%' : '100vh', rootMinW: EMBED ? '0px' : '720px', notMac: !p.mac, hasMac: !!p.mac, // a window keeps the editors 720px wide at least; a widget on a site is as wide as the site made it
       macC1: off ? '#D6D6D6' : '#FF5F57', macC2: off ? '#D6D6D6' : '#FEBC2E', macC3: off ? '#D6D6D6' : '#28C840',
       macG1: h ? '×' : '', macG2: h ? '−' : '', macG3: h ? (p.macFull ? '⤡' : '⤢') : '',
       macHoverOn: () => this.setState({ macHover: true }), macHoverOff: () => this.setState({ macHover: false }),

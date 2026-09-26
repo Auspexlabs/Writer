@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Writer 嵌入示例</title>
+<style>
+  :root{color-scheme:light;--ink:#1D1D1F;--dim:#6E6E73;--line:rgba(0,0,0,.1);--bg:#F5F5F7;--card:#FFFFFF}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,'PingFang SC','Microsoft YaHei',system-ui,sans-serif}
+  main{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:26px;margin:0 0 6px} h2{font-size:17px;margin:40px 0 4px} p{margin:0 0 14px;color:var(--dim)}
+  .widget{height:620px;border-radius:14px;background:var(--card);box-shadow:0 0 0 1px var(--line),0 8px 30px rgba(0,0,0,.06);overflow:hidden}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  button{height:32px;padding:0 14px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+  button:hover{background:#EDEDF0} button.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  input{height:32px;padding:0 10px;border:1px solid var(--line);border-radius:9px;font:inherit;min-width:0}
+  .log{height:96px;overflow:auto;margin:0;padding:10px 12px;border-radius:10px;background:#1D1D1F;color:#D1D1D6;font:12px/1.5 ui-monospace,Menlo,monospace}
+  pre.code{margin:0;padding:14px 16px;border-radius:12px;background:#1D1D1F;color:#F5F5F7;font:12.5px/1.6 ui-monospace,Menlo,monospace;overflow:auto}
+  .ai{display:grid;grid-template-columns:2fr 1fr 1.4fr auto;gap:8px}
+  @media (max-width:760px){.ai{grid-template-columns:1fr}.widget{height:520px}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Writer 嵌入示例</h1>
+  <p>Word、Excel、PowerPoint 等编辑器或整个 Writer 放进任意网页：引擎是 WebAssembly，文档只在访问者的浏览器里。接入方式见 docs/embed.md。</p>
+
+<pre class="code">&lt;div id="doc" style="height:620px"&gt;&lt;/div&gt;
+&lt;script src="https://你的域名/writer/embed/writer-embed.js"&gt;&lt;/script&gt;
+&lt;script type="module"&gt;
+  const writer = Writer.embed('#doc', { mode: 'docx', file: '/files/会议纪要.docx' });
+  await writer.ready;
+  await writer.run('add 会议纪要.docx /body --type paragraph --prop text="由网站写入"');
+  const blob = await writer.get('会议纪要.docx');   // 当前文件
+&lt;/script&gt;</pre>
+
+  <h2>一个编辑器</h2>
+  <p>mode: 'docx'：只有这一个文档，没有标签页和新建页。网站可以用命令改它，也能随时取回文件。</p>
+  <div class="bar">
+    <button class="primary" id="add">用 API 在文末加一段</button>
+    <button id="heading">用 API 加一个标题</button>
+    <button id="download">下载当前文件</button>
+    <button id="outline">查看大纲</button>
+  </div>
+  <div id="word" class="widget"></div>
+  <pre class="log" id="log"></pre>
+
+  <h2>整个软件</h2>
+  <p>mode: 'app'：标签页、新建页和模板都在；可以同时打开几个文件。</p>
+  <div id="app" class="widget"></div>
+
+  <h2>AI 助手</h2>
+  <p>填一个 OpenAI 兼容的接口（最好是你自己的后端转发地址，由后端加上密钥），编辑器右上角会出现 AI 按钮；助手用和桌面版一样的方式改文档，改动可以保留或撤销。网站自己的智能体也可以用 writer.tools() / writer.callTool() 直接操作文档。</p>
+  <div class="ai">
+    <input id="aiUrl" placeholder="接口地址，如 https://你的域名/api/chat/completions">
+    <input id="aiModel" placeholder="模型">
+    <input id="aiKey" placeholder="Authorization（可留空，由后端加）">
+    <button id="aiGo">连接助手</button>
+  </div>
+</main>
+
+<script src="./writer-embed.js"></script>
+<script>
+  const log = (...a) => { const el = document.getElementById('log'); el.textContent += a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ') + '\n'; el.scrollTop = el.scrollHeight; };
+  const DOC = '../templates/zh/docx/meeting-minutes.docx', NAME = 'meeting-minutes.docx';
+  let word, app;
+  function mount(ai) {
+    if (word) word.destroy(); if (app) app.destroy();
+    word = Writer.embed('#word', { mode: 'docx', file: DOC, ai: ai && ai.fn, aiModel: ai && ai.model });
+    app = Writer.embed('#app', { mode: 'app', files: ['../templates/zh/xlsx/budget.xlsx', '../templates/zh/pptx/business-plan.pptx'], ai: ai && ai.fn, aiModel: ai && ai.model });
+    word.ready.then(r => log('ready', r));
+    word.on('change', e => log('change', e));
+  }
+  mount(null);
+  document.getElementById('add').onclick = async () => log('run', await word.run(['add', NAME, '/body', '--type', 'paragraph', '--prop', 'text=这一段是网站通过 API 写入的（' + new Date().toLocaleTimeString() + '）'])); // i18n-ok: the sample site writes Chinese into its document
+  document.getElementById('heading').onclick = async () => log('run', await word.run(['add', NAME, '/body', '--type', 'heading', '--prop', 'text=网站加的标题', '--prop', 'level=2'])); // i18n-ok
+  document.getElementById('download').onclick = async () => { const b = await word.get(NAME); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = NAME; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); log('download', b.size + ' bytes'); };
+  document.getElementById('outline').onclick = async () => { const r = await word.run(['view', NAME, 'outline']); log(r.output.split('\n').slice(0, 6).join('\n')); };
+  document.getElementById('aiGo').onclick = () => {
+    const url = document.getElementById('aiUrl').value.trim(), model = document.getElementById('aiModel').value.trim(), key = document.getElementById('aiKey').value.trim();
+    if (!url) return log('先填接口地址'); // i18n-ok: the sample site's own log
+    mount({ model: model || 'model', fn: Writer.ai.openai({ url, model, headers: key ? { Authorization: /^Bearer /.test(key) ? key : 'Bearer ' + key } : {} }) });
+    log('assistant', url, model);
+  };
+</script>
+</body>
+</html>
