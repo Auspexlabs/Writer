@@ -66,7 +66,7 @@
           </sc-for>
         </div>
       </sc-if>
-      <sc-if value="{{ outlineOn }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ thumbsOn }}" hint-placeholder-val="{{ true }}">
         <div style="flex:1;min-height:0;overflow:auto;padding:0 14px 24px;display:flex;flex-direction:column;gap:14px;align-items:center">
         <sc-for list="{{ pages }}" as="p" hint-placeholder-count="3">
           <div onClick="{{ p.onThumb }}" draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onDragOver="{{ p.onDragOver }}" onDrop="{{ p.onDrop }}" onDragEnd="{{ p.onDragEnd }}" title="拖动可调整页序" style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab;padding-top:6px;margin-top:-6px;border-top:{{ p.dropLine }}">
@@ -208,27 +208,41 @@ class Component extends DCLogic {
   }
   async loadItems() { const K = this.K, d = this.doc; const items = {}; for (const pg of d.pages) items[pk(pg)] = await K.textItems(d.id, pg); this.setState({ items }); }
   schedule() { if (this.raf) return; this.raf = requestAnimationFrame(() => { this.raf = null; this.renderAll(); }); }
+  /** The pages within a screen and a half of the view (two and a half below), each with its distance from the view's middle: only
+   *  they are drawn at full size and get a text layer. */
+  nearPages() {
+    const sc = this.scRef.current, out = new Map(); if (!sc) return out;
+    const vh = sc.clientHeight || 800, top = sc.scrollTop - vh * 1.5, bottom = sc.scrollTop + vh * 2.5, mid = sc.scrollTop + vh / 2;
+    for (const el of sc.querySelectorAll('[data-page]')) { const y = el.offsetTop, h = el.offsetHeight; if (y + h >= top && y <= bottom) out.set(el.getAttribute('data-page'), Math.abs(y + h / 2 - mid)); }
+    return out;
+  }
+  /** Draws the pages near the view, the nearest first, and lets go of the ones far from it: a page's canvas holds its area × zoom² ×
+   *  the pixel ratio² (10 MB for an A4 page at 100% on a Retina screen), so drawing every page of a long file took hundreds of MB and
+   *  kept the main thread busy while scrolling. A scroll starts the pass over from the new place. Thumbnails of pages that are not
+   *  drawn are drawn small on their own. */
   async renderAll() {
     const K = this.K, d = this.doc, sc = this.state.scale; if (!K || !sc || this.rendering) { if (this.rendering) this.again = true; return; }
-    this.rendering = true;
+    this.rendering = true; this.again = false;
     try {
-      for (const pg of d.pages) {
+      const near = this.nearPages(), keyOf = pg => K.keyOf(d.id, pg) + ':' + pg.src + ':' + (pg.rot || 0);
+      for (const pg of d.pages) { const c = this.cv[pg.id]; if (c && c.width && !near.has(pg.id)) { if (c.__task) try { c.__task.cancel(); } catch (e) { } c.width = c.height = 0; c.__key = null; } }
+      const order = d.pages.filter(pg => near.has(pg.id)).sort((a, b) => near.get(a.id) - near.get(b.id)).concat(d.pages.filter(pg => !near.has(pg.id)));
+      for (const pg of order) {
+        if (this.again) break; // scrolled meanwhile: start over from there
         const forms = (this.state.fields[pk(pg)] || []).length ? 2 : undefined; // pages with fields: the inputs stand in for the widgets, so the canvas leaves them out
-        const c = this.cv[pg.id], t = this.tcv[pg.id], key = K.keyOf(d.id, pg) + ':' + pg.src + ':' + (pg.rot || 0) + ':' + sc + ':' + (forms || '');
-        if (c) {
+        const c = this.cv[pg.id], t = this.tcv[pg.id], key = keyOf(pg) + ':' + sc + ':' + (forms || ''), tk = keyOf(pg) + ':' + (forms || '') + ':thumb';
+        if (c && near.has(pg.id)) {
           const l = this.tl[pg.id], lk = K.keyOf(d.id, pg) + ':' + pg.src; // the text layer is built unrotated at scale 1: rotation and zoom are CSS
           if (l && l.__key !== lk) { l.__key = lk; try { await K.textLayer(d.id, pg, l); } catch (e) { } }
-          if (c.__key === key) continue; c.__key = key;
-          await K.renderPage(d.id, pg, c, sc, forms);
-          if (t) { t.__key = key; t.width = c.width / 4 || 1; t.height = c.height / 4 || 1; t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); }
-        } else if (t) { // single-page view: pages off screen render their thumbnail directly
-          const tk = key + ':thumb'; if (t.__key === tk) continue; t.__key = tk;
-          const inf = this.info(pg); await K.renderPage(d.id, pg, t, 120 / (inf ? inf.w : 595));
+          if (c.__key !== key) { c.__key = key; await K.renderPage(d.id, pg, c, sc, forms); }
+          if (t && t.__key !== tk && c.width && c.__key === key) { t.__key = tk; t.width = c.width / 4 || 1; t.height = c.height / 4 || 1; t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); } // the thumbnail from the page just drawn
+        } else if (t && t.__key !== tk) { // a page away from the view (or off screen in the single-page view): its thumbnail directly
+          t.__key = tk; const inf = this.info(pg); await K.renderPage(d.id, pg, t, 120 / (inf ? inf.w : 595));
         }
       }
     } catch (e) { }
     this.applyMarks();
-    this.rendering = false; if (this.again) { this.again = false; this.renderAll(); }
+    this.rendering = false; if (this.again) this.renderAll();
   }
   // ----- search (⌘F): every page's text once, hits marked in the text layers, ⌘G / ⇧⌘G walk them across pages -----
   openFind() { this.focusFind = true; this.setState({ findOpen: true }); }
@@ -417,7 +431,7 @@ class Component extends DCLogic {
         tw: '120px', th: Math.round(120 * inf.h / inf.w) + 'px', tline: st.cur === pg.id ? '2px solid #3478F6' : 'none',
         ref: el => { if (el) { this.cv[pg.id] = el; this.schedule(); } else delete this.cv[pg.id]; },
         w0: inf.w0 + 'px', h0: inf.h0 + 'px', ltf: K ? K.layerTransform(inf.rot, sc) : 'none', lref: el => { if (el) { this.tl[pg.id] = el; this.schedule(); } else delete this.tl[pg.id]; },
-        tref: el => { if (el) { this.tcv[pg.id] = el; const c = this.cv[pg.id]; if (c && c.width) { el.width = c.width / 4; el.height = c.height / 4; el.getContext('2d').drawImage(c, 0, 0, el.width, el.height); } } else delete this.tcv[pg.id]; },
+        tref: el => { if (el) { this.tcv[pg.id] = el; this.schedule(); } else delete this.tcv[pg.id]; }, // drawn by renderAll: from the page if it is drawn, else small on its own
         onThumb: () => this.scrollTo(pg.id), items,
         onDragStart: e => { this.dragId = pg.id; try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', pg.id); } catch (x) { } },
         onDragOver: e => { if (!this.dragId) return; e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (x) { } if (st.dragOver !== pg.id) this.setState({ dragOver: pg.id }); },
@@ -472,7 +486,7 @@ class Component extends DCLogic {
     const outlineItems = outlineOn ? st.outline.map(o => { const pg = d.pages.find(p => p.src === o.index && K.keyOf(d.id, p) === this.okey); const on = pg && pg.id === st.cur; return { title: o.title, pad: (8 + o.level * 12) + 'px', color: pg ? 'var(--ink, #1D1D1F)' : 'var(--ink-3, rgba(29,29,31,0.36))', bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: () => pg && this.scrollTo(pg.id) }; }) : [];
     const zoomOpts = [...new Set([50, 75, 100, 125, 150, 200, 300, 400, Math.round(sc * 100)])].sort((a, b) => a - b).map(String);
     return {
-      hasOutline, outlineOn, outlineItems, panelW: pw + 'px', showThumbList: () => this.setState({ panel: 'thumbs' }), showOutline: () => this.setState({ panel: 'outline' }),
+      hasOutline, outlineOn, thumbsOn: !outlineOn, outlineItems, panelW: pw + 'px', showThumbList: () => this.setState({ panel: 'thumbs' }), showOutline: () => this.setState({ panel: 'outline' }),
       thumbTabBg: outlineOn ? 'transparent' : 'var(--tab-bg, rgba(255,255,255,0.92))', outlineTabBg: outlineOn ? 'var(--tab-bg, rgba(255,255,255,0.92))' : 'transparent', thumbTabSh: outlineOn ? 'none' : 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))', outlineTabSh: outlineOn ? 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))' : 'none',
       pagePre: $t('第'), pagePost: $t('/ {total} 页', { total: d.pages.length }), pageEdit: st.pageEdit != null ? st.pageEdit : String(Math.max(1, ci + 1)),
       onPageText: e => this.setState({ pageEdit: e.target.value }), onPageFocus: e => { const el = e.target; this.setState({ pageEdit: String(Math.max(1, ci + 1)) }, () => el.select()); },
@@ -492,7 +506,7 @@ class Component extends DCLogic {
       markHl: () => this.markSel('hl'), markUl: () => this.markSel('ul'), markSo: () => this.markSel('so'),
       swatches: SWATCHES.map(([c, n]) => ({ color: c, title: $t(n), ring: st.mk === c ? '0 0 0 2px var(--k7, #1D1D1F)' : 'inset 0 0 0 1px var(--k45, rgba(0,0,0,0.2))', onClick: () => this.setState({ mk: c }) })),
       copySel: () => { const s = window.getSelection(); if (s && navigator.clipboard) navigator.clipboard.writeText(s.toString()).catch(() => { }); },
-      onScroll: e => { if (st.selPop || st.pgPop) this.setState({ selPop: null, pgPop: null }); if (single) return; const sc2 = e.currentTarget; const els = Array.from(sc2.querySelectorAll('[data-page]')); const mid = sc2.scrollTop + sc2.clientHeight / 3; let cur = els[0]; els.forEach(el => { if (el.offsetTop <= mid) cur = el; }); if (cur && cur.getAttribute('data-page') !== st.cur) this.setState({ cur: cur.getAttribute('data-page') }); },
+      onScroll: e => { if (st.selPop || st.pgPop) this.setState({ selPop: null, pgPop: null }); if (single) return; this.schedule(); const sc2 = e.currentTarget; const els = Array.from(sc2.querySelectorAll('[data-page]')); const mid = sc2.scrollTop + sc2.clientHeight / 3; let cur = els[0]; els.forEach(el => { if (el.offsetTop <= mid) cur = el; }); if (cur && cur.getAttribute('data-page') !== st.cur) this.setState({ cur: cur.getAttribute('data-page') }); },
       findOpen: st.findOpen, findTop: pure ? '12px' : '58px', findRight: pure ? '110px' : '14px', findRef: this.findRef, findQ: st.findQ, onFindInput: e => this.runFind(e.target.value),
       findCount: st.find && st.find.q ? (st.find.hits.length ? (st.find.cur + 1) + ' / ' + st.find.hits.length : $t('无结果')) : '',
       findNext: () => this.gotoHit((st.find ? st.find.cur : 0) + 1), findPrev: () => this.gotoHit((st.find ? st.find.cur : 0) - 1), closeFind: () => this.closeFind(),
