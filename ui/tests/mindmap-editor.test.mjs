@@ -149,3 +149,21 @@ test('the topic popup writes labels and links, the note saves as typed, and the 
   ed.patch('A', { image: 'data:image/png;base64,AA', imageSize: '400,300' });
   const b = box(ed, 'A'); assert.deepEqual([b.img.w, b.img.h], [240, 180]); assert.ok(ed.renderVals().svgMap.__html.includes('<image href="data:image/png;base64,AA"'));
 });
+
+test('the format panel: the Word 定稿 panel with the map\'s own tabs; colours as dots, markers as glyph buttons', async () => {
+  const FP = await import('../panel.js');
+  const ed = editor(); ed.FP = FP; ed.props.formatOpen = true; ed.select('A');
+  const titles = v => Array.from(v.panelGroups, g => g.title);
+  let v = ed.renderVals();
+  assert.deepEqual([v.showBar, v.formatOpen, v.panelPad], [false, true, '312px']);
+  assert.deepEqual(Array.from(v.panelTabs, t => t.label), ['开始', '样式', '视图', '导出']);
+  assert.deepEqual(titles(v), ['主题', '内容', '关系', '位置']);
+  ed.state.tab = 'style'; v = ed.renderVals();
+  assert.deepEqual(titles(v), ['文字', '填充', '文字颜色', '外框', '标记']);
+  const fill = v.panelGroups[1].rows[0].items[0];
+  assert.equal(fill.t, 'dots'); fill.dots[1].onClick();
+  assert.equal(M.find(ed.props.doc.map, 'A').fill, 'FFE8A3', 'a dot fills the selected topic');
+  ed.state.tab = 'view'; v = ed.renderVals(); assert.deepEqual(titles(v), ['结构', '主题', '线条', '缩放', '显示']);
+  ed.state.tab = 'export'; v = ed.renderVals(); assert.deepEqual(titles(v), ['导出', '转换']);
+});
+

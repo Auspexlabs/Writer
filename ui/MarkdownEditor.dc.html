@@ -70,14 +70,14 @@
 .pt-src::placeholder{color:var(--k63, #C7C7CC)}
 </style>
 </helmet>
-<div data-edroot="1" data-format-open="{{ formatAttr }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
+<div data-edroot="1" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;box-sizing:border-box;padding-right:{{ panelPad }};transition:padding-right .28s cubic-bezier(.2,.8,.2,1);font-family:var(--font-ui, -apple-system,'PingFang SC','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif);color:var(--ink, #1D1D1F)">
   <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
-    <div data-editor-bar="1" style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
+    <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none">
       <div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
         <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
           <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));background:transparent;transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
           <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
-            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" data-on="{{ t.active }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;color:{{ t.fg }};background:{{ t.bg }};transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
+            <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;color:{{ t.fg }};background:{{ t.bg }};transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
           </sc-for>
         </div>
         <div style="display:flex;align-items:center;flex:none">
@@ -88,15 +88,18 @@
       </div>
     </div>
     <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-      <div data-editor-tools="1" style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px">
+      <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px">
         <sc-for list="{{ tools }}" as="it" hint-placeholder-count="0">
-          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span data-editor-sep="1" style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
+          <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
           <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
             <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 9px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:13px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};font-family:{{ it.font }};cursor:pointer;white-space:nowrap;flex:none;color:var(--ink, #1D1D1F);transition:background .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.92)">{{ it.label }}</button>
           </sc-if>
         </sc-for>
       </div></div>
     </sc-if>
+  </sc-if>
+  <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
 
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ cols }};padding-top:{{ gridPT }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
@@ -119,11 +122,11 @@
 
   <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:52px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out"><span>{{ statWords }}</span><span> · </span><span>约 {{ statMin }} 分钟读完</span></div></sc-if>
   <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-    <div style="position:absolute;right:52px;bottom:12px;z-index:30;display:flex;align-items:center;gap:12px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap;pointer-events:none">
+    <div style="position:absolute;right:calc(52px + {{ panelPad }});transition:right .28s cubic-bezier(.2,.8,.2,1);bottom:12px;z-index:30;display:flex;align-items:center;gap:12px;font-size:11px;line-height:14px;color:var(--ink-3, rgba(29,29,31,0.36));white-space:nowrap;pointer-events:none">
       <span>纯文本</span><span>{{ statWords }}</span><span>{{ statChars }}</span><span>约 {{ statMin }} 分钟读完</span>
     </div>
   </sc-if>
-  <button onMouseDown="{{ md }}" onClick="{{ toggleMode }}" title="{{ modeTitle }}" style="position:absolute;right:12px;bottom:7px;z-index:31;min-width:28px;height:24px;padding:0 6px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:{{ modeFs }};font-weight:600;font-family:{{ modeFont }};color:var(--ink-3, rgba(29,29,31,0.36));transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><span data-pop="center" data-k="{{ modeIcon }}">{{ modeIcon }}</span></button>
+  <button onMouseDown="{{ md }}" onClick="{{ toggleMode }}" title="{{ modeTitle }}" style="position:absolute;right:calc(12px + {{ panelPad }});transition:right .28s cubic-bezier(.2,.8,.2,1);bottom:7px;z-index:31;min-width:28px;height:24px;padding:0 6px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:{{ modeFs }};font-weight:600;font-family:{{ modeFont }};color:var(--ink-3, rgba(29,29,31,0.36));transition:background .2s,color .2s,transform .3s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><span data-pop="center" data-k="{{ modeIcon }}">{{ modeIcon }}</span></button>
 
   <sc-if value="{{ hasSelBar }}" hint-placeholder-val="{{ false }}">
     <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ sbx }};top:{{ sby }};z-index:80;display:flex;align-items:center;gap:1px;padding:4px;margin-left:{{ sbML }};border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95))">
@@ -186,6 +189,7 @@ class Component extends DCLogic {
     import('./office-io.js').then(K => { this.K = K; }); // fontFaces for the HTML export
     import('./engine.js').then(E => { this.EN = E; this.resolveImages(); }); // the file route for pictures beside the document, and whether it is still a draft
     import('./picture.js').then(m => { this.P = m; }); // dragging and resizing pictures
+    import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./glass.js');
     document.addEventListener('selectionchange', this.onSel);
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) { }
@@ -549,6 +553,32 @@ class Component extends DCLogic {
     if (this.state.mode === 'rich') { const el = this.edRef.current && this.edRef.current.querySelectorAll('h1,h2,h3,h4,h5,h6')[h.idx]; if (el) sc.scrollTop = el.offsetTop - 70; }
     else { const t = this.ta(), v = this.doc.text || ''; let off = 0; for (let i = 0, n = 0; i < v.length && n < h.line; i++) if (v[i] === '\n') { n++; off = i + 1; } t.focus(); t.setSelectionRange(off, off); sc.scrollTop = off / Math.max(1, v.length) * sc.scrollHeight - 80; }
   }
+  /** The format panel (FormatPanel.dc.html, panel.js) in the Word editor's 定稿 style: the toolbar's commands in the design's
+   *  groups and controls, the same four tabs. */
+  panelVals(c) {
+    const FP = this.FP; if (!FP || !c.formatOpen) return { tabs: [], groups: [] };
+    const k = FP.kit(this), { G, R, grid, wrap, seg, btn, card, chk } = k, { st, d, text, rich, tab } = c, M = this.M;
+    const tabs = FP.tabs([['format', '格式'], ['insert', '插入'], ['view', '视图'], ['export', '导出']], tab, key => this.setState({ tab: key }));
+    const cmd = kind => () => this.cmd(kind), toggle = key => v => { setPref(key, v); this.setState({ [key]: v }); };
+    const chip = (label, kind, css) => ({ t: 'chip', label: $t(label), lcss: css, title: $t(label), onClick: cmd(kind) });
+    if (tab === 'insert') return { tabs, groups: [
+      G('常用', grid(3, card('链接', 'link', cmd('link'), { title: '链接 Ctrl+K' }), card('图片', 'picture', cmd('image')), card('表格', 'table', cmd('table')),
+        card('代码块', 'toText', cmd('codeblock')), card('分割线', 'rule', cmd('hr')), card('待办', 'check', cmd('task'))))] };
+    if (tab === 'view') return { tabs, groups: [
+      G('模式', R(seg([{ label: '所见即所得', on: rich, onClick: () => { if (!rich) this.toggleMode(); } }, { label: '源代码', on: !rich, title: '查看源代码 Ctrl+/', onClick: () => { if (rich) this.toggleMode(); } }]))),
+      G('写作', R(chk('打字机', !!st.typewriter, toggle('typewriter'), { title: '打字机模式：当前行始终居中' }), k.sp(), chk('专注', !!st.focus, toggle('focus'), { title: '专注模式：淡化当前段落以外的内容' }))),
+      G('编辑', R(chk('代码换行', !!st.wrap, toggle('wrap'), { title: '长行折行显示' }), k.sp(), chk('智能标点', !!st.smart, toggle('smart'), { title: '输入时 "" 变为 “”，-- 变为 –，... 变为 …' })))] };
+    if (tab === 'export') return { tabs, groups: [
+      G('导出', grid(3, card('Markdown', 'export', () => this.download(d.title + '.md', text, 'text/markdown'), { title: '下载 .md' }), card('HTML', 'export', async () => this.download(d.title + '.html', await this.fullHtml(), 'text/html'), { title: '下载 HTML' }),
+        card('PDF', 'pdf', () => this.printPdf(), { title: '导出 PDF' }))),
+      G('转换', R(btn('转为 Word 文档', 'convert', () => this.props.onConvert && this.props.onConvert('docx', { title: d.title, html: M.wordHtml(M.mdToHtml(text)) }))))] };
+    return { tabs, groups: [
+      G('样式', wrap(chip('正文', 'p', ''), chip('标题 1', 'h1', 'font-weight:700'), chip('标题 2', 'h2', 'font-weight:700'), chip('标题 3', 'h3', 'font-weight:600'), chip('引用', 'quote', 'font-style:italic'))),
+      G('文字', R(seg([{ label: 'B', css: 'font-weight:700', title: '粗体 Ctrl+B', onClick: cmd('bold') }, { label: 'I', css: "font-style:italic;font-family:'Noto Serif SC',serif", title: '斜体 Ctrl+I', onClick: cmd('italic') },
+          { label: 'S', css: 'text-decoration:line-through', title: '删除线', onClick: cmd('strike') }], { w: 116 }), k.sp(),
+        seg([{ label: '高亮', onClick: cmd('mark') }, { label: '代码', css: "font-family:'IBM Plex Mono',monospace", onClick: cmd('code') }], { w: 116 }))),
+      G('列表', R(seg([{ icon: 'bullets', title: '项目符号', onClick: cmd('ul') }, { icon: 'numbers', title: '编号', onClick: cmd('ol') }, { icon: 'check', title: '待办', onClick: cmd('task') }], { w: 108 })))] };
+  }
   renderVals() {
     const M = this.M, st = this.state, d = this.doc, text = d.text || '', pure = !!this.props.pure, rich = st.mode === 'rich';
     const B = (label, kind, o = {}) => ({ isBtn: true, label, onClick: () => this.cmd(kind), title: o.title || label, fw: o.fw || 400, fs: o.fs || 'normal', td: o.td || 'none', font: o.font || 'inherit' });
@@ -561,7 +591,7 @@ class Component extends DCLogic {
       export: [{ isBtn: true, label: $t('下载 .md'), onClick: () => this.download(d.title + '.md', text, 'text/markdown'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('下载 HTML'), onClick: async () => this.download(d.title + '.html', await this.fullHtml(), 'text/html'), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, { isBtn: true, label: $t('导出 PDF'), onClick: () => this.printPdf(), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }, SEP, { isBtn: true, label: $t('转为 Word 文档'), onClick: () => this.props.onConvert && this.props.onConvert('docx', { title: d.title, html: M.wordHtml(M.mdToHtml(text)) }), title: '', fw: 400, fs: 'normal', td: 'none', font: 'inherit' }]
     };
     const tab = st.tab;
-    const tabs = [['format', $t('格式')], ['insert', $t('插入')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = (st.bubble || this.props.formatOpen) && tab === k; return { label: l, active: on ? '1' : '0', bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = (st.bubble || this.props.formatOpen) && tab === k; this.setState({ tab: k, bubble: this.props.formatOpen ? true : !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
+    const tabs = [['format', $t('格式')], ['insert', $t('插入')], ['view', $t('视图')], ['export', $t('导出')]].map(([k, l]) => { const on = st.bubble && tab === k; return { label: l, bg: on ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', fg: on ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: on ? 600 : 400, onClick: e => { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root.getBoundingClientRect(); const same = st.bubble && tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width) }); } }; });
     const showOutline = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the outline only when its 缩略图 asks, over the text
     const heads = M ? M.headings(text).map((h, i) => Object.assign(h, { idx: i })) : [];
     const stats = M ? M.wordStats(text) : { words: 0, minutes: 1 };
@@ -576,9 +606,11 @@ class Component extends DCLogic {
       BB($t('左'), $t('左对齐'), T('align', 'left'), blk.al === 'left'), BB($t('中'), $t('居中'), T('align', 'center'), blk.al === 'center'), BB($t('右'), $t('右对齐'), T('align', 'right'), blk.al === 'right'), SEP,
       BB($t('－行'), $t('删除行'), T('delRow')), BB($t('－列'), $t('删除列'), T('delCol')), BB('✕', $t('删除表格'), T('delTable'))];
     const langs = [{ v: '', label: $t('纯文本') }].concat(LANGS.map(([v, label]) => ({ v, label })));
+    const formatOpen = !pure && !!this.props.formatOpen, panel = this.panelVals({ st, d, text, rich, tab, formatOpen });
     if (blk && blk.lang && !LANGS.some(x => x[0] === blk.lang)) langs.push({ v: blk.lang, label: blk.lang });
     return {
-      md, notPure: !pure, pure, formatAttr: this.props.formatOpen && !pure ? '1' : '0', showBar: !!this.props.formatOpen || (pure && !!this.props.pureTools), tabs, tools: SETS[tab] || [], bubbleOpen: !!this.props.formatOpen, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab,
+      md, notPure: !pure, pure, showBar: pure && !!this.props.pureTools, tabs, tools: SETS[tab] || [], bubbleOpen: !!st.bubble,
+      formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: formatOpen ? '312px' : '0px', /* the format panel (the Word 定稿 style): the text gives it its width */ rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab,
       barL: pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !pure ? '48px' : '0px', spD: this.props.merged && !pure ? 'flex' : 'none', barR: this.props.barRight || '12px',
       fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
       aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(),

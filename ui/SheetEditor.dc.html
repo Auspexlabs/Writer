@@ -7,20 +7,20 @@
 </head>
 <body>
 <x-dc>
-<div data-edroot="1" data-format-open="{{ formatAttr }}" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F);padding-top:{{ sheetTopPad }};outline:none">
+<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;background:transparent;position:relative;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F);padding-top:{{ sheetTopPad }};padding-right:{{ panelPad }};transition:padding-right .28s cubic-bezier(.2,.8,.2,1);outline:none">
   <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
-  <div data-editor-bar="1" style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
+  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
     <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
     <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
-      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" data-on="{{ t.active }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:{{ t.color }};transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};font-weight:{{ t.weight }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
+      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:{{ t.color }};transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};font-weight:{{ t.weight }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
     </sc-for>
     </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button><button onMouseDown="{{ md }}" onClick="{{ playClick }}" title="沉浸书写 Ctrl+." style="width:28px;height:28px;flex:none;border:none;border-radius:var(--ctl-r, 8px);background:transparent;padding:0;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.9)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"></circle><path d="M6.6 5.6v4.8L10.6 8z" fill="currentColor" stroke="none"></path></svg></button></div>
   </div></div>
   <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-    <div data-editor-tools="1" style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);color:var(--ink, #1D1D1F);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;transform-origin:top left">
+    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);color:var(--ink, #1D1D1F);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;transform-origin:top left">
       <sc-for list="{{ ribbon }}" as="it" hint-placeholder-count="12">
-        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span data-editor-sep="1" style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
+        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
         <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
           <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none" style-hover="background:var(--fill, rgba(0,0,0,0.07))">{{ it.label }}</button>
         </sc-if>
@@ -51,6 +51,9 @@
     </div></div>
   </sc-if>
 
+  </sc-if>
+  <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
   <div style="flex:none;height:34px;width:min(760px,calc(100% - 48px));box-sizing:border-box;margin:4px auto 10px;display:grid;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:12px;background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-size:12.5px;overflow:hidden">
     <input value="{{ nameBox }}" onChange="{{ onNameBox }}" onKeyDown="{{ onNameKey }}" onFocus="{{ onNameFocus }}" onBlur="{{ onNameBlur }}" style="height:100%;border:none;padding:0 14px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px;font-weight:500;outline:none;color:var(--ink, #1D1D1F);background:linear-gradient(var(--line, rgba(0,0,0,0.1)),var(--line, rgba(0,0,0,0.1))) right center/1px 16px no-repeat">
@@ -191,12 +194,12 @@
 
   <sc-if value="{{ hasPop }}" hint-placeholder-val="{{ false }}">
     <div onMouseDown="{{ closePop }}" style="position:fixed;inset:0;z-index:90"></div>
-    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:180px;max-height:{{ popMaxH }};overflow:auto;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);padding:6px;display:flex;flex-direction:column">
+    <div data-menu="1" data-pop="menu" class="fp-menu" onMouseDown="{{ md }}" style="z-index:91;left:{{ popX }};top:{{ popY }};max-height:{{ popMaxH }};translate:{{ popShift }}">
       <sc-for list="{{ popItems }}" as="mi" hint-placeholder-count="0">
-        <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 10px 3px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ mi.label }}</div></sc-if>
-        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--line, rgba(0,0,0,0.1));margin:4px 6px"></div></sc-if>
+        <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div class="fp-mh">{{ mi.label }}</div></sc-if>
+        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div class="fp-msep"></div></sc-if>
         <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:transparent;border-radius:var(--ctl-r, 8px);font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center" style-hover="background:var(--fill, rgba(0,0,0,0.07))"><span style="width:14px;color:var(--k35, #3F7D5C)">{{ mi.check }}</span><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
+          <button class="fp-mi" data-on="{{ mi.onA }}" onClick="{{ mi.onClick }}"><span class="fp-mi-c">✓</span><span style="flex:1">{{ mi.label }}</span><span class="fp-mi-h">{{ mi.hint }}</span></button>
         </sc-if>
       </sc-for>
     </div>
@@ -247,6 +250,8 @@ const TAB_COLORS = [[null, $t('无颜色')], ['#C0392B', $t('红色')], ['#E67E2
 const CF_OPS = { greaterThan: $t('大于'), lessThan: $t('小于'), between: $t('介于'), equal: $t('等于'), notEqual: $t('不等于'), greaterThanOrEqual: $t('大于或等于'), lessThanOrEqual: $t('小于或等于'), notBetween: $t('未介于') };
 const DV_TYPES = [['any', $t('任何值')], ['list', $t('序列')], ['whole', $t('整数')], ['decimal', $t('小数')], ['date', $t('日期')], ['textLength', $t('文本长度')]];
 const FONTS = ['思源宋体', '思源黑体', 'Arial', 'Times New Roman', 'Calibri', '微软雅黑']; // i18n-ok: font family names (CSS font-family values)
+const SIZES = [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36]; // 字号 the ribbon and the panel offer
+const ROTATIONS = [[0, '水平'], [45, '逆时针 45°'], [-45, '顺时针 45°'], [90, '向上 90°'], [-90, '向下 90°']]; // 文字方向, degrees
 const CHART_TYPES = [['column', $t('柱形图')], ['bar', $t('条形图')], ['line', $t('折线图')], ['pie', $t('饼图')], ['area', $t('面积图')], ['scatter', $t('散点图')], ['doughnut', $t('圆环图')]];
 const LEGENDS = [['right', $t('右侧')], ['bottom', $t('底部')], ['top', $t('顶部')], ['left', $t('左侧')], ['none', $t('无图例')]];
 const BORDER_CSS = { thin: '1px solid', medium: '2px solid', thick: '3px solid', dashed: '1px dashed', dotted: '1px dotted', double: '3px double', hair: '1px solid',
@@ -276,6 +281,7 @@ class Component extends DCLogic {
     import('./glass.js');
     import('./sheet-engine.js').then(m => { this.E = m; this.forceUpdate(); this.wantFocus = true; });
     import('./picture.js').then(m => { this.P = m; this.forceUpdate(); }); // the 图片 tab
+    import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./engine.js').then(m => { this.EN = m; });
     window.addEventListener('mousemove', this.onWM); window.addEventListener('mouseup', this.onWU);
     this.attachWheel();
@@ -975,7 +981,67 @@ class Component extends DCLogic {
     const m = this.mergeAt(at.r, at.c) || { r: at.r, c: at.c, rs: 1, cs: 1 }, b = box(m.r, m.c, m.r + m.rs - 1, m.c + m.cs - 1);
     return { hasNote: true, noteL: (b.L + b.W + 6) * this.state.zoom + 'px', noteT: Math.max(0, b.T - 4) * this.state.zoom + 'px', noteText: note, noteRef: E.A(at.r, at.c) };
   }
-  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: this.props.formatOpen ? true : !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
+  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
+  /** The format panel (FormatPanel.dc.html, panel.js) in the Word editor's 定稿 style: the ribbon's commands in the design's
+   *  groups and controls. Menus it opens by id (fill, bd, merge, fmt, clr, chart, frz…) are the ribbon's, which builds the same
+   *  tab in the same render. */
+  panelVals(c) {
+    const FP = this.FP; if (!FP || !c.formatOpen) return { tabs: [], groups: [] };
+    const k = FP.kit(this), { G, R, grid, sel, pick, swatch, seg, btn, menuBtn, card, menuCard, chk, sp, size } = k;
+    const { st, sh, cs, s0, R: rg, tab, tabsDef, pic, picLook, fmtLabel, I } = c;
+    const tabs = FP.tabs(tabsDef.map(([key, l]) => [key, l, key === 'picture']), tab, key => this.setState({ tab: key, pop: null }));
+    const tb = key => this.style(null, key), fs = cs.fs || 11, al = cs.align || '', va = cs.va || 'middle';
+    const step = dir => { const n = dir > 0 ? SIZES.find(x => x > fs) : SIZES.slice().reverse().find(x => x < fs); if (n) this.style({ fs: n }); };
+    const rows = rg.r2 - rg.r1 + 1, cols = rg.c2 - rg.c1 + 1, noFilters = !Object.keys(sh.filters || {}).length;
+    const showF = () => this.commit(s => { s.showF = !s.showF; }, true);
+    if (tab === 'picture' && pic) return { tabs, groups: this.P.picturePanel(k, (l, fn, o = {}) => I($t(l), fn, Object.assign({}, o, { hint: o.hint ? $t(o.hint) : '' })), this.picTools(), picLook, st.picBusy) };
+    if (tab === 'insert') return { tabs, groups: [
+      G('图表', grid(3, card('柱形图', 'chart', () => this.insertChart('column')), card('折线图', 'lineChart', () => this.insertChart('line')), card('饼图', 'pieChart', () => this.insertChart('pie')),
+        card('条形图', 'barChart', () => this.insertChart('bar')), card('面积图', 'areaChart', () => this.insertChart('area')), menuCard('chart', '更多图表', 'plus', null, { title: '全部图表类型，堆积图' }))),
+      G('常用', grid(3, card('超链接', 'link', () => this.setLink(), { title: '超链接（Ctrl+点击打开）' }), card('批注', 'comment', () => this.setNote()), card('图片', 'picture', () => this.toast($t('暂不支持插入图片'))))),
+      G('行列与工作表', grid(3, card('插入行', 'rowAbove', () => this.insDel('r', rg.r1, rows)), card('插入列', 'colLeft', () => this.insDel('c', rg.c1, cols)), card('新工作表', 'grid', () => this.addSheet()))),
+      G('函数', R(menuBtn('fns', '函数库', 'fx', null, { title: '按类别插入函数' }), menuBtn('sum', '求和', 'sigma', null, { title: '自动求和、平均值、计数…' })))] };
+    if (tab === 'formula') return { tabs, groups: [
+      G('函数', R(menuBtn('sum', '自动求和', 'sigma', null, { title: '自动求和、平均值、计数…' }), menuBtn('fns', '函数库', 'fx', null, { title: '按类别插入函数' }))),
+      G('常用函数', grid(3, ['SUM', 'AVERAGE', 'IF', 'VLOOKUP', 'COUNTIF', 'SUMIF', 'ROUND', 'CONCAT', 'TODAY'].map(f => btn(f, null, () => this.insertFn(f), { title: $t('插入 {f}', { f }) })))),
+      G('显示', R(chk('显示公式', !!sh.showF, showF, { title: '单元格里显示公式，而不是结果' })))] };
+    if (tab === 'data') return { tabs, groups: [
+      G('排序和筛选', grid(3, btn('升序', 'up', () => this.sort([{ c: s0.c, asc: true }])), btn('降序', 'down', () => this.sort([{ c: s0.c, asc: false }])), btn('自定义', 'sort', () => this.sortCustom(), { title: '自定义排序…' }),
+        btn('筛选', 'filter', () => this.toggleFilter(), { on: !!sh.filter, title: '筛选 Ctrl+Shift+L' }), btn('清除筛选', null, () => this.setFilters({}), { dis: noFilters }), btn('重新应用', 'refresh', () => this.setFilters(sh.filters || {}), { dis: noFilters, title: '按当前数据重新筛选' }))),
+      G('数据工具', grid(2, btn('删除重复项', null, () => this.dedupe()), btn('分列', null, () => this.splitCols(), { title: '按分隔符把所选列拆到右侧各列' }),
+        btn('数据验证', null, () => this.dvSet(), { on: !!cs.dv }), menuBtn('cf', '条件格式', null, null))),
+      G('填充', R(btn('向下填充', 'down', () => this.fillDir('down'), { title: '向下填充 Ctrl+D' }), btn('向右填充', null, () => this.fillDir('right'), { title: '向右填充 Ctrl+R' })))] };
+    if (tab === 'view') {
+      const frz = sh.frR === 1 && !sh.frC ? '冻结首行' : sh.frC === 1 && !sh.frR ? '冻结首列' : sh.frR || sh.frC ? '冻结至当前单元格' : '不冻结';
+      const zooms = [0.5, 0.75, 1, 1.25, 1.5, 2].map(z => I(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 }));
+      return { tabs, groups: [
+        G('冻结窗格', R(sel('frz', $t(frz), null, { title: '冻结窗格' }))),
+        G('显示', R(chk('网格线', !this.noGrid(sh), () => this.commit(s => { s.noGrid = !this.noGrid(s); }, true)), sp(), chk('显示公式', !!sh.showF, showF))),
+        G('缩放', R(size(Math.round(st.zoom * 100) + '%', () => this.setZoom(this.state.zoom - 0.1), () => this.setZoom(this.state.zoom + 0.1), 'zoom-p', zooms, { w: 124, minW: 44, title: '缩放', decTitle: '缩小', incTitle: '放大' })))] };
+    }
+    const rot = (ROTATIONS.find(([n]) => n === (cs.rotate || 0)) || ROTATIONS[0])[1];
+    return { tabs, groups: [
+      G('剪贴板', grid(2, btn('粘贴', 'paste', () => this.paste(null), { dis: !this.clip }), btn('剪切', 'cut', () => this.copy(true)), btn('复制', 'copy', () => this.copy(false)),
+        btn('格式刷', 'painter', () => { const p = structuredClone(cs); delete p.link; delete p.note; delete p.dv; this.setState({ painter: st.painter ? null : p }); }, { on: !!st.painter, title: '复制格式后选择目标单元格' }))),
+      G('字体', R(pick(cs.font || '', [['', $t('默认字体')]].concat(FONTS.concat(cs.font && !FONTS.includes(cs.font) ? [cs.font] : []).map(f => [f, f])), v => this.style({ font: v || null }), { title: '字体' })),
+        R(size(fs, () => step(-1), () => step(1), 'fsize-p', SIZES.map(n => I(String(n), () => this.style({ fs: n }), { on: fs === n })), { w: 116 }), sp(),
+          seg([{ label: 'B', css: 'font-weight:700', title: '加粗 Ctrl+B', on: cs.b, onClick: () => tb('b') }, { label: 'I', css: 'font-style:italic;font-family:Georgia,serif', title: '斜体 Ctrl+I', on: cs.i, onClick: () => tb('i') },
+            { label: 'U', css: 'text-decoration:underline', title: '下划线 Ctrl+U', on: cs.u, onClick: () => tb('u') }, { label: 'S', css: 'text-decoration:line-through', title: '删除线', on: cs.st, onClick: () => tb('st') }], { w: 148 }))),
+      G('颜色', R(swatch('文字颜色', cs.color || '#1D1D1F', v => this.style({ color: v })), swatch('填充', cs.fill || '#FFFFFF', null, { id: 'fill', title: '填充颜色' }))), // theme: keep (the colours they apply)
+      G('对齐', R(seg([['left', 'alignLeft', '左对齐'], ['center', 'alignCenter', '居中'], ['right', 'alignRight', '右对齐']].map(([a, icon, title]) => ({ icon, title, on: al === a, onClick: () => this.style({ align: al === a ? null : a }) }))),
+          seg([['top', 'vTop', '顶端对齐'], ['middle', 'vMiddle', '垂直居中'], ['bottom', 'vBottom', '底端对齐']].map(([v, icon, title]) => ({ icon, title, on: va === v, onClick: () => this.style({ va: v }) })))),
+        R(seg([{ icon: 'outdent', title: '减少缩进', onClick: () => this.indent(-1) }, { icon: 'indent', title: '增加缩进', onClick: () => this.indent(1) }], { w: 72 }), sel('rot', $t(rot), null, { title: '文字方向' })),
+        R(chk('自动换行', cs.wrap, () => tb('wrap')), sp(), sel('merge', $t('合并'), null, { w: 112, title: '合并单元格' }))),
+      G('数字', R(sel('fmt', fmtLabel, null, { title: '数字格式' })),
+        R(seg([{ label: '¥', title: '货币格式', onClick: () => this.style({ fmt: 'money' }) }, { label: '%', title: '百分比', onClick: () => this.style({ fmt: 'pct', dec: 0 }) }, { label: ',', title: '千位分隔', onClick: () => this.style({ fmt: 'number', dec: 0 }) }]),
+          seg([{ label: '.0', rich: '<span style="font-size:12px">+.0</span>', title: '增加小数位数', onClick: () => this.decimals(1) }, { label: '.00', rich: '<span style="font-size:12px">−.0</span>', title: '减少小数位数', onClick: () => this.decimals(-1) }]))),
+      G('边框与样式', R(sel('bd', $t('边框'), null, { title: '边框' }), sel('cf', $t('条件格式'), null, { title: '条件格式' }))),
+      G('行和列', grid(2, btn('上方插入行', 'rowAbove', () => this.insDel('r', rg.r1, rows)), btn('下方插入行', 'rowBelow', () => this.insDel('r', rg.r2 + 1, rows)),
+        btn('左侧插入列', 'colLeft', () => this.insDel('c', rg.c1, cols)), btn('右侧插入列', 'colRight', () => this.insDel('c', rg.c2 + 1, cols)),
+        btn('删除行', 'trash', () => this.insDel('r', rg.r1, -rows)), btn('删除列', 'trash', () => this.insDel('c', rg.c1, -cols)))),
+      G('编辑', R(menuBtn('sum', '求和', 'sigma', null, { title: '自动求和、平均值、计数…' }), menuBtn('sort', '排序', 'sort', null), btn('筛选', 'filter', () => this.toggleFilter(), { on: !!sh.filter, title: '筛选 Ctrl+Shift+L' })),
+        R(menuBtn('clr', '清除', 'clear', null), btn('查找', 'search', () => { this.focusFind = true; this.setState({ showFind: true }); }, { title: '查找 Ctrl+F' })))] };
+  }
   renderVals() {
     const E = this.E, st = this.state, d = this.doc;
     if (!E) return { md, loading: true, statText: '', tabs: [], ribbon: [], colHeads: [], rowHeads: [], cells: [], charts: [], pics: [], sheetTabs: [], gtc: '0', gtr: '0', gridW: '0', zoom: 1, refBoxes: [], fxMirror: '', inMirror: '' };
@@ -986,14 +1052,14 @@ class Component extends DCLogic {
     const M = (id, label, items, title) => { this.menus[id] = items; return { isMenu: true, label, title: title || label, bg: st.pop && st.pop.id === id ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onToggle: e => this.openPop(id, e) }; };
     const AL = (a, title) => ({ isAlign: true, title, bg: cs.align === a ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => this.style({ align: cs.align === a ? null : a }) });
     const SEP = { isSep: true };
-    const I = (label, onClick, o = {}) => ({ isItem: true, label, check: o.on ? '✓' : '', hint: o.hint || '', onClick: () => { this.setState({ pop: null }); onClick(); } });
+    const I = (label, onClick, o = {}) => ({ isItem: true, label, check: o.on ? '✓' : '', onA: o.on ? '1' : '0', hint: o.hint || '', onClick: () => { this.setState({ pop: null }); onClick(); } });
     const HD = label => ({ isHead: true, label }), IS = { isSepI: true };
     this.menus = {};
     const tabsDef = [['home', $t('开始')], ['insert', $t('插入')], ['formula', $t('公式')], ['data', $t('数据')], ['view', $t('视图')]];
     const pic = this.P ? this.pic : null, picLook = pic ? (st.picLive && st.picLive.id === pic.id ? st.picLive.look : pic.look || {}) : null;
     if (pic) tabsDef.push(['picture', $t('图片')]);
     const tab = st.tab;
-    const tabs = tabsDef.map(([k, l]) => ({ label: l, active: (st.bubble || this.props.formatOpen) && tab === k ? '1' : '0', color: (st.bubble || this.props.formatOpen) && tab === k ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: (st.bubble || this.props.formatOpen) && tab === k ? 600 : 400, bg: (st.bubble || this.props.formatOpen) && tab === k ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(k, e) }));
+    const tabs = tabsDef.map(([k, l]) => ({ label: l, color: st.bubble && tab === k ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: st.bubble && tab === k ? 600 : 400, bg: st.bubble && tab === k ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(k, e) }));
     const touches = x => this.boxes(x.range).some(b => !(b.r2 < R.r1 || b.r1 > R.r2 || b.c2 < R.c1 || b.c1 > R.c2));
     const cfMenu = M('cf', $t('条件格式'), [HD($t('突出显示单元格规则')), I($t('大于…'), () => this.cfPrompt('greaterThan')), I($t('小于…'), () => this.cfPrompt('lessThan')), I($t('介于…'), () => this.cfPrompt('between')), I($t('等于…'), () => this.cfPrompt('equal')), I($t('文本包含…'), () => this.cfPrompt('text')), I($t('重复值…'), () => this.cfPrompt('dup')),
       IS, HD($t('最前 / 最后规则')), I($t('前 10 项…'), () => this.cfPrompt('top')), I($t('前 10%…'), () => this.cfPrompt('topPct')), I($t('最后 10 项…'), () => this.cfPrompt('bottom')), I($t('最后 10%…'), () => this.cfPrompt('bottomPct')), I($t('高于平均值…'), () => this.cfPrompt('above')), I($t('低于平均值…'), () => this.cfPrompt('below')),
@@ -1008,13 +1074,13 @@ class Component extends DCLogic {
     const fmtItems = FMTS.map(([k, l]) => I(l, () => this.style(k === 'general' ? { fmt: null, dec: null } : k === 'thousands' ? { fmt: 'number', dec: 0 } : { fmt: k, dec: null }), { on: fmtKey === k }))
       .concat([IS, HD($t('日期与时间'))], DATE_CODES.map(([k, code]) => I(E.fmtCode(sample, code), () => this.style({ fmt: k, code }), { on: cs.code === code, hint: code })),
         [IS, I($t('自定义…'), () => this.prompt($t('自定义数字格式'), [{ key: 'c', label: $t('格式代码（如 0.00、#,##0、yyyy/m/d）'), value: cs.code || '', first: true }], v => { const code = v.c.trim(); if (!code || code === 'General') return this.style({ fmt: null, dec: null }); import('./engine.js').then(m => this.style(Object.assign({ fmt: null, dec: null }, m.fmtOf(code)))); }))]);
-    const rotMenu = M('rot', '↗', [[0, $t('水平')], [45, $t('逆时针 45°')], [-45, $t('顺时针 45°')], [90, $t('向上 90°')], [-90, $t('向下 90°')]].map(([n, l]) => I(l, () => this.style({ rotate: n || null }), { on: (cs.rotate || 0) === n })), $t('文字方向'));
+    const rotMenu = M('rot', '↗', ROTATIONS.map(([n, l]) => I($t(l), () => this.style({ rotate: n || null }), { on: (cs.rotate || 0) === n })), $t('文字方向'));
     let ribbon = [];
     if (tab === 'home') ribbon = [
       B('↶', () => this.props.onUndo && this.props.onUndo(), { title: $t('撤销 Ctrl+Z') }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: $t('重做 Ctrl+Y') }), SEP,
       B($t('粘贴'), () => this.paste(null), { dis: !this.clip }), B($t('剪切'), () => this.copy(true)), B($t('复制'), () => this.copy(false)), B($t('格式刷'), () => { const p = structuredClone(cs); delete p.link; delete p.note; delete p.dv; this.setState({ painter: st.painter ? null : p }); }, { on: !!st.painter }), SEP,
       S(cs.font || '', [['', $t('默认字体')]].concat(FONTS.concat(cs.font && !FONTS.includes(cs.font) ? [cs.font] : []).map(f => [f, f])), e => this.style({ font: e.target.value || null }), '104px', $t('字体')),
-      S(cs.fs || 11, [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].concat(cs.fs && ![9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].includes(cs.fs) ? [cs.fs] : []).map(n => [n, n + '']), e => this.style({ fs: +e.target.value }), '58px', $t('字号')),
+      S(cs.fs || 11, SIZES.concat(cs.fs && !SIZES.includes(cs.fs) ? [cs.fs] : []).map(n => [n, n + '']), e => this.style({ fs: +e.target.value }), '58px', $t('字号')),
       B('B', () => tb('b'), { on: cs.b, fw: 700, title: $t('加粗 Ctrl+B') }), B('I', () => tb('i'), { on: cs.i, fs: 'italic', title: $t('斜体 Ctrl+I') }), B('U', () => tb('u'), { on: cs.u, td: 'underline', title: $t('下划线 Ctrl+U') }), B('S', () => tb('st'), { on: cs.st, td: 'line-through', title: $t('删除线') }),
       C('A', cs.color || '#B5563A', e => this.style({ color: e.target.value }), $t('文字颜色'), 600),
       C('◧', cs.fill || '#F3E6C4', e => this.style({ fill: e.target.value }), $t('填充颜色')),
@@ -1222,6 +1288,7 @@ class Component extends DCLogic {
         onSel: e => { e.stopPropagation(); if (st.picSel !== im.id) this.setState({ picSel: im.id, chartSel: null, pop: null }); } };
     });
     // popover
+    const formatOpen = !this.props.pure && !!this.props.formatOpen, panel = this.panelVals({ st, sh, cs, s0, R, tab, tabsDef, pic, picLook, fmtLabel, I, formatOpen });
     let popItems = [];
     if (st.pop) {
       if (st.pop.id.startsWith('flt')) {
@@ -1255,7 +1322,9 @@ class Component extends DCLogic {
     const lv = st.live;
     const dlg = st.dlg;
     return {
-      md, loading: false, neverThumbs: false, sheetTopPad: this.props.pure && this.props.pureTools ? '58px' : '0px', formatAttr: this.props.formatOpen && !this.props.pure ? '1' : '0', showBar: !!this.props.formatOpen || (!!this.props.pure && !!this.props.pureTools), fxML: '12px', tabs, ribbon, bubbleOpen: !!this.props.formatOpen || (!!this.props.pure && !!st.bubble), rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), notPure: !this.props.pure,
+      md, loading: false, neverThumbs: false, sheetTopPad: this.props.pure ? (this.props.pureTools ? '58px' : '0px') : '2px', /* the formula bar's top lines up with the format panel's */ showBar: !!this.props.pure && !!this.props.pureTools, fxML: '12px', tabs, ribbon, bubbleOpen: !!this.props.pure && !!st.bubble,
+      formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: formatOpen ? '312px' : '0px', /* the format panel (the Word 定稿 style): the grid gives it its width */
+      rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), notPure: !this.props.pure,
       showThumbs: !this.props.pure && this.props.showThumbs !== false, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       sheetThumbs: d.sheets.map((s, i) => { const u = E.usedRange(s); return { name: s.name, fw: i === this.si ? 600 : 400, bg: i === this.si ? 'var(--k50, rgba(255,255,255,0.9))' : 'transparent', meta: (u ? $t('{range} · {n} 个单元格', { range: `${E.A(u.r1, u.c1)}:${E.A(u.r2, u.c2)}`, n: Object.keys(s.cells).length }) : $t('空')) + ((s.charts || []).length ? $t(' · {n} 图表', { n: s.charts.length }) : ''), onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); } } }; }),
       hasChartList: (sh.charts || []).length > 0,
@@ -1355,7 +1424,7 @@ class Component extends DCLogic {
         else if (k === '-' || k === 'Subtract') { e.preventDefault(); this.setZoom(this.state.zoom - 0.1); }
         else if (k === '0') { e.preventDefault(); this.setZoom(1); }
       },
-      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popMaxH: Math.max(160, Math.min(440, (globalThis.innerHeight || 900) - Math.max(8, st.pop ? st.pop.y : 0) - 12)) + 'px', /* a menu never runs off the bottom of the window */ popItems, closePop: () => { this.setState({ pop: null }); this.wantFocus = true; },
+      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) 0px` : 'none', popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popMaxH: Math.max(160, Math.min(440, (globalThis.innerHeight || 900) - Math.max(8, st.pop ? st.pop.y : 0) - 12)) + 'px', /* a menu never runs off the bottom of the window */ popItems, closePop: () => { this.setState({ pop: null }); this.wantFocus = true; },
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
       dlgFields: dlg ? dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, first: !!fl.first, multi: !!fl.multi, isSel: !!fl.options, single: !fl.multi && !fl.options, options: (fl.options || []).map(([v, l]) => ({ v, l })), onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } })) : [],
       dlgKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.dlgOk(); } if (e.key === 'Escape') this.setState({ dlg: null }); },

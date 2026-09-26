@@ -120,3 +120,26 @@ test('export: the outline as Markdown (titles as headings, text as bullets, note
   assert.deepEqual(calls.filter(c => c[0] === 'fillText').map(c => c[1]), ['Q3 & Q4', '•', 'Revenue up', '•', 'Asia first']);
   assert.deepEqual(calls[0], ['fillRect', 0, 0, 1600, 900], 'the background first');
 });
+
+test('the format panel: the Word 定稿 panel with the deck\'s own tabs; a selected text box brings its text groups and the 形状 context tab', async () => {
+  const FP = await import('../panel.js');
+  const t = K.txt({ id: 't1', html: '<p>Hi</p>' });
+  let doc = { id: 'd', type: 'pptx', ratio: '16:9', theme: 'paper', slides: [slide('s1', { objs: [t] })] };
+  const c = editor(() => doc, d => { doc = d; }); c.FP = FP; c.props.formatOpen = true;
+  const titles = v => Array.from(v.panelGroups, g => g.title);
+  let v = c.renderVals();
+  assert.deepEqual([v.showBar, v.bubbleOpen, v.formatOpen, v.panelPad], [false, false, true, '312px']);
+  assert.deepEqual(Array.from(v.panelTabs, x => x.label), ['开始', '插入', '设计', '切换', '动画', '放映']);
+  assert.deepEqual(titles(v), ['幻灯片', '文字'], 'nothing selected: the slide, and where the text tools are');
+  c.setState({ sel: 't1', sels: ['t1'] }); v = c.renderVals();
+  assert.deepEqual(plain(v.panelTabs.slice(-1).map(x => [x.label, x.ctx])), [['形状', true]]);
+  assert.deepEqual(titles(v), ['幻灯片', '字体', '段落', '文本框']);
+  c.state.tab = 'format'; v = c.renderVals(); assert.deepEqual(titles(v), ['填充与轮廓', '大小', '排列', '大小与位置']);
+  for (const [tab, want] of [['insert', ['常用', '页面']], ['design', ['主题', '背景', '幻灯片大小']], ['trans', ['切换效果', '计时']], ['anim', ['添加动画', '计时', '动画窗格']], ['show', ['开始放映', '视图']]]) {
+    c.state.tab = tab; v = c.renderVals(); assert.deepEqual(titles(v), want, tab);
+  }
+  c.state.tab = 'design'; v = c.renderVals();
+  const themes = v.panelGroups[0].rows[0].items; assert.equal(themes[0].t, 'theme'); themes.find(x => !x.on).onClick();
+  assert.notEqual(doc.theme, 'paper', 'a theme tile sets the deck\'s theme');
+});
+

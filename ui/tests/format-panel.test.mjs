@@ -149,3 +149,31 @@ test('FormatPanel.dc.html turns each item into its control', () => {
   assert.deepEqual([sw.isSwPick, sw.value, toggle.isSw, toggle.onA, link.isLink], [true, '#FFFFFF', true, '0', true]);
   sw.onChange({ target: { value: '#FF0000' } }); toggle.onClick(); assert.deepEqual(got.splice(-2), ['#FF0000', true]);
 });
+
+/** A .dc.html's component script: its data-dc-script body (the tag's attributes may hold '>'). */
+const scriptOf = f => { const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8'), at = src.indexOf('<script type="text/x-dc" data-dc-script'); let i = at, q = null;
+  for (; i < src.length; i++) { const ch = src[i]; if (q) { if (ch === q) q = null; } else if (ch === '"' || ch === "'") q = ch; else if (ch === '>') break; }
+  return src.slice(i + 1, src.indexOf('</script>', i)); };
+const componentOf = f => { const c = base(); vm.runInNewContext(scriptOf(f) + '\nglobalThis.C = Component;', c); const x = new c.C(); x.FP = FP; x.props = { toast() { } }; return x; };
+
+test('Markdown and PDF: the same panel, their own tabs and groups', () => {
+  const md = componentOf('MarkdownEditor.dc.html'), calls = []; md.cmd = k => calls.push(k);
+  const mdv = tab => md.panelVals({ st: md.state, d: { title: 'n' }, text: '# n', rich: true, tab, formatOpen: true });
+  assert.deepEqual(Array.from(mdv('format').tabs, t => t.label), ['格式', '插入', '视图', '导出']);
+  assert.deepEqual(Array.from(mdv('format').groups, g => g.title), ['样式', '文字', '列表']);
+  assert.deepEqual(Array.from(mdv('insert').groups, g => g.title), ['常用']);
+  assert.deepEqual(Array.from(mdv('view').groups, g => g.title), ['模式', '写作', '编辑']);
+  assert.deepEqual(Array.from(mdv('export').groups, g => g.title), ['导出', '转换']);
+  mdv('format').groups[1].rows[0].items[0].opts[0].onClick(); mdv('insert').groups[0].rows[0].items[2].onClick();
+  assert.deepEqual(calls, ['bold', 'table']);
+  assert.equal(md.panelVals({ st: md.state, tab: 'format', formatOpen: false }).groups.length, 0, 'closed: nothing built');
+  const pdf = componentOf('PdfEditor.dc.html'), tools = [];
+  const pv = tab => pdf.panelVals({ st: { tool: 'hl', color: '#B5563A', fs: 14, apps: [{ key: 'preview', label: '预览' }] }, d: { pages: [] }, tab, single: false, setTool: t => tools.push(t), selA: null, selF: false, formatOpen: true });
+  assert.deepEqual(Array.from(pv('tool').tabs, t => t.label), ['工具', '页面', '导出']);
+  assert.deepEqual(Array.from(pv('tool').groups, g => g.title), ['工具', '样式', '批注']);
+  const grid = pv('tool').groups[0].rows[0]; assert.equal(grid.grid, 3);
+  assert.deepEqual(plain(grid.items.filter(b => b.on).map(b => b.label)), ['高亮']); grid.items[0].onClick(); assert.deepEqual(tools, ['select']);
+  assert.deepEqual(Array.from(pv('page').groups, g => g.title), ['视图', '旋转', '页面', '提取与合并']);
+  assert.deepEqual(Array.from(pv('out').groups, g => g.title), ['导出', '转换', '打开方式']);
+});
+

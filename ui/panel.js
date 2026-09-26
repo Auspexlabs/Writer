@@ -48,7 +48,13 @@ export function kit(ed) {
     stat: (n, label) => ({ t: 'stat', n: String(n), label: T(label) }),
     input: (label, value, onChange, onKey, ref, title) => ({ t: 'input', label: T(label), value, onChange, onKey, ref, title: T(title || label) }),
     empty: label => ({ t: 'empty', label }),
-    tsty: (look, on, onClick, title) => ({ t: 'tsty', ...look, on, onClick, title: T(title) })
+    tsty: (look, on, onClick, title) => ({ t: 'tsty', ...look, on, onClick, title: T(title) }),
+    /** A row of colour dots, a palette: [{ color, on, title, onClick }]; no color draws "none". */
+    dots: list => ({ t: 'dots', dots: list.filter(Boolean).map(x => ({ ...x, title: x.title ? T(x.title) : x.color || T('无') })) }),
+    /** A row of small marker buttons, each its glyph in its own colour: [{ label, color, fs, on, dis, title, onClick }]. */
+    marks: list => ({ t: 'marks', marks: list.filter(Boolean).map(x => ({ ...x, title: T(x.title || '') })) }),
+    /** A slide theme as a tile: its background with its text and accent colours, the name under it. */
+    theme: (label, look, on, onClick) => ({ t: 'theme', label: T(label), title: T(label), bg: look.bg, fg: look.fg, acc: look.acc, on: !!on, onClick })
   };
   return k;
 }

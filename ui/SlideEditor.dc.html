@@ -16,20 +16,20 @@
 [data-thumbpanel] [draggable="true"]{content-visibility:auto;contain-intrinsic-height:auto 84px}
 </style>
 </helmet>
-<div data-edroot="1" data-format-open="{{ formatAttr }}" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
+<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;padding-right:{{ panelPad }};transition:padding-right .28s cubic-bezier(.2,.8,.2,1);background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
   <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
-  <div data-editor-bar="1" style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
+  <div style="position:absolute;top:10px;left:{{ barL }};right:{{ barR }};z-index:40;display:flex;justify-content:{{ barJ }};pointer-events:none"><div data-glass-bar="1" style="pointer-events:auto;max-width:100%;min-width:0;flex:0 1 auto;display:flex;align-items:center;gap:1px;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)"><div style="width:{{ spW }};flex:none;display:{{ spD }};align-items:center;justify-content:flex-end;align-self:stretch"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin-right:5px"></span></div>
     <div style="display:flex;align-items:center;gap:1px;min-width:0;overflow-x:auto;scrollbar-width:none">
     <button onMouseDown="{{ md }}" onClick="{{ fileMenu }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink-2, rgba(29,29,31,0.62));transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:transparent" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">文件</button>
     <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
-      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" data-on="{{ t.active }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:{{ t.color }};transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};font-weight:{{ t.weight }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
+      <button onMouseDown="{{ md }}" onClick="{{ t.onClick }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:{{ t.color }};transition:background .2s ease,color .2s ease,transform .35s cubic-bezier(.2,1.4,.4,1);background:{{ t.bg }};font-weight:{{ t.weight }}" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.94)">{{ t.label }}</button>
     </sc-for>
     </div><div style="display:flex;align-items:center;flex:none"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span><button onMouseDown="{{ md }}" onClick="{{ aiClick }}" data-ai-btn="1" title="AI 助手" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ aiBg }};box-shadow:{{ aiSh }};cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:{{ aiFg }};white-space:nowrap;flex:none;transition:background .2s,color .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F)" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>AI</button><button onMouseDown="{{ md }}" onClick="{{ beautifyMenu }}" title="让助手美化本页或整份" style="height:28px;padding:0 10px 0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ beautifyBg }};font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--ink, #1D1D1F);white-space:nowrap;flex:none;transition:background .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.95)"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.8c.4 2.9 1.5 4 4.4 4.4-2.9.4-4 1.5-4.4 4.4-.4-2.9-1.5-4-4.4-4.4 2.9-.4 4-1.5 4.4-4.4z"></path><path d="M12.6 10.6c.2 1.2.6 1.6 1.8 1.8-1.2.2-1.6.6-1.8 1.8-.2-1.2-.6-1.6-1.8-1.8 1.2-.2 1.6-.6 1.8-1.8z"></path></svg>美化</button><button onMouseDown="{{ md }}" onClick="{{ playFromStart }}" title="放映 F5" style="height:28px;padding:0 12px 0 10px;margin-left:4px;border:none;border-radius:var(--ctl-r, 8px);font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--bg, #F6F6F7);background:var(--ink, #1D1D1F);display:flex;align-items:center;gap:6px;flex:none;transition:opacity .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="opacity:0.86" style-active="transform:scale(0.94)"><span style="width:0;height:0;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;border-left:7px solid currentColor"></span>放映</button></div>
   </div></div>
   <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
-    <div data-editor-tools="1" style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);color:var(--ink, #1D1D1F);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;transform-origin:top left">
+    <div style="position:absolute;top:58px;left:{{ rbx }};z-index:39;width:0;height:0;overflow:visible"><div data-bubble="1" data-pop="{{ tabKey }}" style="position:absolute;left:0;top:0;translate:-50% 0;z-index:39;flex:none;width:max-content;max-width:{{ bMax }};transform-origin:top center;padding:5px 6px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);color:var(--ink, #1D1D1F);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;transform-origin:top left">
       <sc-for list="{{ ribbon }}" as="it" hint-placeholder-count="12">
-        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span data-editor-sep="1" style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
+        <sc-if value="{{ it.isSep }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:var(--line, rgba(0,0,0,0.1));margin:0 5px;flex:none"></span></sc-if>
         <sc-if value="{{ it.isBtn }}" hint-placeholder-val="{{ true }}">
           <button title="{{ it.title }}" onMouseDown="{{ md }}" onClick="{{ it.onClick }}" style="height:28px;min-width:28px;padding:0 8px;border:none;border-radius:var(--ctl-r, 8px);background:{{ it.bg }};font-size:12.5px;font-weight:{{ it.fw }};font-style:{{ it.fs }};text-decoration:{{ it.td }};color:{{ it.color }};cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:6px" style-hover="background:var(--fill, rgba(0,0,0,0.07))">
             <sc-if value="{{ it.hasSw }}" hint-placeholder-val="{{ false }}"><span style="width:14px;height:14px;border-radius:3px;background:{{ it.sw }};box-shadow:inset 0 0 0 1px var(--k76, rgba(0,0,0,0.15))"></span></sc-if>{{ it.label }}
@@ -65,6 +65,9 @@
     </div></div>
   </sc-if>
 
+  </sc-if>
+  <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
+    <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ bodyCols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ showThumbs }}" hint-placeholder-val="{{ true }}">
@@ -194,7 +197,7 @@
       </sc-if>
       <sc-if value="{{ pure }}" hint-placeholder-val="{{ false }}"><div data-pure-status="1" data-theme-keep style="position:absolute;right:14px;bottom:12px;z-index:30;font-size:11px;line-height:14px;color:var(--pr-ink, rgba(0,0,0,0.34));white-space:nowrap;pointer-events:none;transition:opacity .18s ease-out">{{ statusText }}</div></sc-if>
       <sc-if value="{{ notPure }}" hint-placeholder-val="{{ true }}">
-      <div style="position:absolute;right:18px;bottom:12px;z-index:30;height:20px;display:flex;align-items:center;gap:12px;font-size:11px;color:var(--ink-3, rgba(29,29,31,0.36));font-variant-numeric:tabular-nums;white-space:nowrap">
+      <div style="position:absolute;right:{{ statusR }};bottom:12px;z-index:30;height:20px;display:flex;align-items:center;gap:12px;font-size:11px;transition:right .28s cubic-bezier(.2,.8,.2,1);color:var(--ink-3, rgba(29,29,31,0.36));font-variant-numeric:tabular-nums;white-space:nowrap">
         <span>{{ statusText }}</span>
         <div style="flex:1"></div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -229,12 +232,12 @@
 
   <sc-if value="{{ hasPop }}" hint-placeholder-val="{{ false }}">
     <div onMouseDown="{{ closePop }}" style="position:fixed;inset:0;z-index:90"></div>
-    <div data-menu="1" data-pop="menu" onMouseDown="{{ md }}" style="position:fixed;left:{{ popX }};top:{{ popY }};z-index:91;min-width:180px;max-height:440px;overflow:auto;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);padding:6px;display:flex;flex-direction:column">
+    <div data-menu="1" data-pop="menu" class="fp-menu" onMouseDown="{{ md }}" style="z-index:91;left:{{ popX }};top:{{ popY }};max-height:440px;translate:{{ popShift }}">
       <sc-for list="{{ popItems }}" as="mi" hint-placeholder-count="0">
-        <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 10px 3px;font-size:11.5px;color:var(--k8, #8E8E93)">{{ mi.label }}</div></sc-if>
-        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--line, rgba(0,0,0,0.1));margin:4px 6px"></div></sc-if>
+        <sc-if value="{{ mi.isHead }}" hint-placeholder-val="{{ false }}"><div class="fp-mh">{{ mi.label }}</div></sc-if>
+        <sc-if value="{{ mi.isSepI }}" hint-placeholder-val="{{ false }}"><div class="fp-msep"></div></sc-if>
         <sc-if value="{{ mi.isItem }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ mi.onClick }}" style="text-align:left;padding:7px 10px;border:none;background:transparent;border-radius:var(--ctl-r, 8px);font-size:13px;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center" style-hover="background:var(--fill, rgba(0,0,0,0.07))"><span style="width:14px;color:var(--k35, #3F7D5C)">{{ mi.check }}</span><span style="flex:1">{{ mi.label }}</span><span style="color:var(--k8, #8E8E93);font-size:11.5px">{{ mi.hint }}</span></button>
+          <button class="fp-mi" data-on="{{ mi.onA }}" onClick="{{ mi.onClick }}"><span class="fp-mi-c">✓</span><span style="flex:1">{{ mi.label }}</span><span class="fp-mi-h">{{ mi.hint }}</span></button>
         </sc-if>
       </sc-for>
       <sc-if value="{{ popIsGrid }}" hint-placeholder-val="{{ false }}">
@@ -284,6 +287,7 @@ class Component extends DCLogic {
     import('./glass.js');
     import('./office-io.js').then(m => { this.K = m; this.forceUpdate(); });
     import('./picture.js').then(m => { this.P = m; this.forceUpdate(); });
+    import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./engine.js').then(m => { this.EN = m; }); // the 图片 tab's commands
     window.addEventListener('mousemove', this.onWM); window.addEventListener('mouseup', this.onWU);
     window.addEventListener('resize', this.onResize); document.addEventListener('fullscreenchange', this.onFs);
@@ -385,6 +389,13 @@ class Component extends DCLogic {
       : $t('美化第 {n} 页幻灯片：统一字号层级、对齐与留白，缩小溢出的文字，需要时换版式或配色；只改这一页，不改动文字内容。', { n: this.ci + 1 }));
   }
   insertObj(o) { this.endEdit(); this.commit((d, s) => s.objs.push(o)); this.setState({ sel: o.id, sels: [o.id] }); return o; }
+  /** 插入 › 日期: today's date, bottom right. */
+  insertDate() { this.insertObj(this.K.txt({ x: 1100, y: this.H - 90, w: 400, h: 50, fs: 20, align: 'right', color: 'sub', html: `<p>${new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN')}</p>` })); }
+  /** 插入 › 页码: a number on every slide, bottom right (the ones there before are replaced). */
+  insertPageNums() { const K = this.K, H = this.H; this.commit(dd => dd.slides.forEach((sl, i) => { sl.objs = sl.objs.filter(x => x.ph !== 'num'); sl.objs.push(K.txt({ ph: 'num', x: 1400, y: H - 80, w: 120, h: 44, fs: 20, align: 'right', color: 'sub', html: `<p>${i + 1}</p>` })); })); }
+  /** 切换: this slide's transition (none takes its time away); the next look at it plays it. */
+  setTrans(key) { this.commit((dd, cs) => { cs.trans = key; if (key === 'none') cs.duration = null; }); if (key !== 'none') this.pendTrans = true; }
+  transToAll() { const s = this.slide, t = s && s.trans, du = s && s.duration; this.commit(dd => dd.slides.forEach(x => { x.trans = t; x.duration = du; })); this.toast($t('已应用到全部幻灯片')); }
   insertText() { const K = this.K, H = this.H; const o = this.insertObj(K.txt({ x: 500, y: H / 2 - 50, w: 600, h: 100, html: `<p>${$t('单击输入文本')}</p>`, fs: 36 })); this.setState({ editing: o.id }); this.focusEdit = o.id; this.selectAll = true; }
   /** 插入 › 形状: a shape of the gallery in the middle of the slide (lines and connectors as line objects). */
   insertShape(kind) {
@@ -637,7 +648,7 @@ class Component extends DCLogic {
     if (lives) { this.commit((d, s) => { for (const o of s.objs) { const lv = lives[o.id]; if (!lv) continue; if (o.t === 'group') { const dx = lv.x - o.x, dy = lv.y - o.y, sx = o.w ? lv.w / o.w : 1, sy = o.h ? lv.h / o.h : 1; o.kids.forEach(kd => Object.assign(kd, { x: Math.round(lv.x + (kd.x - o.x) * sx), y: Math.round(lv.y + (kd.y - o.y) * sy), w: Math.round(kd.w * sx), h: Math.round(kd.h * sy) })); void dx; void dy; } Object.assign(o, lv); } }); this.setState({ lives: null, guides: null }); }
   };
   openPop(id, e, x, y, extra) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && x == null ? null : Object.assign({ id, x: x ?? r.left, y: y ?? r.bottom + 4 }, extra), gridHover: null }); }
-  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: this.props.formatOpen ? true : !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
+  openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
   /** The selected picture's look as the tools see it: its own props plus the rotation the slide model keeps apart. */
   picLook(x) { const pl = this.state.picLive; return pl && pl.id === x.id ? pl.look : Object.assign({}, x.look, x.rot ? { rotation: String(Math.round(x.rot)) } : {}); }
   /** The 图片 tab's tools for the selected picture (picture.js): one engine command per change, the answer taken into the deck and its saved snapshot. */
@@ -663,6 +674,98 @@ class Component extends DCLogic {
     this.pt = { id, tools };
     return tools;
   }
+  /** The format panel (FormatPanel.dc.html, panel.js) in the Word editor's 定稿 style: the ribbon's commands in the design's groups
+   *  and controls. Menus it opens by id (va, lh, para, beautify, shape, table, fxentr…) are the ribbon's, built in the same render. */
+  panelVals(c) {
+    const FP = this.FP; if (!FP || !c.formatOpen) return { tabs: [], groups: [] };
+    const k = FP.kit(this), { G, R, grid, sel, pick, swatch, seg, btn, menuBtn, card, menuCard, num, chk, lab, sp, size, empty, theme } = k;
+    const { K, st, d, th, s, o, I, tab, tabsDef, anims, curFx, cm, px, gradients, isLine } = c;
+    const ctx = { picture: 1, table: 1, format: 1 };
+    const tabs = FP.tabs(tabsDef.map(([key, l]) => [key, key === 'table' ? '表格' : key === 'format' ? '形状' : l, key in ctx]), tab, key => this.setState({ tab: key, pop: null }));
+    const secs = v => +(+v).toFixed(2) + ' ' + $t('秒'), secParse = t => { const v = parseFloat(String(t).replace(/[^\d.]/g, '')); return isFinite(v) ? v : null; };
+    const cmNum = (label, v, set) => num(FP.cmLabel(cm(v)), dd => set(px(Math.max(0, cm(v) + dd * 0.1))), t => { const x = FP.parseCm(t); if (isFinite(x)) set(px(x)); }, { lab: label, labW: 14, w: 86 });
+    const box = () => G('大小与位置', grid(2, cmNum('X', o.x, v => this.patchSel(this.moveKids(o, { x: v }))), cmNum('Y', o.y, v => this.patchSel(this.moveKids(o, { y: v }))),
+      cmNum('宽', o.w, v => this.patchSel(this.moveKids(o, { w: Math.max(1, v) }))), cmNum('高', o.h, v => this.patchSel(this.moveKids(o, { h: v })))),
+      tab === 'format' && o.t !== 'line' && R(lab('旋转'), sp(), num((o.rot || 0) + '°', dd => this.patchSel({ rot: (((o.rot || 0) + dd * 15) % 360 + 360) % 360 }), t => { const v = secParse(t); if (v != null) this.patchSel({ rot: ((Math.round(v) % 360) + 360) % 360 }); }, { w: 72, title: '旋转' }), sel('rot', $t('旋转'), null, { w: 92, title: '旋转 90°' })));
+    const arrange = () => G('排列', R(sel('arr', $t('层次'), null, { title: '置于顶层、上移、下移、置于底层' }), sel('aln', $t('对齐'), null, { title: '对齐幻灯片或所选对象' })),
+      R(btn('组合', null, () => this.groupSels(), { dis: this.sels.length < 2, title: '组合 Ctrl+G' }), o.t === 'group' && btn('取消组合', null, () => this.ungroup(), { title: '取消组合 Ctrl+Shift+G' }),
+        btn('复制', 'duplicate', () => this.sels.forEach(x => this.dup(x)), { title: '复制 Ctrl+D' }), btn('删除', 'trash', () => this.deleteSels())));
+    if (tab === 'picture' && o && o.t === 'image') return { tabs, groups: this.P.picturePanel(k, I, this.picTools(), this.picLook(o), st.picBusy).concat([arrange(), box()]) };
+    if (tab === 'table' && o && o.t === 'table') {
+      const cell = st.cell || { r: 0, c: 0 }, own = (o.cells || {})[cell.r + ':' + cell.c] || {}, [r1, c1, r2, c2] = this.cellRange(), merged = (o.merges || []).some(m => m.r === cell.r && m.c === cell.c), al = own.align || 'left';
+      const styleName = (K.TABLE_STYLES.find(([key]) => key === (o.tstyle || 'MediumStyle2Accent1')) || [, '中等样式 2'])[1];
+      return { tabs, groups: [
+        G('表格样式', R(sel('tstyle', $t(styleName), null, { title: '表格样式' })),
+          R(chk('标题行', o.header !== false, v => this.patchSel({ header: v })), sp(), chk('镶边行', o.banded !== false, v => this.patchSel({ banded: v }))), R(chk('第一列', !!o.firstCol, v => this.patchSel({ firstCol: v })))),
+        G('行和列', grid(2, btn('上方插入行', 'rowAbove', () => this.tableOp((t, x) => K.tableInsertRow(t, x.r))), btn('下方插入行', 'rowBelow', () => this.tableOp((t, x) => K.tableInsertRow(t, x.r + 1))),
+          btn('左侧插入列', 'colLeft', () => this.tableOp((t, x) => K.tableInsertCol(t, x.c))), btn('右侧插入列', 'colRight', () => this.tableOp((t, x) => K.tableInsertCol(t, x.c + 1))),
+          btn('删除行', 'trash', () => { this.tableOp((t, x) => K.tableDeleteRow(t, x.r)); this.setState({ cell: { r: Math.max(0, cell.r - 1), c: cell.c } }); }), btn('删除列', 'trash', () => { this.tableOp((t, x) => K.tableDeleteCol(t, x.c)); this.setState({ cell: { r: cell.r, c: Math.max(0, cell.c - 1) } }); }))),
+        G('单元格', R(btn('合并', 'merge', () => { this.tableOp(t => K.tableMerge(t, r1, c1, r2, c2)); this.setState({ cell: { r: r1, c: c1 } }); }, { dis: r1 === r2 && c1 === c2, title: '合并单元格' }), btn('拆分', 'split', () => this.tableOp((t, x) => K.tableSplit(t, x.r, x.c)), { dis: !merged, title: '拆分单元格' })),
+          R(seg([['left', 'alignLeft', '左对齐'], ['center', 'alignCenter', '居中'], ['right', 'alignRight', '右对齐']].map(([a, icon, title]) => ({ icon, title, on: al === a, onClick: () => this.patchCells({ align: a }) })), { w: 108 })),
+          R(swatch('填充', own.fill || th.card, v => this.patchCells({ fill: v }), { title: '单元格填充' }), btn('无填充', null, () => this.patchCells({ fill: null }))),
+          R(swatch('边框', own.line && own.line !== 'none' ? own.line : th.fg, v => this.patchCells({ line: v }), { title: '单元格边框' }), btn('无边框', null, () => this.patchCells({ line: 'none' })))),
+        arrange()] };
+    }
+    if (tab === 'format' && o) {
+      const line = isLine ? '线条' : '边框', stroke = K.resolveColor(o.stroke, th, isLine ? th.acc : '') || '#1D1D1F';
+      const outline = o.t === 'group' ? null : G(isLine ? '线条' : '填充与轮廓', !isLine && R(swatch('填充', K.resolveColor(String(o.fill || '').startsWith('grad:') ? o.fill.slice(5).split(',')[0] : o.fill, th, o.t === 'shape' ? th.acc : '') || '#FFFFFF', v => this.patchSel({ fill: v }), { title: '填充颜色' }),
+          sel('fillq', $t('主题色'), null, { w: 96, title: '主题色填充' })),
+        !isLine && R(sel('grad', $t('渐变'), gradients(), { title: '渐变填充' }), sel('op', $t('透明度'), null, { title: '透明度' })),
+        R(swatch(line, stroke, v => this.patchSel({ stroke: v, sw: o.sw || (isLine ? 3 : 2) }), { title: isLine ? '线条颜色' : '边框颜色' }), sel('sw', o.sw ? o.sw + ' px' : $t('无边框'), null, { w: 96, title: isLine ? '线条粗细' : '边框粗细' })),
+        R(sel('dash', $t((DASHES.find(([v]) => v === (o.dash || 'solid')) || DASHES[0])[1]), null, { title: '虚线类型' }), chk('阴影', !!o.shadow, v => this.patchSel({ shadow: v })) ));
+      const shapeG = isLine ? G('箭头与线型', R(lab('起点'), sp(), sel('head', $t((ENDS.find(([v]) => v === (o.head || 'none')) || ENDS[0])[1]), null, { w: 150, title: '起点箭头' })),
+          R(lab('终点'), sp(), sel('tail', $t((ENDS.find(([v]) => v === (o.tail || 'none')) || ENDS[0])[1]), null, { w: 150, title: '终点箭头' })),
+          R(lab('线型'), sp(), sel('lk', $t(o.bent ? '肘形连接符' : '直线'), null, { w: 150, title: '线型' })))
+        : o.t === 'shape' ? G('形状', R(sel('shp', $t('更改形状'), null, { title: '更改形状' })), R(chk('锁定纵横比', !!o.lockAspect, v => this.patchSel({ lockAspect: v }))))
+        : o.t !== 'group' ? G('大小', R(chk('锁定纵横比', !!o.lockAspect, v => this.patchSel({ lockAspect: v })))) : null;
+      return { tabs, groups: [outline, shapeG, arrange(), box()].filter(Boolean) };
+    }
+    if (tab === 'insert') return { tabs, groups: [
+      G('常用', grid(3, card('文本框', 'textbox', () => this.insertText()), card('图片', 'picture', () => this.imgRef.current.click()), menuCard('shape', '形状', 'shape', null), menuCard('table', '表格', 'table', null))),
+      G('页面', grid(3, card('新建幻灯片', 'slide', e => this.openGallery('newslide2', 'new', e)), card('日期', 'date', () => this.insertDate()), card('页码', 'pageNumber', () => this.insertPageNums(), { title: '为所有幻灯片添加页码' })))] };
+    if (tab === 'design') return { tabs, groups: [
+      G('主题', grid(3, Object.keys(K.THEMES).map(key => theme(K.THEMES[key].name, K.THEMES[key], d.theme === key, () => this.commit(dd => { dd.theme = key; }))))),
+      G('背景', R(swatch('本页背景', s && s.bg || th.bg, v => this.commit((dd, cs) => { cs.bg = v; }), { title: '本页背景颜色' }), btn('重置', 'refresh', () => this.commit((dd, cs) => { cs.bg = null; }), { title: '重置背景' })),
+        R(btn('背景应用到全部', null, () => this.commit(dd => { const bg = dd.slides[this.ci].bg; dd.slides.forEach(x => x.bg = bg); })))),
+      G('幻灯片大小', R(seg([['16:9', '宽屏 16:9'], ['4:3', '标准 4:3']].map(([key, l]) => ({ label: l, on: (d.ratio || '16:9') === key, onClick: () => this.commit(dd => { dd.ratio = key; }) })))))] };
+    if (tab === 'trans') {
+      const du = s && s.duration ? s.duration / 1000 : s && s.trans === 'morph' ? 1 : 0.7;
+      return { tabs, groups: [
+        G('切换效果', grid(3, K.TRANS.map(([key, l]) => btn(l, null, () => this.setTrans(key), { on: s && (s.trans || 'none') === key })))),
+        G('计时', R(lab('持续时间'), sp(), num(secs(du), dd => this.commit((x, cs) => { cs.duration = Math.max(10, Math.round((du + dd * 0.1) * 1000)); }), t => { const v = secParse(t); if (v != null) this.commit((x, cs) => { cs.duration = Math.max(10, Math.round(v * 1000)); }); }, { w: 80, title: '持续时间（秒）' })),
+          R(btn('预览', 'play', () => this.previewTransition()), btn('应用到全部', null, () => this.transToAll())))] };
+    }
+    if (tab === 'anim') return { tabs, groups: [
+      G('添加动画', R(K.FX.map(([cls, label]) => menuBtn('fx' + cls, label, null, null, { title: { entr: '添加进入动画', emph: '添加强调动画', exit: '添加退出动画' }[cls] })))),
+      G('计时', R(lab('开始'), sp(), pick(curFx ? curFx.start || 'click' : 'click', FX_START.map(([v, l]) => [v, $t(l)]), v => this.patchFx({ start: v }), { w: 150, title: '动画开始方式' })),
+        R(lab('持续时间'), sp(), num(secs(curFx ? K.fxDur(curFx) / 1000 : 0.5), dd => curFx && this.patchFx({ dur: Math.max(1, Math.round((K.fxDur(curFx) / 1000 + dd * 0.25) * 1000)) }), t => { const v = secParse(t); if (v != null) this.patchFx({ dur: Math.max(1, Math.round(v * 1000)) }); }, { w: 80, title: '持续时间（秒）' })),
+        R(lab('延迟'), sp(), num(secs(curFx ? (curFx.delay || 0) / 1000 : 0), dd => curFx && this.patchFx({ delay: Math.max(0, Math.round(((curFx.delay || 0) / 1000 + dd * 0.25) * 1000)) }), t => { const v = secParse(t); if (v != null) this.patchFx({ delay: Math.max(0, Math.round(v * 1000)) }); }, { w: 80, title: '延迟（秒）' }))),
+      G('动画窗格', R(btn('动画窗格', null, () => this.setState({ fxPane: !st.fxPane }), { on: !!st.fxPane }), btn('预览', 'play', () => this.previewFx())),
+        R(k.link('清除本页动画', () => { this.commit((dd, cs) => { cs.anims = []; }); this.setState({ fx: null }); }, { dis: !anims.length })))] };
+    if (tab === 'show') return { tabs, groups: [
+      G('开始放映', grid(3, card('从头开始', 'play', () => this.startShow(0), { title: '从头开始 F5' }), card('从当前页', 'slide', () => this.startShow(this.ci), { title: '从当前幻灯片开始 Shift+F5' }), card('演示者视图', 'fit', () => this.startShow(this.ci, true), { title: '演示者视图 Alt+F5' })),
+        R(chk('循环放映', !!st.loop, v => this.setState({ loop: v }), { title: '放映到最后一张后从头开始，按 Esc 结束' }))),
+      G('视图', R(btn('幻灯片浏览', 'grid', () => this.setState({ sorter: !st.sorter, sel: null, sels: [], editing: null }), { on: !!st.sorter }), btn('显示备注', 'note', () => this.setState({ showNotes: !st.showNotes }), { on: !!st.showNotes })),
+        R(chk('隐藏本页', !!(s && s.hidden), () => this.commit((dd, cs) => { cs.hidden = !cs.hidden; }), { title: '放映时跳过这一页' })))] };
+    // 开始: the slide, then the text of what is selected
+    const slideG = G('幻灯片', grid(2, btn('新建幻灯片', 'plus', e => this.openGallery('newslide', 'new', e)), btn('版式', 'slide', e => this.openGallery('relayout', 'relayout', e)),
+      btn('复制幻灯片', 'duplicate', () => { if (s) this.dupSlide(this.ci); }), btn('删除幻灯片', 'trash', () => this.deleteSlide(this.ci))), R(menuBtn('beautify', '美化', 'star', null, { title: 'AI 美化本页或整份' })));
+    if (!o || !(o.t === 'text' || o.t === 'shape')) return { tabs, groups: [slideG, G('文字', R(empty($t('选中文本框或形状后，在这里设置文字'))))] };
+    const fs = o.fs || 32, al = o.align || 'left', va = o.va || 'top', lhs = o.lh ? String(o.lh) : $t('默认');
+    return { tabs, groups: [slideG,
+      G('字体', R(pick(o.font && o.font !== 'head' ? o.font : '', FONTS.map(([v, l]) => [v, $t(l)]).concat(o.font && o.font !== 'head' && !FONTS.some(([v]) => v === o.font) ? [[o.font, o.font]] : []), v => this.patchSel({ font: v || null }), { title: '字体' })),
+        R(size(fs, () => this.patchSel({ fs: [...SIZES].reverse().find(n => n < fs) || Math.max(8, fs - 4) }), () => this.patchSel({ fs: SIZES.find(n => n > fs) || fs + 8 }), 'fsize-p', SIZES.map(n => I(String(n), () => this.patchSel({ fs: n }), { on: fs === n })), { w: 116 }), sp(),
+          seg([{ label: 'B', css: 'font-weight:700', title: '加粗', on: o.bold, onClick: () => this.txtCmd('bold', 'bold') }, { label: 'I', css: 'font-style:italic;font-family:Georgia,serif', title: '斜体', on: o.italic, onClick: () => this.txtCmd('italic', 'italic') },
+            { label: 'U', css: 'text-decoration:underline', title: '下划线', on: o.underline, onClick: () => this.txtCmd('underline', 'underline') }], { w: 116 })),
+        R(swatch('文字颜色', K.resolveColor(o.color, th, th.fg), v => this.patchSel({ color: v })), sel('art', $t('艺术字'), null, { w: 104, title: '艺术字' }))),
+      G('段落', R(seg([['left', 'alignLeft', '左对齐'], ['center', 'alignCenter', '居中'], ['right', 'alignRight', '右对齐']].map(([a, icon, title]) => ({ icon, title, on: al === a, onClick: () => { if (st.editing) document.execCommand(a === 'center' ? 'justifyCenter' : a === 'right' ? 'justifyRight' : 'justifyLeft'); else this.patchSel({ align: a }); } }))),
+          seg([['top', 'vTop', '顶端对齐'], ['middle', 'vMiddle', '垂直居中'], ['bottom', 'vBottom', '底端对齐']].map(([v, icon, title]) => ({ icon, title, on: va === v, onClick: () => this.patchSel({ va: v }) })))),
+        R(seg([{ icon: 'bullets', title: '项目符号', onClick: () => this.toggleList(false) }, { icon: 'numbers', title: '编号', onClick: () => this.toggleList(true) }], { w: 72 }),
+          seg([{ icon: 'outdent', title: '减少缩进 ⇧Tab', onClick: () => this.indent(-1) }, { icon: 'indent', title: '增加缩进 Tab', onClick: () => this.indent(1) }], { w: 72 }), sp(), sel('lh', $t('行距 {v}', { v: lhs }), null, { w: 96, title: '行距' })),
+        R(sel('para', $t('段落间距'), null, { title: '段前、段后' }), sel('cs', $t('字符间距'), null, { title: '字符间距' }))),
+      G('文本框', R(sel('cols', $t(['一栏', '两栏', '三栏'][(o.cols || 1) - 1] || '一栏'), null, { title: '分栏' }), sel('vert', $t('文字方向'), null, { title: '文字方向' })),
+        R(sel('fit', $t('自动调整'), null, { title: '文字溢出时' })))] };
+  }
   renderVals() {
     const K = this.K, st = this.state, d = this.doc;
     if (!K) return { md, tabs: [], ribbon: [], thumbs: [], objs: [], handles: [], stW: '0', stH: '0', H: '900px', scale: 'none', sBg: 'var(--k51, #fff)', noSlides: false, popItems: [], gridCells: [] };
@@ -673,14 +776,14 @@ class Component extends DCLogic {
     const M = (id, label, items, title, open) => { this.menus[id] = items; return { isMenu: true, label: $t(label), title: $t(title || label), bg: st.pop && st.pop.id === id ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onToggle: e => open ? open(e) : this.openPop(id, e) }; };
     const AL = (a, title) => ({ isAlign: true, title: title ? $t(title) : title, bg: o && (o.align || 'left') === a ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', ai: a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start', onClick: () => { if (st.editing) document.execCommand(a === 'center' ? 'justifyCenter' : a === 'right' ? 'justifyRight' : 'justifyLeft'); else this.patchSel({ align: a }); } });
     const SEP = { isSep: true };
-    const I = (label, onClick, op = {}) => ({ isItem: true, label: $t(label), check: op.on ? '✓' : '', hint: op.hint ? $t(op.hint) : '', onClick: () => { this.setState({ pop: null }); onClick(); } });
+    const I = (label, onClick, op = {}) => ({ isItem: true, label: $t(label), check: op.on ? '✓' : '', onA: op.on ? '1' : '0', hint: op.hint ? $t(op.hint) : '', onClick: () => { this.setState({ pop: null }); onClick(); } });
     const HD = label => ({ isHead: true, label: $t(label) }), IS = { isSepI: true };
     const N = (label, value, onChange, op = {}) => ({ isNum: true, label: $t(label), value, step: op.step || 0.1, w: op.w || '58px', title: $t(op.title || label), onChange: e => onChange(+e.target.value), onKey: e => { if (e.key === 'Enter') e.target.blur(); } });
     this.menus = {};
     const tabsDef = [['home', '开始'], ['insert', '插入'], ['design', '设计'], ['trans', '切换'], ['anim', '动画'], ['show', '放映@@tab']];
     if (o) tabsDef.push(o.t === 'image' && this.P ? ['picture', '图片'] : o.t === 'table' ? ['table', '表格工具'] : ['format', '形状格式']);
     let tab = st.tab; if (!tabsDef.some(t => t[0] === tab)) tab = 'home';
-    const tabs = tabsDef.map(([key, l]) => ({ label: $t(l), active: (st.bubble || this.props.formatOpen) && tab === key ? '1' : '0', color: (st.bubble || this.props.formatOpen) && tab === key ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: (st.bubble || this.props.formatOpen) && tab === key ? 600 : 400, bg: (st.bubble || this.props.formatOpen) && tab === key ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(key, e) }));
+    const tabs = tabsDef.map(([key, l]) => ({ label: $t(l), color: st.bubble && tab === key ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', weight: st.bubble && tab === key ? 600 : 400, bg: st.bubble && tab === key ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: e => this.openTab(key, e) }));
     const layoutItems = fn => K.LAYOUTS.map(([key, l]) => I(l, () => fn(key)));
     const G = (id, label) => M(id, label, [], null, e => this.openGallery(id, id === 'relayout' ? 'relayout' : 'new', e));
     this.menus.beautify = [I('美化本页', () => this.beautify(false)), I('美化整份', () => this.beautify(true))];
@@ -710,14 +813,14 @@ class Component extends DCLogic {
       B('↶', () => this.props.onUndo && this.props.onUndo(), { title: '撤销 Ctrl+Z' }), B('↷', () => this.props.onRedo && this.props.onRedo(), { title: '重做 Ctrl+Y' }), SEP,
       G('newslide', '新建幻灯片'), G('relayout', '版式'), M('beautify', '美化', this.menus.beautify),
       B('复制@@dup', () => { if (s) this.dupSlide(this.ci); }, { title: '复制幻灯片' }),
-      B('删除', () => { if (d.slides.length < 2) return this.toast($t('至少保留一页')); this.commit(dd => dd.slides.splice(this.ci, 1)); this.setState({ cur: Math.max(0, this.ci - 1), sel: null }); }, { title: '删除幻灯片' }), SEP,
+      B('删除', () => this.deleteSlide(this.ci), { title: '删除幻灯片' }), SEP,
       ...textGroup
     ];
     if (tab === 'insert') ribbon = [
       G('newslide2', '新建幻灯片'), SEP,
       B('文本框', () => this.insertText()), M('shape', '形状', K.SHAPE_GALLERY.flatMap(([name, items]) => [HD(name), ...items.map(([key, l]) => I(l, () => this.insertShape(key)))])), B('图片', () => this.imgRef.current.click()), M('table', '表格', []), SEP,
-      B('日期', () => this.insertObj(K.txt({ x: 1100, y: H - 90, w: 400, h: 50, fs: 20, align: 'right', color: 'sub', html: `<p>${new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN')}</p>` }))),
-      B('页码', () => this.commit(dd => dd.slides.forEach((sl, i) => { sl.objs = sl.objs.filter(x => x.ph !== 'num'); sl.objs.push(K.txt({ ph: 'num', x: 1400, y: H - 80, w: 120, h: 44, fs: 20, align: 'right', color: 'sub', html: `<p>${i + 1}</p>` })); })), { title: '为所有幻灯片添加页码' })
+      B('日期', () => this.insertDate()),
+      B('页码', () => this.insertPageNums(), { title: '为所有幻灯片添加页码' })
     ];
     if (tab === 'design') ribbon = [
       ...Object.keys(K.THEMES).map(key => B(K.THEMES[key].name, () => this.commit(dd => { dd.theme = key; }), { on: d.theme === key, sw: K.THEMES[key].bg })), SEP,
@@ -726,10 +829,10 @@ class Component extends DCLogic {
       M('ratio', '幻灯片大小', [['16:9', '宽屏 16:9'], ['4:3', '标准 4:3']].map(([key, l]) => I(l, () => this.commit(dd => { dd.ratio = key; }), { on: (d.ratio || '16:9') === key })))
     ];
     if (tab === 'trans') ribbon = [
-      ...K.TRANS.map(([key, l]) => B(l, () => { this.commit((dd, cs) => { cs.trans = key; if (key === 'none') cs.duration = null; }); if (key !== 'none') this.pendTrans = true; }, { on: s && (s.trans || 'none') === key })), SEP,
+      ...K.TRANS.map(([key, l]) => B(l, () => this.setTrans(key), { on: s && (s.trans || 'none') === key })), SEP,
       N('持续时间', s && s.duration ? s.duration / 1000 : s && s.trans === 'morph' ? 1 : 0.7, v => this.commit((dd, cs) => { cs.duration = Math.max(10, Math.round(v * 1000)); }), { title: '持续时间（秒）' }),
       B('预览', () => this.previewTransition()),
-      B('应用到全部', () => { const t = s && s.trans, du = s && s.duration; this.commit(dd => dd.slides.forEach(x => { x.trans = t; x.duration = du; })); this.toast($t('已应用到全部幻灯片')); })
+      B('应用到全部', () => this.transToAll())
     ];
     const anims = this.animsOf(s), curFx = anims[st.fx];
     if (tab === 'anim') ribbon = [
@@ -801,6 +904,7 @@ class Component extends DCLogic {
         ...placeTools(), SEP, ...copyTools()
       ];
     }
+    const formatOpen = !this.props.pure && !!this.props.formatOpen, panel = this.panelVals({ K, st, d, th, s, o, I, tab, tabsDef, anims, curFx, cm, px, gradients, isLine, formatOpen });
     let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '', popIsGallery = false, gallery = [], galleryLabel = '';
     if (st.pop) {
       if (st.pop.mode) { popIsGallery = true; const re = st.pop.mode === 'relayout'; galleryLabel = $t(re ? '版式' : '新建幻灯片'); gallery = K.LAYOUTS.map(([key, l]) => ({ label: $t(l), slide: this.preview(key), outline: re && s && s.layout === key ? '2px solid var(--k7, #1D1D1F)' : 'none', onClick: () => re ? this.relayout(key) : this.addSlide(key, st.pop.at) })); }
@@ -874,9 +978,10 @@ class Component extends DCLogic {
       onDragEnd: () => { this.dragI = null; this.setState({ drop: null }); }
     }));
     return {
-      notPure: !this.props.pure, pure: !!this.props.pure, formatAttr: this.props.formatOpen && !this.props.pure ? '1' : '0', showBar: !!this.props.formatOpen || (!!this.props.pure && !!this.props.pureTools), showThumbs: !st.sorter && (this.props.pure ? this.props.showThumbs === true : this.props.showThumbs !== false), closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
+      notPure: !this.props.pure, pure: !!this.props.pure, showBar: !!this.props.pure && !!this.props.pureTools, showThumbs: !st.sorter && (this.props.pure ? this.props.showThumbs === true : this.props.showThumbs !== false), closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       bodyCols: !this.props.pure && this.props.showThumbs !== false ? '224px minmax(0,1fr)' : '0px minmax(0,1fr)',
-      md, tabs, ribbon, bubbleOpen: !!this.props.formatOpen || (!!this.props.pure && !!st.bubble), rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), thumbs, themeKey: d.theme || 'paper', ratio: d.ratio || '16:9',
+      formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: formatOpen ? '312px' : '0px', statusR: formatOpen ? '330px' : '18px', /* the format panel (the Word 定稿 style): the stage and the status line give it its width */
+      md, tabs, ribbon, bubbleOpen: !!this.props.pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()), thumbs, themeKey: d.theme || 'paper', ratio: d.ratio || '16:9',
       playFromStart: () => this.startShow(0),
       addSlideQuick: e => this.openGallery('plus', 'new', e, d.slides.length),
       beautifyMenu: e => this.openPop('beautify', e), beautifyBg: st.pop && st.pop.id === 'beautify' ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent',
@@ -967,7 +1072,7 @@ class Component extends DCLogic {
       showBlank: !!(sh && sh.blank), blankBg: sh && sh.blank || '#000', hasJump: !!st.jump, jumpText: $t('跳转到第 {n} 张', { n: st.jump || '' }),
       presenterIn: !!(sh && sh.pv), presenterHtml: { __html: sh && sh.pv ? K.presenterHtml(d, sh.i, this.clock()) : '' },
       onPresenterClick: e => { e.stopPropagation(); const a = e.target.closest && e.target.closest('[data-act]'); if (a) this.presenterAct(a.getAttribute('data-act')); },
-      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popItems, popIsGrid, gridCells, gridLabel, popIsGallery, gallery, galleryLabel,
+      hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) 0px` : 'none', popItems, popIsGrid, gridCells, gridLabel, popIsGallery, gallery, galleryLabel,
       gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null })
     };
   }

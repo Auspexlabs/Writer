@@ -437,3 +437,22 @@ test('the fill handle runs dates on as dates: ISO text in and out, across a mont
   assert.deepEqual(fill(1, 1, 3), ['2024-03-15', '2024-04-15']);
   assert.deepEqual(fill(2, 0, 2), ['2024-02-29', '2024-03-01']);
 });
+
+test('the format panel: the Word 定稿 panel with the sheet\'s own tabs and groups, and no toolbar over the grid', async () => {
+  const FP = await import('../panel.js');
+  const x = editor([{ name: 'Data', cells: { A1: { v: '1', s: { b: true } } } }]), c = x.component; c.FP = FP; c.props.formatOpen = true;
+  const titles = v => Array.from(v.panelGroups, g => g.title);
+  let v = c.renderVals();
+  assert.deepEqual([v.showBar, v.bubbleOpen, v.formatOpen, v.panelPad], [false, false, true, '312px']);
+  assert.deepEqual(plain(v.panelTabs.map(t => [t.label, t.on])), [['开始', true], ['插入', false], ['公式', false], ['数据', false], ['视图', false]]);
+  assert.deepEqual(titles(v), ['剪贴板', '字体', '颜色', '对齐', '数字', '边框与样式', '行和列', '编辑']);
+  const bius = v.panelGroups[1].rows[1].items.find(it => it.t === 'seg');
+  assert.deepEqual(plain(bius.opts.map(o => [o.label, !!o.on])), [['B', true], ['I', false], ['U', false], ['S', false]]);
+  for (const [tab, want] of [['insert', ['图表', '常用', '行列与工作表', '函数']], ['formula', ['函数', '常用函数', '显示']], ['data', ['排序和筛选', '数据工具', '填充']], ['view', ['冻结窗格', '显示', '缩放']]]) {
+    c.state.tab = tab; v = c.renderVals(); assert.deepEqual(titles(v), want, tab);
+  }
+  c.state.pop = null; v.panelTabs[0].onClick(); assert.equal(c.state.tab, 'home');
+  c.props.formatOpen = false; v = c.renderVals();
+  assert.deepEqual([v.formatOpen, v.panelTabs.length, v.panelPad], [false, 0, '0px'], 'closed: the grid has the width back');
+});
+
