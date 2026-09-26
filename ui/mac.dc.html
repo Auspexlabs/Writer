@@ -298,16 +298,14 @@ class Component extends DCLogic {
       if (t) t.dispatchEvent(new WheelEvent('wheel', { deltaY: -Math.log(r) * 100, ctrlKey: true, clientX: x, clientY: y, bubbles: true, cancelable: true }));
     }, { passive: false });
     on('gestureend', e => e.preventDefault(), { passive: false });
-    // Two-finger horizontal swipe: switch tabs; starting at the right edge: toggle the AI panel.
-    const canScrollX = (el, dx) => { for (; el && el !== document.body; el = el.parentElement) { const cs = getComputedStyle(el); if (/(auto|scroll)/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) { if (dx > 0 ? el.scrollLeft + el.clientWidth < el.scrollWidth - 1 : el.scrollLeft > 0) return true; } } return false; };
+    // A two-finger swipe left from the right edge toggles the AI panel. Swipes elsewhere do nothing here: they scroll what is
+    // under them (a wide sheet, the mind map), and never switch documents.
     on('wheel', e => {
       if (e.ctrlKey || Math.abs(e.deltaX) < Math.abs(e.deltaY) * 2) return;
       const now = performance.now(); if (now < cool) return;
       if (now - swipeT > 250) { sx = 0; edge = pointerX > window.innerWidth - 40; }
       swipeT = now; sx += e.deltaX;
-      if (edge) { if (sx > 140) { cool = now + 700; sx = 0; this.menu('toggleAI'); } return; }
-      if (canScrollX(e.target, e.deltaX)) { sx = 0; return; }
-      if (Math.abs(sx) > 160) { cool = now + 700; const dir = sx > 0 ? 1 : -1; sx = 0; this.cycle(dir); }
+      if (edge && sx > 140) { cool = now + 700; sx = 0; this.menu('toggleAI'); }
     }, { passive: true });
   }
 

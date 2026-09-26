@@ -43,3 +43,12 @@ for (const page of ['mac.dc.html', 'win.dc.html']) {
   });
 }
 assert.doesNotMatch(read('theme-dark.css'), /\.tb-more/);
+
+test('a two-finger swipe never switches documents: only a swipe from the right edge does something (the AI panel)', () => {
+  const src = script('mac.dc.html');
+  const wheel = src.slice(src.indexOf("on('wheel'"), src.indexOf('}, { passive: true });', src.indexOf("on('wheel'")));
+  assert.ok(wheel.length > 50, 'the wheel handler is there');
+  assert.doesNotMatch(wheel, /cycle\(|this\.call\('open'/, 'no tab switching from a swipe');
+  assert.match(wheel, /edge && sx > 140\) \{[^}]*toggleAI/);
+  assert.doesNotMatch(read('MacGestures.dc.html'), /双指左右轻扫/, 'the gestures panel no longer promises it');
+});
