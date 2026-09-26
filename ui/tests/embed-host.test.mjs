@@ -1,55 +1,11 @@
 // node --test ui/tests/ — the embed page's side of the protocol (ui/embed/host.js): hello, the site's documents going in, ready
 // once the editor shows one, calls answered only for the site that sent init, change and open events, the assistant's model
-// calls sent to the site. The engine is a stand-in (as in embed-server.test.mjs); the shell is played by the test.
+// calls sent to the site. The page is embed-page.mjs's: an engine stand-in, the shell played by the test.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { page, SITE } from './embed-page.mjs';
 
-// the embed page in an iframe: its window, the site around it (parent), the options embed.dc.html reads from the URL
-const bus = new EventTarget(), posted = [];
-globalThis.window = globalThis;
-globalThis.addEventListener = bus.addEventListener.bind(bus);
-globalThis.removeEventListener = bus.removeEventListener.bind(bus);
-globalThis.dispatchEvent = bus.dispatchEvent.bind(bus);
-const parent = { postMessage(msg, origin, transfer) { posted.push({ msg: structuredClone(msg), origin, transfer }); } };
-globalThis.parent = parent;
-globalThis.location = new URL('https://cdn.example/writer/embed.dc.html?id=w1&mode=docx&ai=1&model=m');
-globalThis.fetch = async u => new Response('static ' + u);
-globalThis.EventSource = class { };
-URL.createObjectURL = () => 'blob:x';
-URL.revokeObjectURL = () => { };
-window.__WRITER_EMBED__ = { id: 'w1', mode: 'docx', ai: true, aiModel: 'm', blankName: 'Draft' };
-
-function fakeEngine() {
-  const files = new Map(), changed = [];
-  const bump = p => { if (!changed.includes(p)) changed.push(p); };
-  return {
-    files, calls: [],
-    Run(body) { const { argv, command } = JSON.parse(body); const a = argv || command.split(' '); this.calls.push(a); if (a[0] === 'create') { files.set(a[1], new Uint8Array([1])); bump(a[1]); } if (a[0] === 'add') bump(a[1]); return JSON.stringify({ code: 0, output: 'ran ' + a.join(' ') }); },
-    Files() { return JSON.stringify({ files: [...files.keys()].map(p => ({ path: p })) }); },
-    Stat(p) { return JSON.stringify({ path: p, mtime: 1, size: files.get(p).length }); },
-    Read(p) { if (!files.has(p)) throw new Error(JSON.stringify({ status: 404, error: { code: 'FILE_NOT_FOUND', message: p + ' not found' } })); return files.get(p); },
-    Write(p, bytes) { files.set(p, bytes); bump(p); return JSON.stringify({ path: p, size: bytes.length }); },
-    Json(p) { return JSON.stringify({ type: 'document', path: '/', file: p }); },
-    Drain() { const out = JSON.stringify(changed); changed.length = 0; return out; },
-    ChatSystem(p) { return 'SYSTEM for ' + p; },
-    ChatTools() { return JSON.stringify([{ name: 'writer', description: 'd', input_schema: {} }]); },
-    ChatTool(name, input) { this.calls.push([name, JSON.parse(input)]); return JSON.stringify({ display: 'writer ' + JSON.parse(input).command, code: 0, output: 'done', wrote: true }); }
-  };
-}
-const S = await import('../embed/server.js');
-const E = S.useEngine(fakeEngine());
-await import('../embed/host.js');
-
-const SITE = 'https://site.example';
-/** A message to the page: from the site by default. */
-const say = (data, from = {}) => dispatchEvent(Object.assign(new Event('message'), { data: Object.assign({ writer: 1, id: 'w1' }, data), origin: from.origin || SITE, source: 'source' in from ? from.source : parent }));
-const until = async (what, ms = 3000) => { for (const end = Date.now() + ms; Date.now() < end; await new Promise(r => setTimeout(r, 5))) { const x = what(); if (x) return x; } throw new Error('timed out'); };
-const find = (type, more = () => true) => posted.find(p => p.msg.type === type && more(p.msg));
-/** The shell (index.dc.html) as the page reports it: open a document, and it becomes the one shown. */
-const embed = window.__WRITER_EMBED__, shown = [];
-const api = { async openPath(name) { shown.push(name); setTimeout(() => embed.shell({ path: name, isDoc: true }, api), 5); } };
-let seq = 0;
-const call = async (method, ...args) => { const n = ++seq; say({ type: 'call', seq: n, method, args }); const r = await until(() => find('result', m => m.seq === n)); return r; };
+const { E, posted, say, until, find, embed, api, shown, call } = await page({ id: 'w1', mode: 'docx', ai: true, aiModel: 'm', blankName: 'Draft' });
 
 test('hello, then the site\'s documents go in quietly and ready comes once the editor shows the one to open', async () => {
   assert.deepEqual(posted[0], { msg: { writer: 1, id: 'w1', type: 'hello' }, origin: '*', transfer: [] }, 'hello before the page knows who embedded it');

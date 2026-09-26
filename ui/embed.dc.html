@@ -127,8 +127,9 @@ class Component extends DCLogic {
     return {
       winRef: this.winRef, onShell: this.onShell,
       pureAttr: sh && sh.pure ? '1' : '0',
-      // one editor: hidden until its document is up, so the 新建 page never flashes by
-      loading: !sh || (SINGLE && !sh.isDoc), bodyVis: !sh || (SINGLE && !sh.isDoc) ? 'hidden' : 'visible',
+      // hidden until the site's documents are open (host.js: starting), and one editor until its document is up, so the 新建
+      // page and the documents opening one by one never flash by
+      loading: !sh || OPTS.starting || (SINGLE && !sh.isDoc), bodyVis: !sh || OPTS.starting || (SINGLE && !sh.isDoc) ? 'hidden' : 'visible',
       loadingText: OPTS.empty ? $t('没有要显示的文档') : $t('正在打开…'), // empty: the site gave nothing this editor opens
       brandHref: 'https://github.com/Auspexlabs/Writer',
       docBar: !!(sh && sh.isDoc), single: !multi, multi,

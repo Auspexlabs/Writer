@@ -22,6 +22,7 @@ boot().catch(e => console.error('Writer: the engine did not start', e));
 
 let seed; const seeded = new Promise(r => { seed = r; });
 hold(seeded);
+opts.starting = true; // the page shows 正在打开… until the site's documents are open (embed.dc.html)
 let shellApi = null, shellInfo = null, firstOpen = null;
 const shellWaiters = [];
 
@@ -49,6 +50,11 @@ async function openDoc(name) {
 }
 
 async function start(files, open) {
+  try { await begin(files, open); } finally { opts.starting = false; window.dispatchEvent(new Event('writer-settings')); }
+}
+
+async function begin(files, open) {
+  const given = (files || []).filter(f => f && f.name && f.data).map(f => f.name);
   for (const f of files || []) if (f && f.name && f.data) await engine.put(f.name, new Uint8Array(f.data));
   if (!files || !files.length) {
     // a single editor with nothing given: a blank document of its kind (a PDF is only ever opened)
@@ -59,9 +65,11 @@ async function start(files, open) {
     }
   }
   seeding = false; seed();
-  firstOpen = open || (files && files[0] && files[0].name) || '';
+  firstOpen = open || given[0] || '';
+  // the whole app: every document the site gave is a tab, in its order, and the one to show comes to the front
+  if ((!opts.mode || opts.mode === 'app') && given.length > 1) for (const name of given) await openDoc(name);
   const shown = !!firstOpen && await openDoc(firstOpen);
-  if (!shown && opts.mode && opts.mode !== 'app') { opts.empty = true; window.dispatchEvent(new Event('writer-settings')); } // one editor with nothing to show says so
+  if (!shown && opts.mode && opts.mode !== 'app') opts.empty = true; // one editor with nothing to show says so
   post({ type: 'ready', file: shown ? firstOpen : '' });
 }
 
