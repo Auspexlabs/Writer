@@ -113,6 +113,20 @@ public static partial class Engine
         });
     });
 
+    /// <summary>AI 自动补全 in the page: the request the site's model answers, {system, user} (Assistant.CompleteMessage).</summary>
+    [JSExport]
+    public static string CompletePrompt(string before, string after, string hint) => NodeJson.Write(w =>
+    {
+        w.WriteStartObject();
+        w.WriteString("system", Assistant.CompleteSystem);
+        w.WriteString("user", Assistant.CompleteMessage(before, after, hint));
+        w.WriteEndObject();
+    });
+
+    /// <summary>The model's reply as the editor shows it (Assistant.CleanCompletion).</summary>
+    [JSExport]
+    public static string CompleteClean(string text, string before) => Assistant.CleanCompletion(text, before);
+
     /// <summary>GET /files: the documents in the workspace, newest first, and every extension the engine opens.</summary>
     [JSExport]
     public static string Files() => Guard(() =>

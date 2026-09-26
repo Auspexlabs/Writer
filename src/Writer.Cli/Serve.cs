@@ -280,8 +280,14 @@ public sealed class Serve : IDisposable
                 case "/ai/test" when request.HttpMethod == "POST":
                     if (await JsonBody(request, response, AiExample) is { } trial) await Json(response, 200, await TestAi(trial));
                     break;
+                case "/ai/models" when request.HttpMethod == "POST":
+                    if (await JsonBody(request, response, AiExample) is { } asked) await Json(response, 200, await ListModels(asked));
+                    break;
+                case "/complete" when request.HttpMethod == "POST":
+                    if (await JsonBody(request, response, CompleteExample) is { } typed) await Complete(response, typed);
+                    break;
                 default:
-                    await Json(response, 404, Error("NOT_FOUND", "No such endpoint", "Endpoints: POST /run, POST /chat, GET /files, /file, /stat, /binary, /html, /json, /outline, /text, /events, PUT /file, DELETE /file, GET/PUT /ai, POST /ai/test, /app/."));
+                    await Json(response, 404, Error("NOT_FOUND", "No such endpoint", "Endpoints: POST /run, POST /chat, POST /complete, GET /files, /file, /stat, /binary, /html, /json, /outline, /text, /events, PUT /file, DELETE /file, GET/PUT /ai, POST /ai/test, POST /ai/models, /app/."));
                     break;
             }
         }
@@ -779,21 +785,23 @@ public sealed class Serve : IDisposable
         return null;
     }
 
-    /// <summary>GET /ai: {provider, baseUrl, model, hasKey, source}; source is env, file or none. Never the key.</summary>
+    /// <summary>GET /ai: {provider, baseUrl, model, completeModel, hasKey, source}; source is env, file or none. Never the key.</summary>
     static string AiJson(AiConfig c) => NodeJson.Write(w =>
     {
         w.WriteStartObject();
         w.WriteString("provider", c.Provider);
         w.WriteString("baseUrl", c.BaseUrl);
         w.WriteString("model", c.Model);
+        w.WriteString("completeModel", c.CompleteModel);
         w.WriteBoolean("hasKey", c.HasKey);
         w.WriteString("source", c.Source);
         w.WriteEndObject();
     });
 
-    /// <summary>{provider, baseUrl, model, apiKey?} checked. Without apiKey the key of <paramref name="keep"/> is used, but only while the
-    /// address stays on its server, so a stored key never travels to another one; "" clears it.</summary>
-    static AiConfig ParseAi(JsonElement root, AiConfig? keep)
+    /// <summary>{provider, baseUrl, model, completeModel?, apiKey?} checked. Without apiKey the key of <paramref name="keep"/> is used, but
+    /// only while the address stays on its server, so a stored key never travels to another one; "" clears it. With
+    /// <paramref name="needModel"/> false (listing the models) the model may be missing.</summary>
+    static AiConfig ParseAi(JsonElement root, AiConfig? keep, bool needModel = true)
     {
         if (root.ValueKind != JsonValueKind.Object) throw new WriterException(ErrorCode.Usage, "Body must be a JSON object", AiExample);
         var provider = Text(root, "provider")?.Trim() ?? "";
@@ -802,11 +810,11 @@ public sealed class Serve : IDisposable
         var baseUrl = (Text(root, "baseUrl") ?? "").Trim().TrimEnd('/');
         if (!AiConfig.IsHttpUrl(baseUrl)) throw new WriterException(ErrorCode.Validation, "接口地址要以 http:// 或 https:// 开头", "例如 https://api.deepseek.com");
         var model = (Text(root, "model") ?? "").Trim();
-        if (model.Length == 0) throw new WriterException(ErrorCode.Validation, "请填写模型", "填服务商文档里的模型名。");
+        if (model.Length == 0 && needModel) throw new WriterException(ErrorCode.Validation, "请选择模型", "在模型列表里选一个。");
         var key = Text(root, "apiKey") is { } typed ? typed.Trim() : keep is not null && AiConfig.SameOrigin(keep.BaseUrl, baseUrl) ? keep.Key : "";
         // a key travels in a request header: a space, line break or full-width character pasted along would break the request
         if (key.Any(c => c is < '!' or > '~')) throw new WriterException(ErrorCode.Validation, "API Key 里有空格、换行或中文字符", "重新复制服务商给的 Key 再粘贴。");
-        return new AiConfig(provider, baseUrl, model, key, "file");
+        return new AiConfig(provider, baseUrl, model, key, "file") { CompleteModel = (Text(root, "completeModel") ?? "").Trim() };
     }
 
     static JsonElement ParseBody(string body)
@@ -843,7 +851,7 @@ public sealed class Serve : IDisposable
         var live = Ai().Config;
         var config = root.ValueKind == JsonValueKind.Object && !root.TryGetProperty("provider", out _) ? live : ParseAi(root, live);
         var error = config.Usable ? await store.Chat(config).TestAsync(_stop.Token)
-            : config.Model.Length == 0 ? "请填写模型" : !AiConfig.IsHttpUrl(config.BaseUrl) ? "接口地址不对" : "请填写 API Key";
+            : config.Model.Length == 0 ? "请选择模型" : !AiConfig.IsHttpUrl(config.BaseUrl) ? "接口地址不对" : "请填写 API Key";
         return NodeJson.Write(w =>
         {
             w.WriteStartObject();
@@ -851,6 +859,57 @@ public sealed class Serve : IDisposable
             if (error is not null) w.WriteString("error", error);
             w.WriteEndObject();
         });
+    }
+
+    /// <summary>POST /ai/models: {provider, baseUrl, apiKey?} (the live settings when the body names no provider) → {models: [{id, name}]}:
+    /// what the provider's API lists for that key, for the model menus. A provider without the list answers with its error.</summary>
+    async Task<string> ListModels(string body)
+    {
+        var store = AiSettings();
+        var root = ParseBody(body);
+        var live = Ai().Config;
+        var config = root.ValueKind == JsonValueKind.Object && !root.TryGetProperty("provider", out _) ? live : ParseAi(root, live, needModel: false);
+        if (!AiConfig.IsHttpUrl(config.BaseUrl)) throw new WriterException(ErrorCode.Validation, "接口地址不对", "例如 https://api.deepseek.com");
+        if (config.NeedsKey && !config.HasKey) throw new WriterException(ErrorCode.Validation, "请填写 API Key", "有了 Key 才能读取这家服务商的模型列表。");
+        var models = await store.Chat(config with { Model = config.Model.Length > 0 ? config.Model : "-" }).ModelsAsync(_stop.Token);
+        return NodeJson.Write(w =>
+        {
+            w.WriteStartObject();
+            w.WriteStartArray("models");
+            foreach (var (id, name) in models)
+            {
+                w.WriteStartObject();
+                w.WriteString("id", id);
+                if (name.Length > 0) w.WriteString("name", name);
+                w.WriteEndObject();
+            }
+            w.WriteEndArray();
+            w.WriteEndObject();
+        });
+    }
+
+    const string CompleteExample = "{\"before\":\"The text up to the caret\",\"after\":\"the text after it\",\"hint\":\"the body of a Word document\"}";
+
+    /// <summary>POST /complete: {before, after?, hint?} → {text}: the autocomplete's suggestion at the caret ("" for none), from the
+    /// settings' completion model; hint says where the text is typed. 503 NO_MODEL while no model is set up.</summary>
+    async Task Complete(HttpListenerResponse response, string body)
+    {
+        var chat = Ai().Chat;
+        if (chat is null)
+        {
+            await Json(response, 503, Error("NO_MODEL", "No model is set up", "Set one up in Settings › AI."));
+            return;
+        }
+        var root = ParseBody(body);
+        if (root.ValueKind != JsonValueKind.Object || Text(root, "before") is not { } before)
+            throw new WriterException(ErrorCode.Usage, "Body needs before", "Send " + CompleteExample + ".");
+        var text = await chat.CompleteAsync(before, Text(root, "after") ?? "", Text(root, "hint"), _stop.Token);
+        await Json(response, 200, NodeJson.Write(w =>
+        {
+            w.WriteStartObject();
+            w.WriteString("text", text);
+            w.WriteEndObject();
+        }));
     }
 
     static string ErrorPart(string stderr)

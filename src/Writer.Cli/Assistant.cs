@@ -230,6 +230,55 @@ public static class Assistant
         + "The tools: the document's palette= and fonts=; a slide's layout= (moves its placeholders as PowerPoint does), align=edge:paths, distribute=axis:paths and background=; a shape's fit=shrink when it reads overflow=true (or shorten its text, or enlarge the box), size=, and x= y= w= h=. "
         + "Read `view <file> outline` first — it shows every shape's box, size and overflow — then make the fewest edits that satisfy the rules, one command per change, and never rewrite the user's words unless asked.\n";
 
+    // ---------- the autocomplete (POST /complete): the words the user is about to type, shown after the caret ----------
+
+    /// <summary>How much of the text around the caret a completion sees.</summary>
+    public const int CompleteBefore = 2000, CompleteAfter = 400;
+
+    public const string CompleteSystem =
+        "You are the autocomplete of a document editor. The user is typing; predict the words they will type next at the cursor.\n"
+        + "Reply with the continuation only: no quotes, no explanations, no markdown, nothing before or after it.\n"
+        + "Keep it short: finish the current sentence, or add one short sentence (at most about 20 words, or 30 Chinese characters).\n"
+        + "Match the language, tone and style of the text, and what is typed where the <where> tag says. Start exactly at the cursor: "
+        + "finish an unfinished word, and begin with a space only when the text needs one there.\n"
+        + "Never repeat what is already before the cursor, and do not run into the text after it.\n"
+        + "If nothing useful fits, reply with nothing.";
+
+    /// <summary>The user message of a completion request: where the text is typed (<paramref name="hint"/>, from the editor: "a
+    /// spreadsheet cell …", "the speaker notes …"), the text before the caret, and after it when there is any.</summary>
+    public static string CompleteMessage(string before, string after, string? hint = null)
+    {
+        before = before.Length > CompleteBefore ? before[^CompleteBefore..] : before;
+        after = after.Length > CompleteAfter ? after[..CompleteAfter] : after;
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(hint)) sb.Append("<where>").Append(hint.Length > 1200 ? hint[..1200] : hint).Append("</where>\n");
+        sb.Append("<text_before_cursor>\n").Append(before).Append("\n</text_before_cursor>\n");
+        if (after.Trim().Length > 0) sb.Append("<text_after_cursor>\n").Append(after).Append("\n</text_after_cursor>\n");
+        return sb.Append("Continue the text at the cursor.").ToString();
+    }
+
+    /// <summary>A model's completion as the editor shows it: one line, without a code fence or wrapping quotes, without the end of
+    /// the text before the caret when the model repeated it, and with no second space at the caret. "" when nothing is left.</summary>
+    public static string CleanCompletion(string? text, string before)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        var t = text.Replace("\r", "");
+        if (t.StartsWith("```", StringComparison.Ordinal)) t = t[(t.IndexOf('\n') is var n and >= 0 ? n + 1 : t.Length)..];
+        var nl = t.IndexOf('\n');
+        if (nl == 0) return ""; // a new paragraph: the editor suggests within the one being typed
+        if (nl > 0) t = t[..nl];
+        t = t.TrimEnd();
+        if (t.Length >= 2 && ((t[0] == '"' && t[^1] == '"') || (t[0] == '“' && t[^1] == '”')) && t.IndexOf(t[0], 1) == t.Length - 1) t = t[1..^1];
+        for (var k = Math.Min(Math.Min(t.Length, before.Length), 80); k >= 4; k--)
+            if (before.EndsWith(t[..k], StringComparison.Ordinal)) { t = t[k..]; break; }
+        if (before.Length > 0 && (char.IsWhiteSpace(before[^1]) || IsWide(before[^1]))) t = t.TrimStart();
+        if (t.Length > 240) t = t[..240];
+        return t.Trim().Length == 0 ? "" : t;
+    }
+
+    /// <summary>A CJK character or full-width punctuation: no space follows it.</summary>
+    static bool IsWide(char c) => c is >= '⺀' and <= '鿿' or >= '豈' and <= '﫿' or >= '＀' and <= '￯' or >= '　' and <= '〿';
+
     static string Run(string[] argv)
     {
         var stdout = new StringWriter();

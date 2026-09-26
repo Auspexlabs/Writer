@@ -30,6 +30,9 @@ public sealed record AiConfig(string Provider, string BaseUrl, string Model, str
 
     public static readonly AiConfig None = new("anthropic", Providers["anthropic"], "", "", "none");
 
+    /// <summary>The model the autocomplete (POST /complete) uses: a fast one of the same provider; "" means the assistant's.</summary>
+    public string CompleteModel { get; init; } = "";
+
     public bool OpenAi => Provider != "anthropic";
     public bool HasKey => Key.Length > 0;
     /// <summary>Local servers and custom endpoints may run without a key.</summary>
@@ -48,8 +51,8 @@ public sealed record AiConfig(string Provider, string BaseUrl, string Model, str
         Uri.TryCreate(a, UriKind.Absolute, out var x) && Uri.TryCreate(b, UriKind.Absolute, out var y)
         && Uri.Compare(x, y, UriComponents.SchemeAndServer, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) == 0;
 
-    /// <summary>WRITER_AI_PROVIDER, WRITER_AI_BASE_URL, WRITER_AI_KEY and WRITER_AI_MODEL, or the older ANTHROPIC_API_KEY,
-    /// ANTHROPIC_BASE_URL and WRITER_MODEL. Null when none of them names a provider, an address or a key.</summary>
+    /// <summary>WRITER_AI_PROVIDER, WRITER_AI_BASE_URL, WRITER_AI_KEY, WRITER_AI_MODEL and WRITER_AI_COMPLETE_MODEL, or the older
+    /// ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL and WRITER_MODEL. Null when none of them names a provider, an address or a key.</summary>
     public static AiConfig? FromEnvironment(Func<string, string?> env)
     {
         string? Var(string name) => env(name)?.Trim() is { Length: > 0 } v ? v : null;
@@ -63,7 +66,7 @@ public sealed record AiConfig(string Provider, string BaseUrl, string Model, str
             (baseUrl ?? (anthropic ? Var("ANTHROPIC_BASE_URL") : null) ?? Providers[provider]).TrimEnd('/'),
             Var("WRITER_AI_MODEL") ?? Var("WRITER_MODEL") ?? (anthropic ? Chat.DefaultModel : ""),
             key ?? (anthropic ? Var("ANTHROPIC_API_KEY") : null) ?? "",
-            "env");
+            "env") { CompleteModel = Var("WRITER_AI_COMPLETE_MODEL") ?? "" };
     }
 
     /// <summary>~/Library/Application Support/Writer/ai.json on macOS, %APPDATA%\Writer\ai.json on Windows,
@@ -85,7 +88,7 @@ public sealed record AiConfig(string Provider, string BaseUrl, string Model, str
             if (JsonNode.Parse(File.ReadAllText(file)) is not JsonObject o) return null;
             string S(string name) => o[name] is JsonValue v && v.TryGetValue<string>(out var s) ? s.Trim() : "";
             var provider = S("provider");
-            return new AiConfig(Providers.ContainsKey(provider) ? provider : "custom", S("baseUrl").TrimEnd('/'), S("model"), S("apiKey"), "file");
+            return new AiConfig(Providers.ContainsKey(provider) ? provider : "custom", S("baseUrl").TrimEnd('/'), S("model"), S("apiKey"), "file") { CompleteModel = S("completeModel") };
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -97,7 +100,7 @@ public sealed record AiConfig(string Provider, string BaseUrl, string Model, str
     public void Write(string file)
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(file))!;
-        var json = new JsonObject { ["provider"] = Provider, ["baseUrl"] = BaseUrl, ["model"] = Model, ["apiKey"] = Key }
+        var json = new JsonObject { ["provider"] = Provider, ["baseUrl"] = BaseUrl, ["model"] = Model, ["completeModel"] = CompleteModel, ["apiKey"] = Key }
             .ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         var tmp = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
         if (OperatingSystem.IsWindows())
@@ -131,5 +134,5 @@ public sealed class AiStore(string file, Func<string, string?>? env = null, Http
     /// <summary>When the file was last written (a date in 1601 when there is none): another engine may have saved it.</summary>
     public DateTime Stamp() => File.GetLastWriteTimeUtc(file);
 
-    public Chat Chat(AiConfig config) => new(config.Key, config.Model, config.BaseUrl, handler, config.OpenAi);
+    public Chat Chat(AiConfig config) => new(config.Key, config.Model, config.BaseUrl, handler, config.OpenAi, config.Provider) { CompleteModel = config.CompleteModel };
 }

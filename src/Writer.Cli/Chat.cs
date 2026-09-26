@@ -28,15 +28,21 @@ public sealed partial class Chat
     readonly string _apiKey;
     readonly string _baseUrl;
     readonly bool _openAi;
+    readonly string _provider;
 
     public string Model { get; }
 
-    public Chat(string apiKey, string model, string baseUrl, HttpMessageHandler? handler = null, bool openAi = false)
+    /// <summary>The autocomplete's model (ChatComplete.cs); "" means <see cref="Model"/>.</summary>
+    public string CompleteModel { get; init; } = "";
+
+    /// <param name="provider">An id of <see cref="AiConfig.Providers"/>: how to turn a model's thinking off for the autocomplete.</param>
+    public Chat(string apiKey, string model, string baseUrl, HttpMessageHandler? handler = null, bool openAi = false, string provider = "")
     {
         _apiKey = apiKey;
         Model = model;
         _baseUrl = baseUrl.TrimEnd('/');
         _openAi = openAi;
+        _provider = provider;
         _http = new HttpClient(handler ?? Direct, disposeHandler: false) { Timeout = TimeSpan.FromSeconds(180) };
     }
 
