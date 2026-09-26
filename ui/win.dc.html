@@ -189,6 +189,8 @@ const win = (cmd, args) => invoke('plugin:window|' + cmd, Object.assign({ label:
 const normPath = p => String(p || '').replace(/^\\\\\?\\/, '').replace(/\\/g, '/').replace(/\/+$/, '');
 const relPath = (path, workspace) => { const full = normPath(path), root = normPath(workspace) + '/'; return full.toLowerCase().startsWith(root.toLowerCase()) ? full.slice(root.length) : full; };
 
+/** The tabs in the order the documents were opened (the shell's seq), a new one at the end. */
+const tabOrder = docs => docs.slice().sort((a, b) => (a.seq || 0) - (b.seq || 0));
 class Component extends DCLogic {
   state = { sh: null, collapsed: store.get().collapsed !== false, ov: null, prefsTab: null, toast: null, hovTab: null, active: document.hasFocus(), max: false, menu: false, q: '', snap: false, askDefault: null, more: false };
   winRef = React.createRef(); qRef = React.createRef(); api = null; workspace = null;
@@ -255,7 +257,7 @@ class Component extends DCLogic {
   press(label) { const w = this.winRef.current; const b = (w && w.querySelector(`[data-panel-tab="${{ '开始': 'home', '插入': 'insert', '布局': 'layout', '引用': 'refs', '审阅': 'review', '视图': 'view' }[label] || ''}"]`)) || this.barButtons().find(x => x.textContent.trim() === $t(label)); if (b) { b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); b.click(); return true; } return false; }
   quickPress() { const q = settings().quickTab || '开始', press = () => { if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }; if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(press, 50); } press(); }
   toggleBar() { if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
-  cycle(dir) { const docs = ((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
+  cycle(dir) { const docs = tabOrder(((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on)); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
   current() { const sh = this.state.sh; return sh && sh.docs.find(d => d.on); }
 
   /** The W menu's commands (and window.__writerMenu, which the native test hooks call). */
@@ -349,7 +351,7 @@ class Component extends DCLogic {
   renderVals() {
     const st = this.state, sh = st.sh, set = settings(), dark = document.documentElement.dataset.theme === 'dark';
     // tabs are the documents opened in this window, not every file of the folder
-    const openDocs = sh ? sh.docs.filter(d => d.open || d.on) : [];
+    const openDocs = sh ? tabOrder(sh.docs.filter(d => d.open || d.on)) : [];
     const multi = openDocs.length > 0 && !(sh && sh.pure);
     const quickTab = set.quickTab || '开始';
     const S = t => SQ[t] || SQ.docx, on = 'var(--tab-bg, rgba(255,255,255,0.92))', onSh = 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))';

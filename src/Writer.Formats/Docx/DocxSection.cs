@@ -137,7 +137,8 @@ static partial class DocxSection
     }
 
     static bool Near(long a, long b) => Math.Abs(a - b) <= 20;
-    static string Cm(long twips) => (twips * Twip / 360000.0).ToString("0.##", CultureInfo.InvariantCulture) + "cm";
+    /// <summary>A length in cm to the hundredth, halves up as Word shows them: 1800 twips (Chinese Word's 3.175 cm side margin) is 3.18cm.</summary>
+    static string Cm(long twips) => Math.Round(twips * Twip / 360000m, 2, MidpointRounding.AwayFromZero).ToString("0.##", CultureInfo.InvariantCulture) + "cm";
     static bool IsLandscape(W.PageSize size) => size.Orient?.Value == W.PageOrientationValues.Landscape || size.Width?.Value > size.Height?.Value;
 
     public static void SetPage(DocxDocument doc, string value) => SetPage(Section(doc), value);

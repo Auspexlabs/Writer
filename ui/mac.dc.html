@@ -138,6 +138,8 @@ const invoke = (cmd, args) => { const t = window.__TAURI_INTERNALS__; return t &
 const LABEL = (() => { try { return window.__TAURI_INTERNALS__.metadata.currentWindow.label; } catch (e) { return 'main'; } })();
 const win = (cmd, args) => invoke('plugin:window|' + cmd, Object.assign({ label: LABEL }, args));
 
+/** The tabs in the order the documents were opened (the shell's seq), a new one at the end. */
+const tabOrder = docs => docs.slice().sort((a, b) => (a.seq || 0) - (b.seq || 0));
 class Component extends DCLogic {
   state = { sh: null, collapsed: store.get().collapsed !== false, lh: false, ov: null, prefsTab: null, toast: null, hovTab: null, active: document.hasFocus(), full: false, askDefault: null, more: false };
   winRef = React.createRef(); api = null; workspace = null;
@@ -205,7 +207,7 @@ class Component extends DCLogic {
   quickPress() { const q = settings().quickTab || '开始', press = () => { if (!this.press(q)) this.press('开始') || this.flash($t('这个编辑器没有「{q}」', { q: $t(q) })); }; if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure && !this.state.sh.showFormat) { this.call('showFormat'); return setTimeout(press, 50); } press(); }
   format(cmd) { const a = document.activeElement; if (a && a.isContentEditable) document.execCommand(cmd); else this.flash($t('先把光标放进文字里')); }
   toggleBar() { if (this.state.sh && this.state.sh.isDoc && !this.state.sh.pure) return this.call('toggleFormat'); const c = !this.state.collapsed; store.set({ collapsed: c }); this.setState({ collapsed: c }, () => this.report()); }
-  cycle(dir) { const docs = ((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
+  cycle(dir) { const docs = tabOrder(((this.state.sh && this.state.sh.docs) || []).filter(d => d.open || d.on)); if (docs.length < 2) return; const i = Math.max(0, docs.findIndex(d => d.on)); this.call('open', docs[(i + dir + docs.length) % docs.length].id); }
   current() { const sh = this.state.sh; return sh && sh.docs.find(d => d.on); }
 
   /** Native menu items (and the page's own shortcuts in a browser). */
@@ -324,7 +326,7 @@ class Component extends DCLogic {
     const st = this.state, sh = st.sh, set = settings(), dark = document.documentElement.dataset.theme === 'dark';
     const lit = st.active || st.lh, off = dark ? '#4A4A4C' : '#D6D6D6';
     // tabs are the documents opened in this window, not every file of the folder
-    const openDocs = sh ? sh.docs.filter(d => d.open || d.on) : [];
+    const openDocs = sh ? tabOrder(sh.docs.filter(d => d.open || d.on)) : [];
     const side = !!(sh && sh.showThumbs && sh.isDoc && !sh.pure && sh.type === 'docx'); // Word's thumbnails: a glass sidebar the lights sit in
     const multi = openDocs.length > 0 && !(sh && sh.pure);
     const quickTab = set.quickTab || '开始';

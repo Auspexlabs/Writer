@@ -79,3 +79,12 @@ test('Aa controls the shared format panel for every document type', () => {
     c.toggleAIPanel();
   }
 });
+
+test('the title bar\'s tabs follow the order the documents were opened in', async () => {
+  const c = shell(); let info; c.props.onShell = i => { info = i; };
+  c.state.docs = [{ id: 'x', type: 'xlsx', title: '预算', path: '预算.xlsx' }, { id: 'a', type: 'docx', title: '方案', path: '方案.docx' }, { id: 'p', type: 'pptx', title: '路演', path: '路演.pptx' }];
+  c.EN = { open: async d => Object.assign({}, d, { loaded: true }), isDraft: () => false, watch: () => () => { } }; c.toastMsg = () => { }; c.checkExternal = () => { };
+  for (const id of ['a', 'p', 'x']) await c.open(id);
+  c.emitShell();
+  assert.deepEqual(info.docs.filter(d => d.open).sort((a, b) => a.seq - b.seq).map(d => d.id), ['a', 'p', 'x'], 'not the folder\'s order');
+});

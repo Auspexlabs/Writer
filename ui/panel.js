@@ -46,7 +46,7 @@ export function kit(ed) {
     range: (label, value, min, max, onChange, o = {}) => ({ t: 'range', label: T(label), value, min, max, onChange, text: o.text != null ? String(o.text) : String(value), title: T(o.title || label) }),
     link: (label, onClick, o = {}) => ({ t: 'link', label: T(label), onClick, dis: o.dis }),
     stat: (n, label) => ({ t: 'stat', n: String(n), label: T(label) }),
-    input: (label, value, onChange, onKey, ref) => ({ t: 'input', label: T(label), value, onChange, onKey, ref }),
+    input: (label, value, onChange, onKey, ref, title) => ({ t: 'input', label: T(label), value, onChange, onKey, ref, title: T(title || label) }),
     empty: label => ({ t: 'empty', label }),
     tsty: (look, on, onClick, title) => ({ t: 'tsty', ...look, on, onClick, title: T(title) })
   };
@@ -65,7 +65,7 @@ export function parseCm(text) {
   const m = /^\s*(-?\d+(?:\.\d+)?|-?\.\d+)\s*([a-z"]+|厘米|公分|毫米|英寸|磅)?\s*$/i.exec(String(text || ''));
   return m ? +m[1] * (CM[(m[2] || 'cm').toLowerCase()] || 1) : NaN;
 }
-/** A length in cm as the fields show it: 2.54 厘米. */
-export const cmLabel = cm => T('{n} 厘米', { n: +(+cm).toFixed(2) });
+/** A length in cm as the fields show it, to the hundredth and halves up as Word shows them (1800 twips, 3.175 cm, is 3.18 厘米). */
+export const cmLabel = cm => T('{n} 厘米', { n: Math.round(+cm * 100 + 1e-9) / 100 });
 /** Rounds to the step, so a stepper lands on round values. */
 export const snap = (v, step) => Math.round(Math.round(v / step) * step * 1000) / 1000;

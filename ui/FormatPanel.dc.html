@@ -175,7 +175,7 @@
               </sc-if>
               <sc-if value="{{ it.isStat }}" hint-placeholder-val="{{ false }}"><div class="fp-stat"><b>{{ it.n }}</b><span>{{ it.label }}</span></div></sc-if>
               <sc-if value="{{ it.isInput }}" hint-placeholder-val="{{ false }}">
-                <input class="fp-in" ref="{{ it.ref }}" value="{{ it.value }}" placeholder="{{ it.label }}" aria-label="{{ it.label }}" onChange="{{ it.onChange }}" onKeyDown="{{ it.onKey }}">
+                <input class="fp-in" ref="{{ it.ref }}" value="{{ it.value }}" placeholder="{{ it.label }}" title="{{ it.title }}" aria-label="{{ it.label }}" onChange="{{ it.onChange }}" onKeyDown="{{ it.onKey }}">
               </sc-if>
               <sc-if value="{{ it.isLink }}" hint-placeholder-val="{{ false }}"><button class="fp-link" disabled="{{ it.dis }}" onMouseDown="{{ keep }}" onClick="{{ it.onClick }}">{{ it.label }}</button></sc-if>
               <sc-if value="{{ it.isEmpty }}" hint-placeholder-val="{{ false }}"><div class="fp-empty">{{ it.label }}</div></sc-if>

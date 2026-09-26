@@ -466,6 +466,7 @@ const MACOS = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform
 let PERF = new URLSearchParams(location.search).get('perf'); try { PERF = PERF || localStorage.getItem('writerPerf'); } catch (e) { } // frame-time HUD, see perf.js
 
 class Component extends DCLogic {
+  openSeqN = 0; // the order documents were opened in: the title bar's tabs follow it
   state = { ready: false, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null, pTools: false, pThumbs: false, pAI: false };
   prefs = {}; closed = new Set(); lastSel = '';
   chatRef = React.createRef(); rootRef = React.createRef(); leftPillRef = React.createRef(); rightPillRef = React.createRef(); fileRef = React.createRef(); hist = {}; sv = {}; _len = 0; _cards = 0; _h = 0;
@@ -565,7 +566,7 @@ class Component extends DCLogic {
   emitShell() {
     if (!this.props.onShell || !this.state.ready) return;
     const st = this.state, d = this.doc, isDoc = st.view === 'doc' && !!d;
-    const info = { docs: st.docs.map(x => ({ id: x.id, title: x.title, type: x.type, path: x.path, open: !!x.loaded, on: isDoc && x.id === d.id, draft: this.EN ? this.EN.isDraft(x.path) : false })), isDoc, title: isDoc ? d.title : $t('新建'), type: isDoc ? d.type : '', path: isDoc ? d.path : '', draft: isDoc && this.EN ? this.EN.isDraft(d.path) : false, showThumbs: !!st.showThumbs, showAI: !!st.showAI, showFormat: !!st.showFormat && !st.showAI, pure: !!(isDoc && st.pure), dark: document.documentElement.dataset.theme === 'dark' };
+    const info = { docs: st.docs.map(x => ({ id: x.id, title: x.title, type: x.type, path: x.path, open: !!x.loaded, seq: x.loaded ? x.openSeq || (x.openSeq = ++this.openSeqN) : 0, on: isDoc && x.id === d.id, draft: this.EN ? this.EN.isDraft(x.path) : false })), isDoc, title: isDoc ? d.title : $t('新建'), type: isDoc ? d.type : '', path: isDoc ? d.path : '', draft: isDoc && this.EN ? this.EN.isDraft(d.path) : false, showThumbs: !!st.showThumbs, showAI: !!st.showAI, showFormat: !!st.showFormat && !st.showAI, pure: !!(isDoc && st.pure), dark: document.documentElement.dataset.theme === 'dark' };
     const k = JSON.stringify(info); if (k !== this._shK) { this._shK = k; this.props.onShell(info, this.shellApi); }
   }
   /** What reopens next time (退出时保留窗口 / 上次文档): the open documents in order, the ones closed, the last active one. */
@@ -650,8 +651,9 @@ class Component extends DCLogic {
     if (!d.loaded) {
       if (this.loading === id) return; this.loading = id; this.setState({ menu: null, docsOpen: false });
       this.toastMsg($t('正在打开 {title}…', { title: d.title }));
+      const seq = ++this.openSeqN; // its tab's place: when it was asked for, not when its file finished reading
       try {
-        const nd = await this.EN.open(d); this.loading = null; this.setState(s => ({ docs: s.docs.map(x => x.id === id ? nd : x), cur: id, view: 'doc', menu: null, docsOpen: false, toast: null }));
+        const nd = await this.EN.open(d); nd.openSeq = seq; this.loading = null; this.setState(s => ({ docs: s.docs.map(x => x.id === id ? nd : x), cur: id, view: 'doc', menu: null, docsOpen: false, toast: null }));
         // compatibility mode (.doc, .xls, .ppt, .wps, .odt, .rtf, .csv …): the file was read into a draft of the editor's own type
         if (nd.from) this.toastMsg($t('「{name}」已按兼容模式打开：存储时将另存为 {ext} 文件，原文件保持不变。', { name: nd.from.replace(/\\/g, '/').split('/').pop(), ext: '.' + nd.type }));
       }

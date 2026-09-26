@@ -125,7 +125,12 @@
 .wd-qbar-c{width:14px;height:3px;border-radius:2px;flex:none}
 .wd-qcol input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;padding:0;border:none}
 .wd-qai{padding:0 10px 0 8px!important;font-size:13px!important;font-weight:500;gap:5px}
-.wd-ed ::selection,.wd-ed::selection{background:var(--sel-page, #C7DDFB)} /* theme: keep — the page stays white in both themes, as in the design */
+.wd-tbl-cols,.wd-tbl-rows{position:absolute;display:flex;overflow:hidden;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)} /* theme: keep — on the white page in both themes */
+.wd-tbl-cols{left:0;top:-16px;border-radius:3px 3px 0 0}.wd-tbl-rows{left:-16px;top:0;flex-direction:column;border-radius:3px 0 0 3px}
+.wd-tbl-cols span,.wd-tbl-rows span{flex:none;display:flex;align-items:center;justify-content:center;font-size:9.5px;color:rgba(0,0,0,.5);background:#E9E9EC;box-sizing:border-box}
+.wd-tbl-cols span{height:14px;box-shadow:inset -.5px 0 0 #FFFFFF}.wd-tbl-rows span{width:14px;box-shadow:inset 0 -.5px 0 #FFFFFF}
+.wd-tbl-frame{position:absolute;inset:0;box-shadow:0 0 0 2px var(--fp-accent, #007AFF);border-radius:1px}
+.wd-ed ::selection,.wd-ed::selection,html[data-theme="dark"] .wd-ed ::selection,html[data-theme="dark"] .wd-ed::selection{background:var(--sel-page, #C7DDFB)} /* theme: keep — the page stays white in both themes, as in the design (over the dark theme's green) */
 </style>
 </helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;background:{{ rootBg }};position:relative;outline:none">
@@ -248,6 +253,13 @@
               </sc-if>
             </div>
           </sc-for>
+          <sc-if value="{{ tblOn }}" hint-placeholder-val="{{ false }}">
+            <div data-tbl-overlay="1" style="position:absolute;left:{{ tblX }};top:{{ tblY }};width:{{ tblW }};height:{{ tblH }};z-index:2;pointer-events:none">
+              <div class="wd-tbl-cols"><sc-for list="{{ tblCols }}" as="c" hint-placeholder-count="3"><span style="width:{{ c.w }}">{{ c.label }}</span></sc-for></div>
+              <div class="wd-tbl-rows"><sc-for list="{{ tblRows }}" as="r" hint-placeholder-count="3"><span style="height:{{ r.h }}">{{ r.label }}</span></sc-for></div>
+              <div class="wd-tbl-frame"></div>
+            </div>
+          </sc-if>
           <sc-if value="{{ hfOn }}" hint-placeholder-val="{{ false }}">
             <div data-hfbar="1" onMouseDown="{{ md }}" style="position:absolute;left:{{ padH }};top:{{ hfBarTop }};bottom:{{ hfBarBottom }};z-index:3;display:flex;align-items:center;gap:1px;padding:4px;border-radius:12px;background:linear-gradient(180deg,var(--k23, rgba(255,255,255,0.82)),var(--k40, rgba(255,255,255,0.66)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:0 8px 24px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));font-family:'Noto Sans SC',sans-serif">
               <sc-for list="{{ hfBtns }}" as="b" hint-placeholder-count="0">
@@ -397,8 +409,14 @@ const SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 6
 const PAGES = { A4: [794, 1123], Letter: [816, 1056], A5: [559, 794], B5: [665, 945], A3: [1123, 1587], Legal: [816, 1344] }; // px at 96 dpi, portrait
 const PAPER_CM = { A4: [21, 29.7], A5: [14.8, 21], B5: [17.6, 25], A3: [29.7, 42], Letter: [21.59, 27.94], Legal: [21.59, 35.56] }; // 纸张, as the panel names them
 // 页边距: the engine's presets (DocxSection.Margins), cm top / sides; any other margins are "top right bottom left" as the engine prints them
-const MARGIN_PRESETS = [['normal', '普通', '2.54 厘米'], ['narrow', '窄', '1.27 厘米'], ['moderate', '适中', '2.54 / 1.91 厘米'], ['wide', '宽', '2.54 / 5.08 厘米']];
-const MARGIN_CM = { normal: [2.54, 2.54], narrow: [1.27, 1.27], moderate: [2.54, 1.91], wide: [2.54, 5.08] };
+const MARGIN_CM = { normal: [2.54, 2.54], narrow: [1.27, 1.27], moderate: [2.54, 1.905], wide: [2.54, 5.08] };
+/** Word's 页边距 presets as the panel offers them: [value written, label, hint, top, sides]. 普通 is the one the language's Word has:
+ *  Chinese Word's 上下 2.54 · 左右 3.18 厘米 (1800 twips, the design's 普通), English Word's 2.54 all round (the engine's normal). */
+const marginPresets = () => [globalThis.$lang && $lang() === 'en' ? ['normal', '普通', '2.54 厘米', 2.54, 2.54] : ['2.54cm 3.175cm 2.54cm 3.175cm', '普通', '2.54 / 3.18 厘米', 2.54, 3.175],
+  ['narrow', '窄', '1.27 厘米', 1.27, 1.27], ['moderate', '适中', '2.54 / 1.91 厘米', 2.54, 1.905], ['wide', '宽', '2.54 / 5.08 厘米', 2.54, 5.08]];
+/** The preset margins are (to the hundredth of a cm); 2.54 all round is 普通 too, English Word's. */
+const marginPreset = m => { const near = (a, b) => Math.abs(a - b) < 0.011, list = marginPresets();
+  return list.find(([, , , t, sd]) => near(m.top, t) && near(m.bottom, t) && near(m.left, sd) && near(m.right, sd)) || ([m.top, m.right, m.bottom, m.left].every(x => near(x, 2.54)) ? list[0] : undefined); };
 /** A page's margins in cm, { top, right, bottom, left }, from a preset's name or the engine's four lengths. */
 const marginsCm = margin => {
   const p = MARGIN_CM[margin]; if (p) return { top: p[0], right: p[1], bottom: p[0], left: p[1] };
@@ -407,8 +425,10 @@ const marginsCm = margin => {
   return [t, r, b, l].every(x => x >= 0) ? { top: t, right: r, bottom: b, left: l } : marginsCm('normal');
 };
 /** Margins as the page model keeps them: a preset's name when they are one, else top right bottom left in cm. */
-const marginText = m => { const r = x => +(+x).toFixed(2); const hit = Object.entries(MARGIN_CM).find(([, [a, b]]) => r(m.top) === a && r(m.bottom) === a && r(m.left) === b && r(m.right) === b); return hit ? hit[0] : `${r(m.top)}cm ${r(m.right)}cm ${r(m.bottom)}cm ${r(m.left)}cm`; };
+const marginText = m => { const r = x => Math.round(+x * 100 + 1e-9) / 100, near = (a, b) => Math.abs(a - b) < 0.011; const hit = Object.entries(MARGIN_CM).find(([, [a, b]]) => near(m.top, a) && near(m.bottom, a) && near(m.left, b) && near(m.right, b)); return hit ? hit[0] : `${r(m.top)}cm ${r(m.right)}cm ${r(m.bottom)}cm ${r(m.left)}cm`; };
 const marginsPx = margin => { const m = marginsCm(margin), px = x => Math.round(x * 96 / 2.54); return { top: px(m.top), right: px(m.right), bottom: px(m.bottom), left: px(m.left) }; };
+/** A table column's letter over it, as a spreadsheet names columns: A…Z, AA… */
+const colName = i => (i >= 26 ? colName(Math.floor(i / 26) - 1) : '') + String.fromCharCode(65 + i % 26);
 /** A CSS colour (rgb() from getComputedStyle, or #hex) as #RRGGBB; '' when it is not one. */
 const rgbHex = c => { const m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ''); return m ? '#' + [m[1], m[2], m[3]].map(x => (+x).toString(16).padStart(2, '0')).join('').toUpperCase() : /^#[0-9a-f]{6}$/i.test(c || '') ? c.toUpperCase() : ''; };
 // 段前 / 段后: in lines (行) as Chinese Word counts them — "0.5lines" in the file's beforeLines — or points for documents that use them
@@ -442,7 +462,9 @@ const PIC_BLOCKS = 'p,h1,h2,h3,li,blockquote'; // the blocks a picture can sit i
 const OUTLINE = '2px solid var(--k59, #3F7D5C)';
 const CV_PAD = [18, 24]; // canvas padding top / left: the scroll anchor when zooming (纯净模式 keeps PURE_TOP above the page)
 const PURE_TOP = 76;
-const ZMIN = 0.2, ZMAX = 4;
+// 100% is the page as the design (定稿) draws it, A4 680px wide: st.zoom is the page's CSS zoom, the zoom shown is it against Z100
+const Z100 = 680 / 794, ZMIN = 0.2 * Z100, ZMAX = 4 * Z100;
+const pctOf = z => Math.round(z / Z100 * 100);
 const THUMB_MS = 1000, NO_THUMB = { __html: '' }; // page thumbnails re-copy the document at most once a second
 const AV_ME = 'oklch(0.56 0.1 45)', AV_HUES = [225, 345, 165, 285, 105]; // comment avatars: mine keep the designed colour, other authors one of these hues
 /** An author's initials for an avatar: the first character of a CJK name, else the first letters of its first and last words. */
@@ -478,7 +500,7 @@ const hfOut = html => {
 };
 
 class Component extends DCLogic {
-  state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: 1, zoomEdit: null, view: 'page', showRuler: false, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFFF00', activeCid: null, imgSel: false, hf: null, hfLive: null };
+  state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: Z100, zoomEdit: null, view: 'page', showRuler: false, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFFF00', activeCid: null, imgSel: false, hf: null, hfLive: null };
   edRef = React.createRef(); cvRef = React.createRef(); imgRef = React.createRef(); findRef = React.createRef(); hfRef = React.createRef(); panelFindRef = React.createRef();
   pgId = 'pg' + Math.random().toString(36).slice(2, 8); // scopes the page view's rules (pgCss) to this editor's text
   componentDidMount() {
@@ -500,7 +522,7 @@ class Component extends DCLogic {
     if (this.cvRef.current) this.cvRef.current.addEventListener('scroll', this.onCvScroll, { passive: true });
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) { }
     this.autoFit = true;
-    const fit = () => { const cv = this.cvRef.current; if (!cv || !this.autoFit || this.state.view === 'web') return; const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; const z = Math.max(ZMIN, Math.min(1, Math.floor((cv.clientWidth - 48) / W * 20) / 20)); if (z !== this.state.zoom) this.setState({ zoom: z }); };
+    const fit = () => { const cv = this.cvRef.current; if (!cv || !this.autoFit || this.state.view === 'web') return; const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; const z = Math.max(ZMIN, Math.min(1, Math.floor((cv.clientWidth - 48) / (W * Z100) * 20) / 20) * Z100); if (Math.abs(z - this.state.zoom) > 1e-6) this.setState({ zoom: z }); }; // in 5% steps of the zoom shown, 100% at most
     this.fitRO = new ResizeObserver(() => { fit(); clearTimeout(this.riT); this.riT = setTimeout(() => this.refreshInfo(), 200); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.refreshInfo()); if (this.cvRef.current) this.fitRO.observe(this.cvRef.current);
     this.attachWheel();
@@ -518,7 +540,7 @@ class Component extends DCLogic {
     this.gone = true; this.follow && this.follow.detach(); this.hb && this.hb.remove(); this.shb && this.shb.remove();
   }
   onCvScroll = () => { this.hb && this.hb.layout(); this.shb && this.shb.layout(); };
-  /** Continuous zoom, 20%–400%; `at` (client coords) is the point that stays put, default the canvas centre. */
+  /** Continuous zoom, 20%–400% as shown (z is the page's CSS zoom, Z100 at 100%); `at` (client coords) is the point that stays put, default the canvas centre. */
   setZoom(z, at) {
     z = Math.max(ZMIN, Math.min(ZMAX, z)); this.autoFit = false;
     const cv = this.cvRef.current, z0 = this.state.zoom; if (!cv || Math.abs(z - z0) < 1e-4) return;
@@ -531,7 +553,7 @@ class Component extends DCLogic {
   sideBySide() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; this.setState({ view: 'side' }, () => { if (cv) this.setZoom((cv.clientWidth - 60) / (2 * W + GAP)); this.refreshInfo(); }); }
   fitWidth() { const cv = this.cvRef.current, pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4; if (cv) this.setZoom((cv.clientWidth - 60) / (pg.orient === 'landscape' ? ph : pw)); }
   onWheel = e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom(this.state.zoom * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
-  applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
+  applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100 * Z100); }
   componentDidUpdate(pp) {
     this.attachWheel(); this.attachFollow(); this.hb && this.hb.layout(); this.shb && this.shb.layout();
     if (pp.formatOpen && !this.props.formatOpen && this.state.pop) this.setState({ pop: null });
@@ -883,8 +905,19 @@ class Component extends DCLogic {
     const x = Math.max(half + 8, Math.min(window.innerWidth - half - 8, rawX));
     const selBar = r.collapsed || !rc.width ? null : { x: Math.round(x), y: Math.round(below ? rc.bottom + 10 : rc.top - 10), below, dx: Math.max(-half + 16, Math.min(half - 16, Math.round(rawX - x))) };
     if (JSON.stringify(selBar) !== JSON.stringify(this.state.selBub || null)) next.selBub = selBar;
+    const tb = tblEl && ed === this.edRef.current ? this.tableBox(tblEl) : null;
+    if (JSON.stringify(tb) !== JSON.stringify(this.state.tblBox || null)) next.tblBox = tb;
     if (Object.keys(next).length) this.setState(next);
   };
+  /** The table the caret is in, as the design draws it while its 表格 tab is up: its frame on the page and the size of each grid
+   *  column (every cell edge, so merged cells count once) and row, in page px (unzoomed). */
+  tableBox(t) {
+    const host = this.edRef.current && this.edRef.current.parentElement; if (!host || !t.isConnected) return null;
+    const z = this.state.zoom, h = host.getBoundingClientRect(), r = t.getBoundingClientRect(), px = v => Math.round(v * 10) / 10, xs = [];
+    for (const td of t.querySelectorAll('td,th')) { if (td.closest('table') !== t) continue; const c = td.getBoundingClientRect(); for (const v of [c.left, c.right]) { const u = (v - r.left) / z; if (!xs.some(x => Math.abs(x - u) < 2)) xs.push(u); } }
+    xs.sort((a, b) => a - b);
+    return { x: px((r.left - h.left) / z), y: px((r.top - h.top) / z), w: px(r.width / z), h: px(r.height / z), cols: xs.slice(1).map((x, i) => px(x - xs[i])), rows: Array.from(t.rows, tr => px(tr.getBoundingClientRect().height / z)) };
+  }
   restore() {
     const ed = this.root; const s = window.getSelection();
     if (document.activeElement !== ed) ed.focus({ preventScroll: true });
@@ -1591,14 +1624,14 @@ class Component extends DCLogic {
     const sec = this.sectionOf(), sp0 = sec ? this.secPage(sec) : pg, setSec = patch => sec ? this.setSecPage(sec, patch) : this.change({ page: Object.assign({}, pg, patch) });
     const own = sec ? { title: '应用于本节' } : {}, land = sp0.orient === 'landscape';
     const paper = (size, orient) => { const [w, h] = PAPER_CM[size] || PAPER_CM.A4, [a, b] = orient === 'landscape' ? [h, w] : [w, h]; return $t('{size} · {w} × {h} 厘米', { size, w: a, h: b }); };
-    const mg = marginsCm(sp0.margin), preset = MARGIN_PRESETS.find(([key]) => key === sp0.margin);
+    const mg = marginsCm(sp0.margin), preset = marginPreset(mg);
     const setMg = patch => setSec({ margin: marginText(Object.assign({}, mg, patch)) });
     const side = (key, l) => num(this.FP.cmLabel(mg[key]), dd => setMg({ [key]: Math.max(0, this.FP.snap(mg[key] + dd * 0.1, 0.01)) }), t => { const v = this.FP.parseCm(t); if (v >= 0 && v < 30) setMg({ [key]: v }); }, { lab: l, labW: 14, w: 80, title: $t('{side}页边距', { side: $t(l) }) });
     const brk = sec && sec.getAttribute('data-w-sectionbreak'), brkLabel = brk ? $t('分节符（{kind}）', { kind: $t((SECTION_BREAKS.find(x => x[0] === brk) || [, '下一页'])[1]) }) : $t('分页符');
     return [
       G('纸张', R(sel('size', paper(sp0.size, sp0.orient), Object.keys(PAPER_CM).map(s => I(paper(s, 'portrait'), () => setSec({ size: s }), { on: sp0.size === s })), own)),
         R(lab('方向'), sp(), seg([{ label: '纵向', on: !land, onClick: () => setSec({ orient: 'portrait' }) }, { label: '横向', on: land, onClick: () => setSec({ orient: 'landscape' }) }], { w: 140 }))),
-      G('页边距', R(sel('margin', preset ? $t(preset[1]) : $t('自定义'), MARGIN_PRESETS.map(([key, l, hint]) => I(l, () => setSec({ margin: key }), { on: sp0.margin === key, hint })), own),
+      G('页边距', R(sel('margin', preset ? $t(preset[1]) : $t('自定义'), marginPresets().map(([v, l, hint]) => I(l, () => setSec({ margin: v }), { on: !!preset && preset[0] === v, hint: $t(hint) })), own),
           sel('margin-more', $t('自定义…'), [I('上下左右相同…', () => this.prompt('页边距', [{ key: 'v', label: '上下左右（厘米）', value: String(mg.top), first: true }], v => { const x = this.FP.parseCm(v.v); if (x >= 0 && x < 30) setMg({ top: x, bottom: x, left: x, right: x }); })),
             I('上下对称、左右对称…', () => this.prompt('页边距', [{ key: 'tb', label: '上下（厘米）', value: String(mg.top), first: true }, { key: 'lr', label: '左右（厘米）', value: String(mg.left) }], v => { const a = this.FP.parseCm(v.tb), b = this.FP.parseCm(v.lr); if (a >= 0 && b >= 0) setMg({ top: a, bottom: a, left: b, right: b }); }))], { w: 92, title: '自定义页边距' })),
         grid(2, side('top', '上'), side('bottom', '下'), side('left', '左'), side('right', '右'))),
@@ -1618,7 +1651,7 @@ class Component extends DCLogic {
     const tocStyle = toc ? toc.getAttribute('data-toc-style') || 'classic' : st.tocStyle || 'classic';
     const nfmt = d.noteFormat || 'decimal';
     return [
-      G('目录', R(btn('插入目录', 'toc', () => this.insertToc(), { title: '根据标题生成目录' }), btn('更新目录', 'refresh', () => this.insertToc(), { dis: !toc, title: '按现在的标题更新目录' })),
+      G('目录', R(btn('插入目录', 'toc', () => this.insertToc(), { title: '根据标题生成目录' }), btn('更新目录', 'refresh', () => toc ? this.insertToc() : this.props.toast && this.props.toast($t('文档里还没有目录，先点「插入目录」')), { title: '按现在的标题更新目录' })),
         R(lab('样式'), sp(), sel('tocsty', $t((TOC_STYLES.find(x => x[0] === tocStyle) || TOC_STYLES[0])[1]), TOC_STYLES.map(([key, l]) => I(l, () => this.setTocStyle(key), { on: tocStyle === key })), { w: 132, title: '目录样式' }))),
       G('脚注和尾注', R(btn('插入脚注', 'note', () => this.insertNote('footnote'), { title: '在光标处插入脚注，注释显示在页面底端' }), btn('插入尾注', 'note', () => this.insertNote('endnote'), { title: '在光标处插入尾注，注释显示在文档末尾' })),
         R(lab('编号'), sp(), sel('nfmt', (NOTE_FORMATS.find(x => x[0] === nfmt) || NOTE_FORMATS[0])[1], NOTE_FORMATS.map(([key, l]) => I(l, () => this.setNoteFormat(key), { on: nfmt === key })), { w: 132, title: '脚注和尾注的编号样式' })),
@@ -1647,18 +1680,18 @@ class Component extends DCLogic {
         R(lab('显示'), sp(), sel('markup', $t({ all: '所有标记', none: '无标记', original: '原始版本' }[st.markup || 'all']), null, { w: 132, title: '所有标记：修订和批注都显示；无标记：显示修改后的样子；原始版本：显示修改前的样子' })),
         R(btn('全部接受', 'check', () => this.resolveTrack(true), { title: '接受所有修订' }), btn('全部拒绝', 'cross', () => this.resolveTrack(false), { title: '拒绝所有修订' }))),
       G('查找与替换', R(input('查找', st.fq, e => this.setState({ fq: e.target.value, fcount: null }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } }, this.panelFindRef)),
-        R(input('替换为', st.fr, e => this.setState({ fr: e.target.value }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.replaceOne(); } })),
-        R(btn('下一个', 'search', () => this.findNext(), { title: '查找下一个' }), btn('替换', null, () => this.replaceOne(), { title: '替换这一处' }), btn('全部替换', null, () => this.replaceAll())),
+        R(input('替换为', st.fr, e => this.setState({ fr: e.target.value }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.replaceOne(); } }, null, '替换为：回车替换找到的这一处')),
+        R(btn('下一个', 'search', () => this.findNext(), { title: '查找下一个' }), btn('全部替换', 'refresh', () => this.replaceAll())),
         st.fcount != null && R(empty(st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'))))
     ];
   }
   panelView(k, c) {
     const { G, R, seg, size, btn, chk, lab, sp } = k, { st, pg, I } = c, web = st.view === 'web', sv = st.view === 'side';
-    const zoomItems = [0.5, 0.75, 1, 1.25, 1.5, 2].map(z => I(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 })).concat([I('页宽', () => this.fitWidth()), I('整页', () => this.fitPage()), I('多页', () => this.sideBySide())]);
+    const zoomItems = [0.5, 0.75, 1, 1.25, 1.5, 2].map(z => I(Math.round(z * 100) + '%', () => this.setZoom(z * Z100), { on: Math.abs(st.zoom - z * Z100) < 0.005 })).concat([I('页宽', () => this.fitWidth()), I('整页', () => this.fitPage()), I('多页', () => this.sideBySide())]);
     return [
       G('视图', R(seg([{ label: '页面', on: !web, title: '分页显示，带页眉页脚', onClick: () => this.setState({ view: sv ? 'side' : 'page' }) }, { label: '网页', on: web, title: '连续阅读，不分页', onClick: () => this.setState({ view: 'web' }) },
         { label: '阅读', title: '沉浸阅读 Ctrl+.', onClick: () => this.props.onPlay && this.props.onPlay() }]))),
-      G('缩放', R(size(Math.round(st.zoom * 100) + '%', () => this.setZoom(this.state.zoom - 0.1), () => this.setZoom(this.state.zoom + 0.1), 'zoom-p', zoomItems, { w: 124, minW: 44, title: '缩放', decTitle: '缩小 Ctrl+−', incTitle: '放大 Ctrl+＋' }),
+      G('缩放', R(size(pctOf(st.zoom) + '%', () => this.setZoom(this.state.zoom - 0.1 * Z100), () => this.setZoom(this.state.zoom + 0.1 * Z100), 'zoom-p', zoomItems, { w: 124, minW: 44, title: '缩放', decTitle: '缩小 Ctrl+−', incTitle: '放大 Ctrl+＋' }),
         btn('适应宽度', 'fit', () => this.fitWidth()))),
       G('显示', R(chk('缩略图', this.props.showThumbs !== false, () => this.props.onToggleThumbs && this.props.onToggleThumbs()), sp(), chk('标尺', st.showRuler && !web, v => this.setState({ showRuler: v }), { dis: web || sv })),
         R(chk('页眉页脚', pg.hf, v => this.change({ page: Object.assign({}, pg, { hf: v }) })), sp(), chk('网格线', !!st.showGrid, v => this.setState({ showGrid: v }), { dis: web }))),
@@ -1666,8 +1699,11 @@ class Component extends DCLogic {
     ];
   }
   panelTable(k, c) {
-    const { G, R, grid, btn, menuBtn, seg, swatch, sel, num, chk, lab, sp, link, tsty } = k, { f, I } = c, t = f.tbl || {}, cell = f.cell || {}, row = f.row || {};
-    const styles = TABLE_STYLES.map(([key, label, look]) => tsty(look, key === 'none' ? t.borders === 'none' : (t.style || 'TableGrid') === key && t.borders !== 'none', () => this.tbl('style', key), label));
+    const { G, R, grid, btn, menuBtn, seg, swatch, sel, num, chk, lab, sp, tsty } = k, { f, I, HD } = c, t = f.tbl || {}, cell = f.cell || {}, row = f.row || {};
+    const isStyle = key => key === 'none' ? t.borders === 'none' : (t.style || 'TableGrid') === key && t.borders !== 'none';
+    const styles = TABLE_STYLES.slice(0, 3).map(([key, label, look]) => tsty(look, isStyle(key), () => this.tbl('style', key), label)); // the design's three; the others are in 边框
+    const borders = [['top', '上框线'], ['bottom', '下框线'], ['left', '左框线'], ['right', '右框线'], ['all', '所有框线'], ['none', '无框线'], ['', '随表格']].map(([key, l]) => I(l, () => this.tbl('cborder', key), { on: key !== '' && key === cell.borders }))
+      .concat([HD($t('整个表格'))], TABLE_STYLES.slice(3).map(([key, label]) => I(label, () => this.tbl('style', key), { on: isStyle(key) })));
     const ha = cell.align || 'left', va = cell.valign || 'top', rh = row.height ? parseFloat(row.height) : 0;
     const setH = cm => this.tbl('height', cm > 0 ? +cm.toFixed(2) + 'cm' : '');
     return [
@@ -1679,10 +1715,10 @@ class Component extends DCLogic {
         R(seg([['left', 'alignLeft', '左'], ['center', 'alignCenter', '中'], ['right', 'alignRight', '右']].map(([a, icon, title]) => ({ icon, title: $t('{side}对齐', { side: $t(title) }), on: ha === a, onClick: () => this.tbl('calign', [a, va]) }))),
           seg([['top', 'vTop', '顶端'], ['middle', 'vMiddle', '居中'], ['bottom', 'vBottom', '底端']].map(([v, icon, title]) => ({ icon, title: $t('{side}对齐', { side: $t(title) }), on: va === v, onClick: () => this.tbl('calign', [ha, v]) })))),
         R(swatch('底纹', cell.fill ? '#' + cell.fill : '#FFFFFF', c2 => this.tbl('shade', c2), { value: cell.fill ? '#' + cell.fill : '#F5F5F7', title: '单元格底纹' }), // theme: keep (the shading it applies)
-          sel('cbd', $t('边框'), null, { w: 100, title: '单元格边框' })),
+          sel('cbd-p', $t('边框'), borders, { w: 100, title: '单元格边框，或整个表格的线条' })),
         R(lab('行高'), sp(), num(rh ? this.FP.cmLabel(rh) : $t('自动'), dd => setH(Math.max(0, (rh || 0.8) + dd * 0.1)), txt => { const v = this.FP.parseCm(txt); if (!txt.trim() || txt.trim() === $t('自动')) setH(0); else if (v >= 0 && v < 30) setH(v); }, { w: 80, title: '行高' }))),
-      G('更多', R(menuBtn('tsort', '排序', 'sort', null, { title: '按所在列排序，数字按大小' }), btn('转文本', 'toText', () => this.tableToText(), { title: '转换为文本' }), btn('属性', 'gear', () => this.tableDlg(), { title: '表格属性…' })),
-        R(link('删除表格', () => this.tbl('delTable'))))
+      G('更多', R(menuBtn('tsort', '排序', 'sort', null, { title: '按所在列排序，数字按大小' }), btn('转文本', 'toText', () => this.tableToText(), { title: '转换为文本' }),
+        menuBtn('tprops', '属性', 'gear', [I('表格属性…', () => this.tableDlg()), I('删除表格', () => this.tbl('delTable'))], { title: '表格属性，删除表格' })))
     ];
   }
   panelImage(k, c) {
@@ -1786,7 +1822,7 @@ class Component extends DCLogic {
       ribbon = [
       M('size', $t('纸张：{size}', { size: sp.size }), ['A4', 'Letter', 'A5'].map(s => I(s, () => setSec({ size: s }), { on: sp.size === s })), own.title),
       M('orient', sp.orient === 'landscape' ? '横向' : '纵向', [['portrait', '纵向'], ['landscape', '横向']].map(([k, l]) => I(l, () => setSec({ orient: k }), { on: sp.orient === k })), own.title),
-      M('margin', '页边距', [['narrow', '窄', '1.27 cm'], ['normal', '普通', '2.54 cm'], ['wide', '宽', '3.18 cm']].map(([k, l, h]) => I(l, () => setSec({ margin: k }), { on: sp.margin === k, hint: h })), own.title),
+      M('margin', '页边距', marginPresets().map(([v, l, h]) => I(l, () => setSec({ margin: v }), { on: (marginPreset(marginsCm(sp.margin)) || [])[0] === v, hint: $t(h) })), own.title),
       M('cols', $t('分栏：{n}', { n: sp.cols }), [1, 2, 3].map(n => I($t('{n} 栏', { n }), () => setSec({ cols: n }), { on: +sp.cols === n })), own.title),
       M('brk', '分隔符', [HD($t('分页符')), I('分页符', () => this.insertHTML('<hr data-pb="1"><p><br></p>'), { hint: 'Ctrl+Enter' }), HD($t('分节符')), ...SECTION_BREAKS.map(([k, l]) => I(l, () => this.sectionBreak(k), { on: !!sec && sec.getAttribute('data-w-sectionbreak') === k })), I('删除分节符', () => this.sectionBreak(''))], '分页符与分节符：每节可以有自己的纸张、方向、页边距和分栏'),
       M('lnum', '行号@@word', [I('无', () => this.change({ lineNumbers: false }), { on: !d.lineNumbers }), I('连续', () => this.change({ lineNumbers: true }), { on: !!d.lineNumbers })], '在页边显示行号（Word 中显示）'),
@@ -1829,9 +1865,9 @@ class Component extends DCLogic {
       M('move', '页面移动', [I('垂直', () => this.setState({ view: 'page' }), { on: st.view === 'page' }), I('并排', () => this.sideBySide(), { on: st.view === 'side' })], '页面上下翻，或并排左右翻'), SEP,
       B('标尺', () => this.setState({ showRuler: !st.showRuler }), { on: st.showRuler && !web }), B('缩略图', () => this.props.onToggleThumbs && this.props.onToggleThumbs(), { on: this.props.showThumbs !== false }), B('页眉页脚', () => setPage({ hf: !pg.hf }), { on: pg.hf }),
       B(pg.orient === 'landscape' ? '横向' : '纵向', () => setPage({ orient: pg.orient === 'landscape' ? 'portrait' : 'landscape' }), { title: '点击切换纸张方向' }), SEP,
-      M('zoom', $t('缩放：{pct}', { pct: Math.round(st.zoom * 100) + '%' }), [0.5, 0.75, 1, 1.25, 1.5, 2].map(z => I(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 }))
+      M('zoom', $t('缩放：{pct}', { pct: pctOf(st.zoom) + '%' }), [0.5, 0.75, 1, 1.25, 1.5, 2].map(z => I(Math.round(z * 100) + '%', () => this.setZoom(z * Z100), { on: Math.abs(st.zoom - z * Z100) < 0.005 }))
         .concat([I('页宽', () => this.fitWidth()), I('整页', () => this.fitPage()), I('多页', () => this.sideBySide())])),
-      B('100%', () => this.setZoom(1), { on: Math.abs(st.zoom - 1) < 0.005 }), B('适应宽度', () => this.fitWidth()), SEP,
+      B('100%', () => this.setZoom(Z100), { on: Math.abs(st.zoom - Z100) < 0.005 }), B('适应宽度', () => this.fitWidth()), SEP,
       B('阅读模式', () => this.props.onPlay && this.props.onPlay(), { title: '沉浸阅读 Ctrl+.' })
     ];
     if (tab === 'table') ribbon = [
@@ -1917,6 +1953,7 @@ class Component extends DCLogic {
     const bubbleBtns = [bb('B', () => this.exec('bold'), { on: f.b, fw: 700 }), bb('I', () => this.exec('italic'), { on: f.i, fs: 'italic' }), bb('U', () => this.exec('underline'), { on: f.u }), SEPB,
       bb('标题@@sel', () => this.exec('formatBlock', heading ? '<p>' : '<h1>'), { on: heading }), SEPB, bb('链接', () => this.linkDlg())]
       .concat(this.props.onRewrite ? [SEPB, bb('改写', () => this.props.onRewrite(String(getSelection())), { star: true })] : []);
+    const tbx = !pure && !st.hf && f.inTable ? st.tblBox || null : null; // the table the caret is in: its letters, numbers and frame
     const formatOpen = !pure && !!this.props.formatOpen, panel = this.panelVals({ st, f, pg, d, tab, tabsDef, I, HD, info, comments, notes, moveComment, formatOpen });
     // popover: after the panel, whose controls register their menus as it builds them
     if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
@@ -1951,6 +1988,8 @@ class Component extends DCLogic {
       cvPad: web ? `${this.cvTop}px 0 72px` : `${this.cvTop}px ${CV_PAD[1]}px 72px`, cvBg: web ? pg.color || 'var(--kpage, #FFFFFF)' : 'transparent', cvLight: web ? '1' : undefined, sheetBg: 'transparent', pageSh: 'var(--word-paper-sh)',
       hasWm: !web && !!pg.wm, wm: $t(pg.wm), sheets, pgId: this.pgId, hfZones, hfRef: this.hfRef, hfOp: hf ? 1 : 0.6, edOp: hf ? 0.4 : 1, edPe: hf ? 'none' : 'auto',
       showRuler: st.showRuler && !web && !sv && !pure, cmPx: CMPX + 'px', halfCmPx: CMPX / 2 + 'px', tabStops, onRuler: e => this.rulerClick(e, m.left), rulerTitle: $t('点击标尺添加制表位；点击制表位切换 左 / 居中 / 右 / 小数点，再点一次移除'),
+      tblOn: !!tbx, tblX: tbx ? tbx.x + 'px' : '0', tblY: tbx ? tbx.y + 'px' : '0', tblW: tbx ? tbx.w + 'px' : '0', tblH: tbx ? tbx.h + 'px' : '0',
+      tblCols: tbx ? tbx.cols.map((w, i) => ({ w: w + 'px', label: colName(i) })) : [], tblRows: tbx ? tbx.rows.map((h, i) => ({ h: h + 'px', label: String(i + 1) })) : [],
       hfOn: !!hf, hfBtns, hfBarTop: !hf ? 'auto' : hf.kind === 'header' ? zoneTop + m.top + 26 + 'px' : paged ? zoneTop + PH - m.bottom - 64 + 'px' : 'auto', hfBarBottom: hf && hf.kind === 'footer' && !paged ? m.bottom + 26 + 'px' : 'auto', // clear of the 页眉 / 页脚 label
       onHfInput: () => this.hfInput(), onHfKey: e => { if (e.key === 'Escape') { e.preventDefault(); this.exitHF(); } },
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
@@ -1979,16 +2018,16 @@ class Component extends DCLogic {
       hasComments: !pure && !st.hideCm && (d.comments || []).length > 0, comments, commentCount: (d.comments || []).length, hasSide: side, hasNotes: notes.length > 0, notes, noteCount: notes.length,
       pagesText: web ? $t('连续') : $t('共 {n} 页', { n: info.pages }), pagePositionText: web ? $t('连续') : $t('第 {n} / {total} 页', { n: this.caretPage() + 1, total: info.pages }), wordsText: $t('{n} 字', { n: (info.count || 0).toLocaleString() }), trackOn: !!d.track,
       statusX: `calc(50% + ${((showTh && !pure ? 240 : 0) - (formatOpen ? 312 : side ? 272 : 0)) / 2}px)`,
-      zoomPct: Math.round(st.zoom * 100), onZoom: e => this.setZoom(+e.target.value / 100),
-      zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1),
-      zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
-      onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(Math.round(this.state.zoom * 100)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
+      zoomPct: pctOf(st.zoom), onZoom: e => this.setZoom(+e.target.value / 100 * Z100),
+      zoomIn: () => this.setZoom(this.state.zoom + 0.1 * Z100), zoomOut: () => this.setZoom(this.state.zoom - 0.1 * Z100),
+      zoomText: st.zoomEdit != null ? st.zoomEdit : pctOf(st.zoom) + '%',
+      onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(pctOf(this.state.zoom)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
       onZoomKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { const el = e.target; this.setState({ zoomEdit: null }, () => el.blur()); } },
       onRootKey: e => {
         if (!(e.ctrlKey || e.metaKey)) return; const k = e.key;
-        if (k === '=' || k === '+' || k === 'Add') { e.preventDefault(); this.setZoom(this.state.zoom + 0.1); }
-        else if (k === '-' || k === 'Subtract') { e.preventDefault(); this.setZoom(this.state.zoom - 0.1); }
-        else if (k === '0') { e.preventDefault(); this.setZoom(1); }
+        if (k === '=' || k === '+' || k === 'Add') { e.preventDefault(); this.setZoom(this.state.zoom + 0.1 * Z100); }
+        else if (k === '-' || k === 'Subtract') { e.preventDefault(); this.setZoom(this.state.zoom - 0.1 * Z100); }
+        else if (k === '0') { e.preventDefault(); this.setZoom(Z100); }
       },
       hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : '0', popY: st.pop ? st.pop.y + 'px' : '0', popMinW: Math.max(168, st.pop && st.pop.w || 0) + 'px',
       popMaxH: st.pop ? `min(420px, ${st.pop.up ? st.pop.y - 8 + 'px' : `calc(100vh - ${st.pop.y + 8}px)`})` : '420px', popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) ${st.pop.up ? '-100%' : '0px'}` : 'none', popItems, popIsGrid, gridCells, gridLabel, gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null }),

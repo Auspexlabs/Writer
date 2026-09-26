@@ -259,6 +259,8 @@ public class DocxSectionTests
         using var doc = new DocxAdapter().Create();
         Mutations.Set(doc.Root, Props(("margin", "2.54cm 3.18cm 2.54cm 3.18cm")));
         Assert.Equal("2.54cm 3.18cm 2.54cm 3.18cm", doc.Root.GetProps()["margin"]);
+        Mutations.Set(doc.Root, Props(("margin", "2.54cm 3.175cm 2.54cm 3.175cm"))); // Chinese Word's 普通: 1800 twips a side, shown as Word shows it
+        Assert.Equal((1800U, "2.54cm 3.18cm 2.54cm 3.18cm"), (Section(doc).GetFirstChild<W.PageMargin>()!.Left!.Value, doc.Root.GetProps()["margin"]));
         Mutations.Set(doc.Root, Props(("margin", "moderate")));
         Assert.Equal("moderate", doc.Root.GetProps()["margin"]);
         Mutations.Set(doc.Root, Props(("page", "B5")));

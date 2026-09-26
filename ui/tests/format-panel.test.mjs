@@ -16,7 +16,7 @@ const base = () => ({ location: { search: '' }, URLSearchParams, structuredClone
   React: { createRef: () => ({ current: null }) }, DCLogic: class { setState(u, cb) { Object.assign(this.state, typeof u === 'function' ? u(this.state) : u); if (cb) cb(); } forceUpdate() { } } });
 
 const ctx = base();
-vm.runInNewContext(script('WordEditor.dc.html') + '\nglobalThis.WordEditor = Component; globalThis.__T = { marginsCm, marginText, spaceText, spaceStep, spaceParse, rgbHex };', ctx);
+vm.runInNewContext(script('WordEditor.dc.html') + '\nglobalThis.WordEditor = Component; globalThis.__T = { marginsCm, marginText, marginPresets, marginPreset, spaceText, spaceStep, spaceParse, rgbHex, Z100, colName };', ctx);
 const H = ctx.__T;
 /** A Word editor with the panel open (no page on screen): what it calls is recorded in `calls`. */
 function word(doc = {}, props = {}) {
@@ -47,7 +47,13 @@ test('the Word panel has the design\'s six tabs and, on each, its groups in orde
   const v = at(c, 'table', { inTable: true, tbl: { style: 'GridTable4Accent1', header: 'true' }, row: {}, cell: {} });
   assert.deepEqual(plain(v.panelTabs.slice(-1).map(t => [t.label, t.on, t.ctx])), [['表格', true, true]]);
   assert.deepEqual(titles(v), ['表格样式', '行和列', '单元格', '更多']);
-  assert.deepEqual(plain(items(group(v, '表格样式')).filter(x => x.t === 'tsty').map(x => [x.title, x.on])).slice(0, 3), [['网格表 4（彩色标题行）', true], ['简明表格（隔行底纹）', false], ['网格表 4（橙色标题行）', false]]);
+  assert.deepEqual(plain(items(group(v, '表格样式')).filter(x => x.t === 'tsty').map(x => [x.title, x.on])), [['网格表 4（彩色标题行）', true], ['简明表格（隔行底纹）', false], ['网格表 4（橙色标题行）', false]], 'the design\'s three');
+  assert.deepEqual(plain(c.menus['cbd-p'].slice(-4).map(m => m.label)), ['整个表格', '网格', '三线表', '无框线'], 'the other styles are in 边框');
+  assert.deepEqual(plain(c.menus.tprops.map(m => m.label)), ['表格属性…', '删除表格']);
+  assert.deepEqual(plain(items(group(v, '更多')).map(x => x.label)), ['排序', '转文本', '属性'], 'no extra link under the group');
+  assert.deepEqual(plain(items(group(at(c, 'review'), '查找与替换')).filter(x => x.t === 'btn').map(x => x.label)), ['下一个', '全部替换'], 'Return in 替换为 replaces one');
+  assert.equal(find(at(c, 'view'), '缩放', x => x.t === 'size').value, '100%', '100% is the design\'s page, A4 680px wide');
+  assert.equal(c.state.zoom, H.Z100);
   const closed = word({}, { formatOpen: false }).renderVals();
   assert.deepEqual([closed.formatOpen, closed.panelTabs.length, closed.panelGroups.length], [false, 0, 0], 'a closed panel builds nothing');
 });
@@ -93,11 +99,18 @@ test('the panel\'s controls run the editor\'s commands', () => {
 });
 
 test('the page and spacing helpers: margins as presets or four lengths, spacing in lines or points', () => {
-  assert.deepEqual(plain(H.marginsCm('moderate')), { top: 2.54, right: 1.91, bottom: 2.54, left: 1.91 });
+  assert.deepEqual(plain(H.marginsCm('moderate')), { top: 2.54, right: 1.905, bottom: 2.54, left: 1.905 });
   assert.deepEqual(plain(H.marginsCm('2.54cm 3.18cm 2cm 3.18cm')), { top: 2.54, right: 3.18, bottom: 2, left: 3.18 }, 'the engine\'s four lengths');
   assert.deepEqual(plain(H.marginsCm('25.4mm 1in')), { top: 2.54, right: 2.54, bottom: 2.54, left: 2.54 });
   assert.deepEqual(plain(H.marginsCm('sideways')), plain(H.marginsCm('normal')), 'what cannot be read is Word\'s normal');
   assert.equal(H.marginText({ top: 2.54, right: 5.08, bottom: 2.54, left: 5.08 }), 'wide');
+  // 普通 is the language's Word's: Chinese 上下 2.54 · 左右 3.18 (the design's), English 2.54 all round; both read as 普通
+  assert.deepEqual(plain(H.marginPresets().map(p => [p[0], p[1]])), [['2.54cm 3.175cm 2.54cm 3.175cm', '普通'], ['narrow', '窄'], ['moderate', '适中'], ['wide', '宽']]);
+  assert.equal(H.marginPreset(H.marginsCm('2.54cm 3.18cm 2.54cm 3.18cm'))[1], '普通');
+  assert.equal(H.marginPreset(H.marginsCm('normal'))[1], '普通');
+  assert.equal(H.marginPreset(H.marginsCm('2cm 2cm 2cm 2cm')), undefined);
+  assert.equal(H.marginText(H.marginsCm('2.54cm 3.175cm 2.54cm 3.175cm')), '2.54cm 3.18cm 2.54cm 3.18cm', 'a side typed next to them keeps the others as Word shows them');
+  assert.deepEqual([H.colName(0), H.colName(4), H.colName(25), H.colName(26), H.colName(27)], ['A', 'E', 'Z', 'AA', 'AB']);
   assert.equal(H.marginText({ top: 2.5, right: 3.176, bottom: 2.5, left: 3.176 }), '2.5cm 3.18cm 2.5cm 3.18cm');
   assert.deepEqual([H.spaceText('0.5lines'), H.spaceText('6pt'), H.spaceText('')], ['0.5 行', '6 磅', '0 行']);
   assert.deepEqual([H.spaceStep('0.5lines', 1), H.spaceStep('0.5lines', -1), H.spaceStep('0lines', -1), H.spaceStep('6pt', 1), H.spaceStep('', 1)], ['1lines', '0lines', '0lines', '12pt', '0.5lines']);
