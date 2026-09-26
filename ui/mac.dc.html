@@ -127,7 +127,6 @@ button,input,select,textarea{font-family:inherit;color:inherit}
 // The native menu calls window.__writerMenu(id) and window.__writerOpen(path); this page reports its state with invoke('shell_state').
 const NATIVE = /[?&]native=1(&|$)/.test(location.search) || !!window.__TAURI_INTERNALS__;
 const EXT = { docx: '.docx', xlsx: '.xlsx', pptx: '.pptx', md: '.md', pdf: '.pdf', mm: '.mm' };
-const SQ = { docx: ['W', 'var(--type-w, #2F6BD1)'], xlsx: ['X', 'var(--type-x, #1E8A52)'], pptx: ['P', 'var(--type-p, #D0592E)'], md: ['M', 'var(--type-m, #3A3A3C)'], mm: ['T', 'var(--type-t, #7A5CC4)'], pdf: ['P', 'var(--type-f, #B5563A)'] }; // the type squares: letter and colour
 const DOC_ICON = type => './assets/doc/doc-' + ({ docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', mm: 'mindmap', pdf: 'pdf' }[type] || 'word') + '-32.png';
 /** The window title: the file name, marked 未存储 while it is a draft. */
 const docTitle = sh => { const name = sh.title + (EXT[sh.type] || ''); return sh.draft ? $t('{name} — 未存储', { name }) : name; };
@@ -329,7 +328,7 @@ class Component extends DCLogic {
     const side = !!(sh && sh.showThumbs && sh.isDoc && !sh.pure && sh.type === 'docx'); // Word's thumbnails: a glass sidebar the lights sit in
     const multi = openDocs.length > 0 && !(sh && sh.pure);
     const quickTab = set.quickTab || '开始';
-    const S = t => SQ[t] || SQ.docx, on = 'var(--tab-bg, rgba(255,255,255,0.92))', onSh = 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))';
+    const on = 'var(--tab-bg, rgba(255,255,255,0.92))', onSh = 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))';
     const more = [{ label: $t('沉浸书写'), key: '⌘.', fn: () => this.call('play') }];
     return {
       winRef: this.winRef, onShell: this.onShell, openPrefs: this.openPrefs, isFull: st.full,
@@ -348,8 +347,8 @@ class Component extends DCLogic {
       sideToggle: () => this.call('toggleThumbs'), sideOn: sh && sh.showThumbs && sh.isDoc && !side ? '1' : '0', sideShift: side ? 'translateX(116px)' : 'none', historyShift: side ? '132px' : '0px', sideTitle: $t(sh && sh.showThumbs ? '隐藏缩略图 ⌃⌘S' : '缩略图 ⌃⌘S'), titleBg: side ? 'transparent' : 'var(--bg, #F6F6F7)',
       goBack: () => this.undo(false), goFwd: () => this.undo(true),
       single: !multi, multi,
-      // one document: its type square and name; the start page: just 新建
-      fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', sq: sh && sh.isDoc ? S(sh.type)[0] : '', sqBg: sh && sh.isDoc ? S(sh.type)[1] : 'transparent', sqDisp: sh && sh.isDoc ? 'inline-flex' : 'none',
+      // one document: its file icon and name; the start page: just 新建
+      fileName: sh ? (sh.isDoc ? docTitle(sh) : $t(sh.title)) : 'Writer', sqDisp: sh && sh.isDoc ? 'inline-flex' : 'none',
       fileIcon: sh && sh.isDoc ? DOC_ICON(sh.type) : '',
       tabs: openDocs.map((x, i, arr) => {
         const hv = st.hovTab === x.id, dr = st.drag && st.drag.id === x.id ? st.drag : null;
