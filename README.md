@@ -86,6 +86,14 @@ MCP 服务只有一个工具 `writer`，参数就是上面这样的一行命令�
 - 全部命令、路径语法、HTTP 接口和 MCP 配置：[docs/engine.md](docs/engine.md)
 - 给 AI 智能体的使用说明：[SKILL.md](SKILL.md)
 
+**嵌入网页。** Writer 的编辑器可以放进任何网页：一个 Word、Excel 或 PowerPoint 编辑器，或者整个 Writer。引擎编译成 WebAssembly，在访问者的浏览器里运行；访问者直接编辑，网站用上面这些命令读写文档，AI 也能直接修改。接入方法见 [docs/embed.md](docs/embed.md)。
+
+```html
+<div id="doc" style="height:640px"></div>
+<script src="https://你的域名/writer/embed/writer-embed.js"></script>
+<script>Writer.embed('#doc', { mode: 'docx', file: '/files/方案.docx' });</script>
+```
+
 ## 从源代码构建
 
 引擎需要 .NET 10 SDK，编辑器的测试需要 Node 20。
@@ -94,6 +102,7 @@ MCP 服务只有一个工具 `writer`，参数就是上面这样的一行命令�
 dotnet test Writer.slnx        # 引擎测试
 node --test ui/tests/          # 编辑器逻辑测试
 ./build.sh osx-arm64           # 单文件 writer，输出到 dist/osx-arm64/（不带参数：macOS、Linux、Windows 全部构建）
+./build.sh embed               # 嵌入网页用的静态文件，输出到 dist/embed/writer/
 dist/osx-arm64/writer app --dir ~/Documents   # 在浏览器里用编辑器打开一个文件夹
 ```
 
@@ -111,8 +120,8 @@ npm run dev                    # 构建内置引擎，打开开发窗口
 
 ```
 src/          引擎（.NET 10）：Writer.Core 文档树与路径，Writer.Formats 各格式的读写，
-              Writer.Cli 命令行、MCP 服务、HTTP 服务和 AI 助手
-ui/           编辑器：每种格式一个页面，engine.js 负责和引擎通信
+              Writer.Cli 命令行、MCP 服务、HTTP 服务和 AI 助手，Writer.Browser 编译成 WebAssembly 的引擎
+ui/           编辑器：每种格式一个页面，engine.js 负责和引擎通信；embed/ 是嵌入网页用的脚本
 desktop/      Mac 和 Windows 应用（Tauri 2 窗口加内置引擎）
 website/      官网，纯静态页面
 tests/        引擎测试：单元、格式适配器、命令行和往返保真

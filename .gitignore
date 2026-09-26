@@ -17,3 +17,6 @@ website/.deploy.local
 
 # fidelity audit output (node tools/fidelity/roundtrip.mjs)
 tools/fidelity/out/
+
+# the engine compiled to WebAssembly, published for the embedded editor (./build.sh embed puts it in dist/embed/writer)
+ui/_framework/

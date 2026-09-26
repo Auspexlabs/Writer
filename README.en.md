@@ -107,6 +107,16 @@ returns exactly what the CLI prints. `writer serve` is a local HTTP API, and `wr
 - Every command, the path syntax, the HTTP API and MCP setup: [docs/engine.md](docs/engine.md)
 - How an AI agent should use it: [SKILL.md](SKILL.md)
 
+**Embedding.** Writer's editors go into any web page: one Word, Excel or PowerPoint editor, or the whole of Writer. The
+engine is compiled to WebAssembly and runs in the visitor's browser; visitors edit, the site reads and changes the
+documents with the commands above, and AI can edit them too. How to set it up: [docs/embed.md](docs/embed.md) (in Chinese).
+
+```html
+<div id="doc" style="height:640px"></div>
+<script src="https://YOUR-HOST/writer/embed/writer-embed.js"></script>
+<script>Writer.embed('#doc', { mode: 'docx', file: '/files/plan.docx' });</script>
+```
+
 ## Build from source
 
 The engine needs the .NET 10 SDK; the editor's tests need Node 20.
@@ -115,6 +125,7 @@ The engine needs the .NET 10 SDK; the editor's tests need Node 20.
 dotnet test Writer.slnx        # engine tests
 node --test ui/tests/          # editor logic tests
 ./build.sh osx-arm64           # single-file writer in dist/osx-arm64/ (no argument: macOS, Linux and Windows)
+./build.sh embed               # the static files for embedding in web pages, in dist/embed/writer/
 dist/osx-arm64/writer app --dir ~/Documents   # open a folder in the editor, in your browser
 ```
 
@@ -132,8 +143,9 @@ Packaging, signing and diagnostics are in [desktop/README.md](desktop/README.md)
 
 ```
 src/          the engine (.NET 10): Writer.Core, the document tree and paths; Writer.Formats, reading and
-              writing each format; Writer.Cli, the command line, MCP server, HTTP server and AI assistant
-ui/           the editors, one page per format; engine.js talks to the engine
+              writing each format; Writer.Cli, the command line, MCP server, HTTP server and AI assistant;
+              Writer.Browser, the engine compiled to WebAssembly
+ui/           the editors, one page per format; engine.js talks to the engine; embed/, embedding in web pages
 desktop/      the Mac and Windows app (Tauri 2 windows around a bundled engine)
 website/      the website, as static pages
 tests/        engine tests: unit, format adapters, command line and round-trip fidelity
