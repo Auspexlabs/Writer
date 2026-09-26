@@ -1202,7 +1202,7 @@ export const inkOn = fill => { const [r, g, b] = [0, 2, 4].map(i => parseInt(fil
 export function inkFills(root) {
   for (const el of root.querySelectorAll('[style*="background"],[data-ink]')) {
     const fill = colorHex(el.style.backgroundColor);
-    if (fill) el.setAttribute('data-ink', inkOn(fill)); else el.removeAttribute('data-ink');
+    const ink = fill && inkOn(fill); if (el.getAttribute('data-ink') !== ink) { if (ink) el.setAttribute('data-ink', ink); else el.removeAttribute('data-ink'); } // an unchanged mark restyles nothing
   }
   return root;
 }

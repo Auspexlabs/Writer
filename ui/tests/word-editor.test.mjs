@@ -62,6 +62,24 @@ test('a page break inside a paragraph and a paragraph that starts a page split p
   assert.deepEqual(pages(c, [[0, 100], ['hr', 128, 1], ['before', 157, 60]]), { text: '共 2 页', thumbs: [['0px', '20px'], ['-157px', '9px']] }, 'and so is one right after a page break');
 });
 
+test('typing that moves no block keeps the pages: the page view\'s gaps are not taken out to measure the whole file again', () => {
+  const c = editor({ id: 'd', html: '' }), ed = laidOut([[0, 900], [908, 100]]);
+  c.edRef.current = ed; c.refreshInfo();
+  const css = c.pgCss.textContent; let writes = 0;
+  c.pgCss = { get textContent() { return css; }, set textContent(v) { writes++; } };
+  c.refreshInfo(true);
+  assert.equal(writes, 0, 'the same blocks, as tall as they were: nothing laid out again');
+  assert.equal(c.state.info.pages, 2);
+  ed.children[1].offsetHeight = 140; c.refreshInfo(true);
+  assert.equal(writes, 2, 'a paragraph that grew a line: measured without the gaps, then the gaps put back');
+  c.refreshInfo(true); assert.equal(writes, 2, 'and then remembered as it is now');
+  c.refreshInfo(); assert.equal(writes, 4, 'without `typed` (a load, a new page size, a resize) it always measures');
+  const onInput = c.renderVals().onInput; c.syncT = null;
+  onInput({ nativeEvent: { inputType: 'insertText' } }); clearTimeout(c.syncT); assert.ok(!c.pgDirty, 'typing a character');
+  onInput({ nativeEvent: { inputType: 'insertParagraph' } }); clearTimeout(c.syncT); assert.equal(c.pgDirty, true, 'Enter, a paste, formatting: counted from scratch at the next pause');
+  c.refreshInfo(!c.pgDirty); assert.equal(writes, 6); assert.ok(!c.pgDirty);
+});
+
 test('headers and footers: every page shows its own number, the first page its own once 首页不同 is on', () => {
   const footer = '<p style="text-align:center">第 {page} 页 / 共 {pages} 页</p>';
   const c = editor({ id: 'd', html: '', header: 'H', footer, titlePg: true, firstHeader: '', firstFooter: '' });

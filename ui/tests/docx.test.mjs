@@ -88,11 +88,13 @@ test('unchanged Word table and TOC plan no writes, including centered blank cell
 test('automatic text takes the colour Word gives it on the fill behind it: dark on a light fill, white on a dark one, in either theme', () => {
   assert.deepEqual(['D9D9D9', 'F5F5F7', 'FFFF00', 'DDEBF7', '1F3864', '000080', '000000'].map(f => EN.inkOn(f)), ['dark', 'dark', 'dark', 'dark', 'light', 'light', 'light']);
   // every element with a fill of its own is marked (cell shading, a highlight, the contents box); a fill taken away takes its mark along
-  const el = (bg, ink) => { const attrs = ink ? { 'data-ink': ink } : {}; return { style: { backgroundColor: bg }, attrs, setAttribute(k, v) { attrs[k] = v; }, removeAttribute(k) { delete attrs[k]; } }; };
-  const els = [el('rgb(217, 217, 217)'), el('rgb(31, 56, 100)', 'dark'), el('transparent', 'dark'), el('', 'light')];
+  let writes = 0;
+  const el = (bg, ink) => { const attrs = ink ? { 'data-ink': ink } : {}; return { style: { backgroundColor: bg }, attrs, getAttribute: k => k in attrs ? attrs[k] : null, setAttribute(k, v) { writes++; attrs[k] = v; }, removeAttribute(k) { writes++; delete attrs[k]; } }; };
+  const els = [el('rgb(217, 217, 217)'), el('rgb(31, 56, 100)', 'dark'), el('transparent', 'dark'), el('', 'light'), el('rgb(0, 0, 128)', 'light')];
   let asked = '';
   EN.inkFills({ querySelectorAll: sel => { asked = sel; return els; } });
-  assert.deepEqual(els.map(e => e.attrs['data-ink'] || null), ['dark', 'light', null, null]);
+  assert.deepEqual(els.map(e => e.attrs['data-ink'] || null), ['dark', 'light', null, null, 'light']);
+  assert.equal(writes, 4, 'a mark that is right already is left alone: every typing pause runs this over the whole file');
   assert.match(asked, /\[style\*="background"\]/);
   assert.match(asked, /\[data-ink\]/, 'marks left by a fill that went are found too');
 });

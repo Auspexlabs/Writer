@@ -417,6 +417,8 @@ const AV_ME = 'oklch(0.56 0.1 45)', AV_HUES = [225, 345, 165, 285, 105]; // comm
 const initialsOf = name => { const w = String(name || '').trim().split(/\s+/).filter(Boolean), first = s => Array.from(s)[0]; return !w.length ? '?' : /^[\p{Lu}\p{Ll}]/u.test(w[0]) ? (first(w[0]) + (w.length > 1 ? first(w[w.length - 1]) : '')).toUpperCase() : first(w[0]); };
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 const GAP = 20; // px between the pages of the page view
+/** Input that only changes text inside the blocks already there: after it the pages can only move if a block's height did. */
+const TYPED = /^(insertText|insertCompositionText|insertReplacementText|delete(Content|Word|SoftLine|HardLine)(Backward|Forward))$/;
 const HF_PRESETS = ['{page}', '第 {page} 页', '{page} / {pages}', '第 {page} 页 / 共 {pages} 页', '- {page} -', 'Page {page} of {pages}']; // 样式 button, 插入 › 页码 — i18n-ok: written into headers/footers as-is, never translated
 /** A preset ({page}/{pages} tokens) as header/footer html at an alignment (center when none is given). */
 const hfPreset = (tpl, align) => `<p style="text-align:${align || 'center'}">${tpl}</p>`;
@@ -776,8 +778,8 @@ class Component extends DCLogic {
     this.pt = { img, tools };
     return tools;
   }
-  sync() { clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 350); }
-  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(); }
+  sync(typed) { if (!typed) this.pgDirty = true; clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 350); }
+  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(!this.pgDirty); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
   ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
   /** The pages, as [top, bottom] of the text as it flows without page gaps. A block that does not fit what is left of a page starts
@@ -789,11 +791,11 @@ class Component extends DCLogic {
    *  the page gap; splitting rows needs real layout. */
   pagesOf(ed, contentH, step) {
     const y = el => { let t = 0; for (let e = el; e && e !== ed; e = e.offsetParent) t += e.offsetTop; return t; };
-    const pieces = []; let brk = false;
+    const pieces = []; let brk = false, inner = false;
     for (const c of Array.from(ed.children)) {
       let top = y(c), el = c, css = 'margin-top', forced = brk || c.getAttribute('data-pb') === 'before';
       for (const s of c.matches('hr') ? [] : Array.from(c.querySelectorAll('span[data-pb]'))) {
-        const end = y(s) + s.offsetHeight; pieces.push({ top, bottom: end, el, css, forced });
+        const end = y(s) + s.offsetHeight; pieces.push({ top, bottom: end, el, css, forced }); inner = true;
         top = end + (parseFloat(getComputedStyle(s).marginBottom) || 0); el = s; css = 'margin-bottom'; forced = true;
       }
       pieces.push({ top, bottom: y(c) + c.offsetHeight, el, css, forced });
@@ -812,21 +814,31 @@ class Component extends DCLogic {
       while (bottom + shift > k * step + contentH + 1 && (k + 1) * step < bottom + shift) { const b = bottom; bottom = k * step + contentH - shift; turn(); top = k * step - shift; bottom = b; }
     }
     at.push([top === null ? 0 : top, bottom]);
-    return { at, push };
+    return { at, push, inner };
   }
   /** A selector for an element of the text by its place: the page view's rules must not touch the html that is saved. */
   cssPath(el) { const ed = this.edRef.current, path = []; for (let e = el; e && e !== ed; e = e.parentElement) path.unshift(`>:nth-child(${Array.prototype.indexOf.call(e.parentElement.children, e) + 1})`); return `[data-pg="${this.pgId}"]` + path.join(''); }
   get paged() { return this.state.view === 'page' && +this.page.cols === 1; } // ponytail: text in columns is not paginated, it shows on one long sheet
-  refreshInfo() {
+  /** The status bar's counts, the outline's headings and the pages. `typed`: only text was typed or deleted since the last full
+   *  count (TYPED); then, when every block is the one it was and as tall, the pages are where they were and stay as they are. */
+  refreshInfo(typed) {
     const ed = this.edRef.current; if (!ed) return;
+    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, m = marginsPx(pg.margin);
+    const kids = Array.from(ed.children), key = [H, m.top, m.bottom, pg.cols, this.state.view].join(), was = this.pgSeen;
+    let at, push = null, inner = false;
+    if (typed && was && was.key === key && was.kids.length === kids.length && kids.every((c, i) => c === was.kids[i] && c.offsetHeight === was.h[i])) at = was.at; // the page view's gaps stay: taking them out to measure lays the whole file out twice more
+    else {
+      if (this.pgCss) this.pgCss.textContent = ''; // measured as the text flows without page gaps
+      ({ at, push, inner } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP));
+      if (this.state.view === 'side') { const W = pg.orient === 'landscape' ? ph : pw, colW = W - m.left - m.right, gap = m.left + m.right + GAP; at = Array.from({ length: Math.max(1, Math.round((ed.scrollWidth + gap) / (colW + gap))) }, () => [0, 0]); push = []; } // 并排: each column is a page
+      this.pgDirty = false; this.pgSeen = this.state.view === 'side' || inner ? null : { key, kids, h: kids.map(c => c.offsetHeight), at }; // a break inside a paragraph is pushed down inside it: its height is not the one measured here
+    }
+    // innerText needs the layout too: read from the one just made, before the gaps go back in (every read after that lays the whole
+    // document out again)
     const t = ed.innerText || '';
     const cjk = (t.match(/[\u4e00-\u9fa5]/g) || []).length, words = (t.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9]+/g) || []).length;
-    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, m = marginsPx(pg.margin);
-    if (this.pgCss) this.pgCss.textContent = ''; // measured as the text flows without page gaps
-    let { at, push } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP);
-    if (this.state.view === 'side') { const W = pg.orient === 'landscape' ? ph : pw, colW = W - m.left - m.right, gap = m.left + m.right + GAP; at = Array.from({ length: Math.max(1, Math.round((ed.scrollWidth + gap) / (colW + gap))) }, () => [0, 0]); push = []; } // 并排: each column is a page
-    if (this.pgCss && this.paged) this.pgCss.textContent = push.map(([el, css, px]) => `${this.cssPath(el)}{${css}:${Math.round(px)}px!important}`).join('\n');
     const heads = Array.from(ed.querySelectorAll('h1,h2,h3')).map((h, i) => ({ lvl: +h.tagName[1], text: h.innerText.trim() || $t('（空标题）'), i }));
+    if (push && this.pgCss && this.paged) this.pgCss.textContent = push.map(([el, css, px]) => `${this.cssPath(el)}{${css}:${Math.round(px)}px!important}`).join('\n');
     const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
     this.layoutPics(); this.drawShapes(); // floating pictures and shapes follow their paragraphs onto their pages
     if (JSON.stringify(next) !== JSON.stringify({ info: this.state.info, heads: this.state.heads })) this.setState(next); // an unchanged count re-renders nothing
@@ -1942,7 +1954,7 @@ class Component extends DCLogic {
       onHfInput: () => this.hfInput(), onHfKey: e => { if (e.key === 'Escape') { e.preventDefault(); this.exitHF(); } },
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
       onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); }, // double-click the text: back to it
-      onInput: () => { if (this.selImg) this.selectImg(null); if (this.state.ctxBar) this.setState({ ctxBar: null }); this.sync(); },
+      onInput: e => { if (this.selImg) this.selectImg(null); if (this.state.ctxBar) this.setState({ ctxBar: null }); this.sync(TYPED.test((e && (e.nativeEvent || e).inputType) || '')); },
       onEdClick: e => {
         const t = e.target;
         if (t.tagName === 'IMG') { if (t !== this.selImg) this.selectImg(t); }
