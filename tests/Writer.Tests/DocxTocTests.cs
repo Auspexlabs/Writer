@@ -98,7 +98,7 @@ public class DocxTocTests
 
         var html = HtmlWriter.Render(doc);
         Assert.Contains("<nav class=\"toc\">\n<p class=\"toc-title\">目录</p>\n<ul>\n<li><span>Intro</span></li>\n<li><span>Scope</span></li>\n</ul>\n</nav>", html);
-        Assert.StartsWith("Intro\nScope\n\nIntro\n\nBody", Views.Text(doc.Root));
+        Assert.StartsWith("目录\nIntro\nScope\n\nIntro\n\nBody", Views.Text(doc.Root)); // the contents under its title
         AssertValid(doc);
     }
 

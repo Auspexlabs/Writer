@@ -16,13 +16,26 @@ sealed class DocxFootnote(DocxDocument doc, W.Paragraph p, OpenXmlElement refere
     bool Endnote => reference is W.EndnoteReference;
     string Id => ((reference as W.FootnoteReference)?.Id ?? ((W.EndnoteReference)reference).Id)?.Value.ToString(CultureInfo.InvariantCulture) ?? "";
 
-    public override IReadOnlyDictionary<string, string> GetProps() => new Dictionary<string, string>
+    public override IReadOnlyDictionary<string, string> GetProps()
     {
-        ["id"] = Endnote ? "e" + Id : Id, // footnotes and endnotes count from 1 each: an endnote's id says which it is
-        ["kind"] = Endnote ? "endnote" : "footnote",
-        ["text"] = DocxFootnotes.Note(doc, Endnote, Id) is { } note ? DocxFootnotes.TextOf(note) : "",
-        ["at"] = DocxFootnotes.OffsetOf(p, reference.Parent!).ToString(CultureInfo.InvariantCulture),
-    };
+        var note = DocxFootnotes.Note(doc, Endnote, Id);
+        var props = new Dictionary<string, string>
+        {
+            ["id"] = Endnote ? "e" + Id : Id, // footnotes and endnotes count from 1 each: an endnote's id says which it is
+            ["kind"] = Endnote ? "endnote" : "footnote",
+            ["text"] = note is not null ? DocxFootnotes.TextOf(note) : "",
+            ["at"] = DocxFootnotes.OffsetOf(p, reference.Parent!).ToString(CultureInfo.InvariantCulture),
+        };
+        if (note is not null && DocxCitations.NoteCitation(note) is { } cite)
+        {
+            var field = CiteField.Of(cite);
+            props["cite"] = string.Join(";", field.Sources.Select(x => x.Tag));
+            if (field.Sources.Any(x => x.Pages.Length > 0)) props["pages"] = string.Join(";", field.Sources.Select(x => x.Pages));
+            props["citeText"] = DocxCitations.ResultText(cite);
+            props["citeHtml"] = DocxCitations.ResultHtml(cite);
+        }
+        return props;
+    }
 
     public override string GetRaw() => DocxFootnotes.Note(doc, Endnote, Id)?.OuterXml ?? reference.Parent!.OuterXml;
 
@@ -31,6 +44,10 @@ sealed class DocxFootnote(DocxDocument doc, W.Paragraph p, OpenXmlElement refere
         switch (name)
         {
             case "text": DocxFootnotes.SetText(doc, Endnote, Id, value); break;
+            case "cite" or "pages":
+                var note = DocxFootnotes.Note(doc, Endnote, Id) ?? throw new WriterException(ErrorCode.PathNotFound, "The note is gone", "Read the paragraph's notes again.");
+                DocxCitations.SetNoteCitation(doc, note, name == "cite" ? value : null, name == "pages" ? value : null);
+                break;
             case "at":
                 var run = (W.Run)reference.Parent!;
                 var (previous, next) = (run.PreviousSibling(), run.NextSibling());
@@ -61,6 +78,8 @@ static class DocxFootnotes
         var note = endnote ? new W.Endnote { Id = id } : (OpenXmlElement)new W.Footnote { Id = id };
         Notes(doc, endnote, create: true)!.Append(note);
         SetText(doc, endnote, id.ToString(CultureInfo.InvariantCulture), text);
+        if (props.TryGetValue("cite", out var cite)) DocxCitations.SetNoteCitation(doc, note, cite, props.GetValueOrDefault("pages"));
+        else if (DocxCitations.NoteCitation(note) is null && doc.Main.Document?.Body?.Descendants<W.SdtRun>().Any(DocxCitations.IsCitation) == true) DocxCitations.Refresh(doc); // a new note moves a Chicago source's first note
         return new DocxFootnote(doc, p, run.ChildElements.Last());
     }
 
@@ -125,6 +144,8 @@ static class DocxFootnotes
     public static void SetText(DocxDocument doc, bool endnote, string id, string text)
     {
         var note = Note(doc, endnote, id) ?? throw new WriterException(ErrorCode.Validation, $"No {(endnote ? "endnote" : "footnote")} {id}", "Add the note first.");
+        var cite = DocxCitations.NoteCitation(note); // a note that cites keeps its citation, the text after it
+        cite?.Remove();
         note.RemoveAllChildren<W.Paragraph>();
         var lines = text.ReplaceLineEndings("\n").Split('\n');
         for (var i = 0; i < lines.Length; i++)
@@ -136,6 +157,7 @@ static class DocxFootnotes
             if (line.Length > 0) p.Append(new W.Run(DocxRuns.TextElements(line)));
             note.Append(p);
         }
+        if (cite is not null) DocxCitations.PlaceNoteCitation(note.Elements<W.Paragraph>().First(), cite);
     }
 
     public static void Remove(DocxDocument doc, bool endnote, string id, OpenXmlElement reference)
@@ -148,6 +170,8 @@ static class DocxFootnotes
             run.Remove();
             DocxRuns.Rejoin(previous, next);
         }
+        var cited = Note(doc, endnote, id) is { } note && DocxCitations.NoteCitation(note) is not null;
         Note(doc, endnote, id)?.Remove();
+        if (cited) DocxCitations.Refresh(doc); // the source's next note may now be its first, in full
     }
 }

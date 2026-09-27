@@ -58,10 +58,22 @@ public static class Views
             var blocks = node.Children.Where(c => Registry.Find(c.Kind)?.Inline != true).ToList();
             if (blocks.Count == 0)
             {
-                if (node.Text is { Length: > 0 } text) sb.Append(text).Append("\n\n");
+                if (Spliced(node) is { Length: > 0 } text) sb.Append(text).Append("\n\n");
                 return;
             }
             foreach (var block in blocks) Walk(block);
+        }
+
+        /// <summary>A block's text with its citations in it, each at its character offset (their text is not the paragraph's own); a
+        /// contents or works-cited list under its title.</summary>
+        static string Spliced(Node node)
+        {
+            var text = node.Text ?? "";
+            if (node.Kind is "toc" or "bibliography" && node.GetProps().GetValueOrDefault("title") is { Length: > 0 } title) return title + "\n" + text; // a list under its title
+            foreach (var p in node.Children.Where(c => c.Kind == "citation").Select(c => c.GetProps())
+                .OrderByDescending(p => int.TryParse(p.GetValueOrDefault("at"), out var at) ? at : int.MaxValue))
+                text = text.Insert(int.TryParse(p.GetValueOrDefault("at"), out var at) ? Math.Clamp(at, 0, text.Length) : text.Length, p.GetValueOrDefault("text") ?? "");
+            return text;
         }
 
         /// <summary>Mind map: the root on its own line, every descendant as an indented bullet.</summary>

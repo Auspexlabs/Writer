@@ -91,7 +91,7 @@ public static partial class HtmlWriter
     {
         var endnote = note.GetValueOrDefault("kind") == "endnote";
         var label = endnote ? Roman(++_endnoteCount) : (++_footnoteCount).ToString(CultureInfo.InvariantCulture);
-        _notes!.Add((endnote, label, note.GetValueOrDefault("text") ?? ""));
+        _notes!.Add((endnote, label, (note.GetValueOrDefault("citeText") + " " + note.GetValueOrDefault("text")).Trim())); // a note that cites: its citation, then its own text
         return "<sup class=\"note\">" + label + "</sup>";
     }
 

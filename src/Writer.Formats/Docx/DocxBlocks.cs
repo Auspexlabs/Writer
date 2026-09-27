@@ -38,6 +38,9 @@ static class DocxBlocks
                 case W.SdtBlock sdt when DocxToc.IsToc(sdt):
                     yield return new DocxToc(doc, [sdt]);
                     break;
+                case W.SdtBlock sdt when DocxBibliography.Is(sdt):
+                    yield return new DocxBibliography(doc, sdt);
+                    break;
                 case W.SdtBlock sdt when sdt.SdtContentBlock is { } content:
                     foreach (var n in Project(doc, content)) yield return n;
                     break;
@@ -53,6 +56,7 @@ static class DocxBlocks
         W.Paragraph p => new DocxParagraph(doc, p),
         W.Table t => new DocxTable(doc, t),
         W.SdtBlock sdt when DocxToc.IsToc(sdt) => new DocxToc(doc, [sdt]),
+        W.SdtBlock sdt when DocxBibliography.Is(sdt) => new DocxBibliography(doc, sdt),
         _ => throw new InvalidOperationException($"Not a block: {element.LocalName}"),
     };
 
@@ -68,7 +72,8 @@ static class DocxBlocks
             "image" => DocxImage.New(doc, props),
             "pagebreak" => (new W.Paragraph(new W.Run(new W.Break { Type = W.BreakValues.Page })), []),
             "toc" => DocxToc.New(doc, props),
-            _ => throw new WriterException(ErrorCode.UnsupportedKind, $"Cannot add {kind} under {parent.Kind}", "Blocks: paragraph, heading, code, table, image, pagebreak, toc."),
+            "bibliography" => DocxBibliography.New(doc, props),
+            _ => throw new WriterException(ErrorCode.UnsupportedKind, $"Cannot add {kind} under {parent.Kind}", "Blocks: paragraph, heading, code, table, image, pagebreak, toc, bibliography."),
         };
         InsertAt(parent, container, element, index);
         if (kind is "paragraph" or "heading" or "code" && DocxRevisions.Tracking(doc)) DocxRevisions.MarkInserted(doc, (W.Paragraph)element);

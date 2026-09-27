@@ -331,14 +331,15 @@ public static partial class HtmlWriter
     static void Inlines(Node node, StringBuilder sb)
     {
         var runs = node.Children.Where(c => c.Kind == "run").ToList();
+        // docx citations, and notes while a document's pages are drawn: each goes in at its character offset of the (undeleted) text
+        var marks = node.Children.Where(c => c.Kind == "citation" || c.Kind == "footnote" && _notes is not null).Select(c => c.GetProps())
+            .OrderBy(n => int.TryParse(n.GetValueOrDefault("at"), out var at) ? at : int.MaxValue).ToList();
         if (runs.Count == 0)
         {
             sb.Append(Esc(node.Text ?? "").Replace("\n", "<br>"));
+            foreach (var m in marks) sb.Append(Mark(m));
             return;
         }
-        // docx notes, while a document's pages are drawn: each mark goes in at its character offset of the (undeleted) text
-        var marks = _notes is null ? [] : node.Children.Where(c => c.Kind == "footnote").Select(c => c.GetProps())
-            .OrderBy(n => int.TryParse(n.GetValueOrDefault("at"), out var at) ? at : int.MaxValue).ToList();
         var (pos, next) = (0, 0);
         int At(int i) => int.TryParse(marks[i].GetValueOrDefault("at"), out var at) ? at : int.MaxValue;
         foreach (var run in runs)
@@ -380,15 +381,18 @@ public static partial class HtmlWriter
                 for (; next < marks.Count && At(next) <= pos + text.Length; next++)
                 {
                     var cut = Math.Clamp(At(next) - pos, from, text.Length);
-                    sb.Append(RunText(text[from..cut])).Append(NoteMark(marks[next]));
+                    sb.Append(RunText(text[from..cut])).Append(Mark(marks[next]));
                     from = cut;
                 }
                 pos += text.Length;
             }
             sb.Append(RunText(text[from..])).Append(close);
         }
-        for (; next < marks.Count; next++) sb.Append(NoteMark(marks[next]));
+        for (; next < marks.Count; next++) sb.Append(Mark(marks[next]));
     }
+
+    /// <summary>A citation's text (a citation's props have html), else a note's mark.</summary>
+    static string Mark(IReadOnlyDictionary<string, string> props) => props.TryGetValue("html", out var html) && !props.ContainsKey("kind") ? html : NoteMark(props);
 
     static string RunText(string text) => Esc(text).Replace("\n", "<br>").Replace("\f", Common.InlineHtml.PageBreak);
 

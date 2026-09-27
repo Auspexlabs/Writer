@@ -96,10 +96,10 @@ public static class Exporter
         var props = new Dictionary<string, string>();
         foreach (var p in Registry.PropsFor(definition, target.Format))
             if (!p.ReadOnly && !p.WriteOnly && p.Name != "text" && source.TryGetValue(p.Name, out var value)) props[p.Name] = value;
-        var runs = block.Children.Where(c => c.Kind == "run").Select(RunSpecOf).Where(r => !r.Deleted).ToList();
+        var runs = RunsOf(block);
         if (runs.Count > 0 && Registry.PropsFor(definition, target.Format).Any(p => p.Name == "md")) props["md"] = Plain(target, MdWriter.Inline(runs));
         else if (source.TryGetValue("text", out var text) && Registry.PropsFor(definition, target.Format).Any(p => p.Name == "text" && !p.ReadOnly))
-            props["text"] = Plain(target, text); // a toc's text is generated, not written
+            props["text"] = Plain(target, block.Children.Any(c => c.Kind == "citation") ? string.Concat(runs.Select(r => r.Text)) : text); // a toc's text is generated, not written
         if (kind == "paragraph" && !props.ContainsKey("list")) props.Remove("level");
         return props;
     }
@@ -331,6 +331,34 @@ public static class Exporter
     static string Plain(Document target, string text) => target.Format == "docx" ? text : text.Replace('\f', '\n');
 
     public static RunSpec RunSpecOf(Node run) => RunSpec.FromProps(run.GetProps());
+
+    /// <summary>A block's runs with its citations among them, each at its character offset (a Word citation's text is its own, not its
+    /// paragraph's): what the block says when it goes to another format.</summary>
+    public static List<RunSpec> RunsOf(Node block)
+    {
+        var runs = block.Children.Where(c => c.Kind == "run").Select(RunSpecOf).Where(r => !r.Deleted).ToList();
+        var cites = block.Children.Where(c => c.Kind == "citation").Select(c => c.GetProps())
+            .Select(p => (At: int.TryParse(p.GetValueOrDefault("at"), out var at) ? at : int.MaxValue, Runs: InlineHtml.Parse(p.GetValueOrDefault("html") ?? "").ToList()))
+            .OrderBy(x => x.At).ToList();
+        if (cites.Count == 0) return runs;
+        var spliced = new List<RunSpec>();
+        var (pos, next) = (0, 0);
+        foreach (var r in runs)
+        {
+            var from = 0;
+            for (; next < cites.Count && cites[next].At <= pos + r.Text.Length; next++)
+            {
+                var cut = Math.Clamp(cites[next].At - pos, from, r.Text.Length);
+                if (cut > from) spliced.Add(r with { Text = r.Text[from..cut] });
+                spliced.AddRange(cites[next].Runs);
+                from = cut;
+            }
+            if (from < r.Text.Length) spliced.Add(r with { Text = r.Text[from..] });
+            pos += r.Text.Length;
+        }
+        for (; next < cites.Count; next++) spliced.AddRange(cites[next].Runs);
+        return spliced;
+    }
 
     /// <summary>The inline HTML of a block's runs, for the html property.</summary>
     public static string HtmlOf(Node block) => InlineHtml.Render(block.Children.Where(c => c.Kind == "run").Select(RunSpecOf));

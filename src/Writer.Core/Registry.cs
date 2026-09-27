@@ -122,6 +122,10 @@ public static class Registry
                 new("revisions", PropType.Int, "Tracked insertions and deletions still pending.") { ReadOnly = true, Formats = Docx },
                 new("comments", PropType.Int, "Comment count.") { ReadOnly = true, Formats = Docx },
                 new("styles", PropType.Json, "The document's paragraph and character styles as a JSON array of {id, name, type, basedOn, heading, hidden, look}: look holds what the style sets on its own (font, size, bold, italic, color, align, spaceBefore, spaceAfter, lineSpacing, indentFirst), inherited along basedOn; hidden marks one Word keeps out of its style gallery.") { ReadOnly = true, Formats = Docx },
+                new("sources", PropType.Json, "The document's sources, as Word's Manage Sources keeps them (its bibliography part): a JSON array of {tag, type, authors, editors, title, container, publisher, place, year, month, day, volume, issue, pages, edition, url, doi, isbn, accessed}. type is article (a journal), book, chapter, magazine, newspaper, webpage, report, conference, thesis or other; container is the journal, the book of a chapter, the website, the newspaper; authors are [{last, first}], or [{name}] for an organisation.") { ReadOnly = true, Formats = Docx },
+                new("source", PropType.Json, "Write-only. Adds or changes a source (the fields of sources; one given as none is cleared, one left out stays), or removes one: {\"tag\":\"Peg15\",\"remove\":true}, refused while a citation names it. A new source without a tag gets one as Word makes them (Peg15). Citations and works-cited lists are drawn again.") { WriteOnly = true, Example = "{\"type\":\"article\",\"authors\":[{\"last\":\"Pegg\",\"first\":\"Ian L.\"}],\"title\":\"Behavior of technetium in nuclear waste vitrification processes\",\"container\":\"Journal of Radioanalytical and Nuclear Chemistry\",\"year\":\"2015\",\"volume\":\"305\",\"issue\":\"1\",\"pages\":\"287-292\",\"doi\":\"10.1007/s10967-014-3900-9\"}", Formats = Docx },
+                new("citationStyle", PropType.Enum, "The citation style: mla (MLA 9), apa (APA 7), chicago (Chicago 18, notes and bibliography: citations are footnotes) or chicago-date (Chicago 18, author-date). Writing it draws every citation and works-cited list again.") { Values = ["mla", "apa", "chicago", "chicago-date"], Example = "mla", Formats = Docx },
+                new("citations", PropType.Enum, "Write-only. refresh draws every citation and works-cited list again from the sources, as Word's Update Citations and Bibliography does.") { Values = ["refresh"], WriteOnly = true, Example = "refresh", Formats = Docx },
                 new("style", PropType.Json, "Write-only. Defines or changes a style: a JSON object with id (or name) and any of name, type (paragraph, the default, or character), basedOn, font, size (points), bold, italic, color, align, spaceBefore, spaceAfter, lineSpacing, indentFirst; a value of none clears that setting. A new style is added to styles.xml; paragraphs then take it with style=<id>, runs with style=<id>.") { WriteOnly = true, Example = "{\"id\":\"Note\",\"name\":\"Note\",\"italic\":true,\"color\":\"595959\"}", Formats = Docx },
                 Accept, Reject,
                 new("slides", PropType.Int, "Slide count.") { ReadOnly = true, Formats = Pptx },
@@ -255,6 +259,16 @@ public static class Registry
                 new("text", PropType.String, "The entries as last generated, one per line.") { ReadOnly = true },
             ],
         },
+        new("bibliography", "A works-cited list as Word makes one (References › Bibliography): Works Cited, References or Bibliography on a new page and an entry per source of the document, in its citation style and order with hanging indents, drawn again whenever a source, a citation or the style changes.")
+        {
+            Formats = Docx, Parents = ["body"],
+            Props =
+            [
+                new("title", PropType.String, "The title above the entries; the style's own (Works Cited, References, Bibliography) when omitted on add, empty for none.") { Example = "Works Cited" },
+                new("text", PropType.String, "The entries, one per line.") { ReadOnly = true },
+                new("html", PropType.String, "The entries as <p> paragraphs, titles in <i>.") { ReadOnly = true },
+            ],
+        },
         new("run", "Span of text with one set of character formatting.")
         {
             Formats = Documents, Parents = ["heading", "paragraph"], Inline = true,
@@ -307,6 +321,27 @@ public static class Registry
                 new("kind", PropType.Enum, "footnote (at the foot of the page) or endnote (at the end of the document); set when added.") { Values = ["footnote", "endnote"], Example = "footnote" },
                 new("text", PropType.String, "The note's text; paragraphs joined by newlines.") { Example = "See the appendix." },
                 new("at", PropType.Int, "Character offset in the paragraph's text where the mark sits; the end when omitted on add. Writing it moves the mark.") { Min = 0, Example = "12" },
+                new("cite", PropType.String, "The sources the note cites (their tags, ; between), in Chicago's notes: the note's text is then the citation in full the first time a source is cited and short after, drawn from the source, before the note's own text. none takes the citation out.") { Example = "Peg15" },
+                new("pages", PropType.String, "The place the note cites in each source (a page, a range), ; between for several.") { Example = "288" },
+                new("citeText", PropType.String, "The citation as the note shows it.") { ReadOnly = true },
+                new("citeHtml", PropType.String, "The citation as the note shows it, titles in <i>.") { ReadOnly = true },
+            ],
+        },
+        new("citation", "A citation in the text as Word makes one (References › Insert Citation): a citation content control around a CITATION field, drawn from the document's sources in its citation style, e.g. (Pegg 288) in MLA. It sits at a character offset of the paragraph's text; its own text is not part of the paragraph's. Address one as //citation[@id=123] or by position under its paragraph.")
+        {
+            Formats = Docx, Parents = ["paragraph", "heading"], Inline = true,
+            Props =
+            [
+                Id(Docx),
+                new("sources", PropType.String, "The sources cited: their tags, ; between for several.") { Example = "Peg15" },
+                new("pages", PropType.String, "The place cited in each source (a page, a range, para. 4), ; between for several.") { Example = "288" },
+                new("noAuthor", PropType.Bool, "Leaves the author out, as when the sentence names them: Pegg shows … (288).") { Example = "true" },
+                new("noYear", PropType.Bool, "Leaves the year out.") { Example = "true" },
+                new("prefix", PropType.String, "Text before the citation, inside its parentheses (see); none removes it.") { Example = "see" },
+                new("suffix", PropType.String, "Text after the citation, inside its parentheses; none removes it.") { Example = "emphasis added" },
+                new("at", PropType.Int, "Character offset in the paragraph's text where the citation sits; the end when omitted on add. Writing it moves the citation.") { Min = 0, Example = "12" },
+                new("text", PropType.String, "The citation as it shows.") { ReadOnly = true },
+                new("html", PropType.String, "The citation as it shows, titles in <i>.") { ReadOnly = true },
             ],
         },
         new("equation", "An equation in a paragraph (Word's Office Math), written and read as LaTeX: fractions, scripts, roots, sums and integrals with limits, \\left…\\right, matrices and cases, accents, Greek letters and symbols. It sits at a character offset of the paragraph's text.")

@@ -24,6 +24,8 @@ public class AdapterMatrixTests : IDisposable
         ("docx", "footnote", "/body/paragraph[1]"),
         ("docx", "equation", "/body/paragraph[1]"),
         ("docx", "shape", "/body/paragraph[1]"),
+        ("docx", "citation", "/body/paragraph[1]"),
+        ("docx", "bibliography", "/body"),
         ("md", "heading", "/body"),
         ("md", "paragraph", "/body"),
         ("md", "code", "/body"),
@@ -123,6 +125,7 @@ public class AdapterMatrixTests : IDisposable
         "run" => new() { ["text"] = "seed" },
         "image" => new() { ["src"] = _png },
         "table" => new() { ["rows"] = "2", ["cols"] = "2" },
+        "citation" => new() { ["sources"] = "Peg15" },
         _ => new(),
     };
 
@@ -138,6 +141,8 @@ public class AdapterMatrixTests : IDisposable
             return;
         }
         var body = doc.Root.Children.Single();
+        if (doc.Format == "docx") // a source for citations and notes that cite (Peg15, as the examples name it)
+            Mutations.Set(doc.Root, new Dictionary<string, string> { ["source"] = """{"type":"article","authors":[{"last":"Pegg","first":"Ian L."}],"title":"Behavior of technetium","container":"Journal of Radioanalytical and Nuclear Chemistry","year":"2015"}""" });
         Mutations.Add(body, "paragraph", new Dictionary<string, string> { ["text"] = "seed paragraph" }, null);
         Mutations.Add(body, "table", new Dictionary<string, string> { ["rows"] = "2", ["cols"] = "2" }, null);
     }

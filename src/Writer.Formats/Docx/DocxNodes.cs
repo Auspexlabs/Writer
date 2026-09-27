@@ -26,6 +26,9 @@ sealed class DocxRoot(DocxDocument doc) : Node
         props["revisions"] = DocxRevisions.Count(doc).ToString(CultureInfo.InvariantCulture);
         props["comments"] = DocxComments.Count(doc).ToString(CultureInfo.InvariantCulture);
         props["styles"] = DocxStyleGallery.Read(doc);
+        var sources = DocxSources.Read(doc);
+        if (sources.Count > 0) props["sources"] = DocxSources.Json(sources);
+        if (DocxSources.Style(doc) is { } citationStyle) props["citationStyle"] = DocxSources.NameOf(citationStyle);
         return props;
     }
 
@@ -61,6 +64,9 @@ sealed class DocxRoot(DocxDocument doc) : Node
                 break;
             case "track": DocxRevisions.SetTracking(doc, value == "true"); break;
             case "author": DocxRevisions.SetDefaultAuthor(doc, value); break;
+            case "source": DocxSources.Define(doc, value, tag => DocxCitations.Cites(doc, tag)); DocxCitations.Refresh(doc); break;
+            case "citationStyle": DocxSources.SetStyle(doc, value); DocxCitations.Refresh(doc); break;
+            case "citations": DocxCitations.Refresh(doc); break; // refresh: every citation and works-cited list drawn again
             case "accept": DocxRevisions.Resolve(doc.Main.Document!.Body!, accept: true); break;
             case "reject": DocxRevisions.Resolve(doc.Main.Document!.Body!, accept: false); break;
         }
@@ -88,7 +94,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
 
     protected override IEnumerable<Node> ProjectChildren() =>
         Kind == "code" ? [] : DocxRuns.Walk(p, deleted: true).Select(x => (Node)new DocxRun(doc, x.Run, x.Link))
-            .Concat(DocxImage.In(p).Select(d => (Node)new DocxImage(doc, d))).Concat(DocxComments.In(doc, p)).Concat(DocxFootnotes.In(doc, p)).Concat(DocxEquation.In(p)).Concat(DocxShape.In(p));
+            .Concat(DocxImage.In(p).Select(d => (Node)new DocxImage(doc, d))).Concat(DocxComments.In(doc, p)).Concat(DocxFootnotes.In(doc, p)).Concat(DocxCitations.In(doc, p)).Concat(DocxEquation.In(p)).Concat(DocxShape.In(p));
 
     public override IReadOnlyDictionary<string, string> GetProps()
     {
@@ -275,6 +281,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
     {
         if (kind == "comment") return DocxComments.Add(doc, p, props);
         if (kind == "footnote") return DocxFootnotes.Add(doc, p, props);
+        if (kind == "citation") return DocxCitations.Add(doc, p, props);
         if (kind == "equation") return DocxEquation.Add(p, props);
         if (kind == "shape") return DocxShape.Add(doc, p, props);
         if (kind == "image") return DocxImage.AddTo(doc, this, p, props, index);

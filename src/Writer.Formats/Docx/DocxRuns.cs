@@ -22,6 +22,8 @@ static class DocxRuns
                 case W.Hyperlink h:
                     foreach (var x in Walk(h, h, deleted)) yield return x;
                     break;
+                case W.SdtRun sdt when DocxCitations.IsCitation(sdt): // a citation's text is its own, drawn from its source (DocxCitation)
+                    break;
                 case W.DeletedRun when deleted:
                 case W.InsertedRun or W.MoveToRun or W.SimpleField or W.SdtRun or W.SdtContentRun or W.CustomXmlRun:
                     foreach (var x in Walk(child, link, deleted)) yield return x;
