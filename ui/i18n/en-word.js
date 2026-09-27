@@ -212,4 +212,5 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '引文建议': 'Citation Hints', '像是用了某个来源却没有引文的句子标成灰色，句末给出建议的引文，按 Tab 插入': 'Sentences that seem to draw on a source but cite none are marked in grey, with the citation they would get at their end: Tab puts it in',
   '需要引文？Tab 添加来源': 'Needs a citation? Tab to add a source', 'Tab 插入这条引文，Esc 忽略': 'Tab to insert this citation, Esc to ignore it',
   '这句话像是引用了资料：Tab 添加来源并插入引文，Esc 忽略': 'This sentence seems to draw on a source: Tab to add it and cite it, Esc to ignore',
+  '表格里有纵向合并的单元格，无法排序': 'The table has cells merged down, so it cannot be sorted',
 });

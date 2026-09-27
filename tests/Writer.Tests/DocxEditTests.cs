@@ -148,6 +148,27 @@ public class DocxEditTests
         Assert.Equal(NumId(a), NumId(Mutations.Refresh(joined)));
     }
 
+    [Fact]
+    public void Continue_numbering_reaches_back_past_the_paragraphs_and_lists_between()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        var a = Mutations.Add(body, "paragraph", Props(("text", "one"), ("list", "number")), null);
+        Mutations.Add(body, "paragraph", Props(("text", "two"), ("list", "number")), null);
+        Mutations.Add(body, "paragraph", Props(("text", "a paragraph between")), null);
+        Mutations.Add(body, "paragraph", Props(("text", "a bullet between"), ("list", "bullet")), null);
+        var c = Mutations.Add(body, "paragraph", Props(("text", "three"), ("list", "number")), null);
+        var d = Mutations.Add(body, "paragraph", Props(("text", "four"), ("list", "number")), null);
+        Assert.NotEqual(NumId(a), NumId(c)); // after a gap a list starts at 1
+        Assert.Equal(NumId(a), a.GetProps()["listId"]);
+        Assert.Equal(NumId(c), d.GetProps()["listId"]);
+        var joined = Mutations.Set(c, Props(("restart", "false"))); // 继续编号
+        Assert.Equal(NumId(a), NumId(joined));
+        Assert.Equal(NumId(a), NumId(Mutations.Refresh(d)));
+        Assert.Equal(a.GetProps()["listId"], Mutations.Refresh(d).GetProps()["listId"]);
+        Assert.False(Mutations.Add(body, "paragraph", Props(("text", "•"), ("list", "bullet")), null).GetProps().ContainsKey("listId")); // bullets count nothing
+    }
+
     static string NumId(Node paragraph) =>
         XElement.Parse(paragraph.GetRaw()).Descendants().First(e => e.Name.LocalName == "numId").Attributes().First().Value;
 

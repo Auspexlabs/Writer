@@ -117,6 +117,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
                 // numbering that starts again here: the item before it counts in another list of the same kind
                 if (list != "bullet" && p.PreviousSibling<W.Paragraph>() is { } previous && doc.Styles.ListInfo(previous).List == list && !doc.Styles.SameList(previous, p))
                     props["restart"] = "true";
+                if (list != "bullet" && doc.Styles.NumIdOf(p) is { } listId) props["listId"] = listId.ToString(CultureInfo.InvariantCulture);
             }
         }
         if (AlignOf(p.ParagraphProperties) is { } align) props["align"] = align;
@@ -264,10 +265,19 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         var old = doc.Styles.NumIdOf(p) ?? throw new WriterException(ErrorCode.Validation, "restart applies to list paragraphs", "Set list=number first.");
         int numId;
         if (on) numId = doc.Styles.RestartedNumId(p);
-        else if (p.PreviousSibling<W.Paragraph>() is { } previous && doc.Styles.ListInfo(previous).List == doc.Styles.ListInfo(p).List) numId = doc.Styles.NumIdOf(previous)!.Value;
+        else if (PreviousOfKind() is { } previous) numId = doc.Styles.NumIdOf(previous)!.Value;
         else return;
         for (var q = p; q is not null && doc.Styles.NumIdOf(q) == old; q = q.NextSibling<W.Paragraph>())
             Renumber(q, numId);
+    }
+
+    /// <summary>The nearest list item before this one numbered the same way, past the paragraphs, tables and other lists between.</summary>
+    W.Paragraph? PreviousOfKind()
+    {
+        var kind = doc.Styles.ListInfo(p).List;
+        for (var q = p.PreviousSibling<W.Paragraph>(); q is not null; q = q.PreviousSibling<W.Paragraph>())
+            if (doc.Styles.NumIdOf(q) is not null && doc.Styles.ListInfo(q).List == kind) return q;
+        return null;
     }
 
     static void Renumber(W.Paragraph q, int numId)

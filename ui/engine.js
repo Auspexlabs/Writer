@@ -650,6 +650,16 @@ export function runTableOp(table, op, cell, flag) {
     return tr;
   });
   body.replaceChildren(...trs);
+  if (op === 'split' && r.was) { // the pieces of a split cell are as wide as their own grid columns, not each as wide as the merged cell was
+    const x0 = before.rows.flatMap(row => row.cells).find(x => x.id === cell), w0 = x0 && x0.ref && x0.ref.getAttribute('data-w-width');
+    let grid = null; try { grid = JSON.parse(table.getAttribute('data-w-widths') || 'null'); } catch (e) { grid = null; }
+    const each = w0 && cmOf(w0) != null ? cmOf(w0) / r.was.cs : null;
+    for (const row of r.m.rows) for (const x of row.cells) if (x.id === cell || x.from === cell) {
+      const td = x.ref || body.querySelector(`[data-path="${x.id}"]`); if (!td) continue;
+      const w = grid && grid[x.c] != null ? grid[x.c] : each != null ? Math.round(each * 100) / 100 + 'cm' : null;
+      if (w) td.setAttribute('data-w-width', w); else td.removeAttribute('data-w-width');
+    }
+  }
   let ops = []; try { ops = JSON.parse(table.getAttribute('data-ops') || '[]'); } catch (e) { ops = []; }
   table.setAttribute('data-ops', JSON.stringify(ops.concat([record])));
   if (op === 'insertCol' || op === 'deleteCols') { table.querySelector('colgroup')?.remove(); table.removeAttribute('data-w-widths'); table.style.tableLayout = ''; } // the columns changed: Word lays them out anew
@@ -698,7 +708,7 @@ export function blocksOf(nodes, file) {
     const pics = (n.children || []).filter(c => c.kind === 'image'); // a paragraph's own pictures: floating in it, or in its line of text
     if (pics.length && (n.kind === 'heading' || n.kind === 'paragraph')) b.pics = pics.map(c => picOf(c, file, byId));
     if (n.kind === 'heading') { b.props.html = p.html || esc(p.text); b.props.level = p.level || '1'; if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
-    else if (n.kind === 'paragraph') { b.props.html = p.html || esc(p.text); if (p.list && p.list !== 'none') { b.props.list = p.list; b.props.level = p.level || '0'; if (p.restart === 'true') b.props.restart = 'true'; } if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
+    else if (n.kind === 'paragraph') { b.props.html = p.html || esc(p.text); if (p.list && p.list !== 'none') { b.props.list = p.list; b.props.level = p.level || '0'; if (p.restart === 'true') b.props.restart = 'true'; if (p.listId) b.props.listId = String(p.listId); } if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
     else if (n.kind === 'code') b.props.text = p.text || '';
     else if (n.kind === 'table') {
       // the tree gives json props (widths) parsed; the editor keeps them as the JSON text the engine takes back
@@ -723,10 +733,22 @@ export function tableCss(p) {
   const w = p.width && p.width !== 'auto' ? (/%$/.test(p.width) ? p.width : cmOf(p.width) * CM_PX + 'px') : '100%';
   return `border-collapse:collapse;width:${w};margin:8px ${p.align === 'center' ? 'auto' : p.align === 'right' ? '0 8px auto' : '0'}${p.widths ? ';table-layout:fixed' : ''}`;
 }
+/** Lists that number on across what is between them — the same data-w-listid, one numbering instance in the file — start where
+ *  the one before them in their list stopped, as Word counts them; after an edit (an item added to the first, 继续编号) the editor
+ *  counts again. Top-level lists only: a nested level starts again under its item. */
+export function numberLists(root) {
+  const seen = new Map();
+  for (const ol of root.querySelectorAll('ol')) {
+    if (ol.parentElement && ol.parentElement.closest('ol,ul')) continue;
+    const id = ol.getAttribute('data-w-listid'), n = id ? seen.get(id) || 0 : 0;
+    if (n) { if (ol.getAttribute('start') !== String(n + 1)) ol.setAttribute('start', String(n + 1)); } else if (ol.hasAttribute('start')) ol.removeAttribute('start');
+    if (id) seen.set(id, n + Array.from(ol.children).filter(x => x.tagName === 'LI').length);
+  }
+}
 /** The list kinds beyond the html tags' own: the ol carries them as data-w-list (number is a plain ol, bullet a plain ul). */
 export const LIST_KINDS = ['number', 'outline', 'chinese'];
 export function blocksToHtml(blocks) {
-  let out = ''; const stack = []; // open lists: {type, kind}
+  let out = ''; const stack = [], counted = new Map(); // open lists: {type, kind}; the items each list (listId) has had so far
   const closeLists = n => { while (stack.length > n) { out += '</' + stack.pop().type + '>'; } };
   const pa = (b, tag, extra) => {
     const css = [alignCss(b.props.align), b.shade ? 'background:#' + esc(b.shade) : '', b.mark ? 'font-size:' + b.mark + 'pt' : '', paraCss(b.props)].filter(Boolean).join(';');
@@ -741,10 +763,12 @@ export function blocksToHtml(blocks) {
       if (stack.length === level + 1 && (stack[level].kind !== kind || b.props.restart)) { out += '</' + stack.pop().type + '>'; }
       while (stack.length < level + 1) {
         const own = stack.length === level, t = own ? type : 'ul';
-        out += own ? `<${t}${kind !== 'bullet' && kind !== 'number' ? ` data-w-list="${kind}"` : ''}${b.props.restart ? ' data-w-restart="1"' : ''}>` : '<ul>';
+        const lid = own && t === 'ol' && level === 0 && b.props.listId ? String(b.props.listId) : '', from = lid ? counted.get(lid) || 0 : 0;
+        out += own ? `<${t}${kind !== 'bullet' && kind !== 'number' ? ` data-w-list="${kind}"` : ''}${b.props.restart ? ' data-w-restart="1"' : ''}${lid ? ` data-w-listid="${esc(lid)}"` : ''}${from ? ` start="${from + 1}"` : ''}>` : '<ul>';
         stack.push({ type: t, kind: own ? kind : 'bullet' });
       }
       out += pa(b, 'li');
+      if (level === 0 && b.props.listId) counted.set(String(b.props.listId), (counted.get(String(b.props.listId)) || 0) + 1);
       continue;
     }
     closeLists(0);
@@ -1275,7 +1299,7 @@ const docxAttrs = (el, keys) => Object.fromEntries(keys.filter(k => el.hasAttrib
 /** Blocks in document order from an editor root (element or html). Each block keeps its element so paths can be written back. */
 export function blocksFromHtml(root) {
   const el = typeof root === 'string' ? parseHtml(root) : root;
-  const out = [];
+  const out = [], lists = new Set();
   const walk = (node, listType, level) => {
     for (const c of Array.from(node.childNodes)) {
       if (c.nodeType === 3) { if (c.nodeValue.trim()) out.push({ kind: 'paragraph', path: null, props: { html: esc(c.nodeValue.trim()) }, el: null }); continue; }
@@ -1285,6 +1309,9 @@ export function blocksFromHtml(root) {
       if (tag === 'LI') {
         const inner = c.cloneNode(true); Array.from(inner.querySelectorAll('ul,ol')).forEach(x => x.remove());
         const restart = !c.previousElementSibling && node.getAttribute && node.hasAttribute('data-w-restart') ? { restart: 'true' } : {};
+        const lid = node.getAttribute && node.getAttribute('data-w-listid');
+        if (lid && !c.previousElementSibling) { restart.listId = lid; if (lists.has(lid)) restart.joins = 'true'; } // its list's id rides on its first item: a list that numbers on from one before it joins it
+        if (lid) lists.add(lid);
         out.push(withPics({ kind: 'paragraph', path: pathOf(c), props: Object.assign({ html: inlineHtml(inner), list: listType || 'bullet', level: String(Math.max(0, level)) }, restart, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c)));
         Array.from(c.children).filter(x => /^(UL|OL)$/.test(x.tagName)).forEach(x => walk(x, listKind(x, listType), level + 1));
         continue;
@@ -1545,8 +1572,9 @@ function tableData(rows) {
 /** Commands that give a table just added from a plain grid its merges and formatting: colspans and cell props row by row
  * (a cell's place is its column less what merges on its left took), then rowspans top to bottom, left to right, when every
  * cell above is already merged and a cell's place is its place among the visible cells of its row. */
-export function newTableCommands(tablePath, rows, file) {
+export function newTableCommands(tablePath, rows, file, widths) {
   const m = blocksModel(rows), cmds = [], rowPath = r => `${tablePath}/row[${r + 1}]`;
+  let grid = null; try { grid = JSON.parse(widths || 'null'); } catch (e) { grid = null; } // a cell as wide as its column already is: the table's widths made it so
   m.rows.forEach((row, r) => {
     if (Object.keys(rows[r].props || {}).length) cmds.push(['set', file, rowPath(r), ...propsArgs(rows[r].props)]);
     let taken = 0;
@@ -1555,6 +1583,7 @@ export function newTableCommands(tablePath, rows, file) {
       if (x.cs > 1) { cmds.push(['set', file, at, '--prop', 'colspan=' + x.cs]); taken += x.cs - 1; }
       const { colspan, rowspan, html, ...props } = x.ref.props;
       if (/<[a-z]/i.test(html || '') && !/^(<br>|&nbsp;)*$/.test(html || '')) props.html = html;
+      if (props.width && x.cs === 1 && Array.isArray(grid) && grid[x.c] === props.width) delete props.width;
       if (Object.keys(props).length) cmds.push(['set', file, at, ...propsArgs(props)]);
     }
   });
@@ -1565,7 +1594,7 @@ export function newTableCommands(tablePath, rows, file) {
 function blockProps(b, forNew) {
   const p = {};
   if (b.kind === 'heading') { p.html = b.props.html; p.level = b.props.level; if (b.align || !forNew) p.align = b.align || 'left'; }
-  else if (b.kind === 'paragraph') { p.html = b.props.html; p.list = b.props.list || (forNew ? null : 'none'); if (b.props.list) { p.level = b.props.level || '0'; if (b.props.restart) p.restart = 'true'; } if (b.props.style) p.style = b.props.style; if (b.align || !forNew) p.align = b.align || 'left'; }
+  else if (b.kind === 'paragraph') { p.html = b.props.html; p.list = b.props.list || (forNew ? null : 'none'); if (b.props.list) { p.level = b.props.level || '0'; if (b.props.restart) p.restart = 'true'; else if (forNew && b.props.joins && b.props.list !== 'bullet') p.restart = 'false'; } if (b.props.style) p.style = b.props.style; if (b.align || !forNew) p.align = b.align || 'left'; }
   if (b.kind === 'heading' || b.kind === 'paragraph') { for (const k of PARA_OWN) if (b.props[k] && (b.props.sectionBreak || !SECTION_PROPS.includes(k))) p[k] = b.props[k]; }
   else if (b.kind === 'code') p.text = b.props.text;
   else if (b.kind === 'image') { p.src = b.props.src; if (b.width) p.width = Math.round(b.width) + 'px'; }
@@ -1593,6 +1622,7 @@ function changedProps(orig, b) {
     if (ol !== nl) p.list = nl;
     if (nl !== 'none' && String(orig.props.level || '0') !== String(b.props.level || '0')) p.level = b.props.level || '0';
     if (nl !== 'none' && nl !== 'bullet' && (orig.props.restart || '') !== (b.props.restart || '')) p.restart = b.props.restart || 'false';
+    else if (nl !== 'none' && nl !== 'bullet' && !b.props.restart && b.props.listId && orig.props.listId && String(b.props.listId) !== String(orig.props.listId)) p.restart = 'false'; // 继续编号: joined to a list before it
     if ((orig.props.style || '') !== (b.props.style || '') && b.props.style) p.style = b.props.style;
   }
   if (b.kind === 'bibliography' && (orig.props.title || '') !== (b.props.title || '')) p.title = b.props.title || '';
@@ -1660,7 +1690,7 @@ async function planContainer(file, parentPath, origChildren, newChildren, log, e
     b.path = r.path;
     counts[b.kind] = (counts[b.kind] || 0) + 1;
     if (b.kind === 'image' && r.props && r.props.id != null) b.id = String(r.props.id);
-    if (b.kind === 'table') for (const argv of newTableCommands(r.path, b.rows, file)) { await exec(argv); n++; }
+    if (b.kind === 'table') for (const argv of newTableCommands(r.path, b.rows, file, b.props.widths)) { await exec(argv); n++; }
     if (b.kind === 'row') for (let ci = 0; ci < b.cells.length; ci++) {
       const { html, ...props } = b.cells[ci].props;
       if (/<[a-z]/i.test(html || '') && !/^(<br>|&nbsp;)*$/.test(html || '')) props.html = html;

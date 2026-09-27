@@ -223,6 +223,9 @@
               <sc-if value="{{ hasWm }}" hint-placeholder-val="{{ false }}">
                 <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="transform:rotate(-32deg);font-size:110px;font-weight:700;color:rgba(29,29,31,0.07);white-space:nowrap;font-family:'Noto Sans SC',sans-serif">{{ wm }}</span></div>
               </sc-if>
+              <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:{{ padH }};right:{{ padR }};top:{{ padT }};bottom:{{ padB }};background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(15.6pt - {{ gridPx }}),rgba(47,93,138,0.16) calc(15.6pt - {{ gridPx }}),rgba(47,93,138,0.16) 15.6pt)"></div>
+              </sc-if>
             </div>
           </sc-for>
           <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-cstyle="{{ citeStyleAttr }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
@@ -434,6 +437,8 @@ const CASES = { // 更改大小写, as Word's dialog has them; the last two swit
   half: s => Array.from(s, c => c === '\u3000' ? ' ' : c >= '\uFF01' && c <= '\uFF5E' ? String.fromCharCode(c.charCodeAt(0) - 0xFEE0) : c).join(''),
   full: s => Array.from(s, c => c === ' ' ? '\u3000' : c >= '!' && c <= '~' ? String.fromCharCode(c.charCodeAt(0) + 0xFEE0) : c).join('') };
 const SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 60, 72];
+/** A list id of the editor's own, for lists joined or split here before the file gives them one (engine.js numberLists). */
+const newListId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const PAGES = { A4: [794, 1123], Letter: [816, 1056], A5: [559, 794], B5: [665, 945], A3: [1123, 1587], Legal: [816, 1344] }; // px at 96 dpi, portrait
 const PAPER_CM = { A4: [21, 29.7], A5: [14.8, 21], B5: [17.6, 25], A3: [29.7, 42], Letter: [21.59, 27.94], Legal: [21.59, 35.56] }; // 纸张, as the panel names them
 // 页边距: the engine's presets (DocxSection.Margins), cm top / sides; any other margins are "top right bottom left" as the engine prints them
@@ -923,7 +928,7 @@ class Component extends DCLogic {
   sync(typed) { if (!typed) this.pgDirty = true; clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 350); }
   flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(!this.pgDirty); this.citeScan(); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
-  ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
+  ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.EN.numberLists(ed); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
   /** The pages, as [top, bottom] of the text as it flows without page gaps. A paragraph that runs past the end of a page goes on
    *  on the next one from the line that does not fit, as Word breaks it: at least two of its lines on either side (孤行控制, unless
    *  turned off), none when 段中不分页 keeps it whole, and a heading or a paragraph set to 与下段同页 goes on with it when its first
@@ -1358,14 +1363,42 @@ class Component extends DCLogic {
     if (cmd === 'undo' && this.undoPic()) return;
     if (this.state.hf && /^justify/.test(cmd)) return this.hfAlign({ justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' }[cmd] || 'left');
     this.restore();
+    if (cmd === 'fontName' && this.caretOnly()) { const w = this.caretWord(); if (w) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(w); } else return this.typeWith({ 'font-family': `'${val}'` }); } // Word: the caret's word, or what is typed next
     try { document.execCommand('styleWithCSS', false, ['foreColor', 'hiliteColor', 'backColor', 'fontName'].includes(cmd)); } catch (e) { }
     document.execCommand(cmd, false, val);
     this.after();
   }
   after() { if (this.state.hf) this.hfInput(); else { this.ink(); this.sync(); } setTimeout(this.onSel, 0); }
+  /** 分隔线: as Word draws one (三个减号 then Enter), an empty paragraph with a bottom border, which the file keeps as the
+   *  paragraph's border; then a paragraph to go on typing in. */
+  insertRule() {
+    this.insertHTML('<p data-w-border="bottom" data-rule="1"><br></p><p><br></p>');
+    const ed = this.edRef.current, p = ed && ed.querySelector('p[data-rule]'); if (p) { p.removeAttribute('data-rule'); this.EN && this.EN.drawPara(p); }
+    this.after();
+  }
+  /** The selection is only a caret. */
+  caretOnly() { const s = window.getSelection(); return !!s.rangeCount && s.getRangeAt(0).collapsed; }
+  /** Word's rule for a change with only a caret: inside a word it is the whole word's (a range over it); at a word's edge, or in
+   *  Chinese text, null — the change is for what is typed next (typeWith). */
+  caretWord() {
+    const r = window.getSelection().getRangeAt(0), n = r.startContainer; if (n.nodeType !== 3) return null;
+    const t = n.nodeValue, i = r.startOffset, W = /[\p{L}\p{N}_'’]/u;
+    if (!(i > 0 && i < t.length && W.test(t[i - 1]) && W.test(t[i])) || /[\u3400-\u9fff]/.test(t[i - 1] + t[i])) return null;
+    let a = i, b = i; while (a > 0 && W.test(t[a - 1])) a--; while (b < t.length && W.test(t[b])) b++;
+    const w = document.createRange(); w.setStart(n, a); w.setEnd(n, b); return w;
+  }
+  /** What is typed next at the caret takes this look: an empty span holding it (a zero-width space the save leaves out). */
+  typeWith(css) {
+    const s = window.getSelection(); if (!s.rangeCount) return; const r = s.getRangeAt(0), n = r.startContainer;
+    const held = n.nodeType === 3 && n.nodeValue === '\u200B' && n.parentElement.tagName === 'SPAN' && n.parentElement.childNodes.length === 1 ? n.parentElement : null;
+    if (held) { for (const [k, v] of Object.entries(css)) held.style.setProperty(k, v); return this.after(); } // a second change before typing: the same span, not one inside it
+    const sp = document.createElement('span'); for (const [k, v] of Object.entries(css)) sp.style.setProperty(k, v); sp.textContent = '\u200B';
+    r.insertNode(sp); const nr = document.createRange(); nr.setStart(sp.firstChild, 1); nr.collapse(true); s.removeAllRanges(); s.addRange(nr); this.range = nr.cloneRange();
+    this.after();
+  }
   setFontSize(pt) {
-    this.restore(); const s = window.getSelection();
-    if (s.getRangeAt(0).collapsed) { this.blocks().forEach(b => b.style.fontSize = pt + 'pt'); return this.after(); }
+    this.restore(); const s = window.getSelection(); if (!s.rangeCount) return;
+    if (s.getRangeAt(0).collapsed) { const w = this.caretWord(); if (!w) return this.typeWith({ 'font-size': pt + 'pt' }); s.removeAllRanges(); s.addRange(w); } // not the paragraph's style attribute, which the save never read
     try { document.execCommand('styleWithCSS', false, false); } catch (e) { }
     document.execCommand('fontSize', false, '7');
     const ed = this.root; let last = null;
@@ -1430,11 +1463,18 @@ class Component extends DCLogic {
   restartList(on) {
     this.restore(); const el = this.caretEl(), li = el && el.closest && el.closest('li'), ol = li && li.parentElement;
     if (!ol || ol.tagName !== 'OL') return;
-    if (on && li.previousElementSibling) { const tail = ol.cloneNode(false); Array.from(ol.childNodes).slice(Array.from(ol.childNodes).indexOf(li)).forEach(n => tail.appendChild(n)); ol.after(tail); tail.setAttribute('data-w-restart', '1'); }
-    else if (on) ol.setAttribute('data-w-restart', '1');
+    if (on && li.previousElementSibling) { const tail = ol.cloneNode(false); Array.from(ol.childNodes).slice(Array.from(ol.childNodes).indexOf(li)).forEach(n => tail.appendChild(n)); ol.after(tail); tail.setAttribute('data-w-restart', '1'); tail.removeAttribute('data-w-listid'); tail.removeAttribute('start'); }
+    else if (on) { ol.setAttribute('data-w-restart', '1'); ol.removeAttribute('data-w-listid'); }
     else {
-      ol.removeAttribute('data-w-restart'); const prev = ol.previousElementSibling;
-      if (prev && prev.tagName === 'OL' && (prev.getAttribute('data-w-list') || '') === (ol.getAttribute('data-w-list') || '')) { while (ol.firstChild) prev.appendChild(ol.firstChild); ol.remove(); }
+      // Word's 继续编号 goes on from the nearest list numbered the same way, whatever is between them
+      ol.removeAttribute('data-w-restart'); const kind = o => o.getAttribute('data-w-list') || '';
+      const prev = ol.previousElementSibling;
+      if (prev && prev.tagName === 'OL' && kind(prev) === kind(ol)) { while (ol.firstChild) prev.appendChild(ol.firstChild); ol.remove(); }
+      else {
+        const lists = Array.from(this.root.querySelectorAll('ol')).filter(o => !(o.parentElement && o.parentElement.closest('ol,ul')));
+        const before = lists.slice(0, lists.indexOf(ol)).reverse().find(o => kind(o) === kind(ol));
+        if (before) { if (!before.getAttribute('data-w-listid')) before.setAttribute('data-w-listid', newListId()); ol.setAttribute('data-w-listid', before.getAttribute('data-w-listid')); }
+      }
     }
     this.after();
   }
@@ -1766,7 +1806,32 @@ class Component extends DCLogic {
     const next = order[order.indexOf(t.kind) + 1]; if (next) t.kind = next; else stops.splice(stops.indexOf(t), 1);
     this.para('tabs', EN.tabsText(stops));
   }
-  insertHTML(h) { this.restore(); document.execCommand('insertHTML', false, h); this.after(); }
+  insertHTML(h) {
+    this.restore();
+    if (/^<(p|hr|table|div|h[1-6])[\s>]/i.test(h) && this.blocksAfterItem(h)) return this.after();
+    document.execCommand('insertHTML', false, h); this.after();
+  }
+  /** Blocks (a rule, a page break, a table, a picture) inserted in a list item: the browser would put them inside the item, where the
+   *  save cannot keep them, so they go after it — the list split around them, the items after it in a list of their own that goes
+   *  on numbering. False when the caret is not in a list item. */
+  blocksAfterItem(h) {
+    const s = window.getSelection(); if (!s.rangeCount) return false;
+    const n = s.getRangeAt(0).startContainer, at = n.nodeType === 3 ? n.parentElement : n, li = at && at.closest('li,td,th');
+    if (!li || li.tagName !== 'LI' || !this.root.contains(li)) return false;
+    let list = li.parentElement; while (list.parentElement && list.parentElement.tagName === 'LI') list = list.parentElement.parentElement;
+    const items = Array.from(list.children), item = items.find(x => x.contains(li)), rest = items.slice(items.indexOf(item) + 1);
+    const t = document.createElement('template'); t.innerHTML = h; const added = Array.from(t.content.childNodes);
+    list.after(...added);
+    if (rest.length) {
+      const tail = list.cloneNode(false); ['data-path', 'data-w-restart', 'id'].forEach(a => tail.removeAttribute(a));
+      if (list.tagName === 'OL' && !list.getAttribute('data-w-listid')) list.setAttribute('data-w-listid', newListId()); // one list still: it numbers on
+      if (list.tagName === 'OL') tail.setAttribute('data-w-listid', list.getAttribute('data-w-listid'));
+      tail.append(...rest); added[added.length - 1].after(tail);
+    }
+    const p = added.filter(x => x.nodeType === 1 && x.tagName === 'P').pop();
+    if (p) { const r = document.createRange(); r.selectNodeContents(p); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); }
+    return true;
+  }
   /** The thumbnail panel's "＋ 新页面": a page break at the very end of the text, not at the caret, through the normal
    *  insertHTML path so it autosaves and undoes like any edit; the caret ends up in the new empty paragraph, scrolled into view. */
   addPage() {
@@ -1841,11 +1906,16 @@ class Component extends DCLogic {
     for (const tr of table.rows) { const p = document.createElement('p'); p.textContent = Array.from(tr.cells).map(c => c.innerText.trim()).join('\t'); out.appendChild(p); }
     table.replaceWith(out); this.after();
   }
-  /** 排序: the rows by the caret's column, numbers as numbers; a header row (标题行重复) stays on top. The save writes the table anew. */
+  /** 排序: the rows by the caret's column (the grid's: merged cells before it count as wide as they are), numbers as numbers; a
+   *  header row (标题行重复) stays on top. As Word, a table whose rows are merged down is not sorted: the merges would tear. The
+   *  save writes the table anew. */
   sortTable(desc) {
-    const td = this.cell(); if (!td) return; const table = td.closest('table'), tr0 = td.parentElement, col = Array.from(tr0.cells).indexOf(td), body = tr0.parentElement;
+    const td = this.cell(); if (!td) return; const tr0 = td.parentElement, body = tr0.parentElement;
     const rows = Array.from(body.rows), head = rows.filter(r => r.hasAttribute('data-w-header')), rest = rows.filter(r => !r.hasAttribute('data-w-header'));
-    const key = r => (r.cells[col] ? r.cells[col].innerText : '').trim(), num = s => s !== '' && isFinite(s.replace(/[,，]/g, '')) ? +s.replace(/[,，]/g, '') : null;
+    if (rest.some(r => Array.from(r.cells).some(c => c.rowSpan > 1))) return this.props.toast && this.props.toast($t('表格里有纵向合并的单元格，无法排序'));
+    const gridCol = c => { let x = 0; for (const o of c.parentElement.cells) { if (o === c) return x; x += o.colSpan || 1; } return x; }, col = gridCol(td);
+    const at = r => { let x = 0; for (const c of r.cells) { x += c.colSpan || 1; if (x > col) return c; } return null; };
+    const key = r => (at(r) ? at(r).innerText : '').trim(), num = s => s !== '' && isFinite(s.replace(/[,，]/g, '')) ? +s.replace(/[,，]/g, '') : null;
     rest.sort((a, b) => { const x = key(a), y = key(b), nx = num(x), ny = num(y); const c = nx !== null && ny !== null ? nx - ny : x.localeCompare(y, 'zh', { numeric: true }); return desc ? -c : c; });
     body.replaceChildren(...head, ...rest); this.after();
   }
@@ -2048,6 +2118,7 @@ class Component extends DCLogic {
     else if (ctrl && k === 'h') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
     else if (ctrl && k === 's') this.flush(); // the typing in, before the shell's save (Ctrl+S there says where it went)
     else if (ctrl && k === 'k') { e.preventDefault(); this.linkDlg(); }
+    else if (ctrl && e.key === 'Enter' && !e.shiftKey && !e.altKey) { e.preventDefault(); this.onSel(); this.insertHTML('<hr data-pb="1"><p><br></p>'); } // 分页符, as Word; at the caret as it is now
     else if (ctrl && e.shiftKey && (e.key === '>' || e.key === '.')) { e.preventDefault(); this.bump(1); }
     else if (ctrl && e.shiftKey && (e.key === '<' || e.key === ',')) { e.preventDefault(); this.bump(-1); }
     else if (ctrl && k === 'z' && !e.shiftKey && this.undoPic()) e.preventDefault();
@@ -2066,7 +2137,9 @@ class Component extends DCLogic {
       this.after();
     }
   };
-  bump(dir) { const cur = this.state.fmt.size || 11; let i = SIZES.findIndex(s => s >= cur); if (i < 0) i = SIZES.length - 1; const nx = SIZES[Math.max(0, Math.min(SIZES.length - 1, SIZES[i] === cur ? i + dir : dir > 0 ? i : i - 1))]; this.setFontSize(nx); }
+  bump(dir) { const s = window.getSelection(), at = s.rangeCount && s.getRangeAt(0).collapsed && s.anchorNode, el = at && (at.nodeType === 3 ? at.parentElement : at);
+    const cur = el && this.root.contains(el) ? Math.round(parseFloat(getComputedStyle(el).fontSize) * 0.75 * 2) / 2 : this.state.fmt.size || 11; // the caret's own size: fmt lags a quick second press
+    let i = SIZES.findIndex(s => s >= cur); if (i < 0) i = SIZES.length - 1; const nx = SIZES[Math.max(0, Math.min(SIZES.length - 1, SIZES[i] === cur ? i + dir : dir > 0 ? i : i - 1))]; this.setFontSize(nx); }
   linkDlg() { this.restore(); const sel = window.getSelection().toString(); this.prompt('插入链接', [{ key: 'url', label: '链接地址', ph: 'https://', first: true }, { key: 'text', label: '显示文字', value: sel, ph: '留空则使用地址', ai: 'the text a link shows in a Word document' }], v => { if (!v.url) return; const url = /^(https?:|mailto:|#)/.test(v.url) ? v.url : 'https://' + v.url; if (sel && (!v.text || v.text === sel)) this.exec('createLink', url); else this.insertHTML(`<a href="${url}">${(v.text || url).replace(/</g, '&lt;')}</a>`); }); }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
   /** Each page thumbnail lays out a copy of its own page's blocks (pageCuts), or of the whole document when there are no cuts (a
@@ -2149,7 +2222,7 @@ class Component extends DCLogic {
       G('页面', grid(3, card('页眉', 'header', () => this.enterHF('header', this.caretPage()), { title: '编辑页眉（也可双击页面顶部）' }),
         card('页脚', 'footer', () => this.enterHF('footer', this.caretPage()), { title: '编辑页脚（也可双击页面底部）' }), menuCard('pagenum', '页码', 'pageNumber', null, { title: '在页脚插入页码' }),
         card('分页符', 'pageBreak', () => this.insertHTML('<hr data-pb="1"><p><br></p>'), { title: '分页符 Ctrl+Enter' }), menuCard('cover', '封面', 'cover', null, { title: '在文档开头插入一页封面' }),
-        card('分隔线', 'rule', () => this.insertHTML('<hr><p><br></p>')))),
+        card('分隔线', 'rule', () => this.insertRule()))),
       G('符号与批注', grid(3, card('公式', 'equation', () => this.eqDialog(), { title: '用 LaTeX 输入公式，保存为 Word 公式' }), menuCard('sym', '符号', 'symbol', null),
         card('日期', 'date', () => this.insertDate()), menuCard('dropcap', '首字下沉', 'dropCap', null, { title: '段落的第一个字放大到三行高' }),
         menuCard('bm', '书签', 'bookmark', null, { title: '给所在段落加上书签，交叉引用和链接可以跳到这里' }), card('批注', 'comment', () => this.addComment())))
@@ -2346,7 +2419,7 @@ class Component extends DCLogic {
       M('table', '表格', []), B('图片', () => { this.restore(); this.imgRef.current.click(); }), B('链接', () => this.linkDlg(), { title: 'Ctrl+K' }), SEP,
       B('文本框', () => this.insertShape('textbox'), { title: '插入文本框，可拖到页面任意位置' }), M('shapes', '形状', SHAPE_KINDS.map(([k, l]) => I(l, () => this.insertShape(k)))), B('图表', () => this.insertChart(), { title: '插入柱状图图片' }),
       B('公式@@word', () => this.eqDialog(), { title: '用 LaTeX 输入公式，保存为 Word 公式' }), SEP,
-      B('分隔线', () => this.insertHTML('<hr><p><br></p>')), B('分页符', () => this.insertHTML('<hr data-pb="1"><p><br></p>')), SEP,
+      B('分隔线', () => this.insertRule()), B('分页符', () => this.insertHTML('<hr data-pb="1"><p><br></p>')), SEP,
       B('页眉', () => this.enterHF('header', this.caretPage()), { title: '编辑页眉（也可双击页面顶部）' }), B('页脚', () => this.enterHF('footer', this.caretPage()), { title: '编辑页脚（也可双击页面底部）' }),
       M('pagenum', '页码', presetPick(tpl => this.insertPageNum(tpl)), '在页脚插入页码'), SEP,
       B('日期', () => { this.restore(); document.execCommand('insertText', false, new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })); this.after(); }),
@@ -2526,7 +2599,7 @@ class Component extends DCLogic {
       cvRef: this.cvRef, edRef: this.edRef, fnRef: this.fnRef, imgRef: this.imgRef,
       onCanvasDown: e => { if (e.target === this.cvRef.current) { e.preventDefault(); this.restore(); } },
       zoomV: st.zoom, pageW: web ? '100%' : sv ? n * PW + (n - 1) * GAP + 'px' : PW + 'px', sheetH: web ? 'auto' : sv ? PH + 'px' : n * PH + (n - 1) * GAP + 'px',
-      sideAttr: sv ? '1' : '0', edFlex: sv ? 'none' : '1', edW: sv ? PW - m.left - m.right + 'px' : 'auto', edH: sv ? PH - m.top - m.bottom + 'px' : 'auto', edCols: sv ? 'auto' : pg.cols, edColW: sv ? PW - m.left - m.right + 'px' : 'auto', edGap: sv ? m.left + m.right + GAP + 'px' : '32px', edFill: sv ? 'auto' : 'balance', pad: web ? '16px 56px 48px' : `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`, padH: m.left + 'px', padR: m.right + 'px', pageBg: pg.color || 'var(--kpage, #FFFFFF)', pageInk, cols: pg.cols,
+      sideAttr: sv ? '1' : '0', edFlex: sv ? 'none' : '1', edW: sv ? PW - m.left - m.right + 'px' : 'auto', edH: sv ? PH - m.top - m.bottom + 'px' : 'auto', edCols: sv ? 'auto' : pg.cols, edColW: sv ? PW - m.left - m.right + 'px' : 'auto', edGap: sv ? m.left + m.right + GAP + 'px' : '32px', edFill: sv ? 'auto' : 'balance', pad: web ? '16px 56px 48px' : `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`, padH: m.left + 'px', padR: m.right + 'px', padT: m.top + 'px', padB: m.bottom + 'px', showGrid: !!st.showGrid && !web, gridPx: (1 / Math.min(1, st.zoom || 1)).toFixed(2) + 'px', // at least a screen pixel, or zoomed out some lines vanish pageBg: pg.color || 'var(--kpage, #FFFFFF)', pageInk, cols: pg.cols,
       cvPad: web ? `${this.cvTop}px 0 72px` : `${this.cvTop}px ${CV_PAD[1]}px 72px`, cvBg: web ? pg.color || 'var(--kpage, #FFFFFF)' : 'transparent', cvLight: web ? '1' : undefined, sheetBg: 'transparent', pageSh: 'var(--word-paper-sh)',
       hasWm: !web && !!pg.wm, wm: $t(pg.wm), sheets, pgId: this.pgId, hfZones, hfRef: this.hfRef, hfOp: hf ? 1 : 0.6, edOp: hf ? 0.4 : 1, edPe: hf ? 'none' : 'auto',
       showRuler: st.showRuler && !web && !sv && !pure, cmPx: CMPX + 'px', halfCmPx: CMPX / 2 + 'px', tabStops, onRuler: e => this.rulerClick(e, m.left), rulerTitle: $t('点击标尺添加制表位；点击制表位切换 左 / 居中 / 右 / 小数点，再点一次移除'),
