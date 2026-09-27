@@ -1,5 +1,6 @@
 // English UI text, keyed by the Chinese source string (rules in ui/i18n.js). Loaded only when the UI is in English.
 Object.assign(window.I18N_EN = window.I18N_EN || {}, {
+  '中文': 'Chinese', '西文': 'Latin', '中文字体': 'Chinese Font', '西文字体': 'Latin Font',
   // top bar / global
   '文件': 'File', 'AI 助手': 'Assistant', '沉浸书写 Ctrl+.': 'Immersive Writing Ctrl+.',
   '查找': 'Find', '替换为': 'Replace With', '查找下一个': 'Find Next', '替换': 'Replace', '全部替换': 'Replace All', '关闭': 'Close',

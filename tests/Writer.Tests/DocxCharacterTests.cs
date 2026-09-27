@@ -11,6 +11,29 @@ public class DocxCharacterTests
     static Dictionary<string, string> Props(params (string Name, string Value)[] pairs) => pairs.ToDictionary(p => p.Name, p => p.Value);
 
     [Fact]
+    public void Chinese_and_Latin_fonts_survive_html_edits_independently()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        var p = Mutations.Add(body, "paragraph", Props(("html", "<span data-font-west=\"Arial\" data-font-ea=\"SimSun\">Hello 中文</span>")), null);
+        var run = p.Children.Single(c => c.Kind == "run");
+        Assert.Equal("Arial", run.GetProps()["font"]);
+        Assert.Equal("SimSun", run.GetProps()["fontEa"]);
+        run = Mutations.Set(run, Props(("fontLatin", "Georgia")));
+        Assert.Contains("w:ascii=\"Georgia\"", run.GetRaw());
+        Assert.Contains("w:eastAsia=\"SimSun\"", run.GetRaw());
+        var html = p.GetProps()["html"].Replace("Hello", "Edited");
+        Mutations.Set(p, Props(("html", html)));
+        run = p.Children.Single(c => c.Kind == "run");
+        Assert.Equal("Georgia", run.GetProps()["font"]);
+        Assert.Equal("SimSun", run.GetProps()["fontEa"]);
+        Assert.Equal("Edited 中文", p.Text);
+        Mutations.Set(run, Props(("fontEa", "KaiTi")));
+        Assert.Contains("w:ascii=\"Georgia\"", run.GetRaw());
+        Assert.Contains("w:eastAsia=\"KaiTi\"", run.GetRaw());
+    }
+
+    [Fact]
     public void Superscript_spacing_effects_and_the_highlight_pen_round_trip_through_html_and_props()
     {
         using var doc = new DocxAdapter().Create();

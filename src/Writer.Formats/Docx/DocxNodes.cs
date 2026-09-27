@@ -358,6 +358,7 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
         if (rp?.FontSize?.Val?.Value is { } half && double.TryParse(half, NumberStyles.Float, CultureInfo.InvariantCulture, out var halfPoints))
             props["size"] = (halfPoints / 2).ToString("0.##", CultureInfo.InvariantCulture);
         if (rp?.RunFonts?.Ascii?.Value is { } font) props["font"] = font;
+        if (rp?.RunFonts?.EastAsia?.Value is { } ea && ea != props.GetValueOrDefault("font")) props["fontEa"] = ea;
         if (rp?.Shading?.Fill?.Value is { } fill && !fill.Equals("auto", StringComparison.OrdinalIgnoreCase)) props["highlight"] = fill.ToUpperInvariant();
         else if (rp?.Highlight?.Val?.InnerText is { } highlight && DocxRuns.HighlightHex(highlight) is { } named) props["highlight"] = named;
         if (rp?.VerticalTextAlignment?.Val?.Value is { } vertical && vertical != W.VerticalPositionValues.Baseline) props["vertAlign"] = vertical == W.VerticalPositionValues.Superscript ? "superscript" : "subscript";
@@ -430,6 +431,12 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
                 rp.FontSizeComplexScript = new W.FontSizeComplexScript { Val = half };
                 break;
             case "font": rp.RunFonts = new W.RunFonts { Ascii = value, HighAnsi = value, EastAsia = value, ComplexScript = value }; break;
+            case "fontEa":
+                var eaFonts = rp.RunFonts ??= new W.RunFonts(); eaFonts.EastAsia = value; eaFonts.EastAsiaTheme = null;
+                break;
+            case "fontLatin":
+                var latinFonts = rp.RunFonts ??= new W.RunFonts(); latinFonts.Ascii = value; latinFonts.HighAnsi = value; latinFonts.AsciiTheme = null; latinFonts.HighAnsiTheme = null;
+                break;
             case "highlight": DocxRuns.SetHighlight(rp, value == "none" ? null : value); break;
             case "vertAlign": rp.VerticalTextAlignment = value is "baseline" or "none" ? null : new W.VerticalTextAlignment { Val = value == "superscript" ? W.VerticalPositionValues.Superscript : W.VerticalPositionValues.Subscript }; break;
             case "spacing": rp.Spacing = value == "none" ? null : new W.Spacing { Val = (int)Math.Round(double.Parse(value.TrimEnd('p', 't', ' '), CultureInfo.InvariantCulture) * 20) }; break;

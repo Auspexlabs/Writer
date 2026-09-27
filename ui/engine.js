@@ -1645,7 +1645,7 @@ function ptOf(v) { const m = /^([\d.]+)\s*(pt|px)$/i.exec(String(v || '').trim()
 export function runsOf(html) {
   const root = typeof html === 'string' ? parseHtml(html) : html, out = [];
   const add = (t, s) => { if (!t) return; const last = out[out.length - 1]; if (last && last.s === s) last.t += t; else out.push({ t, s }); };
-  const key = f => JSON.stringify([f.b, f.i, f.u, f.s, f.c, f.a, f.color, f.bg, f.size, f.font, f.ins, f.del, f.rs, f.va, f.ls, f.sh, f.ol, f.caps].map(x => x || 0));
+  const key = f => JSON.stringify([f.b, f.i, f.u, f.s, f.c, f.a, f.color, f.bg, f.size, f.font, f.ins, f.del, f.rs, f.va, f.ls, f.sh, f.ol, f.caps, f.fontEa === f.font ? null : f.fontEa].map(x => x || 0));
   const walk = (node, f) => {
     for (const c of Array.from(node.childNodes)) {
       if (c.nodeType === 3) { add(c.nodeValue.replace(/\u00a0/g, ' ').replace(/\u200B/g, ''), key(f)); continue; }
@@ -1670,7 +1670,9 @@ export function runsOf(html) {
       if (st.color) g.color = colorHex(st.color) || g.color;
       if (st.backgroundColor) g.bg = colorHex(st.backgroundColor) || g.bg;
       if (st.fontSize) g.size = ptOf(st.fontSize) || g.size;
-      if (st.fontFamily) g.font = st.fontFamily.split(',')[0].trim().replace(/["']/g, '');
+      if (st.fontFamily) { g.font = st.fontFamily.split(',')[0].trim().replace(/["']/g, ''); g.fontEa = null; }
+      if (c.getAttribute('data-font-west')) g.font = c.getAttribute('data-font-west');
+      if (c.getAttribute('data-font-ea')) g.fontEa = c.getAttribute('data-font-ea');
       if (tag === 'SUP' || st.verticalAlign === 'super') g.va = 'sup'; else if (tag === 'SUB' || st.verticalAlign === 'sub') g.va = 'sub'; // superscript, subscript
       if (st.letterSpacing && st.letterSpacing !== 'normal') g.ls = st.letterSpacing; // character spacing
       if (st.textTransform) g.caps = st.textTransform === 'uppercase' ? 'all' : 0; // a slide's all caps and small caps

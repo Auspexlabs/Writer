@@ -114,7 +114,7 @@ public static partial class InlineHtml
             var css = new List<string>();
             if (run.Color is not null) css.Add("color:#" + run.Color);
             if (run.Size is not null) css.Add("font-size:" + run.Size + "pt");
-            if (run.Font is not null) css.Add("font-family:'" + Esc(run.Font) + "'");
+            if (run.Font is not null || run.FontEa is not null) css.Add("font-family:" + string.Join(',', new[] { run.Font, run.FontEa }.OfType<string>().Distinct().Select(f => "'" + Esc(f) + "'")));
             if (run.Highlight is not null) css.Add("background-color:#" + run.Highlight);
             if (run.Spacing is not null) css.Add("letter-spacing:" + run.Spacing);
             if (run.Caps is not null) css.Add(run.Caps == "small" ? "font-variant:small-caps" : "text-transform:uppercase");
@@ -122,7 +122,13 @@ public static partial class InlineHtml
             if (run.Outline) css.Add(OutlineCss);
             if (css.Count > 0)
             {
-                open.Append("<span style=\"").Append(string.Join(';', css)).Append("\">");
+                open.Append("<span");
+                if (run.FontEa is not null)
+                {
+                    open.Append(" data-font-ea=\"").Append(Esc(run.FontEa)).Append('"');
+                    if (run.Font is not null) open.Append(" data-font-west=\"").Append(Esc(run.Font)).Append('"');
+                }
+                open.Append(" style=\"").Append(string.Join(';', css)).Append("\">");
                 close.Insert(0, "</span>");
             }
             Wrap(run.Bold, "b", open, close);
@@ -178,7 +184,7 @@ public static partial class InlineHtml
         };
         if (attrs.TryGetValue("color", out var fontColor) && ParseColor(fontColor) is { } fc) s = s with { Color = fc };
         if (attrs.TryGetValue("face", out var face)) s = s with { Font = face.Split(',')[0].Trim().Trim('"', '\'') };
-        if (!attrs.TryGetValue("style", out var css)) return s;
+        if (!attrs.TryGetValue("style", out var css)) return FontAttrs(s, attrs);
         foreach (var declaration in css.Split(';'))
         {
             var colon = declaration.IndexOf(':');
@@ -190,7 +196,7 @@ public static partial class InlineHtml
                 case "color" when ParseColor(value) is { } c: s = s with { Color = c }; break;
                 case "background-color" or "background" when ParseColor(value) is { } h: s = s with { Highlight = h }; break;
                 case "font-size" when ParseSize(value) is { } size: s = s with { Size = size }; break;
-                case "font-family": s = s with { Font = value.Split(',')[0].Trim().Trim('"', '\'') }; break;
+                case "font-family": s = s with { Font = value.Split(',')[0].Trim().Trim('"', '\''), FontEa = null }; break;
                 case "font-weight" when value is "bold" or "bolder" || (int.TryParse(value, out var weight) && weight >= 600): s = s with { Bold = true }; break;
                 case "font-weight" when value is "normal": s = s with { Bold = false }; break;
                 case "font-style" when value is "italic" or "oblique": s = s with { Italic = true }; break;
@@ -208,8 +214,14 @@ public static partial class InlineHtml
                 case "-webkit-text-stroke" or "-webkit-text-stroke-width": s = s with { Outline = value != "0" && !value.StartsWith("0px", StringComparison.Ordinal) && value != "none" }; break;
             }
         }
-        return s;
+        return FontAttrs(s, attrs);
     }
+
+    static RunSpec FontAttrs(RunSpec s, Dictionary<string, string> attrs) => s with
+    {
+        Font = NonEmpty(attrs, "data-font-west") ?? s.Font,
+        FontEa = NonEmpty(attrs, "data-font-ea") ?? s.FontEa,
+    };
 
     /// <summary>The underline's line style a text-decoration names, if any but solid.</summary>
     static string? LineStyle(string value) => new[] { "double", "dotted", "dashed", "wavy" }.FirstOrDefault(value.Contains);

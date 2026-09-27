@@ -294,6 +294,8 @@ public static class Registry
                 new("color", PropType.Color, "Text color, or none.") { Example = "C00000", Formats = DocxPptx },
                 new("size", PropType.Points, "Font size in points.") { Example = "14pt", Formats = DocxPptx },
                 new("font", PropType.String, "Font family.") { Example = "Arial", Formats = DocxPptx },
+                new("fontEa", PropType.String, "East Asian font, independent of the Latin font.") { Example = "SimSun", Formats = Docx },
+                new("fontLatin", PropType.String, "Latin font; leaves the East Asian font unchanged.") { Example = "Arial", Formats = Docx, WriteOnly = true },
                 Highlight(DocxPptx),
                 new("link", PropType.String, "Hyperlink target: a URL, or #bookmark.") { Example = "https://example.com" },
                 new("style", PropType.String, "Character style id or name (Emphasis, Strong, Intense Emphasis, Subtle Emphasis, or one the document defines); none removes it. In html a run carries it as <span data-style=\"Emphasis\">.") { Example = "Emphasis", Formats = Docx },

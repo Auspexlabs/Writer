@@ -22,12 +22,12 @@ try {
       if (req.url === '/') { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><meta charset="utf-8"><div id="editor" contenteditable="true"></div>'); return; }
       if (req.url === '/ui/word-test.dc.html') {
         res.setHeader('Content-Type', 'text/html');
-        res.end(`<!doctype html><meta charset="utf-8"><style>html,body,#dc-root{height:100%;margin:0;overflow:hidden}</style><script>window.__WRITER_LANG='zh';</script><script src="/ui/memo.js"></script><script src="/ui/i18n.js"></script><script src="/ui/vendor/offline.js"></script><script src="/ui/support.js"></script><body><x-dc><dc-import name="WordEditor" doc="{{ doc }}" on-change="{{ onChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toast }}" style="position:absolute;inset:0"></dc-import></x-dc><script type="text/x-dc" data-dc-script>class Component extends DCLogic { state = { docs:[{id:'test',type:'docx',html:'<p>Test</p>',loaded:true}] }; hist={}; constructor(p){super(p);window.__wordParent=this;} get doc(){return this.state.docs[0];} scheduleSave(){} toastMsg(message){window.__lastToast=message;} ${shellHistory} renderVals(){return {doc:this.doc,onChange:(doc,opts)=>this.setDoc(doc,!opts?.silent),onUndo:()=>this.undo(false),onRedo:()=>this.undo(true),toast:message=>this.toastMsg(message)};} }</script></body>`); return;
+        res.end(`<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/ui/assets/fonts/fonts.css"><style>html,body,#dc-root{height:100%;margin:0;overflow:hidden}</style><script>window.__WRITER_LANG='zh';</script><script src="/ui/memo.js"></script><script src="/ui/i18n.js"></script><script src="/ui/vendor/offline.js"></script><script src="/ui/support.js"></script><body><x-dc><dc-import name="WordEditor" doc="{{ doc }}" on-change="{{ onChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toast }}" style="position:absolute;inset:0"></dc-import></x-dc><script type="text/x-dc" data-dc-script>class Component extends DCLogic { state = { docs:[{id:'test',type:'docx',html:'<p>Test</p>',loaded:true}] }; hist={}; constructor(p){super(p);window.__wordParent=this;} get doc(){return this.state.docs[0];} scheduleSave(){} toastMsg(message){window.__lastToast=message;} ${shellHistory} renderVals(){return {doc:this.doc,onChange:(doc,opts)=>this.setDoc(doc,!opts?.silent),onUndo:()=>this.undo(false),onRedo:()=>this.undo(true),toast:message=>this.toastMsg(message)};} }</script></body>`); return;
       }
       if (req.url.startsWith('/ui/')) {
         const path = resolve(root, '.' + new URL(req.url, 'http://local').pathname);
         if (!path.startsWith(join(root, 'ui') + '/')) { res.writeHead(403).end(); return; }
-        res.setHeader('Content-Type', path.endsWith('.js') ? 'text/javascript' : 'text/html'); res.end(readFileSync(path)); return;
+        res.setHeader('Content-Type', path.endsWith('.js') ? 'text/javascript' : path.endsWith('.css') ? 'text/css' : 'text/html'); res.end(readFileSync(path)); return;
       }
       const chunks = []; for await (const chunk of req) chunks.push(chunk);
       const response = await fetch(base + req.url, { method: req.method, headers: { 'Content-Type': req.headers['content-type'] || 'application/json' }, ...(chunks.length ? { body: Buffer.concat(chunks) } : {}) });
@@ -189,6 +189,18 @@ try {
     check(c.state.zoom === zoom && (p0.querySelector('sub') || p0.innerHTML.includes('vertical-align: sub')), 'Ctrl+= zoomed instead of applying subscript');
     selectParagraph(); p0.dispatchEvent(new KeyboardEvent('keydown', { key: '2', ctrlKey: true, altKey: true, bubbles: true, cancelable: true })); c.flush(); await tick();
     check(c.edRef.current.querySelector('h2'), 'Ctrl+Alt+2 did not apply Heading 2');
+    await EN.run(['create', 'fonts-editor.docx']);
+    await EN.run(['add', 'fonts-editor.docx', '/body', '--type', 'paragraph', '--prop', 'html=<b>Hello 中文</b> <i>World 汉字</i>']);
+    parent.setState({ docs: [await EN.open({ id: 'fonts', path: 'fonts-editor.docx', type: 'docx' })] }); await tick(); c = editor();
+    const fontRoot = c.edRef.current, fontRange = document.createRange(); fontRange.selectNodeContents(fontRoot.querySelector('p'));
+    selection.removeAllRanges(); selection.addRange(fontRange); c.range = fontRange;
+    c.setScriptFont('west', 'Georgia'); c.setScriptFont('ea', 'Noto Sans SC'); c.flush(); await tick();
+    check(fontRoot.querySelector('b').textContent === 'Hello 中文' && fontRoot.querySelector('i').textContent === 'World 汉字', 'independent font controls changed text or formatting');
+    check(c.fontCss.textContent.includes('PingFang') && c.fontCss.textContent.includes('unicode-range:'), 'script font aliases lost bundled font sources');
+    await EN.save(parent.doc, { root: fontRoot });
+    const fontDoc = await EN.open(parent.doc); fontRoot.innerHTML = fontDoc.html;
+    check(fontRoot.querySelector('[data-font-west="Georgia"][data-font-ea="Noto Sans SC"]'), 'Chinese and Latin fonts did not reopen');
+    check(await EN.save(fontDoc, { root: fontRoot }) === 0, 'independent font save was not stable');
     const paragraphs = Array.from({ length: 900 }, (_, i) => `<p>Paragraph ${i}. ${'A long document needs reliable page boundaries. '.repeat(35)}</p>`).join('');
     parent.setState({ docs: [{ id: 'pagination', type: 'docx', html: paragraphs, loaded: false }] }); await tick();
     c = editor(); c.refreshInfo();
@@ -206,7 +218,7 @@ try {
       perf.push({ paragraph: index, pages: full.length, incrementalMs: Math.round(elapsed), fullMs: Math.round(fullElapsed) });
     }
     window.__wordPaginationPerf = perf;
-    return ['MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing', 'WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving', 'WordEditor table commands: insert row, save, undo, save/reopen and redo', 'Word shortcuts: justify, line spacing, subscript without zoom, Heading 2'];
+    return ['MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing', 'WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving', 'WordEditor table commands: insert row, save, undo, save/reopen and redo', 'Word shortcuts: justify, line spacing, subscript without zoom, Heading 2', 'Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op'];
   });
   for (const result of editorResults) console.log('PASS', result);
   console.log('PASS incremental page boundaries match full layout', JSON.stringify(await page.evaluate(() => window.__wordPaginationPerf)));
