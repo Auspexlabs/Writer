@@ -320,6 +320,7 @@ public static class Registry
                 Id(Docx),
                 new("kind", PropType.Enum, "footnote (at the foot of the page) or endnote (at the end of the document); set when added.") { Values = ["footnote", "endnote"], Example = "footnote" },
                 new("text", PropType.String, "The note's text; paragraphs joined by newlines.") { Example = "See the appendix." },
+                new("html", PropType.String, "The note's text with its look: <i>, <b>, <u>, <s>, links; paragraphs joined by <br>. Its citation (cite) is not part of it.") { Example = "See <i>Glass</i>, ch. 2." },
                 new("at", PropType.Int, "Character offset in the paragraph's text where the mark sits; the end when omitted on add. Writing it moves the mark.") { Min = 0, Example = "12" },
                 new("cite", PropType.String, "The sources the note cites (their tags, ; between), in Chicago's notes: the note's text is then the citation in full the first time a source is cited and short after, drawn from the source, before the note's own text. none takes the citation out.") { Example = "Peg15" },
                 new("pages", PropType.String, "The place the note cites in each source (a page, a range), ; between for several.") { Example = "288" },

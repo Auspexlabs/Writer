@@ -294,4 +294,21 @@ public class DocxSectionTests
         var main = ((DocxDocument)reopened).Main;
         Assert.DoesNotContain(main.FootnotesPart!.Footnotes!.Elements<W.Footnote>(), f => f.Id?.Value > 0); // only the separators are left
     }
+
+    [Fact]
+    public void A_note_s_text_keeps_its_look_as_html_one_paragraph_a_line()
+    {
+        using var doc = new DocxAdapter().Create();
+        var p = Mutations.Add(doc.Root.Children.Single(), "paragraph", Props(("text", "Glass holds it.")), null);
+        var note = Mutations.Add(p, "footnote", Props(("html", "See <i>Glass Science</i>, ch. 2.<br>And <b>more</b>.<br>"), ("at", "5")), null);
+        Assert.Equal(("See Glass Science, ch. 2.\nAnd more.", "See <i>Glass Science</i>, ch. 2.<br>And <b>more</b>."), (note.GetProps()["text"], note.GetProps()["html"]));
+        var xml = ((DocxDocument)doc).Main.FootnotesPart!.Footnotes!.Elements<W.Footnote>().Single(f => f.Id?.Value > 0);
+        Assert.Equal(2, xml.Elements<W.Paragraph>().Count()); // the <br> the editor leaves at the end makes no paragraph
+        Assert.Equal(" See ", xml.Descendants<W.Text>().First().Text); // the space after the mark, in the first run: as Word writes it
+
+        using var reopened = Reopen(doc);
+        var n = Mutations.Set(PathResolver.Single(reopened.Root, "//footnote[@id=1]"), Props(("html", "<i>Only</i> this")));
+        Assert.Equal("<i>Only</i> this", n.GetProps()["html"]);
+        Assert.DoesNotContain(new OpenXmlValidator().Validate(((DocxDocument)reopened).Package), e => e.Part is FootnotesPart);
+    }
 }
