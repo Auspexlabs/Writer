@@ -574,8 +574,8 @@ class Component extends DCLogic {
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) { }
     this.autoFit = true;
     const fit = this.fit = () => { const cv = this.cvRef.current; if (!cv || !this.autoFit || this.state.view === 'web') return; const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, W = pg.orient === 'landscape' ? ph : pw; const z = Math.max(ZMIN, Math.min(1, Math.floor((cv.clientWidth - 48) / (W * Z100) * 20) / 20) * Z100); if (Math.abs(z - this.state.zoom) > 1e-6) this.setState({ zoom: z }); }; // in 5% steps of the zoom shown, 100% at most
-    this.fitRO = new ResizeObserver(() => { fit(); clearTimeout(this.riT); this.riT = setTimeout(() => this.refreshInfo(), 200); });
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.refreshInfo()); if (this.cvRef.current) this.fitRO.observe(this.cvRef.current);
+    this.fitRO = new ResizeObserver(() => { fit(); clearTimeout(this.riT); this.riT = setTimeout(() => this.refreshIfMoved(), 200); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.refreshIfMoved()); if (this.cvRef.current) this.fitRO.observe(this.cvRef.current);
     this.attachWheel();
     import('./follow.js').then(F => { this.F = F; this.attachFollow(); });
   }
@@ -632,7 +632,7 @@ class Component extends DCLogic {
       if (o.id !== d.id && this.syncT) { clearTimeout(this.syncT); this.syncT = null; this.props.onChange && this.props.onChange(Object.assign({}, o, { html: this.edRef.current.innerHTML }), { silent: true }); }
       this.load();
     }
-    else if (o.page !== d.page || this.shownView !== this.state.view) { this.shownView = this.state.view; this.refreshInfo(); } // the text reflows into other pages
+    else if (o.page !== d.page || this.shownView !== this.state.view) { this.shownView = this.state.view; this.refreshIfMoved(); } // the text reflows into other pages
     else if (o.notes !== d.notes && this.paged) this.refreshInfo(); // a note typed, cited or gone: its entry at the foot of the page, and the room it takes
     if (o.sources !== d.sources || o.citeStyle !== d.citeStyle || o.id !== d.id || (o.rev || 0) !== (d.rev || 0)) this.citeScan();
     if (this.focusFind && this.findRef.current) { this.findRef.current.focus(); this.findRef.current.select(); this.focusFind = false; }
@@ -641,7 +641,7 @@ class Component extends DCLogic {
   get page() { return Object.assign({ size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, color: '', wm: '', hf: true }, this.doc.page || {}); }
   change(patch, silent) { this.props.onChange && this.props.onChange(Object.assign({}, this.doc, patch), silent ? { silent: true } : undefined); }
   load() {
-    const ed = this.edRef.current; if (!ed) return; ed.innerHTML = this.doc.html || '<p><br></p>'; this.range = null; this.ink(); this.refreshInfo();
+    const ed = this.edRef.current; if (!ed) return; ed.innerHTML = this.doc.html || '<p><br></p>'; this.range = null; this.ink(); if (this.EN) this.refreshInfo(); // else engineReady does, in the document's own styles
     if (this.state.hf) this.setState({ hf: null, hfLive: null });
     if (this.P) ed.querySelectorAll('img[data-path]').forEach(i => { const s = this.P.picSrc(i.getAttribute('src')); if (s !== i.getAttribute('src')) i.setAttribute('src', s); }); // a picture cut out or compressed since
     if (this.selImg) this.selectImg(null);
@@ -1040,8 +1040,14 @@ class Component extends DCLogic {
     const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, cuts, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
     this.layoutPics(); this.drawShapes(); // floating pictures and shapes follow their paragraphs onto their pages
     this.placeNotes(fn && notes, H, m);
+    this.pgSig = this.pagesSig(); // what these pages were laid out from: refreshIfMoved does nothing while it holds
     if (JSON.stringify(next) !== JSON.stringify({ info: this.state.info, heads: this.state.heads })) this.setState(next); // an unchanged count re-renders nothing
   }
+  /** The pages again, unless nothing they are laid out from has moved since the last time: the page setup and view, the text's
+   *  size (a font that finished loading, a canvas resized to a new width reflow it) and its blocks. A 300-page document took five
+   *  full layouts to open, three of them for nothing. */
+  refreshIfMoved() { if (this.EN && this.pagesSig() !== this.pgSig) this.refreshInfo(); } // before engine.js has come, engineReady lays them out
+  pagesSig() { const ed = this.edRef.current; return ed ? [JSON.stringify(this.page), this.state.view, ed.children.length, ed.scrollWidth, ed.scrollHeight, (this.doc.notes || []).length].join('|') : ''; }
   // ----- 脚注 at the foot of the page, as Word shows them in the page view: typed into there, italics and all -----
   /** The footnotes' entries (made once, kept while their marks are in the text) at the text's width `w`, filled from the document's
    *  notes: { h: id → height, sep: the separator's, key } for pagesOf; null when the text has none. */
