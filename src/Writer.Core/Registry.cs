@@ -57,6 +57,7 @@ public static class Registry
         new("orientation", PropType.Enum, "Orientation of the section this paragraph ends.") { Values = ["portrait", "landscape"], Example = "landscape", Formats = Docx },
         new("margin", PropType.String, "Margins of the section this paragraph ends: narrow, normal, moderate, wide, one length, or top right bottom left.") { Example = "narrow", Formats = Docx },
         new("columns", PropType.Int, "Text columns of the section this paragraph ends.") { Min = 1, Max = 4, Example = "2", Formats = Docx },
+        new("markSize", PropType.Points, "The font size of the paragraph mark (¶), where the paragraph gives it one: Word draws an empty paragraph, and the line the mark ends, at least that tall.") { ReadOnly = true, Formats = Docx },
     ];
     static Prop Id(string[] formats) => new("id", PropType.String, "Stable id stored in the file.") { ReadOnly = true, Formats = formats };
     static Prop Data(string description, string example) => new("data", PropType.Json, description) { Example = example };
@@ -120,7 +121,7 @@ public static class Registry
                 new("author", PropType.String, "Default author of tracked changes and comments written from here (else Writer); kept in the file as the document variable WriterAuthor, not the file's creator.") { Example = "Ann", Formats = Docx },
                 new("revisions", PropType.Int, "Tracked insertions and deletions still pending.") { ReadOnly = true, Formats = Docx },
                 new("comments", PropType.Int, "Comment count.") { ReadOnly = true, Formats = Docx },
-                new("styles", PropType.Json, "The document's paragraph and character styles as a JSON array of {id, name, type, basedOn, heading, look}: look holds what the style sets on its own (font, size, bold, italic, color, align, spaceBefore, spaceAfter, lineSpacing, indentFirst), inherited along basedOn.") { ReadOnly = true, Formats = Docx },
+                new("styles", PropType.Json, "The document's paragraph and character styles as a JSON array of {id, name, type, basedOn, heading, hidden, look}: look holds what the style sets on its own (font, size, bold, italic, color, align, spaceBefore, spaceAfter, lineSpacing, indentFirst), inherited along basedOn; hidden marks one Word keeps out of its style gallery.") { ReadOnly = true, Formats = Docx },
                 new("style", PropType.Json, "Write-only. Defines or changes a style: a JSON object with id (or name) and any of name, type (paragraph, the default, or character), basedOn, font, size (points), bold, italic, color, align, spaceBefore, spaceAfter, lineSpacing, indentFirst; a value of none clears that setting. A new style is added to styles.xml; paragraphs then take it with style=<id>, runs with style=<id>.") { WriteOnly = true, Example = "{\"id\":\"Note\",\"name\":\"Note\",\"italic\":true,\"color\":\"595959\"}", Formats = Docx },
                 Accept, Reject,
                 new("slides", PropType.Int, "Slide count.") { ReadOnly = true, Formats = Pptx },

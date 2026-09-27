@@ -42,6 +42,39 @@ public class DocxReadTests
     }
 
     [Fact]
+    public void A_heading_by_its_outline_level_alone_says_the_style_that_draws_it_and_setting_its_level_makes_it_that_heading()
+    {
+        var outlineOnly = P("Research Question: why?");
+        outlineOnly.ParagraphProperties = new W.ParagraphProperties(new W.OutlineLevel { Val = 1 });
+        var bytes = Docx([P("Intro", "Heading2"), outlineOnly, P("Part one", "Chapter")], main =>
+            main.StyleDefinitionsPart!.Styles!.Append(new W.Style(new W.StyleName { Val = "Chapter" }, new W.StyleParagraphProperties(new W.OutlineLevel { Val = 0 }))
+                { Type = W.StyleValues.Paragraph, StyleId = "Chapter" }));
+        using var doc = OpenDocx(bytes);
+        var blocks = doc.Root.Children.Single().Children;
+        Assert.Equal(["heading", "heading", "heading"], blocks.Select(b => b.Kind));
+        Assert.False(blocks[0].GetProps().ContainsKey("style"), "Word's heading style draws it as a heading");
+        Assert.Equal(("2", "Normal"), (blocks[1].GetProps()["level"], blocks[1].GetProps()["style"])); // Word draws it as 正文
+        Assert.Equal(("1", "Chapter"), (blocks[2].GetProps()["level"], blocks[2].GetProps()["style"]));
+
+        Mutations.Set(blocks[1], new Dictionary<string, string> { ["level"] = "2" }); // 标题 2 applied in the editor
+        var set = doc.Root.Children.Single().Children[1];
+        Assert.Equal("2", set.GetProps()["level"]);
+        Assert.False(set.GetProps().ContainsKey("style"));
+        Assert.DoesNotContain("outlineLvl", set.GetRaw());
+    }
+
+    [Fact]
+    public void A_paragraph_says_its_marks_size_when_it_gives_the_mark_one()
+    {
+        var sized = P("Annotated Bibliography");
+        sized.ParagraphProperties = new W.ParagraphProperties(new W.ParagraphMarkRunProperties(new W.FontSize { Val = "24" }));
+        using var doc = OpenDocx(Docx(sized, P("plain")));
+        var blocks = doc.Root.Children.Single().Children;
+        Assert.Equal("12", blocks[0].GetProps()["markSize"]);
+        Assert.False(blocks[1].GetProps().ContainsKey("markSize"));
+    }
+
+    [Fact]
     public void Code_blocks_keep_line_breaks_and_have_no_runs()
     {
         var code = new W.Paragraph(new W.ParagraphProperties(new W.ParagraphStyleId { Val = "Code" }),

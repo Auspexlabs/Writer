@@ -14,9 +14,14 @@ static class DocxStyleGallery
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     static readonly string[] LookKeys = ["font", "size", "bold", "italic", "color", "align", "spaceBefore", "spaceAfter", "lineSpacing", "indentFirst"];
 
+    /// <summary>Every paragraph and character style, since the editor draws the ones the text names whatever the gallery shows; one
+    /// Word keeps out of its gallery says hidden: semiHidden, unless unhideWhenUsed and the body uses it (Normal (Web) in text
+    /// pasted from a web page).</summary>
     public static string Read(DocxDocument doc)
     {
-        var styles = doc.Main.StyleDefinitionsPart?.Styles?.Elements<W.Style>().Where(s => s.StyleId?.Value is { Length: > 0 } && s.SemiHidden is null && s.Type?.Value is var t && (t is null || t == W.StyleValues.Paragraph || t == W.StyleValues.Character)).ToList() ?? [];
+        var styles = doc.Main.StyleDefinitionsPart?.Styles?.Elements<W.Style>().Where(s => s.StyleId?.Value is { Length: > 0 } && s.Type?.Value is var t && (t is null || t == W.StyleValues.Paragraph || t == W.StyleValues.Character)).ToList() ?? [];
+        HashSet<string>? used = null;
+        bool Hidden(W.Style s) => s.SemiHidden is not null && !(s.UnhideWhenUsed is not null && (used ??= Used(doc)).Contains(s.StyleId!.Value!));
         return NodeJson.Compact(w =>
         {
             w.WriteStartArray();
@@ -29,6 +34,7 @@ static class DocxStyleGallery
                 w.WriteString("type", style.Type?.Value == W.StyleValues.Character ? "character" : "paragraph");
                 if (style.BasedOn?.Val?.Value is { } basedOn) w.WriteString("basedOn", basedOn);
                 if (style.Type?.Value != W.StyleValues.Character && HeadingLevel(doc, style) is { } level) w.WriteNumber("heading", level);
+                if (Hidden(style)) w.WriteBoolean("hidden", true);
                 w.WriteStartObject("look");
                 foreach (var (key, value) in Look(doc, style)) w.WriteString(key, value);
                 w.WriteEndObject();
@@ -36,6 +42,15 @@ static class DocxStyleGallery
             }
             w.WriteEndArray();
         });
+    }
+
+    /// <summary>The paragraph and character styles the body names.</summary>
+    static HashSet<string> Used(DocxDocument doc)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var e in doc.Main.Document?.Body?.Descendants() ?? [])
+            if (((e as W.ParagraphStyleId)?.Val?.Value ?? (e as W.RunStyle)?.Val?.Value) is { } id) ids.Add(id);
+        return ids;
     }
 
     static int? HeadingLevel(DocxDocument doc, W.Style style)

@@ -51,6 +51,20 @@ sealed class DocxStyles(WordprocessingDocument package)
         return null;
     }
 
+    /// <summary>For a heading, the style that draws it when that is not Word's own heading style of its level: its own style, a custom
+    /// one that has an outline level; or, for a paragraph that is a heading by its outline level alone (大纲级别 set on the paragraph,
+    /// which Word shows in the navigation pane and contents but does not draw as a heading), its paragraph style or the default one.
+    /// Null for a "heading N" paragraph.</summary>
+    public string? HeadingStyle(W.Paragraph p)
+    {
+        var id = p.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
+        var style = Find(id);
+        var name = style?.StyleName?.Val?.Value;
+        if (name is not null && name.StartsWith("heading ", StringComparison.OrdinalIgnoreCase) && int.TryParse(name.AsSpan(8), out var n) && n is >= 1 and <= 9) return null;
+        if (id is not null && id.StartsWith("Heading", StringComparison.OrdinalIgnoreCase) && int.TryParse(id.AsSpan(7), out var m) && m is >= 1 and <= 9) return null;
+        return id ?? DefaultParagraphStyle()?.StyleId?.Value ?? "Normal";
+    }
+
     /// <summary>The style of paragraphs that name none (Normal, 正文).</summary>
     public W.Style? DefaultParagraphStyle() =>
         Main.StyleDefinitionsPart?.Styles?.Elements<W.Style>().FirstOrDefault(s => s.Type?.Value == W.StyleValues.Paragraph && s.Default?.Value == true);

@@ -95,7 +95,11 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         var props = new Dictionary<string, string> { ["text"] = DocxRuns.ParagraphText(p) };
         if (Kind != "code") props["html"] = Exporter.HtmlOf(this);
         var level = doc.Styles.HeadingLevel(p);
-        if (level > 0) props["level"] = level.ToString(CultureInfo.InvariantCulture);
+        if (level > 0)
+        {
+            props["level"] = level.ToString(CultureInfo.InvariantCulture);
+            if (doc.Styles.HeadingStyle(p) is { } drawnAs) props["style"] = drawnAs;
+        }
         else if (!doc.Styles.IsCode(p))
         {
             if (p.ParagraphProperties?.ParagraphStyleId?.Val?.Value is { } style) props["style"] = style;
@@ -113,6 +117,9 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         if (Kind != "code" && p.ParagraphProperties?.PageBreakBefore is { } pageBreak) props["pageBreakBefore"] = DocxRun.On(pageBreak) ? "true" : "false";
         if (Kind != "code" && FillOf(p.ParagraphProperties?.Shading) is { } fill) props["fill"] = fill;
         if (Kind != "code") DocxParaFormat.Read(p.ParagraphProperties, props);
+        if (Kind != "code" && p.ParagraphProperties?.ParagraphMarkRunProperties?.GetFirstChild<W.FontSize>()?.Val?.Value is { } markHalf
+            && double.TryParse(markHalf, NumberStyles.Float, CultureInfo.InvariantCulture, out var markHalfPoints))
+            props["markSize"] = (markHalfPoints / 2).ToString("0.##", CultureInfo.InvariantCulture);
         if (DocxMarks.Bookmark(p) is { } bookmark) props["bookmark"] = bookmark;
         if (Kind != "code" && DocxMarks.Caption(p) is { } caption) props["caption"] = caption;
         if (DocxMarks.DropCap(p) is { } dropCap) props["dropCap"] = dropCap;
@@ -177,8 +184,9 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             case "style":
                 Properties().ParagraphStyleId = new W.ParagraphStyleId { Val = doc.Styles.ResolveStyle(value, "paragraph") };
                 break;
-            case "level" when Kind == "heading":
+            case "level" when Kind == "heading": // the heading style of that level, whose level is the paragraph's own outline level no longer
                 Properties().ParagraphStyleId = new W.ParagraphStyleId { Val = doc.Styles.HeadingStyleId(int.Parse(value, CultureInfo.InvariantCulture)) };
+                Properties().OutlineLevel = null;
                 break;
             case "level":
                 var numPr = p.ParagraphProperties?.NumberingProperties

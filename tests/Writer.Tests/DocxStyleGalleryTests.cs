@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Writer.Core;
 using Writer.Formats.Docx;
+using W = DocumentFormat.OpenXml.Wordprocessing;
 
 namespace Writer.Tests;
 
@@ -49,5 +50,18 @@ public class DocxStyleGalleryTests
         Mutations.Set(p, Props(("html", "plain stressed <b>bold</b>"))); // the editor took the span off
         Assert.DoesNotContain("rStyle", p.GetRaw());
         Assert.Throws<WriterException>(() => Mutations.Set(doc.Root, Props(("style", """{"bold":true}"""))));
+    }
+
+    [Fact]
+    public void Styles_Word_hides_are_listed_for_drawing_and_say_hidden_unless_the_text_uses_one_that_unhides_when_used()
+    {
+        static W.Style Hidden(string id, string name) => new(new W.StyleName { Val = name }, new W.BasedOn { Val = "Normal" }, new W.SemiHidden(), new W.UnhideWhenUsed(),
+            new W.StyleRunProperties(new W.RunFonts { Ascii = "Times New Roman" }, new W.FontSize { Val = "24" })) { Type = W.StyleValues.Paragraph, StyleId = id };
+        var bytes = TestDocs.Docx([TestDocs.P("Pegg, I. L. (2015).", "NormalWeb")], main => main.StyleDefinitionsPart!.Styles!.Append(Hidden("NormalWeb", "Normal (Web)"), Hidden("BalloonText", "Balloon Text")));
+        using var doc = TestDocs.OpenDocx(bytes);
+        var styles = Styles(doc);
+        Assert.False(styles["NormalWeb"].TryGetProperty("hidden", out _), "pasted from a web page, the text uses it: Word shows it too");
+        Assert.Equal(("Times New Roman", "12"), (styles["NormalWeb"].GetProperty("look").GetProperty("font").GetString(), styles["NormalWeb"].GetProperty("look").GetProperty("size").GetString()));
+        Assert.True(styles["BalloonText"].GetProperty("hidden").GetBoolean());
     }
 }
