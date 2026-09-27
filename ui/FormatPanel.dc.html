@@ -121,6 +121,7 @@
 .fp-cmt-h>button{padding:0;border:none;background:transparent;font-size:12px;color:var(--fp-title)!important;opacity:0;transition:opacity .15s}
 .fp-cmt:hover .fp-cmt-h>button,.fp-cmt[data-on="1"] .fp-cmt-h>button{opacity:1}
 .fp-cmt-t{font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.fp-cmt-c{font-size:12.5px;line-height:1.5;color:var(--fp-ink);margin-top:2px;word-break:break-word}
 .fp-cmt-q{font-size:11.5px;color:var(--fp-title);border-left:2px solid #E3B25A;padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fp-cmt textarea,.fp-cmt input{width:100%;box-sizing:border-box;margin-top:3px;padding:5px 8px;border:none;border-radius:6px;background:var(--fp-ctl);box-shadow:var(--fp-ctl-sh);font:12.5px/1.5 var(--font-ui);color:var(--fp-ink);outline:none;resize:vertical;-webkit-user-select:text;user-select:text}
 .fp-cmt input{height:26px;padding:0 8px}
@@ -207,12 +208,13 @@
                   <div>
                     <div class="fp-cmt-h"><span>{{ it.head }}</span><button onClick="{{ it.onResolve }}" title="{{ it.resolveTitle }}">{{ it.resolveLabel }}</button><button onClick="{{ it.onDelete }}">删除</button></div>
                     <sc-if value="{{ it.quote }}" hint-placeholder-val="{{ false }}"><div class="fp-cmt-q">{{ it.quote }}</div></sc-if>
-                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea data-complete="a comment in the margin of a document" value="{{ it.text }}" onChange="{{ it.onText }}" placeholder="输入批注…" rows="2"></textarea></sc-if>
+                    <sc-if value="{{ it.hasCite }}" hint-placeholder-val="{{ false }}"><div class="fp-cmt-c" dangerouslySetInnerHTML="{{ it.citeH }}" title="引文，按来源自动生成"></div></sc-if>
+                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea data-complete="{{ it.ai }}" value="{{ it.text }}" onChange="{{ it.onText }}" placeholder="{{ it.ph }}" rows="2"></textarea></sc-if>
                     <sc-if value="{{ it.reading }}" hint-placeholder-val="{{ true }}"><div class="fp-cmt-t">{{ it.text }}</div></sc-if>
                     <sc-for list="{{ it.replies }}" as="rp" hint-placeholder-count="0">
                       <div class="fp-rep"><span class="fp-av" style="background:{{ rp.avBg }}">{{ rp.av }}</span><div style="flex:1;min-width:0"><div class="fp-cmt-h"><span>{{ rp.head }}</span><button onClick="{{ rp.onDelete }}">删除</button></div><sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><textarea data-complete="a reply to a comment in a document" value="{{ rp.text }}" onChange="{{ rp.onText }}" rows="1"></textarea></sc-if><sc-if value="{{ it.reading }}" hint-placeholder-val="{{ true }}"><div class="fp-cmt-t">{{ rp.text }}</div></sc-if></div></div>
                     </sc-for>
-                    <sc-if value="{{ it.editing }}" hint-placeholder-val="{{ false }}"><input data-complete="a reply to a comment in a document" value="{{ it.draft }}" onChange="{{ it.onDraft }}" onKeyDown="{{ it.onReplyKey }}" placeholder="回复…（回车发送）"></sc-if>
+                    <sc-if value="{{ it.canReply }}" hint-placeholder-val="{{ false }}"><input data-complete="a reply to a comment in a document" value="{{ it.draft }}" onChange="{{ it.onDraft }}" onKeyDown="{{ it.onReplyKey }}" placeholder="回复…（回车发送）"></sc-if>
                   </div>
                 </div>
               </sc-if>
@@ -274,6 +276,9 @@ const ICONS = {
   date: '<rect x="2.5" y="3.5" width="11" height="10" rx="1.6"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>',
   dropCap: '<path d="M2.5 9V3.5h3a2.7 2.7 0 0 1 0 5.5h-3z"/><path d="M9.5 4h4M9.5 7h4M2.5 11h11M2.5 13.5h8"/>',
   bookmark: '<path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/>',
+  cite: '<path d="M3.5 5h3v3h-3zM6.5 8c0 2.2-1 3.4-3 4M9.5 5h3v3h-3zM12.5 8c0 2.2-1 3.4-3 4"/>',
+  sources: '<path d="M2.5 3.5h4a1.5 1.5 0 0 1 1.5 1.5v8.5a1.2 1.2 0 0 0-1.2-1.2H2.5zM13.5 3.5h-4A1.5 1.5 0 0 0 8 5v8.5a1.2 1.2 0 0 1 1.2-1.2h4.3z"/>',
+  bib: '<path d="M3 4h10M5 6.5h8M3 9.5h10M5 12h8"/>',
   comment: '<path d="M3 3h10a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1H7l-3 2.5v-2.5H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
   toc: '<path d="M3 4h6M3 8h6M3 12h6"/><path d="M11.5 4h1.5M11.5 8h1.5M11.5 12h1.5"/>',
   refresh: '<path d="M3 6.5A4.6 4.6 0 0 1 11.2 4"/><path d="M11.6 1.8v2.5H9.1"/><path d="M13 9.5a4.6 4.6 0 0 1-8.2 2.5"/><path d="M4.4 14.2v-2.5h2.5"/>',
@@ -360,7 +365,9 @@ class Component extends DCLogic {
     else if (t === 'input') o.isInput = true;
     else if (t === 'link') Object.assign(o, { isLink: true, dis: !!it.dis });
     else if (t === 'empty') o.isEmpty = true;
-    else if (t === 'cmt') Object.assign(o, { isCmt: true, onA: it.on ? '1' : '0', doneA: it.done ? '1' : '0', editing: !!it.on, reading: !it.on, replies: it.replies || [] });
+    else if (t === 'cmt') Object.assign(o, { isCmt: true, onA: it.on ? '1' : '0', doneA: it.done ? '1' : '0', editing: !!it.on, reading: !it.on, replies: it.replies || [],
+      // a note uses the card too: its own placeholder, no replies, and its citation (Chicago) above its text
+      ph: it.ph || $t('输入批注…'), ai: it.ai || 'a comment in the margin of a document', canReply: !!it.on && it.reply !== false, hasCite: !!it.cite, citeH: { __html: it.cite || '' } });
     return o;
   }
   renderVals() {

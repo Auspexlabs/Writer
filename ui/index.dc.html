@@ -757,7 +757,7 @@ class Component extends DCLogic {
    *  tab: reloads in place when nothing local is pending, else keeps both sides (see resolveConflict). */
   async checkExternal(id) {
     const st = this.sv[id]; if ((st && st.busy) || this.chatting === id) return; // a save is mid-write; re-check once it finishes
-    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded) return;
+    const d = this.state.docs.find(x => x.id === id); if (!d || !d.loaded || this.EN.isWriting(d.path)) return; // the editor writing into the file itself (a source, the citation style)
     let fresh; try { fresh = await this.EN.stat(d.path); } catch (e) { return; }
     const decision = this.EN.reloadDecision(d._mtime, fresh.mtime, !!(st && (st.t || st.failed)));
     if (decision === 'reload') await this.reloadExternal(id);
@@ -908,8 +908,10 @@ class Component extends DCLogic {
     st.done = (async () => {
       try {
         const root = this.state.cur === id && d.type === 'docx' ? document.querySelector('[data-live="1"] .wd-ed[contenteditable="true"]') : null;
+        const drawn = x => x.type === 'docx' ? (x.notes || []).map(y => y.citeHtml || '').join('\n') : '', was = drawn(d); // notes' citations as shown
         const n = await this.EN.save(d, { root });
-        if (n) { const cur = this.state.docs.find(x => x.id === id); if (cur) this.setDoc(this.EN.adopt(cur, d, true), false, { quiet: true }); }
+        // the save changed in place what a note's citation shows (the engine drew it again): a new object, so the editor shows it
+        if (n) { const cur = this.state.docs.find(x => x.id === id); if (cur) { const nd = this.EN.adopt(cur, d, true); this.setDoc(drawn(nd) !== was ? Object.assign({}, nd) : nd, false, { quiet: true }); } }
         st.at = Date.now(); st.failed = null;
       } catch (e) {
         if (e.code === 'CONFLICT') { this.setState({ saving: false }); await this.resolveConflict(id); return; }

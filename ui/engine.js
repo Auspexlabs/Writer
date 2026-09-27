@@ -316,7 +316,7 @@ async function savePdf(doc) {
 }
 
 // ----- docx: tree → blocks → html -----
-const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const isQuote = style => /quote/i.test(style || '');
 
 // ----- docx tables: one grid model for the editor's table commands and for saving them -----
@@ -710,6 +710,7 @@ export function blocksOf(nodes, file) {
             Object.fromEntries(['fill', 'colspan', 'rowspan', 'borders', 'valign', 'width', 'align'].filter(k => c.props?.[k] != null).map(k => [k, c.props[k]]))) })) }));
     }
     else if (n.kind === 'toc') b.props = { levels: p.levels || '3', title: p.title || '', text: p.text || '', style: p.style || 'classic' };
+    else if (n.kind === 'bibliography') b.props = { title: p.title || '', html: p.html || '' };
     else if (n.kind === 'image') Object.assign(b, picOf(n, file, byId));
     else if (n.kind === 'pagebreak') { }
     else b.props.html = esc(p.text || '');
@@ -763,6 +764,7 @@ export function blocksToHtml(blocks) {
       out += `<table data-path="${esc(b.path)}"${attrs(b.props, ['style', 'header', 'borders', 'borderColor', 'width', 'widths', 'align'])} style="${tableCss(b.props)}">${colgroupOf(b.props.widths)}<tbody>` + m.rows.map((row, r) => `<tr data-path="${esc(row.ref.path)}"${attrs(row.ref.props, ['header', 'height'])}${rowStyle(row.ref.props)}>` + row.cells.map(x => { const c = x.ref;
         return `<td data-path="${esc(c.path)}"${attrs(c.props, ['fill', 'borders', 'valign', 'width', 'align'])}${x.cs > 1 ? ` colspan="${x.cs}"` : ''}${x.rs > 1 ? ` rowspan="${x.rs}"` : ''} style="${cellStyle(c.props, look, r, x, R, C)}">${pbIn(c.props.html || '<br>')}</td>`; }).join('') + '</tr>').join('') + '</tbody></table>';
     }
+    else if (b.kind === 'bibliography') out += bibHtml(b.path, b.props.title, b.props.html);
     else if (b.kind === 'toc') {
       const oneLine = h => plainOf(h).replace(/\s+/g, ' ').trim(), levels = new Map(blocks.filter(h => h.kind === 'heading').map(h => [oneLine(h.props.html), +h.props.level || 1]));
       const entries = (b.props.text || '').split('\n').filter(Boolean).map(line => { const tab = line.lastIndexOf('\t'); const text = tab < 0 ? line : line.slice(0, tab); return { text, page: tab < 0 ? '' : line.slice(tab + 1), level: levels.get(text.replace(/\s+/g, ' ').trim()) || 1 }; });
@@ -814,12 +816,13 @@ async function openDocx(doc) {
   const blocks = blocksOf(body.children, doc.path);
   const page = Object.assign({ hf: true }, doc.page || {}, pageOf(p));
   const comments = commentsOf(body.children, p.author || 'Writer'), track = p.track === 'true'; // the engine writes comments as the document's author, else Writer
-  const notes = notesOf(body.children), eqs = eqsOf(body.children), shapes = shapesOf(body.children);
-  const html = inkFills(parseHtml(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes))).innerHTML;
+  const notes = notesOf(body.children), eqs = eqsOf(body.children), shapes = shapesOf(body.children), cites = citesOf(body.children);
+  const html = inkFills(parseHtml(anchorCites(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes), cites))).innerHTML;
   const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true', noteFormat: p.noteFormat || '' };
   return { html, rev: (doc.rev || 0) + 1, track, comments: comments.map(c => ({ id: c.cid, author: c.author, initials: c.initials, mine: c.mine, time: c.time, text: c.text, quote: c.quote, path: c.path, resolved: c.resolved, parent: c.parent })),
-    notes: notes.map(x => ({ id: x.nid, kind: x.kind, text: x.text })), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
-    _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes } };
+    notes: notes.map(noteOf), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
+    sources: sourcesOf(p.sources), citeStyle: p.citationStyle || '',
+    _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes, cites } };
 }
 
 // ----- docx: footnotes and endnotes -----
@@ -827,14 +830,16 @@ async function openDocx(doc) {
  *  its mark there. */
 export function notesOf(nodes) {
   const out = [];
-  const walk = list => { for (const n of list || []) { if (n.kind === 'footnote') { const q = n.props || {}; out.push({ nid: String(q.id), id: String(q.id), kind: q.kind || 'footnote', text: q.text || '', path: n.path.replace(/\/footnote\[[^\]]*\]$/, ''), at: +q.at || 0 }); } walk(n.children); } };
+  const walk = list => { for (const n of list || []) { if (n.kind === 'footnote') { const q = n.props || {}; out.push(Object.assign({ nid: String(q.id), id: String(q.id), kind: q.kind || 'footnote', text: q.text || '', path: n.path.replace(/\/footnote\[[^\]]*\]$/, ''), at: +q.at || 0 }, q.cite ? { cite: q.cite, pages: q.pages || '', citeHtml: q.citeHtml || esc(q.citeText || '') } : {})); } walk(n.children); } };
   walk(nodes);
   return out;
 }
+/** A note as the editor keeps it: its text and, when it cites (Chicago), the sources and pages and the citation as drawn. */
+const noteOf = x => Object.assign({ id: x.nid, kind: x.kind, text: x.text }, x.cite ? { cite: x.cite, pages: x.pages || '', citeHtml: x.citeHtml || '' } : {});
 /** A note's mark in the text: a superscript number the caret steps over; numbered by order of its kind. */
 const NOTE_MARK = 'sup[data-fn]';
 /** What sits in a paragraph beside its text: deleted text, notes' marks, equations and shapes. Character offsets leave them out. */
-const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape]';
+const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape],span[data-cite]';
 /** The character offset of `node` in block `el`: the visible text before it (a br and a page break one character each). */
 export function offsetIn(el, node) {
   let at = 0; const w = el.ownerDocument.createTreeWalker(el, 5); let n;
@@ -885,27 +890,147 @@ function notesIn(doc, el, blocks) {
   return (doc.notes || []).map(x => {
     const mark = el.querySelector(`${NOTE_MARK.slice(0, 3)}[data-fn="${x.id}"]`);
     const b = mark && (blocks.find(y => (y.kind === 'paragraph' || y.kind === 'heading') && y.el && y.el.contains(mark)) || cells.find(y => y.el && y.el.contains(mark)));
-    if (!b) return { nid: String(x.id), kind: x.kind, text: x.text || '', parent: null, at: 0 };
-    return { nid: String(x.id), kind: x.kind, text: x.text || '', parent: b.kind === 'cell' ? b.path + '/paragraph[1]' : b.path, at: offsetIn(b.el, mark) };
+    const cite = x.cite ? { cite: x.cite, pages: x.pages || '' } : {};
+    if (!b) return Object.assign({ nid: String(x.id), kind: x.kind, text: x.text || '', parent: null, at: 0 }, cite);
+    return Object.assign({ nid: String(x.id), kind: x.kind, text: x.text || '', parent: b.kind === 'cell' ? b.path + '/paragraph[1]' : b.path, at: offsetIn(b.el, mark) }, cite);
   });
 }
 /** Commands that take the file's notes (`orig`) to the editor's (`current`): a new mark adds a note where it sits, a moved one is
  *  added again there, changed text is set, a mark gone takes its note away. Returns the count and the list to remember. */
 export async function planNotes(file, orig, current, log, exec = run) {
   let n = 0; const list = [], byId = new Map((orig || []).map(o => [o.nid, o]));
-  const add = async x => { const r = await exec(['add', file, x.parent, '--type', 'footnote', '--prop', 'kind=' + x.kind, '--prop', 'text=' + x.text, '--prop', 'at=' + x.at]); n++; log && log('add', r.path, 'footnote'); const p = r.props || {}; return { nid: x.nid, id: String(p.id), kind: x.kind, text: x.text, path: x.parent, at: x.at }; };
+  const add = async x => { const r = await exec(['add', file, x.parent, '--type', 'footnote', '--prop', 'kind=' + x.kind, '--prop', 'text=' + x.text, ...(x.cite ? ['--prop', 'cite=' + x.cite, ...(x.pages ? ['--prop', 'pages=' + x.pages] : [])] : []), '--prop', 'at=' + x.at]); n++; log && log('add', r.path, 'footnote'); const p = r.props || {}; return { nid: x.nid, id: String(p.id), kind: x.kind, text: x.text, ...(x.cite ? { cite: x.cite, pages: x.pages || '', citeHtml: p.citeHtml || '' } : {}), path: x.parent, at: x.at }; };
   for (const x of current) {
     const o = byId.get(x.nid);
     if (!x.parent) continue; // its mark is gone from the text: removed below
     try {
       if (!o) list.push(await add(x));
       else if (o.path !== x.parent || o.at !== x.at) { await exec(['remove', file, `//footnote[@id=${o.id}]`]); n++; list.push(await add(x)); }
-      else { if ((o.text || '') !== x.text) { await exec(['set', file, `//footnote[@id=${o.id}]`, '--prop', 'text=' + x.text]); n++; log && log('set', o.path, 'footnote'); } list.push(Object.assign({}, o, { text: x.text })); }
+      else {
+        if ((o.text || '') !== x.text) { await exec(['set', file, `//footnote[@id=${o.id}]`, '--prop', 'text=' + x.text]); n++; log && log('set', o.path, 'footnote'); }
+        // a note's citation: its sources and pages (none takes it out)
+        if ((o.cite || '') !== (x.cite || '') || (o.pages || '') !== (x.pages || '')) { await exec(['set', file, `//footnote[@id=${o.id}]`, '--prop', 'cite=' + (x.cite || 'none'), ...(x.cite ? ['--prop', 'pages=' + (x.pages || 'none')] : [])]); n++; }
+        list.push(Object.assign({}, o, { text: x.text, cite: x.cite, pages: x.pages }));
+      }
     } catch (e) { log && log('skip', x.parent, e.message); }
   }
   const keep = new Set(list.map(x => x.nid));
   for (const o of orig || []) if (!keep.has(o.nid)) { try { await exec(['remove', file, `//footnote[@id=${o.id}]`]); n++; log && log('remove', o.path, 'footnote'); } catch (e) { log && log('skip', o.path, e.message); } }
   return { count: n, list };
+}
+
+// ----- docx: citations, sources and works-cited lists -----
+/** The document's sources as the engine gives them (its JSON: tag, type, authors, title, container, year…), [] when it has none. */
+export function sourcesOf(json) { try { const v = typeof json === 'string' ? JSON.parse(json) : json; return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+/** The citation styles a document is written in, as the engine names them, and the title each gives its works-cited list. */
+export const CITE_STYLES = [['mla', 'MLA 第 9 版'], ['apa', 'APA 第 7 版'], ['chicago', 'Chicago 第 18 版（脚注）'], ['chicago-date', 'Chicago 第 18 版（作者-日期）']];
+export const listTitle = style => ({ apa: 'References', chicago: 'Bibliography', 'chicago-date': 'References' })[style] || 'Works Cited'; // i18n-ok — the styles' own English titles
+/** Every citation in the tree: its id, the paragraph it sits in and its offset there, what it cites, and how it shows. */
+export function citesOf(nodes) {
+  const out = [];
+  const walk = list => { for (const n of list || []) { if (n.kind === 'citation') { const q = n.props || {}; out.push({ id: String(q.id), path: n.path.replace(/\/citation\[[^\]]*\]$/, ''), at: +q.at || 0, sources: q.sources || '', pages: q.pages || '', noAuthor: q.noAuthor === 'true', noYear: q.noYear === 'true', html: q.html || esc(q.text || '') }); } walk(n.children); } };
+  walk(nodes);
+  return out;
+}
+/** A citation in the text (Word's citation control): what it cites on the element, drawn as the engine writes it in the document's
+ *  style; the caret steps over it and a click opens its settings. data-citeid is its id in the file (a new one has none yet). */
+export const citeHtml = x => `<span data-cite="${esc(x.sources)}"${x.id ? ` data-citeid="${esc(x.id)}"` : ''}${x.pages ? ` data-pages="${esc(x.pages)}"` : ''}${x.noAuthor ? ' data-noauthor="1"' : ''}${x.noYear ? ' data-noyear="1"' : ''} contenteditable="false">${x.html || ''}</span>`;
+/** Puts each citation at its character offset in its paragraph. */
+export function anchorCites(html, cites) {
+  if (!cites.length) return html;
+  const root = parseHtml(html), box = root.ownerDocument.createElement('div');
+  for (const x of cites) { const el = root.querySelector(`[data-path="${x.path}"]`); if (el) { box.innerHTML = citeHtml(x); placeAt(el, x.at, box.firstChild); } }
+  return root.innerHTML;
+}
+/** A works-cited list in the editor: its title and entries as the engine drew them, on a page of its own, not typed into. */
+export const bibHtml = (path, title, html) => `<nav data-bib="1"${path ? ` data-path="${esc(path)}"` : ''} data-title="${esc(title || '')}" data-pb="before" contenteditable="false">${title ? `<div class="wd-bib-title">${esc(title)}</div>` : ''}${html || `<p class="wd-bib-empty">${esc(_t('保存后按文档的来源生成'))}</p>`}</nav>`;
+/** The editor's citations: the paragraph each sits in now, its offset there and what it cites. */
+function citesIn(el, blocks) {
+  const cells = blocks.filter(b => b.rows).flatMap(b => b.rows.flatMap(r => r.cells));
+  return Array.from(el.querySelectorAll('span[data-cite]')).map(s => {
+    const b = blocks.find(y => (y.kind === 'paragraph' || y.kind === 'heading') && y.el && y.el.contains(s)) || cells.find(y => y.el && y.el.contains(s));
+    return { el: s, id: s.getAttribute('data-citeid') || '', sources: s.getAttribute('data-cite') || '', pages: s.getAttribute('data-pages') || '', noAuthor: s.hasAttribute('data-noauthor'), noYear: s.hasAttribute('data-noyear'),
+      parent: b ? (b.kind === 'cell' ? b.path + '/paragraph[1]' : b.path) : null, at: b ? offsetIn(b.el, s) : 0 };
+  });
+}
+/** Commands that take the file's citations (`orig`) to the editor's: a new one is added where it sits (and learns its id), one that
+ *  moved is added again there, one whose sources or pages changed is set, one gone is removed. Returns the count and the list. */
+export async function planCites(file, orig, current, log, exec = run) {
+  let n = 0; const list = [], byId = new Map((orig || []).map(o => [o.id, o])), seen = new Set();
+  const args = x => ['--prop', 'sources=' + x.sources, ...(x.pages ? ['--prop', 'pages=' + x.pages] : []), ...(x.noAuthor ? ['--prop', 'noAuthor=true'] : []), ...(x.noYear ? ['--prop', 'noYear=true'] : [])];
+  const add = async x => {
+    const r = await exec(['add', file, x.parent, '--type', 'citation', ...args(x), '--prop', 'at=' + x.at]); n++; log && log('add', r.path, 'citation');
+    const p = r.props || {}; if (x.el) { x.el.setAttribute('data-citeid', String(p.id)); if (p.html) x.el.innerHTML = p.html; }
+    list.push({ id: String(p.id), path: x.parent, at: x.at, sources: x.sources, pages: x.pages, noAuthor: x.noAuthor, noYear: x.noYear, html: p.html || '' });
+  };
+  const drop = async o => { try { await exec(['remove', file, `//citation[@id=${o.id}]`]); n++; log && log('remove', o.path, 'citation'); } catch (e) { log && log('skip', o.path, e.message); } }; // gone with its paragraph already
+  for (const x of current) {
+    if (!x.parent || !x.sources) continue;
+    const o = x.id && !seen.has(x.id) && byId.get(x.id);
+    try {
+      if (!o) { if (x.el) x.el.removeAttribute('data-citeid'); await add(x); continue; } // new, or a copy of one pasted again
+      seen.add(x.id);
+      if (o.path !== x.parent || o.at !== x.at) { await drop(o); await add(x); continue; }
+      const p = {};
+      if (o.sources !== x.sources) p.sources = x.sources;
+      if ((o.pages || '') !== (x.pages || '')) p.pages = x.pages || 'none';
+      if (!!o.noAuthor !== !!x.noAuthor) p.noAuthor = String(!!x.noAuthor);
+      if (!!o.noYear !== !!x.noYear) p.noYear = String(!!x.noYear);
+      if (Object.keys(p).length) { await exec(['set', file, `//citation[@id=${o.id}]`, ...propsArgs(p)]); n++; log && log('set', o.path, 'citation'); }
+      list.push(Object.assign({}, o, { sources: x.sources, pages: x.pages, noAuthor: x.noAuthor, noYear: x.noYear }));
+    } catch (e) { log && log('skip', x.parent, e.message); }
+  }
+  for (const o of orig || []) if (!seen.has(o.id)) await drop(o);
+  return { count: n, list };
+}
+/** Shows what the engine drew last: every citation's text, every note's citation and every works-cited list, from the file. */
+export async function refreshCites(doc, el, exec = run) {
+  const q = async path => { try { const r = await exec(['query', doc.path, path, '--props']); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
+  const [cites, notes, bibs] = await Promise.all([q('//citation'), q('//footnote'), q('//bibliography')]);
+  const byId = new Map(cites.map(c => [String((c.props || {}).id), c.props || {}]));
+  if (el) for (const s of el.querySelectorAll('span[data-cite][data-citeid]')) { const p = byId.get(s.getAttribute('data-citeid')); if (p && p.html != null && s.innerHTML !== p.html) s.innerHTML = p.html; }
+  if (doc._orig) doc._orig.cites = (doc._orig.cites || []).map(o => byId.has(o.id) ? Object.assign({}, o, { html: byId.get(o.id).html }) : o);
+  // a note added in this session keeps the editor's id; the last save knows its id in the file
+  const noteBy = new Map(notes.map(x => [String((x.props || {}).id), x.props || {}])), fileId = new Map(((doc._orig || {}).notes || []).map(o => [String(o.nid), String(o.id)]));
+  doc.notes = (doc.notes || []).map(x => { const p = noteBy.get(fileId.get(String(x.id)) || String(x.id)); return p && p.cite ? Object.assign({}, x, { citeHtml: p.citeHtml || '' }) : x; });
+  if (doc._orig) for (const b of bibs) { const o = (doc._orig.blocks || []).find(x => x.kind === 'bibliography' && x.path === b.path); if (o) o.props = Object.assign({}, o.props, { title: (b.props || {}).title || '' }); } // the title the style gave it is the file's
+  if (el) {
+    const lists = Array.from(el.querySelectorAll('nav[data-bib]'));
+    bibs.forEach((b, i) => { const nav = lists.find(x => x.getAttribute('data-path') === b.path) || lists[i]; if (!nav) return; const p = b.props || {};
+      const html = bibHtml(b.path, p.title || '', p.html || ''); if (nav.outerHTML !== html) { const box = el.ownerDocument.createElement('div'); box.innerHTML = html; nav.replaceWith(box.firstChild); } });
+  }
+  if (el) doc.html = el.innerHTML;
+  return { cites, notes, bibs };
+}
+/** The files the editor is writing into between saves (citeEdit): a change seen on them now is Writer's own. */
+const writing = new Set();
+export const isWriting = path => writing.has(path);
+/** Adds, changes or removes a source of the document (the engine's JSON; {tag, remove: true} removes one) or sets its citation style
+ *  ({ citationStyle }), in the file now, between saves: the engine draws its citations and lists again, and the editor shows them.
+ *  Resolves with the document's sources, and the tag of the source added or changed. */
+export async function citeEdit(doc, change, el, exec = run) {
+  return inLane(doc.path, async () => {
+    const props = change.citationStyle ? { citationStyle: change.citationStyle } : { source: JSON.stringify(change) };
+    // our own write between saves: the shell's check for changes made outside Writer must not take it for one
+    writing.add(doc.path);
+    let r;
+    try { r = await exec(['set', doc.path, '/', ...propsArgs(props)]); const st = await stat(doc.path).catch(() => null); if (st) doc._mtime = st.mtime; }
+    finally { writing.delete(doc.path); }
+    const p = (r && r.props) || (await exec(['get', doc.path, '/'])).props || {};
+    const before = new Set((doc.sources || []).map(x => x.tag));
+    doc.sources = sourcesOf(p.sources);
+    if (p.citationStyle) doc.citeStyle = p.citationStyle;
+    if (doc._orig) doc._orig.citeStyle = doc.citeStyle;
+    await refreshCites(doc, el, exec);
+    const tag = change.tag || (doc.sources.find(x => !before.has(x.tag)) || {}).tag || '';
+    return { sources: doc.sources, tag };
+  });
+}
+/** Looks a source up from what was pasted (cite.js): Crossref and Open Library straight from here, a web page through the engine,
+ *  which may read another site. */
+export async function lookupSource(q) {
+  const C = await import('./cite.js');
+  return C.lookup(q, { page: async url => { const r = await http('/cite/page?url=' + enc(url)); return r.text(); } });
 }
 
 // ----- docx: equations and shapes in paragraphs -----
@@ -1169,6 +1294,7 @@ export function blocksFromHtml(root) {
       }
       if (tag === 'PRE') { out.push({ kind: 'code', path: pathOf(c), props: { text: c.innerText.replace(/\n$/, '') }, el: c }); continue; }
       if (tag === 'BLOCKQUOTE') { out.push(withPics({ kind: 'paragraph', path: pathOf(c), props: Object.assign({ html: inlineHtml(c), style: c.getAttribute('data-style') || 'Quote' }, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c))); continue; }
+      if (c.hasAttribute('data-bib')) { out.push({ kind: 'bibliography', path: pathOf(c), props: { title: c.getAttribute('data-title') ?? '' }, el: c }); continue; }
       if (c.hasAttribute('data-toc')) { out.push({ kind: 'toc', path: pathOf(c), props: { levels: c.getAttribute('data-levels') ?? '3', title: c.getAttribute('data-title') ?? '目录', style: c.getAttribute('data-toc-style') || 'classic' }, refresh: c.hasAttribute('data-refresh'), el: c }); continue; }
       if (tag === 'TABLE') {
         let ops = []; try { ops = JSON.parse(c.getAttribute('data-ops') || '[]'); } catch (e) { ops = null; } // unreadable: the save writes the table anew
@@ -1256,7 +1382,7 @@ function inlineHtml(el) {
   Array.from(c.querySelectorAll('img,figure[data-pic]')).forEach(x => x.remove());
   Array.from(c.querySelectorAll('[data-ai]')).forEach(x => x.removeAttribute('data-ai'));
   Array.from(c.querySelectorAll('[data-cid]')).forEach(x => { while (x.firstChild) x.parentNode.insertBefore(x.firstChild, x); x.remove(); });
-  Array.from(c.querySelectorAll('sup[data-fn],span[data-eq],span[data-shape]')).forEach(x => x.remove());
+  Array.from(c.querySelectorAll('sup[data-fn],span[data-eq],span[data-shape],span[data-cite]')).forEach(x => x.remove());
   return pbOut(c.innerHTML.replace(/\u200B/g, ''));
 }
 
@@ -1384,6 +1510,7 @@ function blockProps(b, forNew) {
   else if (b.kind === 'row') { p.data = JSON.stringify(b.cells.map(c => textOf(c.props.html))); Object.assign(p, b.props); }
   else if (b.kind === 'cell') Object.assign(p, b.props);
   else if (b.kind === 'toc') { p.levels = b.props.levels || '3'; p.title = b.props.title || ''; if (b.props.style && b.props.style !== 'classic') p.style = b.props.style; }
+  else if (b.kind === 'bibliography') p.title = b.props.title || '';
   return p;
 }
 const textOf = html => { const d = parseHtml(html || ''); return d.innerText.replace(/ /g, ' ').trim(); };
@@ -1405,6 +1532,7 @@ function changedProps(orig, b) {
     if (nl !== 'none' && nl !== 'bullet' && (orig.props.restart || '') !== (b.props.restart || '')) p.restart = b.props.restart || 'false';
     if ((orig.props.style || '') !== (b.props.style || '') && b.props.style) p.style = b.props.style;
   }
+  if (b.kind === 'bibliography' && (orig.props.title || '') !== (b.props.title || '')) p.title = b.props.title || '';
   if (b.kind === 'toc') {
     if (String(orig.props.levels || '3') !== String(b.props.levels || '3')) p.levels = b.props.levels || '3';
     if ((orig.props.title || '') !== (b.props.title || '')) p.title = b.props.title || '';
@@ -1624,10 +1752,16 @@ async function saveDocx(doc, root, log) {
   const eqs = await planEquations(doc.path, orig.eqs || [], paras, b => { const o = origBy.get(was.get(b)); return !o || !sameRuns(o.props.html, b.props.html); }, run, log);
   const shapes = await planShapes(doc.path, orig.shapes || [], paras, run, log);
   n += eqs.count + shapes.count;
-  doc.notes = notes.list.map(x => ({ id: x.nid, kind: x.kind, text: x.text }));
+  doc.notes = notes.list.map(noteOf);
+  const cites = await planCites(doc.path, orig.cites || [], citesIn(el, blocks), log);
+  n += cites.count;
   const pageProps = Object.fromEntries(['page', 'orientation', 'margin', 'columns'].filter(k => k in pp).map(k => [k, pp[k]]));
   const now = Object.assign({}, orig, { titlePg: String(!!orig.titlePg) }, pp); // headers and footers as the file has them now
-  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list });
+  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list, cites: cites.list });
+  // a citation, a note that cites or a works-cited list saved: the engine drew them all again (a source's first note in full, APA's
+  // 2015a and 2015b…): show what it drew
+  const bibs = blocks.filter(b => b.kind === 'bibliography');
+  if (cites.count || bibs.some(b => !opened.has(b.path)) || notes.list.some(x => x.cite) && notes.count) await refreshCites(doc, el, run);
   doc.html = el.innerHTML;
   return n;
 }
@@ -2382,6 +2516,10 @@ export function adopt(cur, saved, withHtml) {
   cur._orig = saved._orig;
   cur._mtime = saved._mtime;
   if (cur.type === 'docx' && withHtml) cur.html = saved.html;
+  if (cur.type === 'docx') { // a note's citation as the engine drew it at the save (a source's first note in full, later ones short)
+    const drawn = new Map((saved.notes || []).map(x => [x.id, x]));
+    cur.notes = (cur.notes || []).map(x => { const y = drawn.get(x.id); return y && x.cite && y.cite === x.cite && (y.pages || '') === (x.pages || '') && y.citeHtml !== x.citeHtml ? Object.assign({}, x, { citeHtml: y.citeHtml }) : x; });
+  }
   if (cur.type === 'pptx') {
     const bySlide = new Map(saved.slides.map(s => [s.id, s]));
     // a save gives paths to what it put in the file, and new ones to what it put back or copied under ids another shape had taken

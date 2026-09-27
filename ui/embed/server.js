@@ -92,6 +92,12 @@ export async function answer(url, init = {}) {
         : fail(403, 'HOST_MANAGED', 'The site embedding Writer sets up its assistant');
       case '/ai/models': return fail(403, 'HOST_MANAGED', 'The site embedding Writer sets up its assistant');
       case '/ai/test': return json(200, JSON.stringify({ ok: !!chat, error: chat ? '' : 'No model is set up' }));
+      case '/cite/page': { // a source's page (cite.js): read straight from here, which a site that does not allow it refuses
+        const target = q.get('url') || '';
+        if (!/^https?:\/\//i.test(target)) return fail(400, 'USAGE', 'Give url=<a web address>');
+        try { const r = await fetch(target); if (r.ok) return new Response(await r.text(), { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }); } catch (e) { /* refused below */ }
+        return fail(502, 'LOOKUP_FAILED', 'The page could not be read from this page', 'Paste its DOI, or fill the source in by hand.');
+      }
     }
     return fail(404, 'NOT_FOUND', 'No such endpoint');
   } catch (e) {

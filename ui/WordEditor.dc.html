@@ -72,6 +72,14 @@
 .wd-ed[data-side="1"] hr[data-pb],.wd-ed[data-side="1"] [data-w-sectionbreak="nextPage"],.wd-ed[data-side="1"] [data-w-sectionbreak="oddPage"],.wd-ed[data-side="1"] [data-w-sectionbreak="evenPage"]{break-after:column;-webkit-column-break-after:always}
 .wd-ed[data-side="1"] [data-pb="before"]{break-before:column;-webkit-column-break-before:always}
 .wd-ed sup[data-fn]{color:var(--k2, #2F5D8A);cursor:pointer;padding:0 1px;font-size:.72em;user-select:none}
+.wd-ed span[data-cite]{cursor:pointer;border-radius:3px;user-select:none;transition:background .12s}
+.wd-ed span[data-cite]:hover,.wd-ed span[data-cite][data-on]{background:var(--k48, rgba(47,93,138,0.1))}
+.wd-ed nav[data-bib]{display:block;cursor:default;user-select:none;text-indent:0}
+.wd-ed nav[data-bib] .wd-bib-title{text-align:center;line-height:calc(2 * var(--wd-lh, 1.5))}
+.wd-ed[data-cstyle="apa"] nav[data-bib] .wd-bib-title{font-weight:700}
+.wd-ed nav[data-bib] p{margin:0;padding-left:.5in;text-indent:-.5in;line-height:calc(2 * var(--wd-lh, 1.5))}
+.wd-ed[data-cstyle^="chicago"] nav[data-bib] p{line-height:calc(1 * var(--wd-lh, 1.5));margin-bottom:1em}
+.wd-ed nav[data-bib] p.wd-bib-empty{color:var(--k8, #8E8E93);padding:0;text-indent:0}
 .wd-ed [data-w-sectionbreak]::after{display:block;margin:6px 0 0;border-top:1px dashed var(--k47, #C7C7CC);font:11px/1.8 'Noto Sans SC',sans-serif;color:var(--k8, #8E8E93);text-align:center;text-indent:0;pointer-events:none}
 .wd-ed [data-w-sectionbreak="nextPage"]::after{content:var(--wd-sb-nextPage)}.wd-ed [data-w-sectionbreak="continuous"]::after{content:var(--wd-sb-continuous)}
 .wd-ed [data-w-sectionbreak="evenPage"]::after{content:var(--wd-sb-evenPage)}.wd-ed [data-w-sectionbreak="oddPage"]::after{content:var(--wd-sb-oddPage)}
@@ -198,7 +206,7 @@
               </sc-if>
             </div>
           </sc-for>
-          <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
+          <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-cstyle="{{ citeStyleAttr }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
           <sc-for list="{{ hfZones }}" as="z" hint-placeholder-count="0">
             <div title="{{ z.title }}" onDoubleClick="{{ z.onDbl }}" style="position:absolute;left:0;right:0;top:{{ z.top }};bottom:{{ z.bottom }};height:{{ z.h }};z-index:2;box-sizing:border-box;border-top:{{ z.lineT }};border-bottom:{{ z.lineB }}">
               <sc-if value="{{ z.editing }}" hint-placeholder-val="{{ false }}">
@@ -249,7 +257,8 @@
         <sc-for list="{{ notes }}" as="nt" hint-placeholder-count="0">
           <div onClick="{{ nt.onFocus }}" style="background:var(--k68, rgba(255,255,255,0.72));border:1px solid {{ nt.border }};border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px">
             <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--k11, #6E6E73)"><span style="flex:1">{{ nt.label }}</span><button onClick="{{ nt.onDelete }}" style="border:none;background:transparent;font-size:12px;color:var(--k8, #8E8E93);cursor:pointer">删除</button></div>
-            <textarea data-complete="a footnote in a Word document" value="{{ nt.text }}" onChange="{{ nt.onText }}" autoFocus="{{ nt.focus }}" placeholder="输入注释文字…" rows="2" style="border:1px solid var(--k6, #E5E5EA);border-radius:6px;padding:6px 8px;font-size:12.5px;resize:vertical;background:var(--k0, #FFFFFF);outline:none;line-height:1.5"></textarea>
+            <sc-if value="{{ nt.hasCite }}" hint-placeholder-val="{{ false }}"><div dangerouslySetInnerHTML="{{ nt.cite }}" title="引文，按来源自动生成" style="font-size:12.5px;line-height:1.5;color:var(--k1, #1D1D1F)"></div></sc-if>
+            <textarea data-complete="a footnote in a Word document" value="{{ nt.text }}" onChange="{{ nt.onText }}" autoFocus="{{ nt.focus }}" placeholder="{{ nt.ph }}" rows="2" style="border:1px solid var(--k6, #E5E5EA);border-radius:6px;padding:6px 8px;font-size:12.5px;resize:vertical;background:var(--k0, #FFFFFF);outline:none;line-height:1.5"></textarea>
           </div>
         </sc-for>
       </div>
@@ -319,6 +328,57 @@
           <button onClick="{{ dlgOk }}" style="height:32px;padding:0 16px;border:none;border-radius:7px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13px;cursor:pointer">确定</button>
         </div>
       </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasSrc }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:95;background:var(--k70, rgba(29,29,31,0.12));display:flex;align-items:center;justify-content:center">
+      <div data-dlg="1" data-pop="center" style="width:560px;max-width:calc(100vw - 32px);max-height:calc(100vh - 48px);overflow:auto;border-radius:22px;background:linear-gradient(180deg,var(--k71, rgba(255,255,255,0.88)),var(--k72, rgba(255,255,255,0.74)));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k18, rgba(255,255,255,0.95)),0 12px 32px var(--k22, rgba(0,0,0,0.12)),0 1px 3px var(--k19, rgba(0,0,0,0.1));padding:20px 22px;display:flex;flex-direction:column;gap:12px;color:var(--k1, #1D1D1F);box-sizing:border-box">
+        <div style="display:flex;align-items:baseline;gap:8px"><div style="font-size:15px;font-weight:600;flex:1">{{ srcTitle }}</div><div style="font-size:12px;color:var(--k8, #8E8E93)">{{ srcStyle }}</div></div>
+        <div style="display:flex;gap:8px">
+          <input value="{{ srcQ }}" onChange="{{ onSrcQ }}" onKeyDown="{{ onSrcQKey }}" autoFocus="{{ srcQFocus }}" placeholder="粘贴 DOI、ISBN、网址或整条参考文献" spellCheck="false" style="flex:1;height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)">
+          <button onClick="{{ srcLookup }}" disabled="{{ srcBusy }}" style="height:34px;padding:0 14px;border:none;border-radius:7px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13px;cursor:pointer">查找</button>
+          <button onClick="{{ srcNew }}" title="不查找，直接填写" style="height:34px;padding:0 12px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;background:transparent;font-size:13px;cursor:pointer;color:var(--k1, #1D1D1F)">手动填写</button>
+        </div>
+        <div style="font-size:12px;color:{{ srcStatusColor }};min-height:16px">{{ srcStatus }}</div>
+        <sc-if value="{{ srcHasForm }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px 10px">
+            <sc-for list="{{ srcFields }}" as="f" hint-placeholder-count="0">
+              <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--k11, #6E6E73);grid-column:span {{ f.span }}">{{ f.label }}
+                <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}"><select value="{{ f.value }}" onChange="{{ f.onChange }}" style="height:32px;padding:0 8px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13px;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"><sc-for list="{{ f.options }}" as="o" hint-placeholder-count="0"><option value="{{ o.value }}">{{ o.label }}</option></sc-for></select></sc-if>
+                <sc-if value="{{ f.isArea }}" hint-placeholder-val="{{ false }}"><textarea value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" rows="{{ f.rows }}" spellCheck="false" style="border:1px solid var(--k10, #D1D1D6);border-radius:7px;padding:6px 10px;font-size:13px;resize:vertical;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);line-height:1.5"></textarea></sc-if>
+                <sc-if value="{{ f.isInput }}" hint-placeholder-val="{{ false }}"><input value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" spellCheck="false" style="height:32px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);min-width:0"></sc-if>
+              </label>
+            </sc-for>
+          </div>
+          <div style="font-size:12px;color:var(--k11, #6E6E73)">{{ srcPreviewLabel }}</div>
+          <div data-light="1" dangerouslySetInnerHTML="{{ srcPreview }}" style="padding:8px 12px;border-radius:10px;background:var(--kpage, #FFFFFF);color:#1D1D1F;font:13px/1.6 'Times New Roman','Noto Serif SC',serif"></div>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <button onClick="{{ srcFormCancel }}" style="height:32px;padding:0 14px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;background:transparent;font-size:13px;cursor:pointer;color:var(--k1, #1D1D1F)">取消</button>
+            <button onClick="{{ srcSave }}" disabled="{{ srcBusy }}" style="height:32px;padding:0 16px;border:none;border-radius:7px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:13px;cursor:pointer">{{ srcSaveLabel }}</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ srcShowList }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:12px;color:var(--k11, #6E6E73)">{{ srcListLabel }}</div>
+          <sc-for list="{{ srcList }}" as="x" hint-placeholder-count="0">
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:9px;background:var(--k68, rgba(255,255,255,0.72));border:1px solid var(--k6, #E5E5EA)">
+              <span title="{{ x.title }}" style="flex:1;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ x.label }}</span>
+              <button onClick="{{ x.onCite }}" title="在光标处插入这个来源的引文" style="height:26px;padding:0 10px;border:none;border-radius:6px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12px;cursor:pointer">{{ srcCiteBtn }}</button>
+              <button onClick="{{ x.onEdit }}" style="height:26px;padding:0 8px;border:1px solid var(--k10, #D1D1D6);border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:var(--k1, #1D1D1F)">编辑</button>
+              <button onClick="{{ x.onDelete }}" style="height:26px;padding:0 8px;border:none;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:var(--k8, #8E8E93)">删除</button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ srcNone }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:var(--k8, #8E8E93);padding:4px 2px">还没有来源。粘贴 DOI、ISBN、网址或整条参考文献，按「查找」。</div></sc-if>
+        </sc-if>
+        <div style="display:flex;justify-content:flex-end"><button onClick="{{ srcClose }}" style="height:32px;padding:0 14px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;background:transparent;font-size:13px;cursor:pointer;color:var(--k1, #1D1D1F)">关闭</button></div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasCitePop }}" hint-placeholder-val="{{ false }}">
+    <div data-pop="cite" style="position:fixed;left:{{ citePopX }};top:{{ citePopY }};z-index:60;width:260px;border-radius:14px;background:var(--k71, rgba(255,255,255,0.94));backdrop-filter:blur(10px) saturate(190%);-webkit-backdrop-filter:blur(10px) saturate(190%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:0 8px 24px var(--k22, rgba(0,0,0,0.12));padding:12px;display:flex;flex-direction:column;gap:8px;color:var(--k1, #1D1D1F)">
+      <div style="font-size:12px;color:var(--k11, #6E6E73);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ citePopSource }}">{{ citePopSource }}</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px">{{ citePagesLabel }}<input value="{{ citePopPages }}" onChange="{{ onCitePages }}" onKeyDown="{{ onCitePopKey }}" placeholder="例如 288 或 288-290" spellCheck="false" style="flex:1;height:28px;padding:0 8px;border:1px solid var(--k10, #D1D1D6);border-radius:6px;font-size:12.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);min-width:0"></label>
+      <label title="句子里已经写出作者名时勾选，引文只留页码" style="display:flex;align-items:center;gap:8px;font-size:12.5px"><input type="checkbox" checked="{{ citePopNoAuthor }}" onChange="{{ onCiteNoAuthor }}">正文已写作者名</label>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button onClick="{{ citeRemove }}" style="height:28px;padding:0 10px;border:none;border-radius:6px;background:transparent;font-size:12.5px;cursor:pointer;color:var(--k62, #B5563A)">删除引文</button><button onClick="{{ citePopDone }}" style="height:28px;padding:0 12px;border:none;border-radius:6px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer">完成</button></div>
     </div>
   </sc-if>
   <sc-if value="{{ hasEq }}" hint-placeholder-val="{{ false }}">
@@ -401,6 +461,23 @@ const EQ_PRESETS = [['分式', '\\frac{a}{b}'], ['上标', 'x^{2}'], ['下标', 
   ['矩阵', '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}'], ['分段函数', 'f(x)=\\begin{cases} x & x \\ge 0 \\\\ -x & x < 0 \\end{cases}'], ['二次公式', 'x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}']]; // 公式: dropped in, the LaTeX then typed over
 const SHAPE_KINDS = [['rect', '矩形'], ['roundRect', '圆角矩形'], ['ellipse', '椭圆'], ['triangle', '三角形'], ['diamond', '菱形'], ['hexagon', '六边形'], ['star5', '五角星'], ['rightArrow', '右箭头'], ['leftArrow', '左箭头'], ['chevron', '燕尾形'], ['wedgeRectCallout', '矩形标注']];
 const CAPTIONS = ['图', '表', '公式']; // i18n-ok — 题注 labels: written into the document as they are
+// 管理源: the kinds of source, and the fields each asks for (the engine's names for them), in the order they are filled
+const SRC_TYPES = [['article', '期刊文章'], ['book', '图书'], ['chapter', '书中章节'], ['webpage', '网页@@src'], ['newspaper', '报纸文章'], ['magazine', '杂志文章'], ['report', '报告'], ['conference', '会议论文'], ['thesis', '学位论文'], ['other', '其他']];
+const SRC_FIELDS = { article: ['authors', 'title', 'container', 'year', 'volume', 'issue', 'pages', 'doi', 'url'], book: ['authors', 'title', 'publisher', 'place', 'year', 'edition', 'isbn', 'doi'],
+  chapter: ['authors', 'title', 'container', 'editors', 'publisher', 'place', 'year', 'pages', 'doi'], webpage: ['authors', 'title', 'container', 'year', 'month', 'day', 'url', 'accessed'],
+  newspaper: ['authors', 'title', 'container', 'year', 'month', 'day', 'pages', 'url'], magazine: ['authors', 'title', 'container', 'year', 'month', 'day', 'volume', 'issue', 'pages', 'url'],
+  report: ['authors', 'title', 'publisher', 'year', 'doi', 'url'], conference: ['authors', 'title', 'container', 'year', 'pages', 'doi', 'url'], thesis: ['authors', 'title', 'publisher', 'year', 'url'],
+  other: ['authors', 'title', 'container', 'publisher', 'year', 'url'] };
+const SRC_LABELS = { authors: '作者（每行一位：姓, 名）', editors: '编者（每行一位：姓, 名）', title: '标题@@src', publisher: '出版社', place: '出版地', year: '年@@src', month: '月@@src', day: '日@@src', volume: '卷@@src', issue: '期@@src',
+  pages: '页码@@src', edition: '版次', doi: 'DOI', url: '网址', isbn: 'ISBN', accessed: '访问日期' };
+const SRC_CONTAINER = { article: '期刊', chapter: '书名', webpage: '网站', newspaper: '报纸', magazine: '杂志', conference: '会议' };
+const SRC_SPAN = { authors: 6, editors: 6, title: 6, container: 6, url: 6, publisher: 4, doi: 3, isbn: 3, accessed: 3 };
+const ORG = /\b(organi[sz]ation|association|institute|university|laboratory|department|agency|council|society|office|committee|cent(er|re)|ministry|bureau|commission|foundation|corporation|company|inc|ltd|llc|group|press)\b/i;
+/** Names as the form lists them, one a line ("Pegg, Ian L."), as the engine takes them: a person, or an organisation by its name. */
+const peopleOf = text => String(text || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => l.includes(',') ? { last: l.slice(0, l.indexOf(',')).trim(), first: l.slice(l.indexOf(',') + 1).trim() } : ORG.test(l) ? { name: l } : l);
+const namesText = list => (list || []).map(a => typeof a === 'string' ? a : a.name || (a.last + (a.first ? ', ' + a.first : ''))).join('\n');
+/** A citation to show until the engine has drawn it: the first author's surname, or the title. */
+const citeGuess = s => { const a = (s.authors || [])[0]; return (a ? (typeof a === 'string' ? a.split(' ').pop() : a.last || a.name) : (s.title || '').split(' ').slice(0, 3).join(' ')) || s.tag; };
 const escHtml = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const SECTION_BREAKS = [['nextPage', '下一页'], ['continuous', '连续'], ['evenPage', '偶数页'], ['oddPage', '奇数页']]; // 分节符, as Word names them
 const HILITES = [['#FFFF00', '黄色'], ['#00FF00', '鲜绿色'], ['#00FFFF', '青绿色'], ['#FF00FF', '粉红色'], ['#0000FF', '蓝色'], ['#FF0000', '红色'], ['#000080', '深蓝色'], ['#008080', '青色'], ['#008000', '绿色'], ['#800080', '紫罗兰'], ['#800000', '深红色'], ['#808000', '深黄色'], ['#808080', '深灰色'], ['#C0C0C0', '灰色-25%'], ['#000000', '黑色'], ['transparent', '无']]; // Word's highlight pen: these fifteen are written as w:highlight
@@ -1231,9 +1308,106 @@ class Component extends DCLogic {
   /** The caret section's page setup: a menu's change goes on its break paragraph, or on the document in the last section. */
   secPage(sec) { const g = k => sec.getAttribute('data-w-' + k); return { size: g('page') || this.page.size, orient: g('orientation') || this.page.orient, margin: g('margin') || this.page.margin, cols: +(g('columns') || this.page.cols) }; }
   setSecPage(sec, patch) { const key = { size: 'page', orient: 'orientation', margin: 'margin', cols: 'columns' }; for (const [k, v] of Object.entries(patch)) sec.setAttribute('data-w-' + key[k], String(v)); this.after(); }
+  // ----- citations (引文与书目): Word's citations and works-cited list, drawn by the engine from the document's sources -----
+  /** A citation of source `tag` at the caret: in Chicago's notes a footnote that cites it, else Word's citation in the text, after a
+   *  space when the word before has none; it shows the source's author until the save brings what the engine drew. */
+  insertCite(tag) {
+    if (this.state.hf) return;
+    const d = this.doc, src = (d.sources || []).find(x => x.tag === tag); if (!src) return;
+    if ((d.citeStyle || 'mla') === 'chicago') return this.insertNote('footnote', { cite: tag, citeHtml: this.EN ? this.EN.esc(citeGuess(src)) : '' });
+    this.restore(); const sel = window.getSelection(); if (!sel.rangeCount) return;
+    const r = sel.getRangeAt(0); r.collapse(false);
+    const before = r.startContainer.nodeType === 3 ? r.startContainer.nodeValue.slice(0, r.startOffset) : '';
+    const span = document.createElement('span'); span.setAttribute('data-cite', tag); span.setAttribute('contenteditable', 'false'); span.textContent = '(' + citeGuess(src) + ')';
+    r.insertNode(span);
+    if (before && !/[\s(\[\u00A0]$/.test(before)) span.before(document.createTextNode(' '));
+    r.setStartAfter(span); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); this.range = r.cloneRange();
+    this.after();
+  }
+  /** 插入书目: the works-cited list at the end of the text (the styles put it last, on a page of its own), under the style's title. */
+  insertBib() {
+    const ed = this.edRef.current; if (!ed || !this.EN) return;
+    const old = ed.querySelector('nav[data-bib]'); if (old) { this.focusEl(old); return this.props.toast && this.props.toast($t('文档里已经有书目，保存时会按来源更新')); }
+    const box = document.createElement('div'); box.innerHTML = this.EN.bibHtml('', this.EN.listTitle(this.doc.citeStyle || 'mla'), ''); ed.appendChild(box.firstChild);
+    this.after(); this.focusEl(ed.lastChild);
+  }
+  /** The document's citation style: every citation and the list are drawn again in it (in the file now, then shown). */
+  async setCiteStyle(name) {
+    if (!this.EN || (this.doc.citeStyle || 'mla') === name && this.doc.citeStyle) return;
+    try { const r = await this.EN.citeEdit(this.doc, { citationStyle: name }, this.edRef.current); this.change({ sources: r.sources, citeStyle: name, html: this.edRef.current.innerHTML }, true); }
+    catch (e) { this.props.toast && this.props.toast(e.message); }
+  }
+  /** 更新引文和书目: what the engine draws from the sources now, shown (a save draws them too). */
+  async refreshCites() { if (!this.EN) return; await this.EN.refreshCites(this.doc, this.edRef.current); this.change({ html: this.edRef.current.innerHTML, notes: this.doc.notes }, true); }
+  /** 管理源: the document's sources, a box to look one up, and its form. `then` 'cite' puts a citation of the source saved at the caret. */
+  openSources(then) { this.setState({ srcDlg: { q: '', status: '', kind: '', form: null, busy: false, then: then || null } }); }
+  /** 插入引文's menu: the document's sources, then one to add (and cite) a new one. */
+  citeItems(I, HD) { return (this.doc.sources || []).map(x => I(this.srcLabel(x), () => this.insertCite(x.tag))).concat([HD(''), I('添加新来源…', () => this.openSources('cite'))]); }
+  srcLabel(x) { const a = (x.authors || [])[0], who = a ? (typeof a === 'string' ? a : a.last || a.name) : ''; return [who && who + ((x.authors || []).length > 2 ? ' et al.' : (x.authors || []).length === 2 ? ' & ' + ((b => typeof b === 'string' ? b : b.last || b.name)(x.authors[1])) : ''), x.year && '(' + x.year + ')', x.title].filter(Boolean).join(' '); }
+  srcSet(patch) { this.setState(st => ({ srcDlg: st.srcDlg && Object.assign({}, st.srcDlg, patch) })); }
+  /** Looks up what was pasted (cite.js): the form fills with what was found, or stays empty to be filled by hand. */
+  async srcLookup() {
+    const dlg = this.state.srcDlg; if (!dlg || !dlg.q.trim() || !this.EN) return;
+    this.srcSet({ busy: true, status: $t('正在查找…'), kind: '' });
+    try {
+      const r = await this.EN.lookupSource(dlg.q);
+      if (!r) return this.srcSet({ busy: false, status: $t('没有找到这条来源。可以粘贴它的 DOI，或点「手动填写」。'), kind: 'err' });
+      const from = { crossref: 'Crossref', openlibrary: 'Open Library', page: $t('网页信息') }[r.from] || r.from;
+      this.srcSet({ busy: false, status: $t('已找到（{from}），检查一下再保存', { from }), kind: 'ok', form: this.srcForm(r.source) });
+      this.srcPreview();
+    } catch (e) { this.srcSet({ busy: false, status: e.message, kind: 'err' }); }
+  }
+  /** A source as the form holds it: its fields as text, the people one a line. */
+  srcForm(src) { const f = { type: 'article' }; for (const [k, v] of Object.entries(src || {})) f[k] = k === 'authors' || k === 'editors' ? namesText(v) : String(v); return f; }
+  srcJson(form) { const o = {}; for (const [k, v] of Object.entries(form)) { if (k === 'authors' || k === 'editors') o[k] = peopleOf(v); else if (String(v).trim()) o[k] = String(v).trim(); } return o; }
+  /** How the source reads in the document's style, in its list and in the text (the engine's cite command), as the form changes. */
+  srcPreview() {
+    clearTimeout(this.srcT);
+    this.srcT = setTimeout(async () => {
+      const dlg = this.state.srcDlg; if (!dlg || !dlg.form || !this.EN) return;
+      const json = this.srcJson(dlg.form); if (!json.title && !(json.authors || []).length) return this.srcSet({ preview: '' });
+      try {
+        const r = await this.EN.run(['cite', '--style', this.doc.citeStyle || 'mla', '--source', JSON.stringify(json)]), note = r.note ? r.noteHtml : this.EN.esc(r.inText);
+        this.srcSet({ preview: `<div style="padding-left:.5in;text-indent:-.5in">${r.entryHtml}</div><div style="margin-top:6px"><span style="color:#6E6E73">${this.EN.esc($t(r.note ? '脚注：' : '正文引文：'))}</span>${note}</div>` });
+      }
+      catch (e) { this.srcSet({ preview: '' }); }
+    }, 250);
+  }
+  /** Saves the form's source into the document (Word's source list), then, when asked, cites it at the caret. */
+  async srcSave() {
+    const dlg = this.state.srcDlg; if (!dlg || !dlg.form || !this.EN) return;
+    const json = this.srcJson(dlg.form); if (!json.title && !(json.authors || []).length) return this.srcSet({ status: $t('至少填写标题或作者'), kind: 'err' });
+    this.srcSet({ busy: true });
+    try {
+      const r = await this.EN.citeEdit(this.doc, json, this.edRef.current);
+      this.change({ sources: r.sources, html: this.edRef.current.innerHTML }, true);
+      if (dlg.then === 'cite' && r.tag) { this.setState({ srcDlg: null }); this.insertCite(r.tag); return; }
+      this.srcSet({ busy: false, form: null, q: '', status: $t('已保存'), kind: 'ok', preview: '' });
+    } catch (e) { this.srcSet({ busy: false, status: e.message, kind: 'err' }); }
+  }
+  async srcDelete(tag) {
+    try { const r = await this.EN.citeEdit(this.doc, { tag, remove: true }, this.edRef.current); this.change({ sources: r.sources, html: this.edRef.current.innerHTML }, true); this.srcSet({ status: '' }); }
+    catch (e) { this.srcSet({ status: e.code === 'VALIDATION' ? $t('文中还引用着这条来源，先删掉那些引文') : e.message, kind: 'err' }); }
+  }
+  /** A citation clicked: its settings next to it. */
+  openCitePop(span) {
+    const r = span.getBoundingClientRect(); this.citeEl = span; span.setAttribute('data-on', '1');
+    this.setState({ citePop: { x: Math.round(Math.min(window.innerWidth - 272, Math.max(8, r.left))), y: Math.round(r.bottom + 6), pages: span.getAttribute('data-pages') || '', noAuthor: span.hasAttribute('data-noauthor') } });
+  }
+  /** Writes the popover's settings onto the citation (the save sends them), or takes the citation away. */
+  citePopClose(remove) {
+    const el = this.citeEl, pop = this.state.citePop; this.citeEl = null; this.setState({ citePop: null }); if (!el) return;
+    el.removeAttribute('data-on');
+    if (remove) { el.remove(); this.after(); return; }
+    const pages = (pop.pages || '').trim(), was = [el.getAttribute('data-pages') || '', el.hasAttribute('data-noauthor')];
+    if (pages) el.setAttribute('data-pages', pages); else el.removeAttribute('data-pages');
+    if (pop.noAuthor) el.setAttribute('data-noauthor', '1'); else el.removeAttribute('data-noauthor');
+    if (was[0] !== pages || was[1] !== !!pop.noAuthor) this.after();
+  }
+
   // ----- footnotes and endnotes (脚注 / 尾注): a mark in the text, the note's text in the side panel, both saved into the file -----
   /** A note at the caret: its mark (numbered with the others of its kind) and an empty note, whose text box takes the focus. */
-  insertNote(kind) {
+  insertNote(kind, cite) {
     if (this.state.hf) return; // notes belong to the text, not to a header
     this.restore(); const s = window.getSelection(); if (!s.rangeCount) return;
     const r = s.getRangeAt(0); r.collapse(false);
@@ -1241,7 +1415,7 @@ class Component extends DCLogic {
     sup.setAttribute('data-fn', id); sup.setAttribute('data-kind', kind); sup.setAttribute('contenteditable', 'false'); sup.textContent = '1';
     r.insertNode(sup); r.setStartAfter(sup); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange();
     this.ink();
-    this.change({ html: this.edRef.current.innerHTML, notes: (this.doc.notes || []).concat([{ id, kind, text: '' }]) }); this.setState({ activeNote: id, focusNote: id });
+    this.change({ html: this.edRef.current.innerHTML, notes: (this.doc.notes || []).concat([Object.assign({ id, kind, text: '' }, cite ? { cite: cite.cite, pages: '', citeHtml: cite.citeHtml || '' } : {})]) }); this.setState({ activeNote: id, focusNote: cite ? null : id });
   }
   delNote(id) { const ed = this.edRef.current; ed.querySelectorAll(`sup[data-fn="${id}"]`).forEach(x => x.remove()); this.ink(); this.change({ html: ed.innerHTML, notes: (this.doc.notes || []).filter(x => x.id !== id) }); }
   /** Alignment; 分散对齐 (distribute) is the browser's justify with the last line spread too, which the save reads back as distribute. */
@@ -1704,7 +1878,11 @@ class Component extends DCLogic {
         R(lab('样式'), sp(), sel('tocsty', $t((TOC_STYLES.find(x => x[0] === tocStyle) || TOC_STYLES[0])[1]), TOC_STYLES.map(([key, l]) => I(l, () => this.setTocStyle(key), { on: tocStyle === key })), { w: 132, title: '目录样式' }))),
       G('脚注和尾注', R(btn('插入脚注', 'note', () => this.insertNote('footnote'), { title: '在光标处插入脚注，注释显示在页面底端' }), btn('插入尾注', 'note', () => this.insertNote('endnote'), { title: '在光标处插入尾注，注释显示在文档末尾' })),
         R(lab('编号'), sp(), sel('nfmt', (NOTE_FORMATS.find(x => x[0] === nfmt) || NOTE_FORMATS[0])[1], NOTE_FORMATS.map(([key, l]) => I(l, () => this.setNoteFormat(key), { on: nfmt === key })), { w: 132, title: '脚注和尾注的编号样式' })),
-        notes.map(n => ({ items: [{ t: 'cmt', av: n.mark, avBg: 'var(--fp-accent)', head: n.label, text: n.text, on: st.activeNote === n.id, replies: [], resolveLabel: '', onResolve: e => e.stopPropagation(), onDelete: n.onDelete, onText: n.onText, onClick: n.onFocus, quote: '' }] }))),
+        notes.map(n => ({ items: [{ t: 'cmt', av: n.mark, avBg: 'var(--fp-accent)', head: n.label, text: n.text, on: st.activeNote === n.id, replies: [], resolveLabel: '', onResolve: e => e.stopPropagation(), onDelete: n.onDelete, onText: n.onText, onClick: n.onFocus, quote: '',
+          ph: n.ph, reply: false, ai: 'a footnote in a Word document', cite: n.hasCite ? n.cite.__html : '' }] }))),
+      G('引文与书目', R(lab('样式@@cite'), sp(), sel('cstyle', $t(((EN && EN.CITE_STYLES) || []).find(x => x[0] === (d.citeStyle || 'mla'))?.[1] || 'MLA 第 9 版'), ((EN && EN.CITE_STYLES) || []).map(([key, l]) => I(l, () => this.setCiteStyle(key), { on: (d.citeStyle || 'mla') === key })), { w: 190, title: '引文和书目的格式；换样式后所有引文和书目自动改写' })),
+        R(menuBtn('cite-go', '插入引文', 'cite', this.citeItems(I, HD), { title: '在光标处插入所选来源的引文；Chicago 脚注样式插入脚注' }), btn('管理源', 'sources', () => this.openSources(), { title: '粘贴 DOI、ISBN、网址或整条参考文献，自动查到来源' })),
+        R(btn('插入书目', 'bib', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }), btn('更新@@cite', 'refresh', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' }))),
       G('题注', R(btn('插入题注', 'picture', () => this.insertCaption(capLabel), { title: '图、表、公式的题注，编号自动更新' }),
         sel('caplab', $t('标签：{l}', { l: capLabel }), CAPTIONS.map(l => I(l, () => this.setState({ capLabel: l }), { on: capLabel === l })), { w: 120, title: '题注标签' }))),
       G('交叉引用', R(sel('xkind', $t('引用：{k}', { k: $t(kinds.find(x => x[0] === kind)[1]) }), kinds.map(([key, l]) => I(l, () => this.setState({ xrefKind: key }), { on: kind === key })), { title: '引用的类型' }),
@@ -1887,6 +2065,10 @@ class Component extends DCLogic {
     if (tab === 'refs') ribbon = [
       B('目录', () => this.insertToc(), { title: '根据标题生成/更新目录' }), SEP,
       B('插入脚注', () => this.insertNote('footnote'), { title: '在光标处插入脚注，注释显示在页面底端' }), B('插入尾注', () => this.insertNote('endnote'), { title: '在光标处插入尾注，注释显示在文档末尾' }), SEP,
+      M('cstyle', '引文样式', ((this.EN && this.EN.CITE_STYLES) || []).map(([key, l]) => I(l, () => this.setCiteStyle(key), { on: (d.citeStyle || 'mla') === key })), '引文和书目的格式；换样式后所有引文和书目自动改写'),
+      M('cite', '插入引文', this.citeItems(I, HD), '在光标处插入所选来源的引文；Chicago 脚注样式插入脚注'),
+      B('管理源', () => this.openSources(), { title: '粘贴 DOI、ISBN、网址或整条参考文献，自动查到来源' }), B('书目', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }),
+      B('更新引文和书目', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' }), SEP,
       M('cap', '插入题注', CAPTIONS.map(l => I(l, () => this.insertCaption(l))), '图、表、公式的题注，编号自动更新'),
       M('xref', '交叉引用', (g => g.length ? g : [I('没有可引用的标题、题注或书签', () => { })])([['heading', '标题'], ['caption', '题注'], ['bookmark', '书签']].flatMap(([k, l]) => { const list = bookmarks.filter(t => t.kind === k); return list.length ? [HD($t(l)), ...list.map(t => I(t.label, () => this.insertRef(t)))] : []; })), '引用标题、题注或书签；在 Word 中按住 Ctrl 点击可跳转')
     ];
@@ -1963,6 +2145,7 @@ class Component extends DCLogic {
     const ed0 = this.edRef.current, marks = ed0 && ed0.querySelectorAll ? Array.from(ed0.querySelectorAll('sup[data-fn]')) : null; // the notes whose marks are in the text, in their order
     const noteList = marks ? marks.map(m => (d.notes || []).find(x => x.id === m.getAttribute('data-fn'))).filter(Boolean) : d.notes || [];
     const notes = noteList.map(x => { const m = marks && marks.find(y => y.getAttribute('data-fn') === x.id), n = m ? m.textContent : ''; return { id: x.id, mark: n, label: $t(x.kind === 'endnote' ? '尾注 {n}' : '脚注 {n}', { n }), text: x.text || '', focus: st.focusNote === x.id, border: st.activeNote === x.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
+      hasCite: !!x.cite, cite: { __html: x.citeHtml || '' }, ph: $t(x.cite ? '注释的其他文字（可不填）' : '输入注释文字…'),
       onText: e => this.change({ notes: (d.notes || []).map(y => y.id === x.id ? Object.assign({}, y, { text: e.target.value }) : y) }, true),
       onDelete: e => { e.stopPropagation(); this.delNote(x.id); },
       onFocus: () => { this.setState({ activeNote: x.id, focusNote: null }); this.focusEl(m); } }; });
@@ -2052,6 +2235,7 @@ class Component extends DCLogic {
         }
         const cs = t.closest && t.closest('[data-cid]'); if (cs) this.setState({ activeCid: cs.getAttribute('data-cid') });
         const fn = t.closest && t.closest('sup[data-fn]'); if (fn) this.setState({ activeNote: fn.getAttribute('data-fn'), focusNote: null });
+        const ct = t.closest && t.closest('span[data-cite]'); if (ct) this.openCitePop(ct);
       },
       onEdUp: () => { if (st.painter) setTimeout(() => this.paint(), 0); },
       onEdDown: e => { const edge = e.button === 0 && this.colEdge(e); if (edge) this.startColDrag(e, edge); },
@@ -2075,6 +2259,28 @@ class Component extends DCLogic {
       hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : '0', popY: st.pop ? st.pop.y + 'px' : '0', popMinW: Math.max(168, st.pop && st.pop.w || 0) + 'px',
       popMaxH: st.pop ? `min(420px, ${st.pop.up ? st.pop.y - 8 + 'px' : `calc(100vh - ${st.pop.y + 8}px)`})` : '420px', popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) ${st.pop.up ? '-100%' : '0px'}` : 'none', popItems, popIsGrid, gridCells, gridLabel, gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null }),
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
+      citeStyleAttr: d.citeStyle || 'mla',
+      ...(pop => ({ hasCitePop: !!pop, citePopX: pop ? pop.x + 'px' : '0px', citePopY: pop ? pop.y + 'px' : '0px', citePopPages: pop ? pop.pages : '', citePopNoAuthor: !!(pop && pop.noAuthor),
+        citePagesLabel: $t('页码@@src'), citePopSource: (() => { const el = this.citeEl, tag = el && el.getAttribute('data-cite'), src = (d.sources || []).find(x => x.tag === tag); return src ? this.srcLabel(src) : tag || ''; })(),
+        onCitePages: e => this.setState({ citePop: Object.assign({}, this.state.citePop, { pages: e.target.value }) }), onCiteNoAuthor: e => this.setState({ citePop: Object.assign({}, this.state.citePop, { noAuthor: e.target.checked }) }),
+        onCitePopKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.citePopClose(false); } else if (e.key === 'Escape') this.citePopClose(false); },
+        citePopDone: () => this.citePopClose(false), citeRemove: () => this.citePopClose(true) }))(st.citePop),
+      ...(dlg => {
+        const form = dlg && dlg.form, type = form && SRC_FIELDS[form.type] ? form.type : 'article', set = (k, v) => { this.srcSet({ form: Object.assign({}, this.state.srcDlg.form, { [k]: v }) }); this.srcPreview(); };
+        const field = k => ({ label: $t(k === 'container' ? SRC_CONTAINER[type] || '出处' : k === 'publisher' && type === 'report' ? '机构' : k === 'publisher' && type === 'thesis' ? '学校' : SRC_LABELS[k]), value: form[k] || '', span: SRC_SPAN[k] || 2,
+          isArea: k === 'authors' || k === 'editors', rows: 2, isInput: k !== 'authors' && k !== 'editors', isSelect: false, ph: k === 'accessed' ? 'YYYY-MM-DD' : k === 'authors' ? 'Pegg, Ian L.' : '', onChange: e => set(k, e.target.value) });
+        return { hasSrc: !!dlg, srcTitle: $t('管理源'), srcStyle: $t((this.EN ? this.EN.CITE_STYLES : []).map(x => x[0] === (d.citeStyle || 'mla') ? x[1] : '').join('') || 'MLA'), srcQ: dlg ? dlg.q : '', srcQFocus: !!dlg && !form,
+          onSrcQ: e => this.srcSet({ q: e.target.value }), onSrcQKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.srcLookup(); } },
+          srcLookup: () => this.srcLookup(), srcNew: () => { this.srcSet({ form: { type: 'article' }, status: '', preview: '' }); }, srcBusy: !!(dlg && dlg.busy),
+          srcStatus: dlg ? dlg.status : '', srcStatusColor: dlg && dlg.kind === 'err' ? 'var(--k62, #B5563A)' : dlg && dlg.kind === 'ok' ? 'var(--k2, #2F5D8A)' : 'var(--k8, #8E8E93)',
+          srcHasForm: !!form, srcFields: form ? [{ label: $t('类型'), value: type, span: 6, isSelect: true, isArea: false, isInput: false, options: SRC_TYPES.map(([v, l]) => ({ value: v, label: $t(l) })), onChange: e => set('type', e.target.value) }].concat(SRC_FIELDS[type].map(field)) : [],
+          srcPreviewLabel: $t('在文档里这样显示：'), srcPreview: { __html: dlg && dlg.preview || '' }, srcFormCancel: () => this.srcSet({ form: null, status: '', preview: '' }), srcSave: () => this.srcSave(),
+          srcSaveLabel: $t(dlg && dlg.then === 'cite' ? '保存并插入引文' : form && form.tag ? '保存修改' : '保存来源'),
+          srcShowList: !!dlg && !form, srcCiteBtn: $t('引用@@src'), srcListLabel: $t('文档的来源 · {n}', { n: (d.sources || []).length }), srcNone: !(d.sources || []).length,
+          srcList: (d.sources || []).map(x => ({ label: this.srcLabel(x), title: this.srcLabel(x), onCite: () => { this.setState({ srcDlg: null }); this.insertCite(x.tag); },
+            onEdit: () => { this.srcSet({ form: this.srcForm(x), status: '' }); this.srcPreview(); }, onDelete: () => this.srcDelete(x.tag) })),
+          srcClose: () => this.setState({ srcDlg: null }) };
+      })(st.srcDlg),
       ...(eq => ({ hasEq: !!eq, eqTitle: eq && eq.el ? $t('编辑公式') : $t('插入公式'), eqLatex: eq ? eq.latex : '',
         eqPreview: { __html: eq && this.MD && eq.latex.trim() ? this.MD.renderMath(eq.latex, true) : '' }, eqError: eq && this.MD ? this.MD.mathError(eq.latex) : '',
         onEqLatex: e => this.setState({ eqDlg: Object.assign({}, this.state.eqDlg, { latex: e.target.value }) }),

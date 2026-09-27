@@ -1,13 +1,16 @@
 // A small DOM for node tests: enough of Element for engine.js's html → blocks walk (blocksFromHtml, inlineHtml, runsOf) on
-// well-formed markup. Selectors: tag names, [attr], [attr="v"], .class, > and descendant combinators, comma lists.
+// well-formed markup. Selectors: tag names, [attr], [attr="v"], .class, > and descendant combinators, comma lists. A tree walker and a
+// collapsed range's insertNode, for putting marks at character offsets (offsetIn, placeAt).
 const VOID = /^(br|hr|img|input|col|wbr)$/i;
 const camel = k => k.replace(/-([a-z])/g, (m, c) => c.toUpperCase());
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-export class Text { constructor(t) { this.nodeType = 3; this.nodeValue = t; this.parentNode = null; } get textContent() { return this.nodeValue; } cloneNode() { return new Text(this.nodeValue); } remove() { const p = this.parentNode; if (p) p.childNodes.splice(p.childNodes.indexOf(this), 1); this.parentNode = null; } }
+export class Text { constructor(t) { this.nodeType = 3; this.nodeValue = t; this.parentNode = null; } get textContent() { return this.nodeValue; } get ownerDocument() { return document; }
+  get parentElement() { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null; } get nextSibling() { const s = this.parentNode ? this.parentNode.childNodes : []; return s[s.indexOf(this) + 1] || null; } cloneNode() { return new Text(this.nodeValue); } remove() { const p = this.parentNode; if (p) p.childNodes.splice(p.childNodes.indexOf(this), 1); this.parentNode = null; } }
 
 export class Element {
   constructor(tag, attrs = {}) { this.nodeType = 1; this.tagName = tag.toUpperCase(); this.attrs = {}; this.childNodes = []; this.parentNode = null; this.style = styleProxy(this); for (const [k, v] of Object.entries(attrs)) this.attrs[k] = v; }
+  get ownerDocument() { return document; }
   get parentElement() { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null; }
   get children() { return this.childNodes.filter(n => n.nodeType === 1); }
   get firstChild() { return this.childNodes[0] || null; }
@@ -66,12 +69,16 @@ function matchesOne(el, sel) {
 }
 function simple(el, s) {
   if (s.startsWith(':scope')) return true;
-  const m = /^([a-z0-9]*)((?:[.#\[][^\[\]]*\]?)*)$/i.exec(s); if (!m) return false;
+  const m = /^([a-z0-9*]*)(.*)$/i.exec(s);
   if (m[1] && m[1] !== '*' && el.tagName !== m[1].toUpperCase()) return false;
-  for (const c of m[2].match(/[.#][^.#\[]+|\[[^\]]+\]/g) || []) {
-    if (c[0] === '.') { if (!el.classList.contains(c.slice(1))) return false; }
-    else if (c[0] === '#') { if (el.id !== c.slice(1)) return false; }
-    else { const a = /^\[([^=~^$*|\]]+)(?:([~^$*|]?)=["']?([^"'\]]*)["']?)?\]$/.exec(c); if (!a) return false; const v = el.getAttribute(a[1]); if (v === null) return false; if (a[3] !== undefined) { if (a[2] === '^' ? !v.startsWith(a[3]) : a[2] === '*' ? !v.includes(a[3]) : v !== a[3]) return false; } }
+  // .class, #id, [attr], [attr="v"] (the value may hold brackets: [data-path="/body/paragraph[1]"]), [attr^="v"], [attr*="v"]
+  const re = /\.([-\w]+)|#([-\w]+)|\[([^=~^$*|\]\s]+)(?:([~^$*|]?)=(?:"([^"]*)"|'([^']*)'|([^\]]*)))?\]/y;
+  for (let pos = 0, c; pos < m[2].length; pos = re.lastIndex) {
+    re.lastIndex = pos; if (!(c = re.exec(m[2]))) return false;
+    if (c[1]) { if (!el.classList.contains(c[1])) return false; continue; }
+    if (c[2]) { if (el.id !== c[2]) return false; continue; }
+    const v = el.getAttribute(c[3]), want = c[5] ?? c[6] ?? c[7]; if (v === null) return false;
+    if (want !== undefined && (c[4] === '^' ? !v.startsWith(want) : c[4] === '*' ? !v.includes(want) : v !== want)) return false;
   }
   return true;
 }
@@ -95,7 +102,23 @@ export function parseNodes(html) {
   }
   return root.childNodes.slice();
 }
-export class DOMParser { parseFromString(s) { const body = new Element('body'); parseNodes(s).forEach(n => body.appendChild(n)); return { body, createElement: t => new Element(t), createTextNode: t => new Text(t) }; } }
-export const document = { createElement: t => new Element(t), createTextNode: t => new Text(t), createTreeWalker() { throw new Error('no tree walker'); } };
+export class DOMParser { parseFromString(s) { const body = new Element('body'); parseNodes(String(s).replace(/^\s*<body>/i, '').replace(/<\/body>\s*$/i, '')).forEach(n => body.appendChild(n)); return Object.assign({ body }, document); } }
+/** document.createTreeWalker: the nodes under `root` in document order, elements (1) and/or text (4) as `show` asks. */
+function treeWalker(root, show) {
+  const want = n => n.nodeType === 1 ? show & 1 : n.nodeType === 3 ? show & 4 : 0;
+  const after = n => { if (n.childNodes && n.childNodes.length) return n.childNodes[0]; for (let e = n; e && e !== root; e = e.parentNode) if (e.nextSibling) return e.nextSibling; return null; };
+  let cur = root;
+  return { get currentNode() { return cur; }, nextNode() { for (let n = after(cur); n; n = after(n)) if (want(n)) return (cur = n); return null; } };
+}
+/** document.createRange, collapsed at its start: insertNode splits a text node there, as a browser does. */
+function range() {
+  let at = null, off = 0;
+  return { setStart(n, o) { at = n; off = o; }, collapse() {}, insertNode(m) {
+    if (at.nodeType !== 3) { at.insertBefore(m, at.childNodes[off] || null); return; }
+    const p = at.parentNode, ref = at.nextSibling, rest = at.nodeValue.slice(off); at.nodeValue = at.nodeValue.slice(0, off);
+    if (rest) { const t = new Text(rest); p.insertBefore(t, ref); p.insertBefore(m, t); } else p.insertBefore(m, ref);
+  } };
+}
+export const document = { createElement: t => new Element(t), createTextNode: t => new Text(t), createTreeWalker: treeWalker, createRange: range };
 /** Installs the stub globally (DOMParser, document, Node); returns the root of html parsed as a body. */
 export function install() { globalThis.DOMParser = DOMParser; globalThis.document ??= document; globalThis.Node ??= { ELEMENT_NODE: 1, TEXT_NODE: 3 }; return html => new DOMParser().parseFromString(html).body; }
