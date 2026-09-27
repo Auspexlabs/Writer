@@ -19,6 +19,14 @@ public static class NodeJson
     public static string Serialize(Node node, int depth, IReadOnlySet<string> skip) =>
         Write(w => WriteNode(w, node, depth, skip.Count == 0 ? null : n => !skip.Contains(n.Kind)));
 
+    /// <summary>Nodes with their properties, their children summarised: what query --props prints.</summary>
+    public static string Many(IEnumerable<Node> nodes) => Write(w =>
+    {
+        w.WriteStartArray();
+        foreach (var n in nodes) WriteNode(w, n, 1);
+        w.WriteEndArray();
+    });
+
     public static string Summaries(IEnumerable<Node> nodes) => Write(w =>
     {
         w.WriteStartArray();

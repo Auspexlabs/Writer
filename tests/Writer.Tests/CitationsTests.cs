@@ -80,6 +80,7 @@ public class CitationsTests
         Assert.Equal("Ian L. Pegg, “Behavior of Technetium in Nuclear Waste Vitrification Processes,” *Journal of Radioanalytical and Nuclear Chemistry* 305, no. 1 (2015): 288, https://doi.org/10.1007/s10967-014-3900-9.",
             Show(chicago.Note([new(Pegg, "288")], new HashSet<string>())));
         Assert.Equal("Pegg, “Behavior of Technetium,” 290.", Show(chicago.Note([new(Pegg, "290")], new HashSet<string> { "Peg15" })));
+        Assert.Equal("Pegg, “Behavior of Technetium.”", Show(chicago.Note([new(Pegg)], new HashSet<string> { "Peg15" }))); // the period inside the quotation marks
         Assert.Equal("Thomas S. Kuhn, *The Structure of Scientific Revolutions* (Chicago: University of Chicago Press, 1962), 45.", Show(chicago.Note([new(Kuhn, "45")], new HashSet<string>())));
         Assert.Equal("Kuhn, *Structure of Scientific Revolutions*, 45.", Show(chicago.Note([new(Kuhn, "45")], new HashSet<string> { "Kuh62" })));
         Assert.Equal("Pegg, Ian L. “Behavior of Technetium in Nuclear Waste Vitrification Processes.” *Journal of Radioanalytical and Nuclear Chemistry* 305, no. 1 (2015): 287–292. https://doi.org/10.1007/s10967-014-3900-9.", Show(chicago.Entry(Pegg)));

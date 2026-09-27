@@ -304,11 +304,14 @@ public sealed class Serve : IDisposable
                         await Json(response, 200, LoginState());
                     }
                     break;
+                case "/cite/page":
+                    await CitePage(response, request.QueryString["url"]);
+                    break;
                 case "/ai/chatgpt/logout" when request.HttpMethod == "POST":
                     if (await JsonBody(request, response, "{}") is not null) await Json(response, 200, AiJson(Logout()));
                     break;
                 default:
-                    await Json(response, 404, Error("NOT_FOUND", "No such endpoint", "Endpoints: POST /run, POST /chat, POST /complete, GET /files, /file, /stat, /binary, /html, /json, /outline, /text, /events, PUT /file, DELETE /file, GET/PUT /ai, POST /ai/test, POST /ai/models, GET/POST /ai/chatgpt/login, POST /ai/chatgpt/cancel, POST /ai/chatgpt/logout, /app/."));
+                    await Json(response, 404, Error("NOT_FOUND", "No such endpoint", "Endpoints: POST /run, POST /chat, POST /complete, GET /files, /file, /stat, /binary, /html, /json, /outline, /text, /events, PUT /file, DELETE /file, GET/PUT /ai, POST /ai/test, POST /ai/models, GET/POST /ai/chatgpt/login, POST /ai/chatgpt/cancel, POST /ai/chatgpt/logout, GET /cite/page, /app/."));
                     break;
             }
         }
@@ -789,6 +792,41 @@ public sealed class Serve : IDisposable
     static readonly TimeSpan PingEvery = TimeSpan.FromSeconds(1);
 
     const string AiExample = "{\"provider\":\"deepseek\",\"baseUrl\":\"https://api.deepseek.com\",\"model\":\"deepseek-flash\",\"apiKey\":\"sk-...\"}";
+
+    /// <summary>A web page's html, for looking a source up from its address (ui/cite.js reads the tags a page carries for citation
+    /// managers): the page is on another site, which a page of the app may not read itself. http and https only, 2 MB at most.</summary>
+    async Task CitePage(HttpListenerResponse response, string? url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+        {
+            await Json(response, 400, Error("USAGE", "Give url=<a web address>", "GET /cite/page?url=https://…"));
+            return;
+        }
+        var handler = _ai?.Handler;
+        using var http = new HttpClient(handler ?? new SocketsHttpHandler(), disposeHandler: handler is null) { Timeout = TimeSpan.FromSeconds(20) };
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; Writer citation lookup)");
+        http.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml");
+        try
+        {
+            using var r = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+            var type = r.Content.Headers.ContentType?.MediaType ?? "text/html";
+            if (!r.IsSuccessStatusCode || !(type.Contains("html") || type.Contains("xml")))
+            {
+                await Json(response, 502, Error("LOOKUP_FAILED", $"The page answered {(int)r.StatusCode} ({type})", "Paste its DOI or fill the source in by hand."));
+                return;
+            }
+            await using var stream = await r.Content.ReadAsStreamAsync();
+            var buffer = new MemoryStream();
+            var chunk = new byte[81920];
+            int n;
+            while (buffer.Length < 2 << 20 && (n = await stream.ReadAsync(chunk)) > 0) buffer.Write(chunk, 0, n);
+            await Text(response, 200, "text/html; charset=utf-8", System.Text.Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)Math.Min(buffer.Length, 2 << 20)));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            await Json(response, 502, Error("LOOKUP_FAILED", "The page could not be read: " + ex.Message, "Check the address, or paste its DOI."));
+        }
+    }
 
     AiStore AiSettings() => _ai ?? throw new WriterException(ErrorCode.Usage, "This server keeps no model settings", "Start it with writer serve or writer app.");
 

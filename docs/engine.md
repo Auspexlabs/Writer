@@ -52,7 +52,7 @@ Build a standalone binary with `./build.sh` (all platforms) or `./build.sh osx-a
 ```
 create <file> [--from template]                         new blank document, or a copy of a template
 get <file> [path] [--depth n] [--raw]                   one node as JSON (path defaults to /)
-query <file> <path>                                     every node matching a path
+query <file> <path> [--props]                           every node matching a path (--props: with their properties)
 add <file> <parent> --type kind [--prop k=v]...         add an element (--index n | --after path | --before path)
 add <file> <parent> --raw xml                           put an element back from its 'get --raw' output (pptx)
 set <file> <path> [--prop k=v]... [--raw xml] [--all]   change properties, or replace the raw XML
@@ -64,6 +64,7 @@ search <file> <text> [--ignore-case]                    blocks whose text contai
 section <file> <heading path> [--md text | --remove]    a heading with its blocks: print, rewrite from markdown, remove
 replace <file> [path] --find a --with b [--preview]     find and replace; Word paragraphs keep their formatting
 formula <file> <cell|range path> <formula> [--check]    xlsx: write (a range fills like Excel) and report references
+cite --style mla|apa|chicago|chicago-date --source json  a source's works-cited entry, in-text citation and notes, as JSON
 batch <file> --run "command" [--run ...]                several commands, one save; nothing written when one fails
 export <file> --to out.ext                              md, docx, pptx, xlsx, html, json
 help [format] [element] [--json]                        elements and properties, generated from the registry
@@ -118,6 +119,7 @@ preview with a one-time code that the first visit swaps for an HttpOnly cookie, 
 | `GET /ai`, `PUT /ai` with `{"provider","baseUrl","model","completeModel","apiKey"}` | the assistant's model settings; the key and the ChatGPT sign-in's tokens never come back (`hasKey`, `account {email, plan}`) |
 | `POST /ai/test`, `POST /ai/models` | one small request with the given (or saved) settings → `{ok, error}`; the models a service lists → `{models:[{id, name}]}` |
 | `POST /complete` with `{"before","after","hint"}` | AI autocomplete: `{"text"}`, one line to show after the caret |
+| `GET /cite/page?url=` | a web page's html (http/https only, 2 MB), for looking a source up from its address; 502 when it is not a page |
 | `POST /ai/chatgpt/login`, `GET /ai/chatgpt/login`, `POST /ai/chatgpt/cancel`, `POST /ai/chatgpt/logout` | ChatGPT sign-in (below): start it (`{url, opened}`), follow it (`{state}`: waiting, done, error, cancelled), stop it, delete its tokens |
 | `GET /app/` | the editor app |
 

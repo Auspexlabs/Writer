@@ -684,9 +684,21 @@ sealed class Out
             if (punctuation == '.' && text[^2] == ',') _spans[^1] = new(text[..^2] + ".”", _spans[^1].Italic);
             return this;
         }
+        if (last == '”' && punctuation is '.' or ',') { _spans[^1] = new(text[..^1] + punctuation + "”", _spans[^1].Italic); return this; } // inside the quotation marks
         if (last is '.' or '?' or '!') return this;
         if (last == ',' && punctuation == '.') { _spans[^1] = new(text[..^1] + ".", _spans[^1].Italic); return this; }
         // punctuation after italic text is roman, as the styles set it
         return Add(punctuation.ToString());
     }
+}
+
+/// <summary>Sources as the engine's JSON gives them (the fields of a document's sources prop), for what formats a source without a
+/// document: the cite command.</summary>
+public static class Sources
+{
+    /// <summary>A source from its JSON, its tag made as Word makes one when it has none.</summary>
+    public static Source Parse(string json) => Docx.DocxSources.Parse(json);
+
+    /// <summary>A style by the name a document gives it: mla, apa, chicago, chicago-date.</summary>
+    public static CiteStyle? StyleOf(string name) => Docx.DocxSources.StyleOf(name);
 }

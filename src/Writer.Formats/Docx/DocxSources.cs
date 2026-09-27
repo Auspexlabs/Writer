@@ -135,18 +135,7 @@ static class DocxSources
             Edit(doc, root => root.Elements(B + "Source").Where(e => string.Equals((string?)e.Element(B + "Tag"), existing.Tag, StringComparison.OrdinalIgnoreCase)).Remove());
             return existing.Tag;
         }
-        var s = existing ?? new Source();
-        string Field(string name, string was) => Str(o, name) is { } v ? (v == "none" ? "" : v.Trim()) : was;
-        s = s with
-        {
-            Type = Field("type", existing?.Type ?? "article") is { Length: > 0 } t ? Normalize(t) : "article",
-            Authors = o.TryGetProperty("authors", out var a) ? PeopleOf(a) : s.Authors,
-            Editors = o.TryGetProperty("editors", out var e) ? PeopleOf(e) : s.Editors,
-            Title = Field("title", s.Title), Container = Field("container", s.Container), Publisher = Field("publisher", s.Publisher), Place = Field("place", s.Place),
-            Year = Field("year", s.Year), Month = Field("month", s.Month), Day = Field("day", s.Day), Volume = Field("volume", s.Volume), Issue = Field("issue", s.Issue),
-            Pages = Field("pages", s.Pages), Edition = Field("edition", s.Edition), Url = Field("url", s.Url), Doi = Field("doi", s.Doi), Isbn = Field("isbn", s.Isbn),
-            Accessed = Field("accessed", s.Accessed),
-        };
+        var s = Apply(existing ?? new Source(), o);
         if (s.Title.Length == 0 && s.Authors.Count == 0) throw new WriterException(ErrorCode.Validation, "A source needs a title or an author", "Give at least its title.");
         if (existing is null) s = s with { Tag = tag.Length > 0 ? Unique(doc, tag) : Unique(doc, NewTag(s)) };
         Edit(doc, root =>
@@ -156,6 +145,32 @@ static class DocxSources
             ToXml(element, s);
         });
         return s.Tag;
+    }
+
+    /// <summary>A source from JSON on its own (the fields of Json), its tag made as Word makes one when it has none: what the cite
+    /// command formats.</summary>
+    public static Source Parse(string json)
+    {
+        using var parsed = JsonDocument.Parse(json);
+        if (parsed.RootElement.ValueKind != JsonValueKind.Object) throw new WriterException(ErrorCode.Validation, "A source is a JSON object", "Give {\"type\":\"article\",\"title\":\"…\"}.");
+        var s = Apply(new Source(), parsed.RootElement);
+        return s with { Tag = Str(parsed.RootElement, "tag") is { Length: > 0 } tag ? tag : NewTag(s) };
+    }
+
+    /// <summary>A source with the fields of a JSON object written: one given as "" or none is cleared, one left out stays.</summary>
+    static Source Apply(Source s, JsonElement o)
+    {
+        string Field(string name, string was) => Str(o, name) is { } v ? (v == "none" ? "" : v.Trim()) : was;
+        return s with
+        {
+            Type = Field("type", s.Type) is { Length: > 0 } t ? Normalize(t) : "article",
+            Authors = o.TryGetProperty("authors", out var a) ? PeopleOf(a) : s.Authors,
+            Editors = o.TryGetProperty("editors", out var e) ? PeopleOf(e) : s.Editors,
+            Title = Field("title", s.Title), Container = Field("container", s.Container), Publisher = Field("publisher", s.Publisher), Place = Field("place", s.Place),
+            Year = Field("year", s.Year), Month = Field("month", s.Month), Day = Field("day", s.Day), Volume = Field("volume", s.Volume), Issue = Field("issue", s.Issue),
+            Pages = Field("pages", s.Pages), Edition = Field("edition", s.Edition), Url = Field("url", s.Url), Doi = Field("doi", s.Doi), Isbn = Field("isbn", s.Isbn),
+            Accessed = Field("accessed", s.Accessed),
+        };
     }
 
     static string? Str(JsonElement o, string name) => o.TryGetProperty(name, out var v) ? v.ValueKind switch
@@ -344,8 +359,9 @@ static class DocxSources
     static void Edit(DocxDocument doc, Action<XElement> change)
     {
         var part = Part(doc);
+        // made in MLA, the style a document without one is written in (Word would make it APA)
         var xml = part is not null ? Load(part)! : new XDocument(new XElement(B + "Sources", new XAttribute(XNamespace.Xmlns + "b", B.NamespaceName), new XAttribute("xmlns", B.NamespaceName),
-            new XAttribute("SelectedStyle", "\\APASixthEditionOfficeOnline.xsl"), new XAttribute("StyleName", "APA"), new XAttribute("Version", "6")));
+            new XAttribute("SelectedStyle", "\\MLASeventhEditionOfficeOnline.xsl"), new XAttribute("StyleName", "MLA"), new XAttribute("Version", "7")));
         change(xml.Root!);
         if (part is null)
         {

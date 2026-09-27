@@ -147,6 +147,7 @@ public class DocxCitationTests
     {
         var (doc, p) = Essay("chicago");
         Mutations.Set(doc.Root, Props(("source", KuhnJson)));
+        Mutations.Add(p, "citation", Props(("sources", "Peg15"), ("at", "4")), null); // a citation in the text (author-date here) is no note: the first note is still in full
         var first = Mutations.Add(p, "footnote", Props(("cite", "Peg15"), ("pages", "288"), ("at", "13")), null);
         var second = Mutations.Add(p, "footnote", Props(("cite", "Peg15"), ("pages", "290"), ("at", "53"), ("text", "Compare the melter data.")), null);
         Assert.Equal("Ian L. Pegg, “Behavior of Technetium in Nuclear Waste Vitrification Processes,” Journal of Radioanalytical and Nuclear Chemistry 305, no. 1 (2015): 288, https://doi.org/10.1007/s10967-014-3900-9.", first.GetProps()["citeText"]);

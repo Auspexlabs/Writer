@@ -12,7 +12,8 @@ public sealed class Args
     {
         ["create"] = ("<file> [--from template]", "New blank document, or a copy of a template", ["from"], []),
         ["get"] = ("<file> [path] [--depth n] [--raw]", "One node as JSON (path defaults to /)", ["depth"], ["raw"]),
-        ["query"] = ("<file> <path>", "Every node matching a path", [], []),
+        ["query"] = ("<file> <path> [--props]", "Every node matching a path; --props with their properties", [], ["props"]),
+        ["cite"] = ("--style mla|apa|chicago|chicago-date --source json [--pages n]", "A source as a citation style writes it, no document needed: its works-cited entry, its citation in the text, Chicago's notes", ["style", "source", "pages"], []),
         ["add"] = ("<file> <parent> (--type kind [--prop k=v]... | --raw xml) [--index n | --after path | --before path]", "Add an element, or put one back from 'get --raw' output", ["type", "prop", "raw", "index", "after", "before"], []),
         ["set"] = ("<file> <path> [--prop k=v]... [--raw xml] [--all]", "Change properties, or replace the raw XML", ["prop", "raw"], ["all"]),
         ["remove"] = ("<file> <path> [--all]", "Delete elements", [], ["all"]),

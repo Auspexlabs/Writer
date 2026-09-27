@@ -14,6 +14,7 @@ static class Commands
         "create" => Create(a),
         "get" => Get(a),
         "query" => Query(a),
+        "cite" => Cite(a),
         "add" => Add(a),
         "set" => Set(a),
         "remove" => Remove(a),
@@ -68,7 +69,39 @@ static class Commands
     static string Query(Args a)
     {
         using var doc = Files.Open(a.Need(0, "file"));
-        return NodeJson.Summaries(PathResolver.Query(doc.Root, a.Need(1, "path"))) + "\n";
+        var nodes = PathResolver.Query(doc.Root, a.Need(1, "path"));
+        return (a.Flag("props") ? NodeJson.Many(nodes) : NodeJson.Summaries(nodes)) + "\n";
+    }
+
+    /// <summary>A source as a citation style writes it, no document needed: its entry in the works-cited list, its citation in the
+    /// text and, for Chicago, its first and later notes; each also as html with titles in &lt;i&gt;.</summary>
+    static string Cite(Args a)
+    {
+        var name = a.Opt("style") ?? "mla";
+        var style = Formats.Cite.Sources.StyleOf(name) ?? throw new WriterException(ErrorCode.Usage, $"No citation style '{name}'", "Use --style mla, apa, chicago or chicago-date.");
+        var source = Formats.Cite.Sources.Parse(a.Opt("source") ?? throw new WriterException(ErrorCode.Usage, "--source is required", "Give --source '{\"type\":\"book\",\"authors\":[\"Thomas S. Kuhn\"],\"title\":\"…\",\"year\":\"1962\"}'."));
+        var cites = new Formats.Cite.Citations(style, [source]);
+        var cited = new Formats.Cite.Cited(source, a.Opt("pages") ?? "");
+        static string Plain(IEnumerable<Formats.Cite.Span> spans) => string.Concat(spans.Select(x => x.Text));
+        static string Html(IEnumerable<Formats.Cite.Span> spans) => string.Concat(spans.Select(x => x.Italic ? "<i>" + System.Net.WebUtility.HtmlEncode(x.Text) + "</i>" : System.Net.WebUtility.HtmlEncode(x.Text)));
+        var entry = cites.Entry(source);
+        var inText = Formats.Cite.Citations.InNotes(style) ? new Formats.Cite.Citations(Formats.Cite.CiteStyle.ChicagoDate, [source]).InText([cited]) : cites.InText([cited]);
+        return NodeJson.Write(w =>
+        {
+            w.WriteStartObject();
+            w.WriteString("style", name);
+            w.WriteString("tag", source.Tag);
+            w.WriteString("entry", Plain(entry));
+            w.WriteString("entryHtml", Html(entry));
+            w.WriteString("inText", Plain(inText));
+            if (Formats.Cite.Citations.InNotes(style))
+            {
+                w.WriteString("note", Plain(cites.Note([cited], new HashSet<string>())));
+                w.WriteString("noteHtml", Html(cites.Note([cited], new HashSet<string>())));
+                w.WriteString("shortNote", Plain(cites.Note([cited], new HashSet<string> { source.Tag })));
+            }
+            w.WriteEndObject();
+        }) + "\n";
     }
 
     static string Add(Args a)

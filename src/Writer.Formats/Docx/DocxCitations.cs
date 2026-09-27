@@ -366,9 +366,12 @@ static class DocxCitations
                 {
                     var f = CiteField.Of(sdt);
                     var cites = Cites(f);
-                    if (IsNoteCitation(sdt)) SetResult(sdt, f, Affix(f, new Citations(CiteStyle.Chicago, sources).Note(cites, cited)));
+                    if (IsNoteCitation(sdt))
+                    {
+                        SetResult(sdt, f, Affix(f, new Citations(CiteStyle.Chicago, sources).Note(cites, cited)));
+                        foreach (var c in cites) cited.Add(c.Source.Tag); // a source's first note is its full one; a citation in the text is no note
+                    }
                     else SetResult(sdt, f, Affix(f, inText.InText(cites, f.NoAuthor, f.NoYear)));
-                    foreach (var c in cites) cited.Add(c.Source.Tag);
                 }
                 else if (e is W.FootnoteReference fr && fr.Id?.Value is { } fid && DocxFootnotes.Note(doc, false, fid.ToString(CultureInfo.InvariantCulture)) is { } footnote) Draw(footnote);
                 else if (e is W.EndnoteReference er && er.Id?.Value is { } eid && DocxFootnotes.Note(doc, true, eid.ToString(CultureInfo.InvariantCulture)) is { } endnote) Draw(endnote);
