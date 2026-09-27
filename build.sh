@@ -26,8 +26,9 @@ fi
 
 for rid in "${rids[@]}"; do
   echo "== $rid"
+  # ReadyToRun: compiled ahead, so a command does not JIT the engine first (a view 0.9 s → 0.4 s; twice the size)
   dotnet publish src/Writer.Cli/Writer.Cli.csproj -c Release -r "$rid" --self-contained \
-    -p:PublishSingleFile=true -p:PublishTrimmed=true -p:EnableCompressionInSingleFile=true \
+    -p:PublishSingleFile=true -p:PublishTrimmed=true -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=true \
     -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none \
     -o "dist/$rid" --nologo -v quiet
   rm -rf "dist/$rid/ui" && cp -R ui "dist/$rid/ui"   # writer app serves the UI from next to the binary
