@@ -24,6 +24,7 @@ sealed class PptxRoot(PptxDocument doc) : Node
         {
             ["format"] = "pptx",
             ["slides"] = doc.Slides.Count.ToString(CultureInfo.InvariantCulture),
+            ["layouts"] = PptxLayouts.Read(doc),
             ["width"] = width.ToString(CultureInfo.InvariantCulture),
             ["height"] = height.ToString(CultureInfo.InvariantCulture),
         };
@@ -82,11 +83,14 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         {
             if (bg.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } color) props["background"] = color.ToUpperInvariant();
             if (bg.GetFirstChild<A.BlipFill>() is not null) props["backgroundImage"] = "true";
+            if (bg.GetFirstChild<A.GradientFill>() is { } gradient && PptxOutline.GradientOf(gradient) is { } g) props["backgroundGradient"] = g;
         }
         if (slide.NotesSlidePart is { } notes && PptxDocument.NotesBody(notes) is { } body) props["notes"] = PptxText.BodyText(body.TextBody);
         if (slide.Slide?.Show?.Value == false) props["hidden"] = "true";
         if (Transition() is { } transition)
         {
+            if (transition.AdvanceAfterTime?.Value is { } advance) props["advanceAfter"] = advance.ToString(CultureInfo.InvariantCulture);
+            if (transition.AdvanceOnClick?.Value is { } click) props["advanceOnClick"] = click ? "true" : "false";
             if (TransitionName(transition) is { } name) props["transition"] = name;
             if (int.TryParse(transition.Duration?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var ms)) props["duration"] = ms.ToString(CultureInfo.InvariantCulture);
         }
@@ -96,6 +100,12 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         return props;
     }
 
+    public override (string ContentType, byte[] Data)? GetBinary()
+    {
+        var bg = PptxDecor.Background(slide);
+        return bg is { } b ? PptxImage.Bytes(b.Part, b.Background.BackgroundProperties?.GetFirstChild<A.BlipFill>()?.Blip?.Embed?.Value) : null;
+    }
+
     /// <summary>The background the slide shows when it declares none of its own: its layout's or master's, theme colours resolved.</summary>
     public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props)
     {
@@ -103,7 +113,8 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         var result = new Dictionary<string, string>();
         var inherited = slide.SlideLayoutPart?.SlideLayout?.CommonSlideData?.Background ?? slide.SlideLayoutPart?.SlideMasterPart?.SlideMaster?.CommonSlideData?.Background;
         if (look.Background(inherited) is { } fallback && fallback != "none") result["inheritedBackground"] = fallback;
-        if (!props.ContainsKey("background") && !props.ContainsKey("backgroundImage") && look.Background(PptxDecor.Background(slide)?.Background) is { } background && background != "none") result["background"] = background;
+        if (!props.ContainsKey("background") && !props.ContainsKey("backgroundGradient") && !props.ContainsKey("backgroundImage") && look.Background(PptxDecor.Background(slide)?.Background) is { } background && background != "none") result["background"] = background;
+        if (inherited?.BackgroundProperties?.GetFirstChild<A.GradientFill>() is { } grad && PptxOutline.GradientOf(grad) is { } g) result["inheritedBackgroundGradient"] = g;
         return result.Count == 0 ? null : result;
     }
 
@@ -142,7 +153,7 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         var transition = Transition() ?? new P.Transition();
         var holder = transition.Parent is AlternateContentChoice choice ? choice.Parent : transition.Parent is null ? null : transition;
         holder?.Remove();
-        if (type == "none") return;
+        if (type == "none") { foreach (var old in transition.ChildElements.ToList()) old.Remove(); transition.Duration = null; if (transition.AdvanceAfterTime is null && transition.AdvanceOnClick?.Value != false) return; type = null; }
         if (transition.Parent is not null) transition.Remove();
         if (type is not null)
         {
@@ -195,6 +206,21 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
                 break;
             case "distribute":
                 PptxDesign.Distribute(this, doc.SlideSize.Width, doc.SlideSize.Height, value);
+                break;
+            case "backgroundGradient":
+                slide.Slide!.CommonSlideData!.Background = value is "" or "none" ? null : new P.Background(new P.BackgroundProperties(PptxOutline.Gradient(value, name), new A.EffectList()));
+                break;
+            case "backgroundImage":
+                if (value is "" or "none") { slide.Slide!.CommonSlideData!.Background = null; break; }
+                var (imageBytes, _) = ImageInfo.Load(value);
+                var imageInfo = ImageInfo.Read(imageBytes); var imagePart = slide.AddImagePart(imageInfo.ContentType); imagePart.FeedData(new MemoryStream(imageBytes));
+                slide.Slide!.CommonSlideData!.Background = new P.Background(new P.BackgroundProperties(new A.BlipFill(new A.Blip { Embed = slide.GetIdOfPart(imagePart) }, new A.Stretch(new A.FillRectangle())), new A.EffectList()));
+                break;
+            case "advanceAfter" or "advanceOnClick":
+                var transition = Transition(); if (transition is null) { transition = new P.Transition(); slide.Slide!.AddChild(transition); }
+                if (name == "advanceAfter") transition.AdvanceAfterTime = value == "0" ? null : value;
+                else transition.AdvanceOnClick = value != "false";
+                EditTransition(null, null); // refresh AlternateContent fallback too
                 break;
             case "background":
                 var data = slide.Slide!.CommonSlideData!;
@@ -872,6 +898,7 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
         T.Apply(props);
         var grid = Table.TableGrid?.Elements<A.GridColumn>().Select(c => c.Width?.Value ?? 0).ToList();
         if (grid is { Count: > 0 }) props["widths"] = NodeJson.Compact(w => { w.WriteStartArray(); foreach (var width in grid) w.WriteStringValue(Units.FormatLength(width)); w.WriteEndArray(); });
+        props["heights"] = NodeJson.Compact(w => { w.WriteStartArray(); foreach (var row in rows) w.WriteStringValue(Units.FormatLength(row.Height?.Value ?? 370840)); w.WriteEndArray(); });
         var pr = Table.TableProperties;
         if (pr?.GetFirstChild<A.TableStyleId>()?.Text is { Length: > 0 } styleId) props["style"] = Styles.FirstOrDefault(s => s.Value.Equals(styleId, StringComparison.OrdinalIgnoreCase)).Key ?? styleId;
         if (pr?.FirstRow?.Value == true) props["header"] = "true";
@@ -1040,6 +1067,12 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
                 if (name == "w" && Table.TableGrid is { } g && g.Elements<A.GridColumn>().Sum(c => c.Width?.Value ?? 0) is var sum and > 0)
                     foreach (var col in g.Elements<A.GridColumn>()) col.Width = (long)Math.Round((col.Width?.Value ?? 0) * (double)xfrm.Extents!.Cx!.Value / sum); // the columns keep their shares
                 break;
+            case "heights":
+                var heights = ParseCells(value).Select(Units.ParseLength).ToList(); var tableRows = Table.Elements<A.TableRow>().ToList();
+                if (heights.Count != tableRows.Count || heights.Any(h => h <= 0)) throw new WriterException(ErrorCode.Validation, "Give one positive height for each table row", "Example: heights='[\"1cm\",\"2cm\"]'.");
+                for (var i = 0; i < heights.Count; i++) tableRows[i].Height = heights[i];
+                if (frame.Transform?.Extents is { } rowExtents) rowExtents.Cy = heights.Sum();
+                break;
             case "widths":
                 var widths = ParseCells(value).Select(Units.ParseLength).ToList();
                 var columns = Table.TableGrid?.Elements<A.GridColumn>().ToList() ?? [];
@@ -1199,6 +1232,7 @@ sealed class PptxCell(PptxDocument doc, SlidePart slide, A.TableCell cell) : Nod
         var props = new Dictionary<string, string> { ["text"] = PptxText.BodyText(cell.TextBody), ["html"] = string.Join("<br>", Children.Where(c => c.Kind == "paragraph").Select(Exporter.HtmlOf)) };
         if (PptxText.AlignOf(PptxText.Paragraphs(cell.TextBody).FirstOrDefault()?.ParagraphProperties) is { } align) props["align"] = align;
         if (cell.TableCellProperties?.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } fill) props["fill"] = fill.ToUpperInvariant();
+        if (cell.TableCellProperties?.Anchor?.InnerText is { } anchor) props["valign"] = anchor == "ctr" ? "middle" : anchor == "b" ? "bottom" : "top";
         if (cell.GridSpan?.Value is { } cs && cs > 1) props["colspan"] = cs.ToString(CultureInfo.InvariantCulture);
         if (cell.RowSpan?.Value is { } rs && rs > 1) props["rowspan"] = rs.ToString(CultureInfo.InvariantCulture);
         if (cell.HorizontalMerge?.Value == true || cell.VerticalMerge?.Value == true) props["covered"] = "true";
@@ -1218,6 +1252,7 @@ sealed class PptxCell(PptxDocument doc, SlidePart slide, A.TableCell cell) : Nod
             case "text": PptxText.SetBody(body, slide, [new RunSpec(value)]); break;
             case "md": PptxText.SetBody(body, slide, InlineMarkdown.Parse(value), Docx.DocxReplace.Source.Markdown); break;
             case "html": PptxText.SetBody(body, slide, InlineHtml.Parse(value), Docx.DocxReplace.Source.Html); break;
+            case "valign": (cell.TableCellProperties ??= new A.TableCellProperties()).Anchor = value == "middle" ? A.TextAnchoringTypeValues.Center : value == "bottom" ? A.TextAnchoringTypeValues.Bottom : A.TextAnchoringTypeValues.Top; break;
             case "align":
                 foreach (var p in body.Elements<A.Paragraph>()) (p.ParagraphProperties ??= new A.ParagraphProperties()).Alignment = PptxText.AlignValue(value);
                 break;

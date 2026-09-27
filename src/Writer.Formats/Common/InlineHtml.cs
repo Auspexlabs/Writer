@@ -219,7 +219,7 @@ public static partial class InlineHtml
 
     static RunSpec FontAttrs(RunSpec s, Dictionary<string, string> attrs) => s with
     {
-        Font = NonEmpty(attrs, "data-font-west") ?? s.Font,
+        Font = NonEmpty(attrs, "data-font-west") ?? (attrs.ContainsKey("data-font-ea") ? null : s.Font),
         FontEa = NonEmpty(attrs, "data-font-ea") ?? s.FontEa,
     };
 

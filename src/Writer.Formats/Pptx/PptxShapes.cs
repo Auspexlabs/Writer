@@ -17,6 +17,8 @@ static class PptxOutline
     public static void Read(P.ShapeProperties? spPr, Dictionary<string, string> props)
     {
         if (spPr is null) return;
+        var fillAlpha = spPr.ChildElements.FirstOrDefault(e => e is A.SolidFill or A.GradientFill)?.Descendants<A.Alpha>().FirstOrDefault()?.Val?.Value;
+        if (fillAlpha is { } alpha) props["fillOpacity"] = (alpha / 1000.0).ToString("0.###", Inv);
         if (spPr.GetFirstChild<A.Outline>() is { } ln)
         {
             if (ln.Width?.Value is { } w) props["lineWidth"] = (w / 12700.0).ToString("0.##", Inv);
@@ -36,6 +38,10 @@ static class PptxOutline
     {
         switch (name)
         {
+            case "fillOpacity":
+                var fill = spPr.ChildElements.FirstOrDefault(e => e is A.SolidFill or A.GradientFill);
+                if (fill is not null) foreach (var color in fill.Descendants().Where(e => e is A.RgbColorModelHex or A.SchemeColor or A.PresetColor or A.SystemColor).ToList()) { color.RemoveAllChildren<A.Alpha>(); color.Append(new A.Alpha { Val = (int)Math.Round(double.Parse(value, Inv) * 1000) }); }
+                return true;
             case "lineWidth": Line(spPr).Width = (int)Math.Round(double.Parse(value, Inv) * 12700); return true;
             case "dash":
                 var ln = Line(spPr);

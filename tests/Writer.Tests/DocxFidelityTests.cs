@@ -19,7 +19,7 @@ public class DocxFidelityTests
         _ = NodeJson.Serialize(doc.Root, int.MaxValue);
         using var saved = new MemoryStream();
         doc.Save(saved);
-        Assert.Null(PackageCompare.Diff(original, saved.ToArray()));
+        var diff = PackageCompare.Diff(original, saved.ToArray()); Assert.True(diff is null, diff);
     }
 
     /// <summary>What a save from the editor does to paragraphs the user retyped: every word changed, then set back. The runs cut apart on
@@ -40,6 +40,6 @@ public class DocxFidelityTests
         }
         using var saved = new MemoryStream();
         doc.Save(saved);
-        Assert.Null(PackageCompare.Diff(original, saved.ToArray()));
+        var diff = PackageCompare.Diff(original, saved.ToArray()); Assert.True(diff is null, diff);
     }
 }

@@ -1,5 +1,5 @@
 // Shared slide kit + file import/export/print for 素笺 Office.
-export { formatSlideText } from './slide-format.js';
+export { formatSlideText, listMarker } from './slide-format.js';
 export { findSlides, replaceSlideHits } from './slide-find.js';
 import { sheetPrint } from './sheet-print.js';
 import { pictureView, picSrc } from './picture.js';
@@ -59,6 +59,9 @@ POLY.arrow = POLY.rightArrow; // the key older decks in memory carry
 /** stroke-dasharray for a dash preset at a line width, px. */
 export const dashArray = (dash, sw) => ({ dash: [4, 3], dot: [1, 3], lgDash: [8, 3], dashDot: [4, 3, 1, 3], lgDashDot: [8, 3, 1, 3], sysDash: [3, 1], sysDot: [1, 1], sysDashDot: [3, 1, 1, 1] }[dash] || []).map(n => Math.max(1, n * sw)).join(' ');
 /** A fill value as CSS: a colour, or grad:A,B,angle (angle as the file has it: 0 left to right, 90 top to bottom). */
+export function slideDecor(s, H = 900) { const decor = (s.decor || []).filter(o => !o.background || !(s.bg || s.bgGradient || s.bgImage) && o.source !== 'slide'); if (s.bgImage) decor.unshift(txt({id:'bg-'+s.id,t:'image',src:s.bgImage,x:0,y:0,w:SW,h:H,html:''})); return decor; }
+export function slideBackground(s, th) { const gradient = s.bgGradient || (!s.bg && !s.bgImage && s.inheritedBgGradient); return gradient ? fillCss('grad:' + gradient.split(',').map((v,i)=>i<2 && !v.startsWith('#') ? '#' + v : v).join(',')) : s.bg || s.inheritedBg || th.bg; }
+const alphaFill = (css, alpha) => alpha == null || alpha === 1 ? css : String(css || '').replace(/#([0-9a-f]{6})/gi, (_, c) => `rgba(${[0,2,4].map(i => parseInt(c.slice(i,i+2),16)).join(',')},${alpha})`);
 export const fillCss = f => f && f.startsWith('grad:') ? (g => `linear-gradient(${(+g[2] || 0) + 90}deg,${g[0]},${g[1]})`)(f.slice(5).split(',')) : f;
 /** The two points of a line in its own box: [start, end]. */
 export function lineEnds(o) { const p1 = [o.flipH ? o.w : 0, o.flipV ? o.h : 0]; return [p1, [o.w - p1[0], o.h - p1[1]]]; }
@@ -82,6 +85,7 @@ export function relinkLines(s) {
 export const TABLE_STYLES = [['MediumStyle2Accent1', '中等样式 2'], ['LightStyle1', '浅色样式 1'], ['LightStyle2Accent1', '浅色样式 2'], ['DarkStyle1', '深色样式 1'], ['TableGrid', '网格'], ['NoStyle', '无样式']];
 const mixHex = (a, b, t) => { const h = x => x.replace('#', ''); if (h(a).length !== 6 || h(b).length !== 6) return a; return '#' + [0, 2, 4].map(i => Math.round(parseInt(h(a).slice(i, i + 2), 16) * (1 - t) + parseInt(h(b).slice(i, i + 2), 16) * t).toString(16).padStart(2, '0')).join(''); };
 /** A table's column widths in slide units: its own, else equal shares of its width. */
+export const rowHeights = o => o.rowH?.length === o.rows?.length ? o.rowH : Array.from({length:o.rows?.length || 1},()=>o.h / (o.rows?.length || 1));
 export const colWidths = o => { const n = Math.max(1, ...(o.rows || []).map(r => r.length)); return o.colW && o.colW.length === n ? o.colW : Array.from({ length: n }, () => Math.round(o.w / n)); };
 /** The cells a merge hides, "r:c". */
 export const coveredCells = merges => { const s = new Set(); for (const m of merges || []) for (let i = m.r; i < m.r + m.rs; i++) for (let j = m.c; j < m.c + m.cs; j++) if (i !== m.r || j !== m.c) s.add(i + ':' + j); return s; };
@@ -101,7 +105,7 @@ export function tableCells(o, th) {
     else if (grid) border = `1px solid ${gray}`;
     else if (!none) { bg = isH ? th.acc : band ? th.card : 'transparent'; color = isH ? '#FFFFFF' : th.fg; border = `1px solid ${th.bg}`; }
     if (own.fill) bg = own.fill; if (own.line) border = own.line === 'none' ? 'none' : `1px solid ${own.line}`;
-    out.push({ key: o.id + ':' + key, r, c, text: rows[r][c] || '', bg, color, fw: isH || (firstCol && c === 0) ? 700 : 400, border, bb, jc: own.align === 'center' ? 'center' : own.align === 'right' ? 'flex-end' : 'flex-start', align: own.align || 'left',
+    out.push({ key: o.id + ':' + key, r, c, text: rows[r][c] || '', html: {__html:own.html || esc(rows[r][c] || '').replace(/\n/g,'<br>')}, va: own.valign === 'top' ? 'flex-start' : own.valign === 'bottom' ? 'flex-end' : 'center', bg, color, fw: isH || (firstCol && c === 0) ? 700 : 400, border, bb, jc: own.align === 'center' ? 'center' : own.align === 'right' ? 'flex-end' : 'flex-start', align: own.align || 'left',
       gc: `${c + 1} / span ${m ? m.cs : 1}`, gr: `${r + 1} / span ${m ? m.rs : 1}`, cs: m ? m.cs : 1, rs: m ? m.rs : 1 });
   }
   return out;
@@ -109,8 +113,8 @@ export function tableCells(o, th) {
 const shiftMerges = (merges, axis, at, delta) => (merges || []).map(m => { const p = m[axis], n = axis === 'r' ? m.rs : m.cs, o = Object.assign({}, m); if (at <= p) o[axis] = p + delta; else if (at < p + n) { if (axis === 'r') o.rs = n + delta; else o.cs = n + delta; } return o; }).filter(m => m.rs > 0 && m.cs > 0 && (m.rs > 1 || m.cs > 1));
 const shiftCells = (cells, axis, at, delta) => Object.fromEntries(Object.entries(cells || {}).flatMap(([k, v]) => { const [r, c] = k.split(':').map(Number), p = axis === 'r' ? r : c; if (delta < 0 && p === at) return []; const q = at <= p ? p + delta : p; return [[axis === 'r' ? q + ':' + c : r + ':' + q, v]]; }));
 /** A row inserted before index at (at = rows.length appends). */
-export function tableInsertRow(o, at) { const nc = Math.max(1, ...o.rows.map(r => r.length)); o.rows.splice(at, 0, Array.from({ length: nc }, () => '')); o.merges = shiftMerges(o.merges, 'r', at, 1); o.cells = shiftCells(o.cells, 'r', at, 1); o.h = Math.round(o.h * o.rows.length / (o.rows.length - 1)); return o; }
-export function tableDeleteRow(o, r) { if (o.rows.length < 2) return o; o.rows.splice(r, 1); o.merges = shiftMerges(o.merges, 'r', r, -1); o.cells = shiftCells(o.cells, 'r', r, -1); o.h = Math.round(o.h * o.rows.length / (o.rows.length + 1)); return o; }
+export function tableInsertRow(o, at) { const heights=rowHeights(o); heights.splice(at,0,heights[Math.min(at,heights.length-1)]); o.rowH=heights; const nc = Math.max(1, ...o.rows.map(r => r.length)); o.rows.splice(at, 0, Array.from({ length: nc }, () => '')); o.merges = shiftMerges(o.merges, 'r', at, 1); o.cells = shiftCells(o.cells, 'r', at, 1); o.h = heights.reduce((a,b)=>a+b,0); return o; }
+export function tableDeleteRow(o, r) { if (o.rows.length < 2) return o; const heights=rowHeights(o); heights.splice(r,1); o.rowH=heights; o.rows.splice(r, 1); o.merges = shiftMerges(o.merges, 'r', r, -1); o.cells = shiftCells(o.cells, 'r', r, -1); o.h = heights.reduce((a,b)=>a+b,0); return o; }
 export function tableInsertCol(o, at) { const w = colWidths(o), nw = w[Math.min(at, w.length - 1)]; o.rows.forEach(r => r.splice(at, 0, '')); w.splice(at, 0, nw); o.colW = w; o.w = w.reduce((a, b) => a + b, 0); o.merges = shiftMerges(o.merges, 'c', at, 1); o.cells = shiftCells(o.cells, 'c', at, 1); return o; }
 export function tableDeleteCol(o, c) { const w = colWidths(o); if (w.length < 2) return o; o.rows.forEach(r => r.splice(c, 1)); w.splice(c, 1); o.colW = w; o.w = w.reduce((a, b) => a + b, 0); o.merges = shiftMerges(o.merges, 'c', c, -1); o.cells = shiftCells(o.cells, 'c', c, -1); return o; }
 /** 合并单元格: the range becomes one cell (the texts join it), merges it touches go. */
@@ -315,19 +319,19 @@ export function objView(o, th, ptPx) {
   if (o.shape === 'ellipse') radius = '50%';
   if (o.shape === 'pill') radius = Math.min(o.w, o.h) / 2 + 'px';
   const gid = 'g' + String(o.id).replace(/\W/g, '_');
-  const svg = isLine ? lineSvg(o, stroke) : poly ? svgOf(o, fill, stroke, sw, o.dash, gid) : '';
+  const svg = isLine ? lineSvg(o, stroke) : poly ? svgOf(o, fill, stroke, sw, o.dash, gid).replace(/fill="(?!none)/g, `fill-opacity="${o.fillOpacity ?? 1}" fill="`) : '';
   const fs = Math.round(o.fs * (o.autofit === 'shrink' && o.fit ? o.fit : 1) * 10) / 10; // 溢出时缩排文字: the scale the box needs
   const view = {
     left: o.x + 'px', top: o.y + 'px', width: o.w + 'px', height: o.h + 'px', tf: `rotate(${o.rot || 0}deg)`, op: o.op ?? 1,
     flt: o.shadow ? 'drop-shadow(0 3px 6px rgba(0,0,0,0.35))' : 'none',
-    bg: poly || isLine ? 'transparent' : fillCss(fill) || 'transparent', radius,
+    bg: poly || isLine ? 'transparent' : alphaFill(fillCss(fill), o.fillOpacity) || 'transparent', radius,
     border: !poly && !isLine && sw && stroke ? `${sw}px ${o.dash === 'dot' || o.dash === 'sysDot' ? 'dotted' : o.dash && o.dash !== 'solid' ? 'dashed' : 'solid'} ${stroke}` : 'none',
     svg: { __html: o.t === 'object' ? objectInner(o.data || {}, o.w, o.h) : svg }, isLine, isGroup, kids: isGroup ? o.kids.map(k => Object.assign(objView(k, th, ptPx), { left: (k.x - o.x) + 'px', top: (k.y - o.y) + 'px' })) : [],
     tx: textStyle(o, fs, th),
     color, fs: fs + 'px', font: `'${font}','Noto Sans SC',sans-serif`, fw: o.bold ? 700 : 400, fst: o.italic ? 'italic' : 'normal', td: o.underline ? 'underline' : 'none',
     align: o.align || 'left', va: o.va === 'middle' ? 'center' : o.va === 'bottom' ? 'flex-end' : 'flex-start', lh: o.lh || 1.35,
     pad: o.t === 'text' ? '8px 12px' : '16px 24px', isImg: o.t === 'image', src: picSrc(o.src || ''), picFrame: pic ? pic.frame : '', picImage: pic ? pic.image : '', isTable: o.t === 'table', hasText: o.t === 'text' || o.t === 'shape',
-    tcells: o.t === 'table' ? tableCells(o, th) : [], gtc: o.t === 'table' ? colWidths(o).map(w => w + 'px').join(' ') : '', gtr: o.t === 'table' ? `repeat(${Math.max(1, (o.rows || []).length)}, 1fr)` : '',
+    tcells: o.t === 'table' ? tableCells(o, th) : [], gtc: o.t === 'table' ? colWidths(o).map(w => w + 'px').join(' ') : '', gtr: o.t === 'table' ? rowHeights(o).map(h=>h+'px').join(' ') : '',
     inner: { __html: o.autofit === 'shrink' && o.fit && o.fit < 1 ? (o.html || '').replace(/(font-size\s*:\s*)([\d.]+)px/gi, (_, key, n) => key + Number((n * o.fit).toFixed(5)) + 'px') : o.html || '' },
     hint: o.ph && HINTS[o.ph] && !textOf(o.html) ? T(HINTS[o.ph]) : '' // an empty placeholder's prompt, drawn by CSS and never part of the text
   };
@@ -356,15 +360,15 @@ export function slideObjectHtml(o, v) {
     h += `<div style="position:absolute;inset:0;background:${v.bg};border-radius:${v.radius};border:${v.border};box-sizing:border-box">${v.svg.__html}</div>`;
     if (v.isImg) h += `<div style="position:absolute;inset:0;${v.picFrame}"><img src="${esc(v.src)}" style="${v.picImage}"></div>`;
     if (v.hasText) h += `<div style="position:absolute;inset:0;padding:${v.pad};display:flex;flex-direction:column;justify-content:${v.va};color:${v.color};font-size:${v.fs};font-family:${v.font};font-weight:${v.fw};font-style:${v.fst};text-decoration:${v.td};text-align:${v.align};line-height:${v.lh};${v.tx}"><div class="sv-t t">${v.inner.__html}</div></div>`;
-    if (v.isTable) h += `<div style="position:absolute;inset:0;display:grid;grid-template-columns:${v.gtc};grid-template-rows:${v.gtr};font-size:${v.fs};font-family:${v.font}">` + v.tcells.map(c => `<div style="grid-column:${c.gc};grid-row:${c.gr};display:flex;align-items:center;justify-content:${c.jc};padding:0 16px;background:${c.bg};color:${c.color};font-weight:${c.fw};border:${c.border};border-bottom:${c.bb};overflow:hidden;box-sizing:border-box">${esc(c.text)}</div>`).join('') + '</div>';
+    if (v.isTable) h += `<div style="position:absolute;inset:0;display:grid;grid-template-columns:${v.gtc};grid-template-rows:${v.gtr};font-size:${v.fs};font-family:${v.font}">` + v.tcells.map(c => `<div style="grid-column:${c.gc};grid-row:${c.gr};display:flex;align-items:${c.va};justify-content:${c.jc};padding:0 16px;background:${c.bg};color:${c.color};font-weight:${c.fw};border:${c.border};border-bottom:${c.bb};overflow:hidden;box-sizing:border-box">${c.html.__html}</div>`).join('') + '</div>';
     if (v.isGroup) h += o.kids.map((k, i) => slideObjectHtml(k, v.kids[i])).join('');
     return h + '</div>';
   }
 function slideHtml(s, th, H, scale) {
-  const bg = s.bg || s.inheritedBg || th.bg;
+  const bg = slideBackground(s, th);
   let h = `<div class="sl" style="width:${SW}px;height:${H}px;position:relative;overflow:hidden;background:${bg};zoom:${scale}">`;
 
-  (s.decor || []).concat(s.objs).forEach(o => { h += slideObjectHtml(o, objView(o, th)); });
+  slideDecor(s, H).concat(s.objs).forEach(o => { h += slideObjectHtml(o, objView(o, th)); });
   return h + '</div>';
 }
 
@@ -425,9 +429,9 @@ export function paintSlide(g, s, th, H, pics) {
     if (o.t === 'line') { const [a, b] = lineEnds(o); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.strokeStyle = col(o.stroke, th.acc); g.lineWidth = o.sw || 2; g.stroke(); }
     else if (o.t === 'image') { const im = pics && pics.get(o.src); if (im) g.drawImage(im, 0, 0, o.w, o.h); }
     else if (o.t === 'table') {
-      const ws = colWidths(o), xs = ws.map((w, i) => ws.slice(0, i).reduce((a, b) => a + b, 0)), rh = o.h / Math.max(1, (o.rows || []).length);
+      const ws = colWidths(o), xs = ws.map((w, i) => ws.slice(0, i).reduce((a, b) => a + b, 0)), hs = rowHeights(o);
       for (const c of tableCells(o, th)) {
-        const x = xs[c.c], y = c.r * rh, w = ws.slice(c.c, c.c + c.cs).reduce((a, b) => a + b, 0), h = rh * c.rs;
+        const x = xs[c.c], y = hs.slice(0,c.r).reduce((a,b)=>a+b,0), w = ws.slice(c.c, c.c + c.cs).reduce((a, b) => a + b, 0), h = hs.slice(c.r,c.r+c.rs).reduce((a,b)=>a+b,0);
         if (c.bg !== 'transparent') { g.fillStyle = c.bg; g.fillRect(x, y, w, h); }
         if (c.border !== 'none') { g.strokeStyle = c.border.split(' ').slice(2).join(' '); g.lineWidth = 1; g.strokeRect(x, y, w, h); }
         text({ fs: o.fs, va: 'middle', lh: 1.2 }, [{ text: c.text, lvl: 0, bullet: '' }], { x: x + 16, y, w: w - 32, h }, `${c.fw} ${o.fs || 24}px ${th.bf}, sans-serif`, c.color, c.align);
@@ -438,20 +442,20 @@ export function paintSlide(g, s, th, H, pics) {
       else if (POLY[shape]) POLY[shape].forEach(([x, y], i) => i ? p.lineTo(x * w / 100, y * h / 100) : p.moveTo(x * w / 100, y * h / 100));
       else p.roundRect(0, 0, w, h, shape === 'pill' ? Math.min(w, h) / 2 : shape === 'round' ? Math.min(w, h) * 0.12 : 0);
       p.closePath();
-      const fill = col(o.fill, o.t === 'shape' ? th.acc : ''); if (fill) { g.fillStyle = fill; g.fill(p); }
+      const fill = col(o.fill, o.t === 'shape' ? th.acc : ''); if (fill) { g.save(); g.globalAlpha *= o.fillOpacity ?? 1; g.fillStyle = fill; g.fill(p); g.restore(); }
       if (o.sw && o.stroke) { g.strokeStyle = col(o.stroke, th.fg); g.lineWidth = o.sw; g.stroke(p); }
       const pad = o.t === 'text' ? [12, 8] : [24, 16], v = objView(o, th);
       text(o, htmlParas(o.html), { x: pad[0], y: pad[1], w: w - pad[0] * 2, h: h - pad[1] * 2 }, `${o.italic ? 'italic ' : ''}${v.fw} ${o.fs || 32}px ${v.font}`, v.color, o.align);
     }
     g.restore();
   };
-  g.fillStyle = s.bg || th.bg; g.fillRect(0, 0, SW, H);
-  (s.decor || []).concat(s.objs).forEach(one);
+  g.fillStyle = s.bg || s.inheritedBg || th.bg; const bg = s.bgGradient || (!s.bg && !s.bgImage && s.inheritedBgGradient); if (bg) { const [a,b,angle]=bg.split(','),rad=(+angle||0)*Math.PI/180, dx=Math.cos(rad)*SW/2,dy=Math.sin(rad)*H/2,gr=g.createLinearGradient(SW/2-dx,H/2-dy,SW/2+dx,H/2+dy);gr.addColorStop(0,a.startsWith('#')?a:'#'+a);gr.addColorStop(1,b.startsWith('#')?b:'#'+b);g.fillStyle=gr; } g.fillRect(0, 0, SW, H);
+  slideDecor(s, H).concat(s.objs).forEach(one);
 }
 /** 导出每页为 PNG: every shown slide at 1920 px wide, one file each. */
 export async function exportSlidesPng(doc) {
   const th = THEMES[doc.theme] || THEMES.paper, H = slideH(doc.ratio), shown = doc.slides.filter(s => !s.hidden), pics = new Map();
-  const imgs = shown.flatMap(s => flatObjs((s.decor || []).concat(s.objs))).filter(o => o.t === 'image');
+  const imgs = shown.flatMap(s => flatObjs(slideDecor(s, H).concat(s.objs))).filter(o => o.t === 'image');
   await Promise.all(imgs.map(o => new Promise(res => { const im = new Image(); im.onload = () => { pics.set(o.src, im); res(); }; im.onerror = res; im.src = picSrc(o.src); })));
   for (let i = 0; i < shown.length; i++) {
     const c = document.createElement('canvas'), k = 1920 / SW; c.width = 1920; c.height = Math.round(H * k);
@@ -763,7 +767,8 @@ export function resizeSlides(doc, ratio) {
   const oldH = slideH(doc.ratio), nextH = slideH(ratio), scale = Math.min(1, nextH / oldH), dx = SW * (1 - scale) / 2, dy = (nextH - oldH * scale) / 2;
   const resize = o => { o.x = dx + o.x * scale; o.y = dy + o.y * scale; o.w *= scale; o.h *= scale;
     for (const k of ['fs','sw','sb','sa','cs']) if (o[k]) o[k] *= scale;
-    if (o.colW) o.colW = o.colW.map(w => w * scale);
+    if (o.colW) o.colW = o.colW.map(w => w * scale); if (o.rowH) o.rowH=o.rowH.map(h=>h*scale);
+    if (o.cells && scale !== 1) for (const cell of Object.values(o.cells)) if (cell.html) cell.html=cell.html.replace(/(font-size|letter-spacing)\s*:\s*([\d.]+)px/gi,(_,key,n)=>key+":"+Number((n*scale).toFixed(5))+"px");
     if (o.html && scale !== 1) o.html = o.html.replace(/(font-size|letter-spacing)\s*:\s*([\d.]+)px/gi, (_, key, n) => key + ':' + Number((n * scale).toFixed(5)) + 'px');
     (o.kids || []).forEach(resize);
   };

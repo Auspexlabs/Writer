@@ -1672,7 +1672,7 @@ export function runsOf(html) {
       if (st.fontSize) g.size = ptOf(st.fontSize) || g.size;
       if (st.fontFamily) { g.font = st.fontFamily.split(',')[0].trim().replace(/["']/g, ''); g.fontEa = null; }
       if (c.getAttribute('data-font-west')) g.font = c.getAttribute('data-font-west');
-      if (c.getAttribute('data-font-ea')) g.fontEa = c.getAttribute('data-font-ea');
+      if (c.getAttribute('data-font-ea')) { g.fontEa = c.getAttribute('data-font-ea'); if (!c.getAttribute('data-font-west')) g.font = null; }
       if (tag === 'SUP' || st.verticalAlign === 'super') g.va = 'sup'; else if (tag === 'SUB' || st.verticalAlign === 'sub') g.va = 'sub'; // superscript, subscript
       if (st.letterSpacing && st.letterSpacing !== 'normal') g.ls = st.letterSpacing; // character spacing
       if (st.textTransform) g.caps = st.textTransform === 'uppercase' ? 'all' : 0; // a slide's all caps and small caps
@@ -2366,12 +2366,13 @@ function pptxObject(file, sp, geo, n) {
   const id = (decor ? 'd' : 'e') + path;
   const look = { rot: Number(p.rotation) || 0, shadow: p.shadow === 'true' };
   if (kind === 'object') return { id, path, kind, t: 'object', data: p, html: '', ...box, ...look };
-  if (kind === 'image') { const lk = lookFrom(p); delete lk.rotation; return txt(Object.assign({ id, path, kind, t: 'image', src: binaryUrl(file, path), html: '', look: lk, rot: look.rot }, box)); }
+  if (kind === 'image') { const lk = lookFrom(p); delete lk.rotation; return txt(Object.assign({ id, path, kind, t: 'image', src: binaryUrl(file, path), background: p.background === 'true' || p.background === true, source: p.source, html: '', look: lk, rot: look.rot }, box)); }
   if (n.kind === 'table') {
     const merges = [], cells = {};
-    (n.children || []).forEach((r, ri) => (r.children || []).forEach((c, ci) => { const cp = c.props || {}; if (+cp.colspan > 1 || +cp.rowspan > 1) merges.push({ r: ri, c: ci, rs: +cp.rowspan || 1, cs: +cp.colspan || 1 }); const own = {}; if (cp.fill) own.fill = hex(cp.fill); if (cp.line) own.line = cp.line === 'none' ? 'none' : hex(cp.line); if (cp.align && cp.align !== 'left') own.align = cp.align; if (Object.keys(own).length) cells[ri + ':' + ci] = own; }));
+    (n.children || []).forEach((r, ri) => (r.children || []).forEach((c, ci) => { const cp = c.props || {}; if (+cp.colspan > 1 || +cp.rowspan > 1) merges.push({ r: ri, c: ci, rs: +cp.rowspan || 1, cs: +cp.colspan || 1 }); const own = {}; if (cp.html && cp.html !== esc(cp.text || '').replace(/\n/g,'<br>')) own.html = slideHtmlUnits(cp.html, ptPx); if (cp.valign && cp.valign !== 'middle') own.valign = cp.valign; if (cp.fill) own.fill = hex(cp.fill); if (cp.line) own.line = cp.line === 'none' ? 'none' : hex(cp.line); if (cp.align && cp.align !== 'left') own.align = cp.align; if (Object.keys(own).length) cells[ri + ':' + ci] = own; }));
+    let rowH; try { const hs = typeof p.heights === 'string' ? JSON.parse(p.heights) : p.heights; rowH = Array.isArray(hs) ? hs.map(v=>Math.round(cmOf(v)*ky)) : undefined; } catch {}
     let colW; try { const ws = typeof p.widths === 'string' ? JSON.parse(p.widths) : p.widths; colW = Array.isArray(ws) ? ws.map(v => Math.round(cmOf(v) * kx)) : undefined; } catch (e) { colW = undefined; } // the tree gives JSON props as values, a get as text
-    return txt(Object.assign({ id, path, kind: 'table', t: 'table', html: '', fs: 24, rows: (n.children || []).map(r => (r.children || []).map(c => (c.props || {}).text || '')), merges, cells, colW, tstyle: p.style || 'MediumStyle2Accent1', header: p.header === 'true', banded: p.banded === 'true', firstCol: p.firstCol === 'true' }, box));
+    return txt(Object.assign({ id, path, kind: 'table', t: 'table', html: '', fs: 24, rows: (n.children || []).map(r => (r.children || []).map(c => (c.props || {}).text || '')), merges, cells, colW, rowH, tstyle: p.style || 'MediumStyle2Accent1', header: p.header === 'true', banded: p.banded === 'true', firstCol: p.firstCol === 'true' }, box));
   }
   if (n.kind === 'group') return Object.assign({ id, path, kind: 'group', t: 'group', op: 1, kids: (n.children || []).map(c => pptxObject(file, path, geo, c)) }, box, look);
   const cxn = ref => { const m = /^(\d+),(\d+)$/.exec(ref || ''); return m ? { cnv: +m[1], idx: +m[2] } : null; }; // resolved to an editor id once the slide's objects are known (openPptx)
@@ -2382,7 +2383,7 @@ function pptxObject(file, sp, geo, n) {
   if (decor && p.geometry === 'line') return mkShape(Object.assign({ id, path, kind: 'shape', html: '', fill: hex(p.line), stroke: '', sw: 0, shape: 'rect' }, box, from, { h: Math.max(box.h, 2) }));
   // an empty placeholder is '' rather than an empty paragraph: the editor shows its hint, and nothing is written until the user types
   const html = p.field ? '<p>' + esc(p.text || '') + '</p>' : decor ? slideHtmlUnits(p.html || (p.text ? '<p>' + esc(p.text) + '</p>' : ''), ptPx) : ph && !String(p.text || '').trim() ? '' : paraHtml((n.children || []).filter(c => c.kind === 'paragraph'), ptPx);
-  const base = Object.assign({ id, path, kind: 'shape', html, fs: p.size ? Math.round(cmOf(p.size) / UNIT.pt * ptPx) : (isTitle ? Math.round(40 * ptPx) : Math.round(20 * ptPx)), color: hex(p.color), font: p.font || null, ph: p.field === 'slideNumber' ? 'num' : ph, field: p.field || null, align: p.align || 'left', va: p.verticalAlign || 'top', italic: p.italic === 'true', underline: p.underline === 'true', bold: p.bold != null ? p.bold === 'true' : isTitle, lockAspect: p.lockAspect === 'true' }, box, from, look, decor ? {} : textBox(p, ptPx));
+  const base = Object.assign({ id, path, kind: 'shape', html, fs: p.size ? Math.round(cmOf(p.size) / UNIT.pt * ptPx) : (isTitle ? Math.round(40 * ptPx) : Math.round(20 * ptPx)), color: hex(p.color), font: p.font || null, ph: p.field === 'slideNumber' ? 'num' : ph, field: p.field || null, fillOpacity: p.fillOpacity == null ? 1 : +p.fillOpacity / 100, align: p.align || 'left', va: p.verticalAlign || 'top', italic: p.italic === 'true', underline: p.underline === 'true', bold: p.bold != null ? p.bold === 'true' : isTitle, lockAspect: p.lockAspect === 'true' }, box, from, look, decor ? {} : textBox(p, ptPx));
   const outline = { stroke: p.line && p.line !== 'none' ? hex(p.line) : '', sw: swOf(p, ptPx), dash: p.dash || 'solid' };
   if (filled || (p.geometry && p.geometry !== 'rect' && p.geometry !== 'textbox' && p.geometry !== 'custom')) return mkShape(Object.assign(base, outline, { fill: p.gradient ? 'grad:' + p.gradient.split(',').map((v, i) => i < 2 ? '#' + v : v).join(',') : filled ? hex(p.fill) : null, shape: geomOf(p.geometry) }));
   return txt(Object.assign(base, outline));
@@ -2402,15 +2403,16 @@ async function openPptx(doc) {
     const decor = children.filter(n => n.kind === 'decor').map(n => pptxObject(doc.path, sp, geo, n));
     const objs = children.filter(n => n.kind !== 'decor').map(n => pptxObject(doc.path, sp, geo, n));
     linkLines(objs);
-    return { id: 's' + s.props.id, path: sp, layout: s.props.layout, decor, objs, anims: animsFrom(s.props.animations, objs), sec: s.props.section || '', notes: s.props.notes || '', trans: s.props.transition || 'none', duration: s.props.duration == null ? null : Number(s.props.duration), hidden: s.props.hidden === true || s.props.hidden === 'true', bg: s.props.background ? p2bg(s.props.background) : null, inheritedBg: p2bg((s.computed || {}).inheritedBackground || (s.computed || {}).background) };
+    return { id: 's' + s.props.id, path: sp, layout: s.props.layout, decor, objs, anims: animsFrom(s.props.animations, objs), sec: s.props.section || '', notes: s.props.notes || '', trans: s.props.transition || 'none', duration: s.props.duration == null ? null : Number(s.props.duration), advanceAfter: +s.props.advanceAfter || 0, advanceOnClick: s.props.advanceOnClick !== false && s.props.advanceOnClick !== 'false', bgGradient: s.props.backgroundGradient || null, bgImage: s.props.backgroundImage ? binaryUrl(doc.path, sp) : null, inheritedBgGradient: s.computed?.inheritedBackgroundGradient || null, hidden: s.props.hidden === true || s.props.hidden === 'true', bg: s.props.background ? p2bg(s.props.background) : null, inheritedBg: p2bg((s.computed || {}).inheritedBackground || (s.computed || {}).background) };
   });
   // the palette the deck wears (its theme, written by 设计 or the assistant) is the editor's theme; a deck without one keeps the editor's
   const palette = THEMES[t.props.palette] ? t.props.palette : null;
   const orig = { geo, ratio, palette, slides: pptxSnapshot(slides) };
-  return { theme: palette || doc.theme || 'paper', ratio, slides, _orig: orig };
+  const layouts = (Array.isArray(t.props.layouts) ? t.props.layouts : JSON.parse(t.props.layouts || '[]')).map(l => ({ name:l.name, layout:l.name, id:'layout-'+l.name, bg:l.background && l.background !== 'none' ? p2bg(l.background) : null, decor:slides.find(s=>s.layout===l.name)?.decor || [], objs:l.placeholders.map((props,i) => pptxObject(doc.path,'',geo,{kind:'shape',path:'layout-'+l.name+'-'+i,props:{...props,text:''},children:[]})) }));
+  return { theme: palette || doc.theme || 'paper', ratio, slides, layouts, _orig: orig };
 }
 const p2bg = c => c ? '#' + c : '#FFFFFF';
-const pptxSnapshot = slides => JSON.parse(JSON.stringify(slides.map(s => ({ id: s.id, path: s.path, bg: s.bg, layout: s.layout, sec: s.sec || '', notes: s.notes || '', trans: s.trans || 'none', duration: s.duration ?? null, hidden: !!s.hidden, objs: s.objs.map(objKey), anims: animJson(s) }))));
+const pptxSnapshot = slides => JSON.parse(JSON.stringify(slides.map(s => ({ id: s.id, path: s.path, bg: s.bg, bgGradient: s.bgGradient || null, bgImage: s.bgImage || null, advanceAfter: s.advanceAfter || 0, advanceOnClick: s.advanceOnClick !== false, layout: s.layout, sec: s.sec || '', notes: s.notes || '', trans: s.trans || 'none', duration: s.duration ?? null, hidden: !!s.hidden, objs: s.objs.map(objKey), anims: animJson(s) }))));
 const cnvId = o => { const m = o && o.path && /\[@id=(\d+)\]$/.exec(o.path); return m ? m[1] : null; };
 /** A slide's animations (the engine's animations prop) as the editor keeps them: each effect names its object by editor id, or by
  *  drawing id (sp) when it animates something the editor does not show (a shape of the layout); an effect the engine does not model
@@ -2437,6 +2439,8 @@ function animJson(s) {
 }
 export function slideProps(o, s) {
   const p = {};
+  if ((o.advanceAfter || 0) !== (s.advanceAfter || 0)) p.advanceAfter = String(s.advanceAfter || 0);
+  if ((o.advanceOnClick !== false) !== (s.advanceOnClick !== false)) p.advanceOnClick = String(s.advanceOnClick !== false);
   if ((o.notes || '') !== (s.notes || '')) p.notes = s.notes || '';
   if ((o.sec || '') !== (s.sec || '')) p.section = s.sec || '';
   if (!!o.hidden !== !!s.hidden) p.hidden = s.hidden ? 'true' : 'false';
@@ -2446,10 +2450,10 @@ export function slideProps(o, s) {
 }
 function objKey(o) {
   return Object.assign({ id: o.id, path: o.path, kind: o.kind, t: o.t, x: o.x, y: o.y, w: o.w, h: o.h, html: o.html, fill: o.fill, color: o.color, font: o.font, fs: o.fs, shape: o.shape, rows: o.rows, src: o.src && o.src.startsWith('data:') ? 'data' : o.src, rot: o.rot || 0, field: o.field || null, bold: !!o.bold, italic: !!o.italic, underline: !!o.underline, align: o.align || 'left', va: o.va || 'top',
-    stroke: o.stroke, sw: o.sw, dash: o.dash, shadow: !!o.shadow, lockAspect: !!o.lockAspect,
+    fillOpacity: o.fillOpacity ?? 1, stroke: o.stroke, sw: o.sw, dash: o.dash, shadow: !!o.shadow, lockAspect: !!o.lockAspect,
     lh: o.lh, sb: o.sb || 0, sa: o.sa || 0, cs: o.cs || 0, cols: o.cols || 1, vert: o.vert || 'horz', autofit: o.autofit || 'none', fit: o.fit || 1, tOutline: o.tOutline || '', tShadow: !!o.tShadow, tGrad: o.tGrad || '' },
     o.t === 'image' ? { look: o.look || {} } : {}, o.t === 'line' ? { head: o.head, tail: o.tail, flipH: !!o.flipH, flipV: !!o.flipV, bent: !!o.bent, start: o.start || null, end: o.end || null } : {},
-    o.t === 'table' ? { colW: o.colW || null, merges: o.merges || [], cells: o.cells || {}, tstyle: o.tstyle || 'MediumStyle2Accent1', header: o.header !== false, banded: o.banded !== false, firstCol: !!o.firstCol } : {},
+    o.t === 'table' ? { colW: o.colW || null, rowH: o.rowH || null, merges: o.merges || [], cells: o.cells || {}, tstyle: o.tstyle || 'MediumStyle2Accent1', header: o.header !== false, banded: o.banded !== false, firstCol: !!o.firstCol } : {},
     o.t === 'group' ? { kids: (o.kids || []).map(objKey) } : {});
 }
 function boxProps(o, g) { return { x: cmStr(o.x / g.kx), y: cmStr(o.y / g.ky), w: cmStr(o.w / g.kx), h: cmStr(o.h / g.ky) }; }
@@ -2467,6 +2471,7 @@ function objProps(o, g, orig, slide) {
     const grad = f => f && String(f).startsWith('grad:');
     // a shape's null fill is the theme's accent (objView draws it so): the file gets the colour, not noFill
     if (was('fill') !== o.fill && (o.t === 'shape' || o.fill)) { if (grad(o.fill)) p.gradient = o.fill.slice(5).split(',').map((v, i) => i < 2 ? hexOf(v) : v).join(','); else { if (grad(was('fill'))) p.gradient = ''; p.fill = o.fill ? hexOf(o.fill) : o.fill == null && o.t === 'shape' ? hexOf('acc') : 'none'; } }
+    if ((was('fillOpacity') ?? 1) !== (o.fillOpacity ?? 1) || (p.fill || p.gradient) && (o.fillOpacity ?? 1) !== 1) { if (!p.fill && !p.gradient && o.fill) { if (grad(o.fill)) p.gradient = o.fill.slice(5).replace(/#/g, ''); else p.fill = hexOf(o.fill); } p.fillOpacity = String(Math.round((o.fillOpacity ?? 1) * 100)); }
     if (was('color') !== o.color && o.color) p.color = hexOf(o.color);
     if (was('font') !== o.font && o.font) p.font = o.font;
     if (was('fs') !== o.fs && o.fs) p.size = (Math.round(o.fs / g.ptPx * 2) / 2) + 'pt';
@@ -2504,6 +2509,7 @@ function objProps(o, g, orig, slide) {
   }
   if (o.t === 'table') {
     if (!orig || !same(orig.rows, o.rows)) p.data = JSON.stringify(o.rows || []);
+    const heights = t => t.rowH ? JSON.stringify(t.rowH.map(h => cmStr(h / g.ky))) : null; if (heights(o) && (!orig || heights(o) !== heights(orig))) p.heights = heights(o);
     const widths = t => t.colW ? JSON.stringify(t.colW.map(w => cmStr(w / g.kx))) : null, nw = widths(o);
     if (nw && nw !== (orig ? widths(orig) : null) && (!p.w || orig)) p.widths = nw; // a new table's w already says the total; its own widths follow
     if ((was('tstyle') || 'MediumStyle2Accent1') !== (o.tstyle || 'MediumStyle2Accent1')) p.style = o.tstyle;
@@ -2658,7 +2664,7 @@ async function savePptx(doc, log) {
   for (let i = 0; i < doc.slides.length; i++) {
     const s = doc.slides[i], o = at(s.path);
     if (order.indexOf(s.path) !== i) { await run(['move', doc.path, s.path, '--to', '/', '--index', String(i + 1)]); n++; order.splice(order.indexOf(s.path), 1); order.splice(i, 0, s.path); }
-    if ((o.bg || null) !== (s.bg || null)) { await run(['set', doc.path, s.path, '--prop', 'background=' + (s.bg ? unhex(s.bg) : 'none')]); n++; }
+    if ((o.bg || null) !== (s.bg || null) || (o.bgGradient || null) !== (s.bgGradient || null) || (o.bgImage || null) !== (s.bgImage || null)) { const prop = s.bgImage ? 'backgroundImage=' + await dataUrlOf(s.bgImage) : s.bgGradient ? 'backgroundGradient=' + s.bgGradient.replace(/#/g, '') : 'background=' + (s.bg ? unhex(s.bg) : 'none'); await run(['set', doc.path, s.path, '--prop', prop]); n++; }
     const sp = slideProps(o, s);
     if (Object.keys(sp).length) { await run(['set', doc.path, s.path, ...propsArgs(sp)]); n++; log && log('set', s.path, sp); }
     if (s.layout && o.layout && s.layout !== o.layout) {
@@ -2700,7 +2706,7 @@ async function saveObj(doc, g, s, o, x, oo, log, into) {
     // the markers and levels: after a text rewrite when either side had any, or when only the markup changed (the runs are the same)
     const lists = h => /<li|data-lvl|text-align|\balign=/i.test(h || '');
     if (p.html != null ? lists(x.html) || lists(oo.html) : (x.t === 'text' || x.t === 'shape') && (oo.html || '') !== (x.html || '')) n += await setListProps(doc.path, x.path, x.html, true);
-    if (x.t === 'table') n += await setCellProps(doc.path, x, oo, p.data != null);
+    if (x.t === 'table') n += await setCellProps(doc.path, x, oo, p.data != null, g.ptPx);
     return n;
   }
   if (x.t === 'image' && !(x.src || '').startsWith('data:')) return n;
@@ -2709,7 +2715,7 @@ async function saveObj(doc, g, s, o, x, oo, log, into) {
   const r = await run(['add', doc.path, into || s.path, '--type', kind, ...propsArgs(p)]); n++;
   x.path = (into || s.path) + '/' + kind + '[@id=' + r.props.id + ']'; x.kind = kind; log && log('add', x.path, kind);
   if (kind === 'shape') n += await setListProps(doc.path, x.path, x.html);
-  if (kind === 'table') { if (x.colW) { await run(['set', doc.path, x.path, '--prop', 'widths=' + JSON.stringify(x.colW.map(w => cmStr(w / g.kx)))]); n++; } n += await setCellProps(doc.path, x, null, true); }
+  if (kind === 'table') { if (x.colW) { await run(['set', doc.path, x.path, '--prop', 'widths=' + JSON.stringify(x.colW.map(w => cmStr(w / g.kx)))]); n++; } n += await setCellProps(doc.path, x, null, true, g.ptPx); }
   if (kind === 'image') {
     x.src = binaryUrl(doc.path, x.path); // from now on it loads from its own place in the file
     if (p.crop) { await run(['set', doc.path, x.path, ...propsArgs(boxProps(x, g))]); n++; } // a crop keeps the picture's scale, so it moved the frame
@@ -2718,7 +2724,7 @@ async function saveObj(doc, g, s, o, x, oo, log, into) {
 }
 /** A table's cells: merges as the anchor's colspan / rowspan (a merge that went sets them back to 1), and each cell's own fill,
  *  line and alignment. Only what changed against the snapshot oo; everything after a data rewrite that changed the grid's size. */
-async function setCellProps(file, x, oo, rewritten) {
+async function setCellProps(file, x, oo, rewritten, ptPx) {
   const key = m => m.r + ':' + m.c, cellPath = k => { const [r, c] = k.split(':'); return `${x.path}/row[${+r + 1}]/cell[${+c + 1}]`; };
   const before = oo || { merges: [], cells: {}, rows: [] }, resized = !oo || rewritten && (before.rows.length !== x.rows.length || (before.rows[0] || []).length !== (x.rows[0] || []).length);
   const want = {};
@@ -2727,8 +2733,10 @@ async function setCellProps(file, x, oo, rewritten) {
   for (const k of new Set([...Object.keys(newM), ...Object.keys(oldM)])) { const a = newM[k], b = oldM[k]; if (resized || !b || !a || a.rs !== b.rs || a.cs !== b.cs) put(k, { colspan: String(a ? a.cs : 1), rowspan: String(a ? a.rs : 1) }); }
   const cellsNow = x.cells || {}, cellsThen = before.cells || {};
   for (const k of new Set([...Object.keys(cellsNow), ...Object.keys(cellsThen)])) {
-    const a = cellsNow[k] || {}, b = cellsThen[k] || {}; if (!resized && same(a, b)) continue;
+    const a = cellsNow[k] || {}, b = cellsThen[k] || {}; if (!rewritten && !resized && same(a, b)) continue;
     const props = {}; if (resized ? a.fill : a.fill !== b.fill) props.fill = a.fill ? unhex(a.fill) : 'none'; if (resized ? a.line : a.line !== b.line) props.line = a.line && a.line !== 'none' ? unhex(a.line) : 'none'; if (resized ? a.align : (a.align || 'left') !== (b.align || 'left')) props.align = a.align || 'left';
+    if (resized || (a.valign || 'middle') !== (b.valign || 'middle')) props.valign = a.valign || 'middle';
+    const [row, col] = k.split(':').map(Number); if (a.html != null && (rewritten || resized || a.html !== b.html) && new DOMParser().parseFromString(a.html, 'text/html').body.textContent.trim() === String(x.rows[row]?.[col] || '').trim()) props.html = slideHtmlUnits(a.html, ptPx, false);
     if (Object.keys(props).length) put(k, props);
   }
   let n = 0;

@@ -171,7 +171,7 @@ static class DocxRuns
             rp.FontSizeComplexScript = new W.FontSizeComplexScript { Val = half };
         }
         if (spec.Font is not null) rp.RunFonts = new W.RunFonts { Ascii = spec.Font, HighAnsi = spec.Font, EastAsia = spec.Font, ComplexScript = spec.Font };
-        if (spec.FontEa is not null) { var fonts = rp.RunFonts ??= new W.RunFonts(); fonts.EastAsia = spec.FontEa; fonts.EastAsiaTheme = null; }
+        if (spec.FontEa is not null) { var fonts = rp.RunFonts ??= new W.RunFonts(); if (fonts.EastAsia?.Value != spec.FontEa) { fonts.EastAsia = spec.FontEa; fonts.EastAsiaTheme = null; } }
         if (spec.Highlight is not null) SetHighlight(rp, spec.Highlight);
         if (spec.VertAlign is not null) rp.VerticalTextAlignment = new W.VerticalTextAlignment { Val = spec.VertAlign == "superscript" ? W.VerticalPositionValues.Superscript : W.VerticalPositionValues.Subscript };
         if (spec.Spacing is not null && double.TryParse(spec.Spacing.TrimEnd('p', 't', ' '), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var spacing)) rp.Spacing = new W.Spacing { Val = (int)Math.Round(spacing * 20) };

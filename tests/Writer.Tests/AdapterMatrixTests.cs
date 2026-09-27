@@ -95,7 +95,7 @@ public class AdapterMatrixTests : IDisposable
 
         foreach (var p in props)
         {
-            var value = p.Name == "src" ? _png : p.Example!;
+            var value = p.Name is "src" or "backgroundImage" ? _png : p.Example!;
             node = Mutations.Set(node, new Dictionary<string, string> { [p.Name] = value });
             if (p.Name == "restart") continue; // contextual: reads true only after another list of the same kind (DocxEditTests covers it)
             var canonical = node.GetProps();
@@ -113,7 +113,7 @@ public class AdapterMatrixTests : IDisposable
                 for (var i = 0; i < left.Length; i++)
                     Assert.InRange(Math.Abs(Units.ParseLength(left[i].GetString()!) - Units.ParseLength(right[i].GetString()!)), 0L, 635L);
             }
-            else if (p.Name != "src") Assert.Equal(expected, canonical[p.Name]);
+            else if (p.Name is not ("src" or "backgroundImage")) Assert.Equal(expected, canonical[p.Name]);
         }
 
         node.Remove();

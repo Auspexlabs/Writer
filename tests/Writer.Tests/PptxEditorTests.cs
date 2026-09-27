@@ -15,6 +15,53 @@ public class PptxEditorTests
     static void Valid(Document doc) => Assert.Empty(new OpenXmlValidator(FileFormatVersions.Office2016).Validate(((PptxDocument)doc).Package));
 
     [Fact]
+    public void Table_row_heights_vertical_alignment_and_rich_text_round_trip()
+    {
+        using var doc = new PptxAdapter().Create();
+        var slide = Mutations.Add(doc.Root, "slide", Props(("layout", "blank")), null);
+        var table = Mutations.Add(slide, "table", Props(("rows", "2"), ("cols", "2"), ("heights", "[\"1cm\",\"2cm\"]")), null);
+        var cell = table.Children.First().Children.First();
+        Mutations.Set(cell, Props(("html", "<b>Bold</b> <span style=\"font-size:28pt;color:#FF0000\">Red</span>"), ("valign", "bottom"), ("line", "0000FF")));
+        Valid(doc);
+        using var back = Reopen(doc);
+        var saved = PathResolver.Single(back.Root, "/slide[1]/table[1]");
+        Assert.Equal("1080000", saved.GetProps()["h"]);
+        Assert.Contains("2cm", saved.GetProps()["heights"]);
+        var cp = saved.Children.First().Children.First().GetProps();
+        Assert.Equal("bottom", cp["valign"]);
+        Assert.Contains("28pt", cp["html"]);
+        Assert.Contains("<b>Bold</b>", cp["html"]);
+        Assert.Equal("0000FF", cp["line"]);
+    }
+
+    [Fact]
+    public void Background_fill_transparency_and_automatic_timing_round_trip()
+    {
+        using var doc = new PptxAdapter().Create();
+        var slide = Mutations.Add(doc.Root, "slide", Props(("layout", "blank"), ("backgroundGradient", "4472C4,FFFFFF,45"), ("advanceAfter", "3000"), ("advanceOnClick", "false")), null);
+        var shape = Mutations.Add(slide, "shape", Props(("fill", "FF0000"), ("fillOpacity", "40"), ("text", "Opaque text")), null);
+        Assert.Equal("40", shape.GetProps()["fillOpacity"]);
+        Assert.DoesNotContain("alpha", ((P.Shape)shape.Anchor).TextBody!.OuterXml);
+        Mutations.Set(slide, Props(("transition", "fade"), ("duration", "700")));
+        Valid(doc);
+        Mutations.Set(slide, Props(("transition", "none")));
+        Valid(doc);
+        using var back = Reopen(doc);
+        var props = PathResolver.Single(back.Root, "/slide[1]").GetProps();
+        Assert.Equal("4472C4,FFFFFF,45", props["backgroundGradient"]);
+        Assert.Equal("3000", props["advanceAfter"]);
+        Assert.Equal("false", props["advanceOnClick"]);
+        Assert.False(props.ContainsKey("transition"));
+        const string png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";
+        Mutations.Set(slide, Props(("backgroundImage", png)));
+        Assert.Equal(Convert.FromBase64String(png.Split(',')[1]), slide.GetBinary()!.Value.Data);
+        Valid(doc);
+        Mutations.Set(slide, Props(("background", "none")));
+        Assert.False(slide.GetProps().ContainsKey("backgroundImage"));
+        Valid(doc);
+    }
+
+    [Fact]
     public void Text_box_formatting_and_dimensions_survive_reopening()
     {
         using var doc = new PptxAdapter().Create();
