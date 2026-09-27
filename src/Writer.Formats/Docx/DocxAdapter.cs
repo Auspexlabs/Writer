@@ -53,6 +53,10 @@ public sealed class DocxDocument(WordprocessingDocument package) : Document
     public override Node Root => new DocxRoot(this);
 
     int? _nextId;
+    IReadOnlyDictionary<string, string>? _scheme;
+
+    /// <summary>The theme's colours by name (accent1…), to draw charts and SmartArt as Word does.</summary>
+    internal IReadOnlyDictionary<string, string> Scheme => _scheme ??= Common.OfficeGraphics.Scheme(Main.ThemePart);
 
     /// <summary>A w:id no revision, bookmark or comment in the document uses yet.</summary>
     internal string NextId()

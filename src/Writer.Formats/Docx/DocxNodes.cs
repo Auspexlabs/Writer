@@ -94,7 +94,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
 
     protected override IEnumerable<Node> ProjectChildren() =>
         Kind == "code" ? [] : DocxRuns.Walk(p, deleted: true).Select(x => (Node)new DocxRun(doc, x.Run, x.Link))
-            .Concat(DocxImage.In(p).Select(d => (Node)new DocxImage(doc, d))).Concat(DocxComments.In(doc, p)).Concat(DocxFootnotes.In(doc, p)).Concat(DocxCitations.In(doc, p)).Concat(DocxEquation.In(p)).Concat(DocxShape.In(p));
+            .Concat(DocxImage.In(p).Select(d => (Node)new DocxImage(doc, d))).Concat(DocxComments.In(doc, p)).Concat(DocxFootnotes.In(doc, p)).Concat(DocxCitations.In(doc, p)).Concat(DocxEquation.In(p)).Concat(DocxShape.In(p)).Concat(DocxObject.In(doc, p));
 
     public override IReadOnlyDictionary<string, string> GetProps()
     {

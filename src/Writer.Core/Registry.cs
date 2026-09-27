@@ -502,6 +502,26 @@ public static class Registry
                 .. XlsxStyle,
             ],
         },
+        new("object", "What Word draws that the tools do not edit — a chart, a SmartArt graphic, an embedded (OLE) object such as an Excel sheet or a MathType equation, a group of pictures, a drawing canvas, an old VML drawing — read-only but never lost: move or remove it like a picture. Its props carry what an editor needs to show it: a chart's cached data, SmartArt's laid-out shapes, an object's preview picture. A paragraph holding only one is a block of its own (/body/object[n]).")
+        {
+            Formats = Docx, Parents = [],
+            Props =
+            [
+                new("type", PropType.Enum, "What it is.") { Values = ["chart", "smartart", "ole", "group", "canvas", "vml", "drawing"], ReadOnly = true },
+                new("width", PropType.Length, "Width on the page.") { ReadOnly = true },
+                new("height", PropType.Length, "Height on the page.") { ReadOnly = true },
+                new("name", PropType.String, "Its name in the document (Word's selection pane).") { ReadOnly = true },
+                new("alt", PropType.String, "Alternative text.") { ReadOnly = true },
+                new("title", PropType.String, "A chart's title.") { ReadOnly = true },
+                new("chart", PropType.Json, "A chart as the values it caches: {kind, dir, grouping, title, xTitle, yTitle, min, max, legend, hole, cats, series: [{name, kind, values, x, color, points}]}; an Office 2016 chart (waterfall, funnel, treemap…) with its layout as kind.") { ReadOnly = true },
+                new("smartart", PropType.Json, "A SmartArt graphic as the shapes Word laid out: {shapes: [{x, y, w, h, rot, geom, fill, line, lw, text, size, color, bold, anchor, tx}]} in EMU from its corner; {texts: [...]} when the file keeps no drawing.") { ReadOnly = true },
+                new("progId", PropType.String, "An embedded object's program, e.g. Excel.Sheet.12, Equation.DSMT4 (MathType), Visio.Drawing.15.") { ReadOnly = true },
+                new("src", PropType.String, "The preview picture Word shows for an embedded object or a VML drawing, when it is one a browser draws (PNG, JPEG, GIF, BMP, SVG); binary serves it.") { ReadOnly = true },
+                new("text", PropType.String, "A VML text box's text.") { ReadOnly = true },
+                new("wrap", PropType.String, "float when it floats over the text.") { ReadOnly = true },
+                Id(Docx),
+            ],
+        },
         new("image", "Picture. In Word, PowerPoint and Excel files the picture tools write Office's own picture markup, so the file looks the same in Office.")
         {
             Formats = Pictures, Parents = ["body", "slide", "sheet", "cell", "paragraph", "heading"],

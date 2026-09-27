@@ -52,6 +52,7 @@ static class DocxBlocks
     {
         W.Paragraph p when DocxToc.HasTocField(p) => new DocxToc(doc, DocxToc.BareField(p)),
         W.Paragraph p when DocxImage.IsPictureParagraph(p) => DocxImage.Block(doc, p),
+        W.Paragraph p when DocxObject.IsObjectParagraph(p) => DocxObject.Block(doc, p),
         W.Paragraph p when DocxPageBreak.IsPageBreak(p) => new DocxPageBreak(doc, p),
         W.Paragraph p => new DocxParagraph(doc, p),
         W.Table t => new DocxTable(doc, t),

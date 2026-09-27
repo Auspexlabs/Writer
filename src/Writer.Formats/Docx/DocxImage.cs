@@ -30,6 +30,7 @@ sealed class DocxImage(DocxDocument doc, W.Drawing drawing, W.Paragraph? block =
         DocxRuns.ParagraphText(p).Length == 0
         && p.Descendants<W.Drawing>().Count() == 1
         && p.Descendants<PIC.Picture>().Count() == 1
+        && PicOf(p.Descendants<W.Drawing>().First()) is not null // not a group or canvas holding one picture: that is an object
         && p.Descendants<DW.Inline>().Any();
 
     /// <summary>The pictures in a paragraph's own runs (not in text boxes or alternate content).</summary>
