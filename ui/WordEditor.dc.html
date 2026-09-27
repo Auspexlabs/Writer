@@ -668,11 +668,41 @@ class Component extends DCLogic {
    *  to the selection. */
   applyStyle(s) {
     if (s.type === 'character') return this.charStyle(s.id);
-    const name = String(s.name || '').toLowerCase(), h = s.heading;
+    const name = String(s.name || '').toLowerCase(), h = s.heading, word = h >= 1 && h <= 3 && (/^heading [1-3]$/.test(name) || /^Heading[1-3]$/.test(s.id || ''));
     const tag = h >= 1 && h <= 3 ? 'h' + h : name === 'quote' ? 'blockquote' : name === 'code' ? 'pre' : name === 'title' ? 'h1' : name === 'subtitle' ? 'h2' : 'p';
-    this.exec('formatBlock', '<' + tag + '>');
-    const own = !(h >= 1 && h <= 3) && name !== 'normal' && name !== 'code'; // what the tag alone does not say rides on data-style
-    this.blocks().forEach(b => { b.removeAttribute('data-level'); if (own) b.setAttribute('data-style', s.id); else b.removeAttribute('data-style'); }); // the level is the tag's now
+    const own = !word && name !== 'normal' && name !== 'code'; // what the tag alone does not say rides on data-style (Title on an h1, a heading style of the document's own)
+    // each paragraph becomes the tag in place, keeping what else it had (its spacing, indents, bookmark, path): not formatBlock,
+    // which makes new elements without them and leaves the selection nowhere
+    const sel = window.getSelection(), r0 = sel.rangeCount ? sel.getRangeAt(0) : null, keep = r0 && [r0.startContainer, r0.startOffset, r0.endContainer, r0.endOffset];
+    const made = new Map();
+    for (const b0 of this.blocks()) {
+      const b = b0.tagName === 'LI' || b0.tagName.toLowerCase() === tag ? b0 : this.retag(b0, tag); made.set(b0, b);
+      b.removeAttribute('data-level'); // the level is the tag's now
+      if (own) b.setAttribute('data-style', s.id); else b.removeAttribute('data-style');
+    }
+    if (keep) { const at = n => made.get(n) || n; try { sel.setBaseAndExtent(at(keep[0]), keep[1], at(keep[2]), keep[3]); this.range = sel.getRangeAt(0).cloneRange(); } catch (e) { } }
+    this.after();
+  }
+  /** The block as another tag: its attributes and its contents moved over, so the text nodes (and a caret in them) are the same. */
+  retag(el, tag) {
+    const n = document.createElement(tag);
+    for (const a of Array.from(el.attributes)) n.setAttribute(a.name, a.value);
+    while (el.firstChild) n.appendChild(el.firstChild);
+    el.replaceWith(n);
+    return n;
+  }
+  /** 增加 / 减少缩进: a list item goes a level in or out; any other paragraph's left indent moves a step (half an inch, two
+   *  characters in Chinese text) — not the browser's indent, which wraps the paragraph in a quotation (saved as 引用). */
+  indentBy(dir) {
+    const at = this.caretEl(), li = at && at.closest && at.closest('li');
+    if (li && this.edRef.current.contains(li)) { this.exec(dir > 0 ? 'indent' : 'outdent'); return; }
+    const EN = this.EN;
+    this.blocks().forEach(b => {
+      const cur = parseFloat(b.getAttribute('data-w-indentleft') || '0') || 0, step = /[\u3400-\u9fff]/.test(b.textContent) ? 0.74 : 1.27;
+      const next = Math.max(0, Math.round((Math.round(cur / step + 1e-6) + dir) * step * 100) / 100); // to the next stop, as Word
+      if (next > 0) b.setAttribute('data-w-indentleft', next + 'cm'); else b.removeAttribute('data-w-indentleft');
+      EN && EN.drawPara(b);
+    });
     this.after();
   }
   /** A character style (强调, 明显强调, the document's own) on the selected text as <span data-style>, which the save writes as rStyle; '' clears it. */
@@ -2092,7 +2122,7 @@ class Component extends DCLogic {
         swatch('高亮', st.lastHl, null, { id: 'hl', title: '高亮' }))),
       G('对齐与缩进', R(seg([['left', 'alignLeft', '左对齐'], ['center', 'alignCenter', '居中'], ['right', 'alignRight', '右对齐'], ['justify', 'justify', '两端对齐'], ['distribute', 'distribute', '分散对齐']]
           .map(([a, icon, title]) => ({ icon, title, on: f.align === a, onClick: () => this.align(a) })))),
-        R(seg([{ icon: 'outdent', title: '减少缩进', tip: '减少缩进 Shift+Tab', onClick: () => this.exec('outdent') }, { icon: 'indent', title: '增加缩进', tip: '增加缩进 Tab', onClick: () => this.exec('indent') }], { w: 72 }),
+        R(seg([{ icon: 'outdent', title: '减少缩进', tip: '减少缩进 Shift+Tab', onClick: () => this.indentBy(-1) }, { icon: 'indent', title: '增加缩进', tip: '增加缩进 Tab', onClick: () => this.indentBy(1) }], { w: 72 }),
           sel('indfirst', indLabel, [['', '首行不缩进'], ['2ch', '首行缩进 2 字符'], ['-2ch', '悬挂缩进 2 字符']].map(([v, l]) => I(l, () => this.para('indentFirst', v), { on: ind === v })).concat([I('段落…', () => this.paraDlg())]), { title: '首行缩进' }))),
       G('间距', R(lab('行距'), sp(), sel('lh', lhLabel, null, { w: 120, title: '行距' })),
         R(lab('段前'), num(spaceText(pat.spacebefore), d => this.para('spaceBefore', spaceStep(pat.spacebefore, d)), t => { const v = spaceParse(t); if (v != null) this.para('spaceBefore', v); }, { title: '段前' }), sp(),
@@ -2304,7 +2334,7 @@ class Component extends DCLogic {
       B('• 列表', () => this.exec('insertUnorderedList'), { on: f.ul }), B('1. 列表', () => this.exec('insertOrderedList'), { on: f.ol }),
       M('ol', '编号', [HD($t('编号库')), I('1. a. i.', () => this.setListKind('number'), { on: f.lk === 'number' }), I('1. 1.1 1.1.1', () => this.setListKind('outline'), { on: f.lk === 'outline' }), I('一、（一）1.', () => this.setListKind('chinese'), { on: f.lk === 'chinese' }), // i18n-ok — the galleries' own markers
         HD(''), I('重新开始编号', () => this.restartList(true)), I('继续编号', () => this.restartList(false))], '编号样式：1. a. i.、1. 1.1 1.1.1、一、（一）1.；Tab / Shift+Tab 升降级'),
-      B('⇤', () => this.exec('outdent'), { title: '减少缩进 Shift+Tab' }), B('⇥', () => this.exec('indent'), { title: '增加缩进 Tab' }),
+      B('⇤', () => this.indentBy(-1), { title: '减少缩进 Shift+Tab' }), B('⇥', () => this.indentBy(1), { title: '增加缩进 Tab' }),
       M('lh', '行距', [['1.0', '1'], ['1.15', '1.15'], ['1.5', '1.5'], ['2.0', '2'], ['2.5', '2.5'], ['3.0', '3']].map(([l, v]) => I(l, () => this.para('lineSpacing', v), { on: (f.pat || {}).linespacing === v }))
         .concat([I('固定值…', () => this.prompt('行距', [{ key: 'pt', label: '行距（磅）', value: '18', first: true }], v => { if (+v.pt > 0) this.para('lineSpacing', +v.pt + 'pt'); })), I('段落…', () => this.paraDlg())])),
       M('pbd', '边框', [['bottom', '下框线'], ['top', '上框线'], ['left', '左框线'], ['right', '右框线'], ['box', '外侧框线'], ['none', '无框线']].map(([k, l]) => I(l, () => this.pborder(k), { on: k !== 'none' && (((f.pat || {}).border || '') === 'box' ? k !== 'none' : ((f.pat || {}).border || '').split(' ').includes(k)) }))),
