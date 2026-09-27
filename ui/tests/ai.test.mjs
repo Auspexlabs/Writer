@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { AI_PROVIDERS, aiPreset, aiForm, pickProvider, keyStored, aiRequest, aiMissing, fastModel, modelMenu, modelName, listedModels, keepListed } from '../prefs.js';
+import { AI_PROVIDERS, aiPreset, aiForm, pickProvider, keyStored, aiRequest, aiMissing, fastModel, modelMenu, modelName, listedModels, keepListed, accountLine } from '../prefs.js';
 
 globalThis.window = globalThis; // pdf-kit.js keeps its store on window at import time
 if (!globalThis.dispatchEvent) { // a browser window is an EventTarget; Node's global is not
@@ -23,13 +23,13 @@ test('the providers match the engine\'s list: same ids, addresses, and which one
 
 test('aiForm: GET /ai becomes the form; a stored key is a flag, never a value', () => {
   assert.deepEqual(aiForm({ provider: 'anthropic', baseUrl: 'https://api.anthropic.com', model: '', hasKey: false, source: 'none' }),
-    { provider: 'anthropic', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-5', completeModel: 'claude-haiku-4-5', key: '', hasKey: false, savedUrl: 'https://api.anthropic.com', source: 'none' }, 'nothing saved yet: the recommended models are chosen');
+    { provider: 'anthropic', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-5', completeModel: 'claude-haiku-4-5', key: '', hasKey: false, savedUrl: 'https://api.anthropic.com', source: 'none', account: null }, 'nothing saved yet: the recommended models are chosen');
   assert.deepEqual([aiForm({ provider: 'deepseek', model: 'deepseek-v4-pro', source: 'file' }).completeModel, aiForm({ provider: 'custom', model: '', source: 'file' }).model], ['', ''], 'saved settings are shown as they are');
   assert.equal(aiForm({ provider: 'openai', completeModel: 'gpt-6-luna' }).completeModel, 'gpt-6-luna');
   const saved = aiForm({ provider: 'deepseek', baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash', hasKey: true, source: 'file' });
   assert.equal(saved.key, '');
   assert.equal(keyStored(saved), true);
-  assert.deepEqual(aiForm(null), { provider: 'anthropic', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-5', completeModel: 'claude-haiku-4-5', key: '', hasKey: false, savedUrl: '', source: 'none' });
+  assert.deepEqual(aiForm(null), { provider: 'anthropic', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-5', completeModel: 'claude-haiku-4-5', key: '', hasKey: false, savedUrl: '', source: 'none', account: null });
   assert.equal(aiForm({ provider: 'someday' }).provider, 'custom');
 });
 
@@ -67,9 +67,56 @@ test('every service with a key has models to choose from, one marked for the aut
     assert.ok(p.models.every(m => m.id && m.name && m.note && !/[\u3400-\u9fff]/.test(m.name)), p.id + ': ids, names without Chinese, notes');
     assert.equal(new Set(p.models.map(m => m.id)).size, p.models.length);
   }
-  assert.deepEqual(AI_PROVIDERS.filter(x => !x.key).map(x => x.models.length), [0, 0, 0], 'local servers and custom addresses list their own');
+  assert.deepEqual(AI_PROVIDERS.filter(x => !x.key && !x.login).map(x => x.models.length), [0, 0, 0], 'local servers and custom addresses list their own');
+  const gpt = AI_PROVIDERS.filter(x => x.login);
+  assert.deepEqual(gpt.map(x => [x.id, x.key, x.model, x.models[0].id, x.models.filter(m => m.fast).map(m => m.id)]), [['chatgpt', false, 'gpt-6-astra', 'gpt-6-astra', ['gpt-5.6-luna']]], 'a sign-in, no key; the Codex default first');
+  assert.ok(gpt[0].models.every(m => m.id && m.name && m.note && !/[\u3400-\u9fff]/.test(m.name)));
   assert.deepEqual([fastModel('anthropic'), fastModel('openai'), fastModel('glm'), fastModel('custom')], ['claude-haiku-4-5', 'gpt-6-luna', 'glm-4.7-flashx', '']);
   assert.deepEqual([modelName('anthropic', 'claude-opus-5-5'), modelName('anthropic', 'claude-x'), modelName('openai', '')], ['Claude Opus 5.5', 'claude-x', '']);
+});
+
+test('用 ChatGPT 登录: the form carries the account, never a key or an address of its own; saving waits for the sign-in', () => {
+  const signedOut = aiForm({ provider: 'chatgpt', baseUrl: 'https://chatgpt.com/backend-api/codex', model: 'gpt-6-astra', completeModel: 'gpt-5.6-luna', hasKey: false, source: 'file' });
+  assert.equal(signedOut.account, null);
+  assert.equal(aiMissing(signedOut), '请先用 ChatGPT 登录');
+  const account = { email: 'ada@example.com', plan: 'plus' }, form = { ...signedOut, account, key: 'sk-typed', baseUrl: 'https://elsewhere.example/v1' };
+  assert.equal(aiMissing(form), '');
+  assert.deepEqual(aiRequest(form), { provider: 'chatgpt', baseUrl: 'https://chatgpt.com/backend-api/codex', model: 'gpt-6-astra', completeModel: 'gpt-5.6-luna' }, 'the sign-in\'s tokens only go to the Codex backend; a typed key is not sent');
+  assert.deepEqual(aiForm({ provider: 'deepseek', model: 'deepseek-flash', source: 'file', account }).account, account, 'the sign-in stays while another service is in use');
+  const picked = pickProvider({ ...aiForm({ provider: 'deepseek', model: 'deepseek-flash', source: 'file', account }), key: 'sk-1' }, 'chatgpt');
+  assert.deepEqual([picked.provider, picked.baseUrl, picked.model, picked.completeModel, picked.key, picked.account], ['chatgpt', 'https://chatgpt.com/backend-api/codex', 'gpt-6-astra', 'gpt-5.6-luna', '', account]);
+  assert.deepEqual([accountLine(account), accountLine({ email: 'b@x.test', plan: 'team' }), accountLine({ email: 'c@x.test', plan: 'someday' }), accountLine({ email: 'd@x.test' }), accountLine(null)],
+    ['ada@example.com · Plus', 'b@x.test · Business', 'c@x.test · someday', 'd@x.test', '']);
+  assert.deepEqual(modelMenu('chatgpt', [{ id: 'gpt-6-astra' }, { id: 'gpt-5.7-sol', name: 'GPT-5.7 Sol' }], 'gpt-6-astra').map(m => m.id), ['gpt-6-astra', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5', 'gpt-5.7-sol'], 'what the plan lists joins the menu');
+});
+
+test('chatgptSignIn starts the sign-in, follows it to its end and announces the new settings; cancel and sign-out go to the engine', async () => {
+  const heard = [], stored = {}, states = [];
+  globalThis.localStorage = { setItem: (k, v) => { stored[k] = v; } };
+  const listen = () => heard.push('writer-ai');
+  globalThis.addEventListener('writer-ai', listen);
+  try {
+    let polls = 0;
+    await withEngine((url, opts) => url === '/ai/chatgpt/login' && opts.method === 'POST' ? [200, { url: 'https://auth.openai.com/oauth/authorize?state=s', opened: false }]
+      : url === '/ai/chatgpt/login' ? [200, ++polls < 3 ? { state: 'waiting' } : { state: 'done', email: 'ada@example.com', plan: 'plus' }]
+      : url === '/ai/chatgpt/cancel' ? [200, { state: 'cancelled' }] : [200, { provider: 'chatgpt', model: 'gpt-6-astra', source: 'file' }], async calls => {
+      const end = await EN.chatgptSignIn(s => states.push(s), null, 1);
+      assert.deepEqual(end, { state: 'done', email: 'ada@example.com', plan: 'plus' });
+      assert.deepEqual(states, [{ state: 'waiting', url: 'https://auth.openai.com/oauth/authorize?state=s', opened: false }, end], 'the waiting polls are not announced one by one');
+      assert.deepEqual(heard, ['writer-ai'], 'done: the panel and other windows pick up ChatGPT');
+      assert.deepEqual(await EN.chatgptCancel(), { state: 'cancelled' });
+      assert.deepEqual((await EN.chatgptLogout()).provider, 'chatgpt');
+      assert.deepEqual(heard, ['writer-ai', 'writer-ai']);
+      assert.deepEqual(calls.map(c => [c.method, c.url]), [['POST', '/ai/chatgpt/login'], ['GET', '/ai/chatgpt/login'], ['GET', '/ai/chatgpt/login'], ['GET', '/ai/chatgpt/login'], ['POST', '/ai/chatgpt/cancel'], ['POST', '/ai/chatgpt/logout']]);
+      assert.deepEqual([calls[0].body, calls[4].body, calls[5].body], [{}, {}, {}]);
+    });
+    await withEngine(url => url === '/ai/chatgpt/login' ? [200, { state: 'waiting', url: 'u', opened: true }] : [404, {}], async () => {
+      const ac = new AbortController(), following = EN.chatgptSignIn(null, ac.signal, 50);
+      setTimeout(() => ac.abort(), 20);
+      await assert.rejects(following, e => e.name === 'AbortError', 'a closed window stops following; the sign-in goes on in the engine');
+    });
+    assert.equal(heard.length, 2);
+  } finally { globalThis.removeEventListener('writer-ai', listen); delete globalThis.localStorage; }
 });
 
 test('modelMenu: the service\'s own models with their notes, then what it listed, then a name typed in; each once', () => {
@@ -160,7 +207,9 @@ test('the settings window and the shell use these: rows, the write-only key fiel
   for (const s of ['EN.aiConfig()', 'EN.saveAiConfig(', 'EN.testAi(', "type: type || 'text'", "'password'", "'清除'", "'已保存'", "'测试连接'", "'服务商'", "'接口地址'", "'模型'"])
     assert.ok(settings.includes(s), 'MacSettings: ' + s);
   const shell = readFileSync(new URL('../index.dc.html', import.meta.url), 'utf8');
-  assert.match(shell, /const NO_CHAT = '在「设置 › AI」里填写你自己的模型 API/);
+  assert.match(shell, /const NO_CHAT = '在「设置 › AI」里用 ChatGPT 账号登录，或填写你自己的模型 API/);
+  for (const s of ['EN.chatgptSignIn(', 'EN.chatgptCancel()', 'EN.chatgptLogout()', 'data-chatgpt-login', 'gptOn: !!P && !EMBED']) assert.ok(shell.includes(s), 'the AI panel: ' + s);
+  for (const s of ['EN.chatgptSignIn(', 'EN.chatgptCancel()', 'EN.chatgptLogout()', "'ChatGPT 账号'", "'用 ChatGPT 登录'"]) assert.ok(settings.includes(s), 'MacSettings: ' + s);
   assert.ok(!shell.includes('ANTHROPIC_API_KEY'), 'no env-var hint in the panel any more');
   assert.ok(shell.includes("openAiSettings: () => this.openSettings('ai')") && shell.includes('this.props.onPrefs(tab)'));
   assert.ok(shell.includes("addEventListener('writer-ai', this.onAi)") && shell.includes("e.key === 'writer-ai'"), 'the panel picks up a saved model without a reload');

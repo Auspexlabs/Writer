@@ -63,7 +63,9 @@ const m = (id, name, note, fast) => ({ id, name, note, fast: !!fast });
 
 /** 设置 › AI: the model services on offer, the same as AiConfig.Providers in src/Writer.Cli/AiConfig.cs (tests/ai.test.mjs checks).
  *  url fills 接口地址; model is the service's recommended model, picked with it (Anthropic's is also the default when none is given);
- *  key: the service needs an API Key (local servers and custom endpoints may run without); models: the menu's models, checked
+ *  key: the service needs an API Key (local servers and custom endpoints may run without); login: a ChatGPT sign-in instead of a key
+ *  (the Codex CLI's, src/Writer.Cli/ChatGpt.cs; its models are the ones a ChatGPT plan has in Codex, from OpenClaw's docs, checked
+ *  2026-09-27, and what the plan lists once signed in); models: the menu's models, checked
  *  2026-09-26 on each service's model page (developers.openai.com/api/docs/models, platform.claude.com/docs/en/about-claude/models,
  *  api-docs.deepseek.com/quick_start/pricing, help.aliyun.com/zh/model-studio/models, platform.kimi.com/docs/pricing/chat,
  *  docs.bigmodel.cn/cn/guide/start/model-overview, the Volcengine Ark model list). A key adds what the service itself lists
@@ -74,6 +76,9 @@ export const AI_PROVIDERS = [
     m('claude-fable-5-1', 'Claude Fable 5.1', '推理最强，较慢'), m('claude-haiku-4-5', 'Claude Haiku 4.5', '最快，适合自动补全', true)] },
   { id: 'openai', name: 'OpenAI', url: 'https://api.openai.com/v1', model: 'gpt-6-sol', key: true, models: [
     m('gpt-6-sol', 'GPT-6 Sol', '能力和价格均衡'), m('gpt-6-astra', 'GPT-6 Astra', '最强，适合复杂任务'), m('gpt-6-luna', 'GPT-6 Luna', '最快最省，适合自动补全', true)] },
+  { id: 'chatgpt', name: 'ChatGPT（账号登录）', url: 'https://chatgpt.com/backend-api/codex', model: 'gpt-6-astra', key: false, login: true, models: [
+    m('gpt-6-astra', 'GPT-6 Astra', 'Codex 默认，最强'), m('gpt-5.6-terra', 'GPT-5.6 Terra', '能力和速度均衡'),
+    m('gpt-5.6-luna', 'GPT-5.6 Luna', '最快、最省额度，适合自动补全', true), m('gpt-5.5', 'GPT-5.5', '上一代')] },
   { id: 'deepseek', name: 'DeepSeek', url: 'https://api.deepseek.com', model: 'deepseek-flash', key: true, models: [
     m('deepseek-flash', 'DeepSeek V4.1 Flash', '快而便宜，也适合自动补全', true), m('deepseek-v4-pro', 'DeepSeek V4 Pro', '更强')] },
   { id: 'qwen', name: '通义千问', url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen3.7-plus', key: true, models: [
@@ -98,8 +103,12 @@ const origin = u => { try { return new URL(u).origin; } catch (e) { return ''; }
  *  Nothing saved yet: the service's recommended model and its fast one are chosen already. */
 export function aiForm(cfg) {
   const c = cfg || {}, p = aiPreset(c.provider || 'anthropic'), fresh = !c.source || c.source === 'none';
-  return { provider: p.id, baseUrl: c.baseUrl || p.url, model: c.model || (fresh ? p.model : ''), completeModel: c.completeModel || (fresh && !c.model ? fastModel(p.id) : ''), key: '', hasKey: !!c.hasKey, savedUrl: c.baseUrl || '', source: c.source || 'none' };
+  return { provider: p.id, baseUrl: c.baseUrl || p.url, model: c.model || (fresh ? p.model : ''), completeModel: c.completeModel || (fresh && !c.model ? fastModel(p.id) : ''), key: '', hasKey: !!c.hasKey, savedUrl: c.baseUrl || '', source: c.source || 'none', account: c.account || null };
 }
+
+const PLANS = { free: 'Free', go: 'Go', plus: 'Plus', pro: 'Pro', team: 'Business', business: 'Business', enterprise: 'Enterprise', edu: 'Edu' };
+/** The ChatGPT sign-in as the settings show it: its email and plan (ada@example.com · Plus), '' when signed out. */
+export const accountLine = a => !a ? '' : [a.email, PLANS[a.plan] || a.plan].filter(Boolean).join(' · ');
 
 /** The model the autocomplete uses by default with a service: its fast one, else the assistant's (''). */
 export const fastModel = id => (aiPreset(id).models.find(x => x.fast) || { id: '' }).id;
@@ -139,8 +148,8 @@ export const keyStored = form => !!form.hasKey && !!origin(form.baseUrl) && orig
 /** The PUT /ai (and POST /ai/test) body: apiKey only when one was typed; left out, the engine keeps the stored key. */
 export function aiRequest(form) {
   const p = aiPreset(form.provider), key = String(form.key || '').trim();
-  const body = { provider: p.id, baseUrl: String(form.baseUrl || '').trim().replace(/\/+$/, ''), model: String(form.model || '').trim() || (p.id === 'anthropic' ? p.model : ''), completeModel: String(form.completeModel || '').trim() };
-  if (key) body.apiKey = key;
+  const body = { provider: p.id, baseUrl: p.login ? p.url : String(form.baseUrl || '').trim().replace(/\/+$/, ''), model: String(form.model || '').trim() || (p.id === 'anthropic' ? p.model : ''), completeModel: String(form.completeModel || '').trim() };
+  if (key && !p.login) body.apiKey = key;
   return body;
 }
 
@@ -149,7 +158,7 @@ const httpUrl = u => { try { const x = new URL(u); return /^https?:$/.test(x.pro
 /** What the form still lacks before it can be saved, or ''. */
 export function aiMissing(form) {
   const b = aiRequest(form);
-  return !httpUrl(b.baseUrl) ? '请填写接口地址（http:// 或 https:// 开头）' : !b.model ? '请选择模型' : '';
+  return !httpUrl(b.baseUrl) ? '请填写接口地址（http:// 或 https:// 开头）' : !b.model ? '请选择模型' : aiPreset(b.provider).login && !form.account ? '请先用 ChatGPT 登录' : '';
 }
 
 export const PAIRS = { '「': '」', '『': '』', '《': '》', '“': '”', '‘': '’', '（': '）', '【': '】' }; // i18n-ok

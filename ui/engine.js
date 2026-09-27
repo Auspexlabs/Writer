@@ -187,7 +187,8 @@ export async function chat(doc, messages, onEvent, opts) {
 // ---------- 设置 › AI: the model settings live in the engine, so a settings window of its own (same engine) sees the same ----------
 const JSON_BODY = { 'Content-Type': 'application/json' };
 
-/** The model settings: { provider, baseUrl, model, hasKey, source } (source: env | file | none). The key itself never comes back. */
+/** The model settings: { provider, baseUrl, model, completeModel, hasKey, source, account? } (source: env | file | none; account
+ *  { email, plan }: the ChatGPT sign-in). The key and the sign-in's tokens never come back. */
 export async function aiConfig() { return (await http('/ai')).json(); }
 
 /** Saves { provider, baseUrl, model, apiKey? }: apiKey left out keeps the stored key, '' clears it. The engine switches its assistant at
@@ -195,8 +196,46 @@ export async function aiConfig() { return (await http('/ai')).json(); }
 export async function saveAiConfig(settings) {
   // keepalive: a save on leaving a field still lands when that was the settings window closing
   const r = await (await http('/ai', { method: 'PUT', headers: JSON_BODY, body: JSON.stringify(settings), keepalive: true })).json();
+  aiChanged();
+  return r;
+}
+
+/** The model settings changed: this window hears 'writer-ai', the others a storage event on the key 'writer-ai'. */
+function aiChanged() {
   try { globalThis.localStorage.setItem('writer-ai', String(Date.now())); } catch (e) { }
   try { globalThis.dispatchEvent(new Event('writer-ai')); } catch (e) { }
+}
+
+const sleep = (ms, signal) => new Promise((resolve, reject) => {
+  const stop = () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')); };
+  const t = setTimeout(() => { signal && signal.removeEventListener('abort', stop); resolve(); }, ms);
+  if (signal) signal.aborted ? stop() : signal.addEventListener('abort', stop, { once: true });
+});
+
+/** 用 ChatGPT 登录: starts the sign-in (the engine opens its page in the system's browser) and follows it to its end. onState hears
+ *  { state: 'waiting', url, opened } first (opened false: show url to open by hand), then the end: { state: 'done', email, plan } with
+ *  ChatGPT now the assistant's service, { state: 'error', error }, or 'cancelled' ('none' when another sign-in took its place).
+ *  signal stops following it; chatgptCancel ends the sign-in itself. Resolves with the end. */
+export async function chatgptSignIn(onState, signal, every = 1000) {
+  const start = await (await http('/ai/chatgpt/login', { method: 'POST', headers: JSON_BODY, body: '{}' })).json();
+  if (onState) onState({ state: 'waiting', url: start.url, opened: !!start.opened });
+  for (;;) {
+    await sleep(every, signal);
+    const s = await (await http('/ai/chatgpt/login', { signal })).json();
+    if (s.state === 'waiting') continue;
+    if (s.state === 'done') aiChanged();
+    if (onState) onState(s);
+    return s;
+  }
+}
+
+/** Ends a sign-in under way: { state: 'cancelled' }. */
+export async function chatgptCancel() { return (await http('/ai/chatgpt/cancel', { method: 'POST', headers: JSON_BODY, body: '{}' })).json(); }
+
+/** 退出 ChatGPT 登录: the engine deletes the sign-in's tokens. Resolves with the settings that apply now (no account). */
+export async function chatgptLogout() {
+  const r = await (await http('/ai/chatgpt/logout', { method: 'POST', headers: JSON_BODY, body: '{}' })).json();
+  aiChanged();
   return r;
 }
 

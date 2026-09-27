@@ -71,6 +71,7 @@
                   </div>
                 </sc-if>
                 <sc-if value="{{ r.isButton }}" hint-placeholder-val="{{ false }}">
+                  <sc-if value="{{ r.btnAct }}" hint-placeholder-val="{{ false }}"><button onClick="{{ r.onBtnAct }}" style="flex:none;height:24px;padding:0 12px;border:none;border-radius:7px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px var(--k22, rgba(0,0,0,0.12)),0 1px 2px var(--k66, rgba(0,0,0,0.06));font-size:12.5px;color:var(--ink, #1D1D1F);cursor:default;white-space:nowrap">{{ r.btnActLabel }}</button></sc-if>
                   <button onClick="{{ r.onClick }}" style="flex:none;height:24px;padding:0 14px;border:none;border-radius:7px;background:var(--gctl, rgba(255,255,255,0.8));box-shadow:0 0 0 0.5px var(--k22, rgba(0,0,0,0.12)),0 1px 2px var(--k66, rgba(0,0,0,0.06));font-size:12.5px;color:var(--ink, #1D1D1F);cursor:default;white-space:nowrap">{{ r.btn }}</button>
                 </sc-if>
               </div>
@@ -137,7 +138,7 @@ class Component extends DCLogic {
   }
   /** A model is set up (as the engine sees it: a model, and a key unless the service runs without one) and 自动补全 is on. */
   aiReady() { const P = this.P, f = this.state.ai; return !!(P && f && this.state.v.complete !== false && !P.aiMissing(f) && (P.keyStored(f) || !P.aiPreset(f.provider).key)); }
-  componentWillUnmount() { this.gone = true; this.ac && this.ac.remove(); }
+  componentWillUnmount() { this.gone = true; this.ac && this.ac.remove(); this.loginAbort && this.loginAbort.abort(); } // a sign-in under way goes on in the engine
   aiKey(ai, body) { const b = Object.assign({}, body || this.P.aiRequest(ai)); delete b.apiKey; return JSON.stringify(b); }
   editAi(patch) { this.setState(s => ({ ai: Object.assign({}, s.ai, patch) })); }
   pickAi(id) { this.setState(s => ({ ai: this.P.pickProvider(s.ai, id), aiMsg: '', otherModel: false, modelsMsg: '' }), () => { this.saveAi(); this.loadModels(false); }); }
@@ -151,6 +152,7 @@ class Component extends DCLogic {
   async loadModels(asked) {
     const P = this.P, EN = this.EN, f = this.state.ai; if (!P || !EN || !f || !EN.aiModels) return;
     const b = P.aiRequest(f), p = P.aiPreset(f.provider);
+    if (p.login && !f.account) { if (asked) this.setState({ modelsMsg: $t('先用 ChatGPT 登录，才能读取账号可用的模型') }); return; }
     if (!/^https?:\/\//.test(b.baseUrl) || (p.key && !P.keyStored(f) && !b.apiKey)) { if (asked) this.setState({ modelsMsg: $t('先填写 API Key，才能读取这家的模型列表') }); return; }
     this.setState({ modelsBusy: true, modelsMsg: '' });
     try {
@@ -170,6 +172,33 @@ class Component extends DCLogic {
     return this.aiSaving = EN.saveAiConfig(body).then(c => this.setState(s => ({ aiMsg: '已保存', ai: Object.assign({}, s.ai, { hasKey: c.hasKey, savedUrl: c.baseUrl, source: c.source, key: body.apiKey != null && s.ai.key === f.key ? '' : s.ai.key }) }), () => { if (body.apiKey) this.loadModels(false); }),
       e => { this.aiSent = null; this.setState({ aiMsg: e.hint ? $t('{error}（{hint}）', { error: e.message, hint: e.hint }) : e.message }); });
   }
+  /** 用 ChatGPT 登录: the engine opens the sign-in page in the browser; this follows it, and once it is done shows the settings the
+   *  engine saved with it (ChatGPT, its model, the account). */
+  async signIn() {
+    const EN = this.EN, L = this.state.login; if (!EN || (L && L.state === 'waiting')) return;
+    const ac = this.loginAbort = new AbortController();
+    try {
+      const end = await EN.chatgptSignIn(s => { if (!ac.signal.aborted) this.setState({ login: s, aiMsg: '' }); }, ac.signal);
+      if (end.state !== 'done') { this.setState({ login: end.state === 'error' ? end : null }); return; }
+      const ai = this.P.aiForm(await EN.aiConfig()); this.aiSent = this.aiKey(ai);
+      this.setState({ ai, login: null, otherModel: false, aiMsg: $t('已登录 ChatGPT') }, () => this.loadModels(false));
+    } catch (e) { if (e.name !== 'AbortError') this.setState({ login: { state: 'error', error: $t(e.message) } }); }
+  }
+  async signOut() {
+    const EN = this.EN; if (!EN) return;
+    try { await EN.chatgptLogout(); this.setState(s => ({ ai: Object.assign({}, s.ai, { account: null }), aiMsg: $t('已退出 ChatGPT 登录') })); }
+    catch (e) { this.setState({ aiMsg: $t(e.message) }); }
+  }
+  /** ChatGPT 账号: signed in (the email and plan, 退出登录), a sign-in under way (复制链接 for a browser that did not open, 取消), or
+   *  用 ChatGPT 登录 (again, after an error). */
+  accountRow(base) {
+    const P = this.P, f = this.state.ai, L = this.state.login;
+    if (L && L.state === 'waiting') return { ...base('ChatGPT 账号', L.opened ? '在浏览器里登录 ChatGPT，完成后回到这里。' : '浏览器没有自动打开：复制链接，粘贴到浏览器里打开。'), isButton: true, btn: $t('取消'),
+      onClick: () => this.EN.chatgptCancel().catch(() => { }), btnAct: true, btnActLabel: $t('复制链接'),
+      onBtnAct: () => { if (navigator.clipboard) navigator.clipboard.writeText(L.url).then(() => this.setState({ aiMsg: $t('登录链接已复制，粘贴到浏览器里打开') }), () => { }); } };
+    if (f.account) return { ...base('ChatGPT 账号', P.accountLine(f.account)), isButton: true, btn: $t('退出登录'), onClick: () => this.signOut() };
+    return { ...base('ChatGPT 账号', L && L.state === 'error' ? L.error : '用 ChatGPT 订阅（Plus、Pro 等）的额度，不需要 API Key'), isButton: true, btn: $t(L ? '重新登录' : '用 ChatGPT 登录'), onClick: () => this.signIn() };
+  }
   async testAi() {
     const P = this.P, EN = this.EN; if (!P || !EN || !this.state.ai) return;
     if (this.aiSaving) await this.aiSaving;
@@ -185,10 +214,12 @@ class Component extends DCLogic {
     const field = (k, label, ph, hint, type) => ({ ...base(label, hint), isInput: true, type: type || 'text', ac: type === 'password' ? 'new-password' : 'off', value: f[k] || '', ph: $t(ph), w: '260px', hasAct: false, onChange: e => this.editAi({ [k]: e.target.value }), onBlur: () => this.saveAi(), onKey: e => { if (e.key === 'Escape' || (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229))) e.currentTarget.blur(); } }); // Esc closes the window: save what was typed first
     const menu = this.modelMenu(), cur = menu.find(x => x.id === f.model), other = !!this.state.otherModel;
     const note = this.state.modelsMsg || (other ? '' : cur ? (cur.note ? $t(cur.note) : cur.listed ? $t('这家服务商列出的模型') : '') : p.models.length ? '' : $t('点「刷新列表」读取可用的模型'));
+    const service = { ...base('服务商', f.source === 'env' ? '正在使用环境变量里的设置，它优先于这里保存的内容' : p.login ? '借用 Codex 的登录方式，不是 OpenAI 对其他软件开放的接口，可能随时失效' : ''), isPopup: true, value: f.provider, opts: P.AI_PROVIDERS.filter(x => !(x.login && window.__WRITER_EMBED__)).map(x => ({ v: x.id, l: $t(x.name) })), minW: '170px', onChange: e => this.pickAi(e.target.value) };
     return [
-      { ...base('服务商', f.source === 'env' ? '正在使用环境变量里的设置，它优先于这里保存的内容' : ''), isPopup: true, value: f.provider, opts: P.AI_PROVIDERS.map(x => ({ v: x.id, l: $t(x.name) })), minW: '170px', onChange: e => this.pickAi(e.target.value) },
-      field('baseUrl', '接口地址', p.url || 'https://…/v1'),
-      { ...field('key', 'API Key', stored ? '已保存' : p.key ? '粘贴 API Key' : '不需要可留空', '只保存在这台电脑上', 'password'), w: stored ? '206px' : '260px', hasAct: stored, act: $t('清除'), onAct: () => this.saveAi(true) },
+      service,
+      ...(p.login ? [this.accountRow(base)] : [
+        field('baseUrl', '接口地址', p.url || 'https://…/v1'),
+        { ...field('key', 'API Key', stored ? '已保存' : p.key ? '粘贴 API Key' : '不需要可留空', '只保存在这台电脑上', 'password'), w: stored ? '206px' : '260px', hasAct: stored, act: $t('清除'), onAct: () => this.saveAi(true) }]),
       { ...base('模型', note), isPopup: true, value: other ? '__other' : f.model || '', minW: '200px',
         opts: (f.model || other ? [] : [{ v: '', l: $t('请选择') }]).concat(menu.map(x => ({ v: x.id, l: x.name })), [{ v: '__other', l: $t('其他模型…') }]),
         onChange: e => this.pickModel(e.target.value), popAct: true, act: $t(this.state.modelsBusy ? '读取中…' : '刷新列表'), onAct: () => this.loadModels(true) },
@@ -200,9 +231,10 @@ class Component extends DCLogic {
   modelMenu() { const P = this.P, f = this.state.ai; if (!P || !f) return []; return P.modelMenu(f.provider, P.listedModels(f.provider, P.aiRequest(f).baseUrl), f.model); }
   /** 自动补全: the switch (a setting of this window's pages) and the model it asks (the engine's settings, with the service). */
   completeRows(base, tg) {
-    const f = this.state.ai, menu = this.modelMenu(), cm = f && menu.find(x => x.id === f.completeModel);
+    const f = this.state.ai, menu = this.modelMenu(), cm = f && menu.find(x => x.id === f.completeModel), gpt = !!(f && this.P.aiPreset(f.provider).login);
     return [
-      tg('complete', '打字时显示 AI 建议', '停顿片刻后，光标后面会出现灰色的建议文字：按 Tab 接受，按 Esc 或继续打字忽略。光标前后的一段文字会发给所选的模型'),
+      tg('complete', '打字时显示 AI 建议', gpt ? '停顿片刻后，光标后面会出现灰色的建议文字：按 Tab 接受。用 ChatGPT 登录时，每次建议都计入套餐的用量'
+        : '停顿片刻后，光标后面会出现灰色的建议文字：按 Tab 接受，按 Esc 或继续打字忽略。光标前后的一段文字会发给所选的模型'),
       ...(f ? [{ ...base('建议用的模型', cm && cm.note ? $t(cm.note) : '越快越好：选标着「适合自动补全」的模型'), isPopup: true, value: f.completeModel || '', minW: '200px',
         opts: [{ v: '', l: $t('与助手相同') }].concat(menu.map(x => ({ v: x.id, l: x.name }))),
         onChange: e => { const v = e.target.value; this.setState(s => ({ ai: Object.assign({}, s.ai, { completeModel: v }) }), () => this.saveAi()); } }] : [])
@@ -226,7 +258,7 @@ class Component extends DCLogic {
     const tg = (k, label, hint) => ({ ...base(label, hint), isToggle: true, tbg: v[k] ? A : off, tx: v[k] ? '16px' : '2px', onClick: () => this.set(k, !v[k]) });
     const pop = (k, label, opts, minW, hint) => ({ ...base(label, hint), isPopup: true, value: String(v[k]), opts: O(opts), minW: (minW || 120) + 'px', onChange: e => this.set(k, typeof DEF[k] === 'number' ? +e.target.value : e.target.value) });
     const seg = (k, label, list, hint) => ({ ...base(label, hint), isSeg: true, items: list.map(([val, l]) => { const on = v[k] === val; return { label: $t(l), bg: on ? 'var(--tab-bg, rgba(255,255,255,0.92))' : 'transparent', sh: on ? 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))' : 'none', fw: on ? 500 : 400, onClick: () => this.set(k, val) }; }) });
-    const G = (name, rows) => ({ name: name ? $t(name) : '', hasName: !!name, rows: rows.map((r, i) => ({ isToggle: false, isPopup: false, isSeg: false, isColors: false, isSlider: false, isTheme: false, isIcons: false, isText: false, isInput: false, isButton: false, ...r, bt: i ? '1px solid var(--gline, rgba(0,0,0,0.06))' : 'none' })) });
+    const G = (name, rows) => ({ name: name ? $t(name) : '', hasName: !!name, rows: rows.map((r, i) => ({ isToggle: false, isPopup: false, isSeg: false, isColors: false, isSlider: false, isTheme: false, isIcons: false, isText: false, isInput: false, isButton: false, btnAct: false, ...r, bt: i ? '1px solid var(--gline, rgba(0,0,0,0.06))' : 'none' })) });
     const R = {
       general: [
         G('启动', [seg('startup', '打开 Writer 时', [['home', '新建页'], ['last', '上次文档'], ['blank', '空白']]), pop('newType', '新建文稿类型', [['docx', '文字文档'], ['xlsx', '表格@@xlsx'], ['pptx', '演示文稿'], ['md', '纯文本']], 120), tg('restore', '退出时保留窗口', '重新打开时恢复所有窗口与标签页')]),

@@ -289,6 +289,20 @@ button,input,select,textarea{font-family:inherit;color:inherit}
             <span>{{ welcome }}</span>
             <sc-if value="{{ needsModel }}" hint-placeholder-val="{{ false }}">
               <div data-ai-setup="1" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+                <sc-if value="{{ gptOn }}" hint-placeholder-val="{{ true }}">
+                  <div data-chatgpt-login="1" style="display:flex;flex-direction:column;gap:8px">
+                    <button onClick="{{ gptSignIn }}" style="height:34px;padding:0 16px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);opacity:{{ gptBtnOp }};font-size:13px;font-weight:500;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1),opacity .2s" style-active="transform:scale(0.96)">{{ gptBtn }}</button>
+                    <sc-if value="{{ gptWaiting }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.45;color:var(--k8, #8E8E93)">
+                        <span style="flex:1;min-width:0">{{ gptWaitNote }}</span>
+                        <button onClick="{{ gptCopy }}" style="flex:none;height:18px;padding:0;border:none;background:transparent;font-size:12px;color:var(--k1, #1D1D1F);cursor:pointer;text-decoration:underline;text-underline-offset:2px">复制链接</button>
+                        <button onClick="{{ gptCancel }}" style="flex:none;height:18px;padding:0;border:none;background:transparent;font-size:12px;color:var(--k1, #1D1D1F);cursor:pointer;text-decoration:underline;text-underline-offset:2px">取消</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ gptHasMsg }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;line-height:1.45;color:#B5563A">{{ gptMsg }}</span></sc-if>
+                    <span style="font-size:12px;color:var(--k8, #8E8E93)">{{ gptNote }}</span>
+                  </div>
+                </sc-if>
                 <div style="display:flex;flex-wrap:wrap;gap:6px">
                   <sc-for list="{{ setupProviders }}" as="sp" hint-placeholder-count="4">
                     <button onClick="{{ sp.onClick }}" style="height:28px;padding:0 11px;border:none;border-radius:999px;background:{{ sp.bg }};color:{{ sp.fg }};box-shadow:{{ sp.sh }};font-size:12.5px;cursor:pointer;transition:background .2s,color .2s">{{ sp.name }}</button>
@@ -444,8 +458,9 @@ const CHIPS = {
   mm: ['再展开一层要点', '把每个分支补充两条子项', '按重要性排序分支', '转成演示文稿']
 };
 const WELCOME = { docx: '我可以帮你改写、精简、插入表格，或把这份文档做成演示文稿。修改会直接写入文件，并在这里列出。', xlsx: '我可以帮你汇总、排序、标记数据，或者填充表格。', pptx: '我可以帮你加页、改标题、调整每页内容。', md: '直接在正文里写就好，# 空格变标题，- 空格变列表。我可以帮你生成目录，或转成 Word 文档、演示文稿。', pdf: '我可以帮你总结这份 PDF，或把其中的文字提取成可编辑的 Word 文档。', mm: '我可以帮你展开分支、补充要点、重排结构，或把导图转成大纲、文档和演示。Tab 加子主题，Enter 加同级，拖动主题可以换父级。' };
-const NO_CHAT = '在「设置 › AI」里填写你自己的模型 API：选服务商，填上 API Key 和模型，就能开始。';
-const CONNECT = '选一家 AI 服务，粘贴 API Key，选好模型，助手就能直接修改文档。';
+const NO_CHAT = '在「设置 › AI」里用 ChatGPT 账号登录，或填写你自己的模型 API：选服务商，填上 API Key 和模型，就能开始。';
+const CONNECT = '用 ChatGPT 账号登录，或选一家 AI 服务、粘贴 API Key，助手就能直接修改文档。';
+const CONNECT_KEY = '选一家 AI 服务，粘贴 API Key，选好模型，助手就能直接修改文档。'; // embedded in a site: no ChatGPT sign-in there
 // the AI panel's services to connect in place (设置 › AI has every one, custom addresses too), by their short names
 const SETUP_IDS = ['anthropic', 'openai', 'deepseek', 'qwen', 'kimi', 'glm', 'doubao', 'ollama', 'lmstudio'];
 const SHORT = { anthropic: 'Claude', glm: '智谱', ollama: 'Ollama', lmstudio: 'LM Studio' };
@@ -473,7 +488,7 @@ const EMBED = !!globalThis.__WRITER_EMBED__; // embedded in a site (ui/embed.dc.
 const LIVE_PROPS = ['formatOpen', 'panelOpen', 'panelEnter', 'aiOn', 'pure', 'showThumbs', 'barLeft', 'barRight', 'merged', 'leadW', 'gridOn', 'mdAuto'];
 class Component extends DCLogic {
   openSeqN = 0; // the order documents were opened in: the title bar's tabs follow it
-  state = { ready: false, aiCfg: null, setup: null, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null };
+  state = { ready: false, aiCfg: null, setup: null, login: null, docs: [], cur: null, view: 'create', showAI: false, showFormat: true, showThumbs: false, pure: false, chats: {}, input: '', thinking: false, sending: false, createType: 'docx', prompt: '', gen: null, toast: null, menu: null, dragging: false, chatOn: false, model: '', saving: false, titleDraft: null, ov: null, prefsTab: null, ask: null, recent: [], templates: [], tplCat: null };
   liveIds = []; // the documents whose editors are kept alive, used last first (vals)
   prefs = {}; closed = new Set(); lastSel = '';
   chatRef = React.createRef(); rootRef = React.createRef(); leftPillRef = React.createRef(); rightPillRef = React.createRef(); fileRef = React.createRef(); hist = {}; sv = {}; _len = 0; _cards = 0; _h = 0;
@@ -517,7 +532,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('keydown', this.onKey); window.removeEventListener('writer-settings', this.applyTheme); window.removeEventListener('storage', this.onStorage); window.removeEventListener('writer-ai', this.onAi); window.removeEventListener('focus', this.onAi);
     this.mqDark && this.mqDark.removeEventListener('change', this.applyTheme); this.mqMotion && this.mqMotion.removeEventListener('change', this.applyTheme);
-    this.gone = true; this.ac && this.ac.remove();
+    this.gone = true; this.ac && this.ac.remove(); this.loginAbort && this.loginAbort.abort();
     document.removeEventListener('focusin', this.onFocusIn, true); document.removeEventListener('beforeinput', this.onBeforeInput, true); document.removeEventListener('compositionend', this.onCompEnd, true);
     document.removeEventListener('selectionchange', this.onSelChange); document.removeEventListener('select', this.onSelChange, true);
     window.removeEventListener('focus', this.onExternalPoll); document.removeEventListener('visibilitychange', this.onExternalPoll); clearInterval(this.pollT);
@@ -553,6 +568,23 @@ class Component extends DCLogic {
     try { const list = await this.EN.aiModels({}); P.keepListed(c.provider, c.baseUrl, list); this.toastMsg($t('这家服务商列出了 {n} 个模型', { n: list.length })); }
     catch (e) { this.toastMsg($t('读不到模型列表：{error}', { error: $t(e.message) })); }
   }
+  /** 用 ChatGPT 登录 in the AI panel: the engine opens the sign-in page in the browser and this follows it; once it is done the
+   *  engine has made ChatGPT the assistant's service (writer-ai → onAi) and the panel turns into the assistant. */
+  async signInChatgpt() {
+    const EN = this.EN, L = this.state.login; if (!EN || (L && L.state === 'waiting')) return;
+    const ac = this.loginAbort = new AbortController();
+    try {
+      const end = await EN.chatgptSignIn(s => { if (!ac.signal.aborted) this.setState({ login: s }); }, ac.signal);
+      this.setState({ login: end.state === 'error' ? end : null });
+      if (end.state === 'done') this.toastMsg($t('已登录 ChatGPT：{account}', { account: this.P.accountLine(end) }));
+    } catch (e) { if (e.name !== 'AbortError') this.setState({ login: { state: 'error', error: $t(e.message) } }); }
+  }
+  /** The sign-in page's address, for a browser the engine could not open. */
+  copyLoginLink() {
+    const L = this.state.login; if (!L || !L.url) return;
+    if (navigator.clipboard) navigator.clipboard.writeText(L.url).then(() => this.toastMsg($t('登录链接已复制，粘贴到浏览器里打开')), () => this.toastMsg(L.url)); else this.toastMsg(L.url);
+  }
+  signOutChatgpt() { if (this.EN) this.EN.chatgptLogout().then(() => this.toastMsg($t('已退出 ChatGPT 登录')), e => this.toastMsg($t(e.message))); }
   /** Connecting a service in the AI panel: its recommended model picked; a local server's models read from it. */
   pickSetup(id) {
     const P = this.P; if (!P) return;
@@ -1077,11 +1109,18 @@ class Component extends DCLogic {
     v.live = v.live.map(L => { const P = L.onA === '1' || !was[L.id] ? now : was[L.id]; this.frozen[L.id] = P; return Object.assign({}, L, P); });
     return v;
   }
-  /** The AI panel with no model yet: the services as buttons, then the chosen one's key, model and 连接. */
+  /** The AI panel with no model yet: 用 ChatGPT 登录 first (not when embedded in a site), then the services as buttons and the chosen
+   *  one's key, model and 连接. */
   setupVals() {
     const P = this.P, su = this.state.setup, sp = P && su ? P.aiPreset(su.provider) : null, name = id => $t(SHORT[id] || P.aiPreset(id).name);
     const models = sp ? P.modelMenu(sp.id, su.models || P.listedModels(sp.id, sp.url), su.model) : [];
+    const L = this.state.login, waiting = !!(L && L.state === 'waiting');
     return {
+      gptOn: !!P && !EMBED, gptBtn: $t(waiting ? '正在等待浏览器登录…' : '用 ChatGPT 登录'), gptBtnOp: waiting ? 0.6 : 1, gptSignIn: () => this.signInChatgpt(),
+      gptWaiting: waiting, gptWaitNote: waiting ? $t(L.opened ? '在浏览器里登录 ChatGPT，完成后回到这里。' : '浏览器没有自动打开：复制链接，粘贴到浏览器里打开。') : '',
+      gptCopy: () => this.copyLoginLink(), gptCancel: () => { if (this.EN) this.EN.chatgptCancel().catch(() => { }); },
+      gptHasMsg: !!(L && L.state === 'error'), gptMsg: L && L.state === 'error' ? $t(L.error || '登录没有完成') : '',
+      gptNote: $t('用 ChatGPT 订阅（Plus、Pro 等）的额度，不需要 API Key。也可以连接其他服务：'),
       setupProviders: P ? SETUP_IDS.map(id => { const on = !!su && su.provider === id; return { name: name(id), bg: on ? 'var(--k7, #1D1D1F)' : 'var(--k37, rgba(0,0,0,0.05))', fg: on ? 'var(--kinv, #fff)' : 'var(--k1, #1D1D1F)', sh: 'none', onClick: () => this.pickSetup(id) }; }) : [],
       setupOn: !!sp, setupNeedsKey: !!(sp && sp.key), setupKey: su ? su.key : '', setupKeyPh: sp ? $t('粘贴 {name} 的 API Key', { name: name(sp.id) }) : '',
       setupModels: (su && !su.model ? [{ v: '', l: $t('请选择模型') }] : []).concat(models.map(x => ({ v: x.id, l: x.name + (x.note ? ' · ' + $t(x.note) : '') }))), setupModel: su ? su.model : '',
@@ -1120,7 +1159,9 @@ class Component extends DCLogic {
       const done = this.prefs.complete !== false;
       PP.modelMenu(cfg.provider, PP.listedModels(cfg.provider, cfg.baseUrl), cfg.model).forEach(x => MI((x.id === cfg.model ? '✓ ' : '\u2003 ') + x.name, () => this.switchModel(x.id), x.fast ? $t('快速') : ''));
       MS(); MI(done ? '关闭自动补全' : '打开自动补全', () => PP.set('complete', !done), $t('打字时的灰色建议'));
-      MI('刷新模型列表', () => this.refreshModels()); MI('模型和服务商设置…', () => this.openSettings('ai'));
+      MI('刷新模型列表', () => this.refreshModels());
+      if (cfg.provider === 'chatgpt' && cfg.account) MI('退出 ChatGPT 登录', () => this.signOutChatgpt(), PP.accountLine(cfg.account));
+      MI('模型和服务商设置…', () => this.openSettings('ai'));
     } else if (st.menu && d) {
       MI('新建空白文档', () => this.createBlank('docx')); MI('新建空白表格', () => this.createBlank('xlsx')); MI('新建空白演示', () => this.createBlank('pptx')); MI('新建 Markdown', () => this.createBlank('md')); MI('新建思维导图', () => this.createBlank('mm')); if (ai) MI('用 AI 新建…', () => this.setState({ view: 'create' })); MS();
       MI('切换文档…', () => this.setState({ docsOpen: true })); MI('打开…', () => this.openDialog(), 'Ctrl+O'); MI('创建副本', () => this.duplicate()); MS();
@@ -1180,7 +1221,7 @@ class Component extends DCLogic {
       isDocx: isDoc && d.type === 'docx', formatOpen: fmtOn, isXlsx: isDoc && d.type === 'xlsx', isPptx: isDoc && d.type === 'pptx',
       onDocChange: (nd, opts) => this.setDoc(nd, !(opts && opts.silent)), onUndo: () => this.undo(false), onRedo: () => this.undo(true), onRevise: accept => this.revise(accept), toastFn: m => this.toastMsg(m),
       askAI: text => { this.panelTo({ showAI: true, showFormat: false }); this.send(text); }, // an editor's own AI button (幻灯片 ✦ 美化): the panel opens and the request goes as a message
-      showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? $t(WELCOME[d.type]) + (st.model ? $t('（') + (cfg && PP ? PP.modelName(cfg.provider, st.model) : st.model) + $t('）') : '') : $t(CONNECT)) : '', thinking: st.thinking,
+      showPanel, chatRef: this.chatRef, noMsgs: !msgs.length, welcome: d ? (st.chatOn ? $t(WELCOME[d.type]) + (st.model ? $t('（') + (cfg && PP ? PP.modelName(cfg.provider, st.model) : st.model) + $t('）') : '') : $t(EMBED ? CONNECT_KEY : CONNECT)) : '', thinking: st.thinking,
       needsModel: !st.chatOn, openAiSettings: () => this.openSettings('ai'),
       hasModelChip: !!(st.chatOn && cfg && PP && cfg.source !== 'host'), modelChip: cfg && PP ? PP.modelName(cfg.provider, st.model || cfg.model) : st.model || '', modelChipTitle: $t('切换模型'),
       openModelMenu: e => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ menu: { kind: 'model', x: Math.round(Math.max(8, Math.min(window.innerWidth - 268, r.left))), y: Math.round(r.bottom + 6) }, docsOpen: false }); },
