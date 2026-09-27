@@ -2,6 +2,7 @@
 // Open: the engine's JSON tree becomes an editor model, every block remembering its path.
 // Save: the model is diffed against what was opened and the difference becomes writer commands.
 // The file on disk is the only source of truth; the engine keeps everything the editor does not model.
+import { slideHtmlUnits, listMarker } from './slide-format.js';
 import { txt, shape as mkShape, line as mkLine, SW, slideH, THEMES, phFamily, resolveColor, POLY, union, flatObjs } from './office-io.js';
 import { lookFrom, pictureView, picSrc, placeStyle, PLACE } from './picture.js';
 import { objectInner, objectLabel } from './office-draw.js';
@@ -2231,13 +2232,17 @@ const geomBack = key => GEOM_BACK[key] || key || 'rect';
 /** Outline width: the file's points to slide units and back. */
 const swOf = (p, ptPx) => p.line && p.line !== 'none' ? Math.max(1, Math.round((parseFloat(p.lineWidth) || 0.75) * ptPx)) : 0; // lineWidth prints as "3pt"
 const linePt = (sw, ptPx) => (Math.round(sw / ptPx * 4) / 4) + 'pt';
-function paraHtml(paragraphs) {
-  let out = '', inList = null; // the open list's tag
+function paraHtml(paragraphs, ptPx) {
+  let out = '', inList = null; const counts = []; // the open list's tag
   for (const p of paragraphs) {
-    const pr = p.props || {}, h = pr.html != null ? pr.html : esc(pr.text || ''); // a stub (get --depth 2) has no props
-    const lvl = +pr.level > 0 ? ` data-lvl="${Math.min(4, +pr.level)}"` : '';
-    if (pr.list && pr.list !== 'none') { const tag = pr.list === 'number' ? 'ol' : 'ul'; if (inList !== tag) { if (inList) out += `</${inList}>`; out += `<${tag}>`; inList = tag; } out += `<li${lvl}>` + (h || '<br>') + '</li>'; }
-    else { if (inList) { out += `</${inList}>`; inList = null; } out += `<p${lvl}>` + (h || '<br>') + '</p>'; }
+    const pr = Object.assign({}, p.computed, p.props), h = slideHtmlUnits(pr.html != null ? pr.html : esc(pr.text || ''), ptPx); // a stub (get --depth 2) has no props
+    const lvl = +pr.level > 0 ? ` data-lvl="${Math.min(8, +pr.level)}"` : '';
+    const level = Math.min(8, +pr.level || 0); counts[level] = pr.listStart ? +pr.listStart : (counts[level] || 0) + 1; counts.length = level + 1;
+    const marker = pr.list === 'number' && pr.numberFormat ? listMarker(counts[level], pr.numberFormat) : pr.list === 'bullet' && pr.bullet ? pr.bullet : null;
+    const mark = (marker ? ` data-marker="${esc(marker + ' ')}"` : '') + (pr.numberFormat ? ` data-num-format="${esc(pr.numberFormat)}"` : '') + (pr.listStart ? ` data-start="${+pr.listStart}"` : '') + (pr.bullet ? ` data-bullet="${esc(pr.bullet)}"` : '');
+    const align = pr.align ? ` style="text-align:${pr.align === 'distribute' ? 'justify' : pr.align}"` : '';
+    if (pr.list && pr.list !== 'none') { const tag = pr.list === 'number' ? 'ol' : 'ul'; if (inList !== tag) { if (inList) out += `</${inList}>`; out += `<${tag}>`; inList = tag; } out += `<li${lvl}${align}${mark}>` + (h || '<br>') + '</li>'; }
+    else { counts.length = 0; if (inList) { out += `</${inList}>`; inList = null; } out += `<p${lvl}${align}>` + (h || '<br>') + '</p>'; }
   }
   if (inList) out += `</${inList}>`;
   return out;
@@ -2245,6 +2250,7 @@ function paraHtml(paragraphs) {
 /** The box-wide text settings of a shape as the editor keeps them (spacing in slide units, the rest as the file names it). */
 function textBox(p, ptPx) {
   const t = {}, pt = v => Math.round(parseFloat(v) * ptPx);
+  if (p.verticalAlign) t.va = p.verticalAlign;
   if (p.lineSpacing) t.lh = +p.lineSpacing; if (p.spaceBefore) t.sb = pt(p.spaceBefore); if (p.spaceAfter) t.sa = pt(p.spaceAfter); if (p.charSpacing) t.cs = Math.round(parseFloat(p.charSpacing) * ptPx * 10) / 10;
   if (+p.columns > 1) t.cols = +p.columns; if (p.direction && p.direction !== 'horz') t.vert = p.direction;
   if (p.autofit) { const m = /^shrink(?::(\d+))?$/.exec(p.autofit); if (m) { t.autofit = 'shrink'; if (m[1]) t.fit = +m[1] / 100; } else if (p.autofit === 'resize') t.autofit = 'resize'; }
@@ -2265,6 +2271,7 @@ function pptxObject(file, sp, geo, n) {
   // an id names one object in the whole deck, and a cNvPr id does not: every slide numbers its shapes anew, and master and layout shapes may share one
   const id = (decor ? 'd' : 'e') + path;
   const look = { rot: Number(p.rotation) || 0, shadow: p.shadow === 'true' };
+  if (kind === 'object') return { id, path, kind, t: 'object', data: p, html: '', ...box, ...look };
   if (kind === 'image') { const lk = lookFrom(p); delete lk.rotation; return txt(Object.assign({ id, path, kind, t: 'image', src: binaryUrl(file, path), html: '', look: lk, rot: look.rot }, box)); }
   if (n.kind === 'table') {
     const merges = [], cells = {};
@@ -2280,10 +2287,10 @@ function pptxObject(file, sp, geo, n) {
   const from = decor ? { source: p.source } : {}; // master or layout: 版式 keeps the master's decor and swaps the layout's
   if (decor && p.geometry === 'line') return mkShape(Object.assign({ id, path, kind: 'shape', html: '', fill: hex(p.line), stroke: '', sw: 0, shape: 'rect' }, box, from, { h: Math.max(box.h, 2) }));
   // an empty placeholder is '' rather than an empty paragraph: the editor shows its hint, and nothing is written until the user types
-  const html = decor ? (p.html || (p.text ? '<p>' + esc(p.text) + '</p>' : '')) : ph && !String(p.text || '').trim() ? '' : paraHtml((n.children || []).filter(c => c.kind === 'paragraph'));
-  const base = Object.assign({ id, path, kind: 'shape', html, fs: p.size ? Math.round(cmOf(p.size) / UNIT.pt * ptPx) : (isTitle ? Math.round(40 * ptPx) : Math.round(20 * ptPx)), color: hex(p.color), font: p.font || null, ph, bold: p.bold != null ? p.bold === 'true' : isTitle, lockAspect: p.lockAspect === 'true' }, box, from, look, decor ? {} : textBox(p, ptPx));
+  const html = p.field ? '<p>' + esc(p.text || '') + '</p>' : decor ? slideHtmlUnits(p.html || (p.text ? '<p>' + esc(p.text) + '</p>' : ''), ptPx) : ph && !String(p.text || '').trim() ? '' : paraHtml((n.children || []).filter(c => c.kind === 'paragraph'), ptPx);
+  const base = Object.assign({ id, path, kind: 'shape', html, fs: p.size ? Math.round(cmOf(p.size) / UNIT.pt * ptPx) : (isTitle ? Math.round(40 * ptPx) : Math.round(20 * ptPx)), color: hex(p.color), font: p.font || null, ph: p.field === 'slideNumber' ? 'num' : ph, field: p.field || null, align: p.align || 'left', va: p.verticalAlign || 'top', italic: p.italic === 'true', underline: p.underline === 'true', bold: p.bold != null ? p.bold === 'true' : isTitle, lockAspect: p.lockAspect === 'true' }, box, from, look, decor ? {} : textBox(p, ptPx));
   const outline = { stroke: p.line && p.line !== 'none' ? hex(p.line) : '', sw: swOf(p, ptPx), dash: p.dash || 'solid' };
-  if (filled || (p.geometry && p.geometry !== 'rect' && p.geometry !== 'textbox' && p.geometry !== 'custom')) return mkShape(Object.assign(base, outline, { fill: p.gradient ? 'grad:' + p.gradient.split(',').map((v, i) => i < 2 ? '#' + v : v).join(',') : filled ? hex(p.fill) : null, shape: geomOf(p.geometry), align: 'center', va: 'middle' }));
+  if (filled || (p.geometry && p.geometry !== 'rect' && p.geometry !== 'textbox' && p.geometry !== 'custom')) return mkShape(Object.assign(base, outline, { fill: p.gradient ? 'grad:' + p.gradient.split(',').map((v, i) => i < 2 ? '#' + v : v).join(',') : filled ? hex(p.fill) : null, shape: geomOf(p.geometry) }));
   return txt(Object.assign(base, outline));
 }
 /** A connector's ends name shapes by their drawing id; the editor's lines hold the object's id. */
@@ -2301,11 +2308,11 @@ async function openPptx(doc) {
     const decor = children.filter(n => n.kind === 'decor').map(n => pptxObject(doc.path, sp, geo, n));
     const objs = children.filter(n => n.kind !== 'decor').map(n => pptxObject(doc.path, sp, geo, n));
     linkLines(objs);
-    return { id: 's' + s.props.id, path: sp, layout: s.props.layout, decor, objs, anims: animsFrom(s.props.animations, objs), sec: s.props.section || '', notes: s.props.notes || '', trans: s.props.transition || 'none', duration: s.props.duration == null ? null : Number(s.props.duration), hidden: s.props.hidden === true || s.props.hidden === 'true', bg: p2bg(s.props.background || (s.computed || {}).background) };
+    return { id: 's' + s.props.id, path: sp, layout: s.props.layout, decor, objs, anims: animsFrom(s.props.animations, objs), sec: s.props.section || '', notes: s.props.notes || '', trans: s.props.transition || 'none', duration: s.props.duration == null ? null : Number(s.props.duration), hidden: s.props.hidden === true || s.props.hidden === 'true', bg: s.props.background ? p2bg(s.props.background) : null, inheritedBg: p2bg((s.computed || {}).inheritedBackground || (s.computed || {}).background) };
   });
   // the palette the deck wears (its theme, written by 设计 or the assistant) is the editor's theme; a deck without one keeps the editor's
   const palette = THEMES[t.props.palette] ? t.props.palette : null;
-  const orig = { geo, palette, slides: pptxSnapshot(slides) };
+  const orig = { geo, ratio, palette, slides: pptxSnapshot(slides) };
   return { theme: palette || doc.theme || 'paper', ratio, slides, _orig: orig };
 }
 const p2bg = c => c ? '#' + c : '#FFFFFF';
@@ -2344,7 +2351,7 @@ export function slideProps(o, s) {
   return p;
 }
 function objKey(o) {
-  return Object.assign({ id: o.id, path: o.path, kind: o.kind, t: o.t, x: o.x, y: o.y, w: o.w, h: o.h, html: o.html, fill: o.fill, color: o.color, font: o.font, fs: o.fs, shape: o.shape, rows: o.rows, src: o.src && o.src.startsWith('data:') ? 'data' : o.src, rot: o.rot || 0,
+  return Object.assign({ id: o.id, path: o.path, kind: o.kind, t: o.t, x: o.x, y: o.y, w: o.w, h: o.h, html: o.html, fill: o.fill, color: o.color, font: o.font, fs: o.fs, shape: o.shape, rows: o.rows, src: o.src && o.src.startsWith('data:') ? 'data' : o.src, rot: o.rot || 0, field: o.field || null, bold: !!o.bold, italic: !!o.italic, underline: !!o.underline, align: o.align || 'left', va: o.va || 'top',
     stroke: o.stroke, sw: o.sw, dash: o.dash, shadow: !!o.shadow, lockAspect: !!o.lockAspect,
     lh: o.lh, sb: o.sb || 0, sa: o.sa || 0, cs: o.cs || 0, cols: o.cols || 1, vert: o.vert || 'horz', autofit: o.autofit || 'none', fit: o.fit || 1, tOutline: o.tOutline || '', tShadow: !!o.tShadow, tGrad: o.tGrad || '' },
     o.t === 'image' ? { look: o.look || {} } : {}, o.t === 'line' ? { head: o.head, tail: o.tail, flipH: !!o.flipH, flipV: !!o.flipV, bent: !!o.bent, start: o.start || null, end: o.end || null } : {},
@@ -2357,18 +2364,22 @@ const cnvOf = (ref, slide) => { const t = ref && flatObjs(slide.objs).find(x => 
 function objProps(o, g, orig, slide) {
   const p = {};
   const nb = boxProps(o, g), ob = orig ? boxProps(orig, g) : {};
-  for (const k of ['x', 'y', 'w', 'h']) if (nb[k] !== ob[k]) p[k] = nb[k];
+  for (const k of ['x', 'y', 'w', 'h']) if (g.resized || nb[k] !== ob[k]) p[k] = nb[k];
   const hexOf = c => unhex(g.th && c[0] !== '#' ? resolveColor(c, g.th, c) : c); // acc, card, sub, fg: the editor's theme colours, as hex for the file
   const was = k => orig ? orig[k] : undefined;
   if (o.t === 'text' || o.t === 'shape') {
-    if (!orig || !sameRuns(orig.html, o.html)) p.html = o.html || '';
+    if ((!o.field || o.field === 'footer') && (!orig || !sameRuns(orig.html, o.html))) p.html = slideHtmlUnits(o.html, g.ptPx, false);
+    if (o.field && was('field') !== o.field) p.field = o.field;
     const grad = f => f && String(f).startsWith('grad:');
     // a shape's null fill is the theme's accent (objView draws it so): the file gets the colour, not noFill
     if (was('fill') !== o.fill && (o.t === 'shape' || o.fill)) { if (grad(o.fill)) p.gradient = o.fill.slice(5).split(',').map((v, i) => i < 2 ? hexOf(v) : v).join(','); else { if (grad(was('fill'))) p.gradient = ''; p.fill = o.fill ? hexOf(o.fill) : o.fill == null && o.t === 'shape' ? hexOf('acc') : 'none'; } }
     if (was('color') !== o.color && o.color) p.color = hexOf(o.color);
     if (was('font') !== o.font && o.font) p.font = o.font;
     if (was('fs') !== o.fs && o.fs) p.size = (Math.round(o.fs / g.ptPx * 2) / 2) + 'pt';
-    if (!orig && o.t === 'shape') p.geometry = geomBack(o.shape);
+    if (o.t === 'shape' && (!orig || was('shape') !== o.shape)) p.geometry = geomBack(o.shape);
+    for (const key of ['bold', 'italic', 'underline']) if (!!was(key) !== !!o[key]) p[key] = o[key] ? 'true' : 'false';
+    if ((was('align') || 'left') !== (o.align || 'left')) p.align = o.align || 'left';
+    if ((was('va') || 'top') !== (o.va || 'top')) p.verticalAlign = o.va || 'top';
     if (!!was('lockAspect') !== !!o.lockAspect) p.lockAspect = o.lockAspect ? 'true' : 'false';
     // the box-wide text settings: a new object writes only what differs from the editor's defaults
     const pt = v => (Math.round(v / g.ptPx * 2) / 2) + 'pt';
@@ -2413,11 +2424,11 @@ function objProps(o, g, orig, slide) {
  *  (Tab / ⇧Tab) is the level. Nothing is written for a box without lists or levels. */
 async function setListProps(file, shapePath, html, force) {
   const root = parseHtml(html || ''); const items = [];
-  const walk = (n, inOl) => { for (const c of Array.from(n.children)) { if (c.tagName === 'UL' || c.tagName === 'OL') walk(c, c.tagName === 'OL'); else if (BLOCK.test(c.tagName)) items.push({ list: c.tagName === 'LI' ? (inOl ? 'number' : 'bullet') : 'none', level: Math.min(8, Math.max(0, +c.getAttribute('data-lvl') || 0)) }); } };
+  const walk = (n, inOl) => { for (const c of Array.from(n.children)) { if (c.tagName === 'UL' || c.tagName === 'OL') walk(c, c.tagName === 'OL'); else if (BLOCK.test(c.tagName)) items.push({ list: c.tagName === 'LI' ? (inOl ? 'number' : 'bullet') : 'none', level: Math.min(8, Math.max(0, +c.getAttribute('data-lvl') || 0)), align: c.style?.textAlign || c.getAttribute('align') || null, numberFormat: c.getAttribute('data-num-format'), listStart: c.getAttribute('data-start'), bullet: c.getAttribute('data-bullet') }); } };
   walk(root, false);
-  if (!force && !items.some(x => x.list !== 'none' || x.level)) return 0;
+  if (!force && !items.some(x => x.list !== 'none' || x.level || x.align)) return 0;
   let n = 0;
-  for (let i = 0; i < items.length; i++) { await run(['set', file, `${shapePath}/paragraph[${i + 1}]`, '--prop', 'list=' + items[i].list, '--prop', 'level=' + items[i].level]); n++; }
+  for (let i = 0; i < items.length; i++) { await run(['set', file, `${shapePath}/paragraph[${i + 1}]`, '--prop', 'list=' + items[i].list, '--prop', 'level=' + items[i].level, ...(items[i].align ? ['--prop', 'align=' + items[i].align] : []), ...['numberFormat','listStart','bullet'].flatMap(k => items[i][k] ? ['--prop', k + '=' + items[i][k]] : [])]); n++; }
   return n;
 }
 /** A picture's bytes as a data: URL, read in turn with the file's saves from its place in the file (or from the picture it copies);
@@ -2438,6 +2449,16 @@ function adoptCopy(doc, x, path, moved) {
   x.path = path; if (x.t === 'image') x.src = binaryUrl(doc.path, x.path);
   for (const k of x.kids || []) { const src = k.from && !k.path ? k.from : k.path; if (src) adoptCopy(doc, k, moved(src), moved); }
 }
+function copiedPaths(before, after, pairs = new Map()) {
+  const path = before.path || before.from; if (path) pairs.set(path, after.path);
+  (before.kids || []).forEach((k, i) => { if (after.kids?.[i]) copiedPaths(k, after.kids[i], pairs); });
+  return pairs;
+}
+function bindImportedCopy(doc, model, actual) {
+  model.path = actual.path; model.kind = actual.kind;
+  if (model.t === 'image') model.src = binaryUrl(doc.path, model.path);
+  (model.kids || []).forEach((k, i) => { if (actual.kids?.[i]) bindImportedCopy(doc, k, actual.kids[i]); });
+}
 /** A snapshot entry with its paths moved, members included. */
 const movedKey = (y, moved) => Object.assign({}, y, { path: moved(y.path) }, y.kids ? { kids: y.kids.map(k => movedKey(k, moved)) } : {});
 /** After a slide took a layout (a new slide, or set layout=), the engine's placeholders — empty, placed by the layout — are
@@ -2457,13 +2478,18 @@ async function bindPlaceholders(doc, g, s, o) {
     if (!kept) { x.path = y.path; x.kind = 'shape'; o.objs.push(objKey(Object.assign({}, y, { id: x.id, fs: x.fs }))); }
     // ponytail: a placeholder's snapshot takes the editor's box, so the layout's place is never pinned into the file; a deck whose own layout
     // differs from LAYOUT_SPECS shows the editor's boxes until it is reopened (the file has the layout's)
-    if (x.ph) Object.assign(o.objs.find(z => z.path === y.path), { x: x.x, y: x.y, w: x.w, h: x.h, lh: x.lh }); // and the line height the editor draws a body with
+    if (x.ph) Object.assign(o.objs.find(z => z.path === y.path), { x: x.x, y: x.y, w: x.w, h: x.h, lh: x.lh, va: x.va, align: x.align }); // the untouched gallery slot is inherited
   }
   return n;
 }
 async function savePptx(doc, log) {
   let n = 0;
   const orig = doc._orig || { geo: null, slides: [] }, g = Object.assign({ kx: SW / 33.867, ky: 900 / 19.05, ptPx: SW / 960 }, orig.geo, { th: THEMES[doc.theme] || THEMES.paper });
+  if (doc.ratio !== (orig.ratio || '16:9')) {
+    const wcm = orig.geo?.wcm || 33.867, hcm = wcm * slideH(doc.ratio) / SW;
+    Object.assign(g, { wcm, hcm, kx: SW / wcm, ky: slideH(doc.ratio) / hcm, ptPx: SW / (wcm / 2.54 * 72), resized: true });
+    await run(['set', doc.path, '/', '--prop', 'width=' + cmStr(wcm), '--prop', 'height=' + cmStr(hcm)]); n++;
+  }
   const origSlides = orig.slides, at = path => path && origSlides.find(x => x.path === path);
   // 设计's palette goes into the deck's theme (every slide's inherited colours and fonts follow); a deck that never wore one keeps its own look under 素白
   if (THEMES[doc.theme] && doc.theme !== (orig.palette || 'paper')) { await run(['set', doc.path, '/', '--prop', 'palette=' + doc.theme]); n++; orig.palette = doc.theme; log && log('set', '/', { palette: doc.theme }); }
@@ -2485,7 +2511,7 @@ async function savePptx(doc, log) {
     } else {
       // a slide pasted from another deck may name a layout this one lacks: it goes on a blank one
       const r = await run(['add', doc.path, '/', '--type', 'slide', '--prop', 'layout=' + (s.layout || 'Blank')]).catch(() => { s.layout = 'Blank'; return run(['add', doc.path, '/', '--type', 'slide', '--prop', 'layout=Blank']); }); n++;
-      s.path = '/slide[@id=' + r.props.id + ']'; const made = { path: s.path, layout: s.layout, bg: '#FFFFFF', sec: '', notes: '', trans: 'none', duration: null, hidden: false, objs: [] };
+      s.path = '/slide[@id=' + r.props.id + ']'; const made = { path: s.path, layout: s.layout, bg: null, sec: '', notes: '', trans: 'none', duration: null, hidden: false, objs: [] };
       origSlides.push(made); log && log('add', s.path, 'slide');
       n += await bindPlaceholders(doc, g, s, made);
     }
@@ -2493,6 +2519,14 @@ async function savePptx(doc, log) {
   for (const s of doc.slides) {
     const o = at(s.path);
     for (const x of s.objs) {
+      if (!x.path && x.importSource) {
+        const source = x.importSource;
+        const r = await run(['copy', doc.path, source.path, '--from-file', source.file, '--to', s.path]); n++;
+        const path = idPath(s.path, r), tree = await run(['get', doc.path, path, '--depth', '32']);
+        const imported = pptxObject(doc.path, s.path, g, tree);
+        bindImportedCopy(doc, x, imported); x.kind = r.kind; delete x.importSource;
+        o.objs.push(objKey({...imported,id:x.id}));
+      }
       if (x.path ? o.objs.some(y => y.path === x.path) : !x.from) continue; // in the file, or never was
       const was = !x.path && origSlides.map(os => os.objs.find(y => y.path === x.from)).find(Boolean), gone = removed[x.path || x.from];
       let r = null;
@@ -2503,7 +2537,10 @@ async function savePptx(doc, log) {
         if (home !== s.path) { const put = idPath(home, r); r = await run(['copy', doc.path, put, '--to', s.path]); await run(['remove', doc.path, put]); n += 2; }
       }
       if (!r) continue; // made from the model below
-      const srcKey = was || gone.snap, moved = p => idPath(s.path, r) + p.slice(srcKey.path.length);
+      const srcKey = was || gone.snap;
+      const copied = srcKey.kids ? pptxObject(doc.path, s.path, g, await run(['get', doc.path, idPath(s.path, r), '--depth', '32'])) : null;
+      const pairs = copied ? copiedPaths(srcKey, copied) : new Map();
+      const moved = p => pairs.get(p) || idPath(s.path, r) + p.slice(srcKey.path.length);
       adoptCopy(doc, x, idPath(s.path, r), moved); x.kind = r.kind;
       o.objs.push(Object.assign(movedKey(srcKey, moved), { id: x.id }));
     }
@@ -2519,24 +2556,24 @@ async function savePptx(doc, log) {
       const kids = s.objs.filter(x => x.path && x.path.startsWith(og.path + '/'));
       if (!kids.length) continue;
       await run(['set', doc.path, og.path, '--prop', 'ungroup=true']); n++; log && log('set', og.path, { ungroup: 'true' });
-      const tail = p => s.path + p.slice(p.lastIndexOf('/'));
-      for (const x of kids) { x.path = tail(x.path); if (x.t === 'image') x.src = binaryUrl(doc.path, x.path); }
-      o.objs.splice(o.objs.indexOf(og), 1, ...(og.kids || []).map(k => Object.assign({}, k, { path: tail(k.path) })));
+      const tail = p => s.path + p.slice(og.path.length);
+      for (const x of kids) adoptCopy(doc, x, tail(x.path), tail);
+      o.objs.splice(o.objs.indexOf(og), 1, ...(og.kids || []).map(k => movedKey(k, tail)));
     }
   }
   for (let i = 0; i < doc.slides.length; i++) {
     const s = doc.slides[i], o = at(s.path);
     if (order.indexOf(s.path) !== i) { await run(['move', doc.path, s.path, '--to', '/', '--index', String(i + 1)]); n++; order.splice(order.indexOf(s.path), 1); order.splice(i, 0, s.path); }
-    if ((o.bg || '#FFFFFF') !== (s.bg || '#FFFFFF')) { await run(['set', doc.path, s.path, '--prop', 'background=' + unhex(s.bg || '#FFFFFF')]); n++; }
+    if ((o.bg || null) !== (s.bg || null)) { await run(['set', doc.path, s.path, '--prop', 'background=' + (s.bg ? unhex(s.bg) : 'none')]); n++; }
     const sp = slideProps(o, s);
     if (Object.keys(sp).length) { await run(['set', doc.path, s.path, ...propsArgs(sp)]); n++; log && log('set', s.path, sp); }
     if (s.layout && o.layout && s.layout !== o.layout) {
       // 版式: the engine keeps a placeholder with text and drops an empty one, so it must see the editor's text first
-      for (const x of s.objs) { const oo = x.path && x.ph && o.objs.find(y => y.path === x.path); if (oo && !sameRuns(oo.html, x.html)) { await run(['set', doc.path, x.path, '--prop', 'html=' + (x.html || '')]); n++; oo.html = x.html; } }
+      for (const x of s.objs) { const oo = x.path && x.ph && o.objs.find(y => y.path === x.path); if (oo && !sameRuns(oo.html, x.html)) { await run(['set', doc.path, x.path, '--prop', 'html=' + slideHtmlUnits(x.html, g.ptPx, false)]); n++; oo.html = x.html; } }
       await run(['set', doc.path, s.path, '--prop', 'layout=' + s.layout]); n++; o.layout = s.layout; log && log('set', s.path, { layout: s.layout });
       n += await bindPlaceholders(doc, g, s, o);
     }
-    const keepObjs = new Set(s.objs.filter(x => x.path).map(x => x.path));
+    const keepObjs = new Set(flatObjs(s.objs).filter(x => x.path).map(x => x.path));
     for (const oo of o.objs.slice().reverse()) if (!keepObjs.has(oo.path)) {
       removed[oo.path] = { xml: String(await run(['get', doc.path, oo.path, '--raw'])).trim(), snap: oo };
       await run(['remove', doc.path, oo.path]); n++; log && log('remove', oo.path);
@@ -2545,10 +2582,19 @@ async function savePptx(doc, log) {
       if (x.t === 'group') { n += await saveGroup(doc, g, s, o, x, log); continue; }
       n += await saveObj(doc, g, s, o, x, x.path ? o.objs.find(y => y.path === x.path) : null, log);
     }
+    // Moving a drawing changes its z-order. The engine's child indices include inherited decor.
+    const oldOrder = o.objs.filter(x => keepObjs.has(x.path)).map(x => x.path);
+    const newOrder = s.objs.map(x => x.path).filter(Boolean);
+    for (const path of newOrder) if (!oldOrder.includes(path)) oldOrder.push(path);
+    for (let j = 0; j < newOrder.length; j++) if (oldOrder[j] !== newOrder[j]) {
+      await run(['move', doc.path, newOrder[j], '--to', s.path, '--index', String((s.decor || []).length + j + 1)]); n++;
+      oldOrder.splice(oldOrder.indexOf(newOrder[j]), 1); oldOrder.splice(j, 0, newOrder[j]);
+    }
     // the animations last: they name the objects by drawing id, which a new object has only now
     const anims = animJson(s);
     if (!same(anims, o.anims || [])) { await run(['set', doc.path, s.path, '--prop', 'animations=' + JSON.stringify(anims)]); n++; o.anims = anims; log && log('set', s.path, { animations: anims.length }); }
   }
+  if (g.resized) { const { th, resized, ...geo } = g; orig.geo = geo; orig.ratio = doc.ratio; }
   return n;
 }
 /** One object into the file: set what changed against its snapshot oo, or add it (under `into`, the slide or a group's path). */
@@ -2558,12 +2604,13 @@ async function saveObj(doc, g, s, o, x, oo, log, into) {
   if (oo) {
     if (Object.keys(p).length) { await run(['set', doc.path, x.path, ...propsArgs(p)]); n++; log && log('set', x.path, p); }
     // the markers and levels: after a text rewrite when either side had any, or when only the markup changed (the runs are the same)
-    const lists = h => /<li|data-lvl/i.test(h || '');
+    const lists = h => /<li|data-lvl|text-align|\balign=/i.test(h || '');
     if (p.html != null ? lists(x.html) || lists(oo.html) : (x.t === 'text' || x.t === 'shape') && (oo.html || '') !== (x.html || '')) n += await setListProps(doc.path, x.path, x.html, true);
     if (x.t === 'table') n += await setCellProps(doc.path, x, oo, p.data != null);
     return n;
   }
   if (x.t === 'image' && !(x.src || '').startsWith('data:')) return n;
+  if (x.t === 'object') throw new Error('The original graphic frame is needed to save this object. Copy it again from its source presentation.');
   const kind = x.t === 'image' ? 'image' : x.t === 'table' ? 'table' : x.t === 'line' ? 'connector' : 'shape';
   const r = await run(['add', doc.path, into || s.path, '--type', kind, ...propsArgs(p)]); n++;
   x.path = (into || s.path) + '/' + kind + '[@id=' + r.props.id + ']'; x.kind = kind; log && log('add', x.path, kind);
@@ -2601,26 +2648,26 @@ async function setCellProps(file, x, oo, rewritten) {
  *  members, whose snapshot follows), then each member's own changes go in. */
 async function saveGroup(doc, g, s, o, x, log) {
   let n = 0;
-  const oo = x.path && o.objs.find(y => y.path === x.path);
+  const oo = x.path && flatObjs(o.objs).find(y => y.path === x.path);
   if (!oo) {
-    for (const k of x.kids) n += await saveObj(doc, g, s, o, k, null, log);
+    for (const k of x.kids) n += k.t === 'group' ? await saveGroup(doc, g, s, o, k, log) : await saveObj(doc, g, s, o, k, flatObjs(o.objs).find(y => k.path && y.path === k.path), log);
     const members = x.kids.filter(k => k.path).map(k => k.path.slice(k.path.lastIndexOf('/') + 1));
     if (!members.length) return n;
     const r = await run(['add', doc.path, s.path, '--type', 'group', '--prop', 'members=' + members.join(',')]); n++;
     x.path = s.path + '/group[@id=' + r.props.id + ']'; x.kind = 'group'; log && log('add', x.path, 'group');
-    for (const k of x.kids) if (k.path) { k.path = x.path + k.path.slice(k.path.lastIndexOf('/')); if (k.t === 'image') k.src = binaryUrl(doc.path, k.path); }
+    for (const k of x.kids) if (k.path) { const old = k.path, path = x.path + old.slice(old.lastIndexOf('/')); adoptCopy(doc, k, path, p => path + p.slice(old.length)); }
     if (x.rot) { await run(['set', doc.path, x.path, '--prop', 'rotation=' + Math.round(x.rot)]); n++; }
     o.objs.push(objKey(x));
     return n;
   }
-  const box = union(x.kids), bp = objProps(Object.assign({}, x, box, { t: 'group' }), g, oo, s);
+  const box = {x:x.x,y:x.y,w:x.w,h:x.h}, bp = objProps(x, g, oo, s);
   if (Object.keys(bp).length) {
     await run(['set', doc.path, x.path, ...propsArgs(bp)]); n++; log && log('set', x.path, bp);
     const sx = oo.w ? box.w / oo.w : 1, sy = oo.h ? box.h / oo.h : 1; // the engine moved the members with the group: so does their snapshot
-    for (const k of oo.kids || []) Object.assign(k, { x: Math.round(box.x + (k.x - oo.x) * sx), y: Math.round(box.y + (k.y - oo.y) * sy), w: Math.round(k.w * sx), h: Math.round(k.h * sy) });
+    for (const k of flatObjs(oo.kids || [])) Object.assign(k, { x: Math.round(box.x + (k.x - oo.x) * sx), y: Math.round(box.y + (k.y - oo.y) * sy), w: Math.round(k.w * sx), h: Math.round(k.h * sy) });
     Object.assign(oo, box, { rot: x.rot || 0 });
   }
-  for (const k of x.kids) n += await saveObj(doc, g, s, o, k, k.path ? (oo.kids || []).find(y => y.path === k.path) : null, log, x.path);
+  for (const k of x.kids) n += k.t === 'group' ? await saveGroup(doc, g, s, {objs:oo.kids || []}, k, log) : await saveObj(doc, g, s, o, k, k.path ? (oo.kids || []).find(y => y.path === k.path) : null, log, x.path);
   oo.kids = x.kids.map(objKey);
   return n;
 }

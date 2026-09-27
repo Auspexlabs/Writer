@@ -144,12 +144,14 @@ public sealed class PptxDocument(PresentationDocument package) : Document
         var newId = new P.SlideId { Id = Math.Max(256u, ids.Count == 0 ? 256u : ids.Max(s => s.Id?.Value ?? 0u) + 1), RelationshipId = Presentation.GetIdOfPart(slide) };
         if (index is { } i && i >= 1 && i <= ids.Count) SlideIds.InsertBefore(newId, ids[i - 1]);
         else SlideIds.Append(newId);
+        RefreshSlideNumbers();
     }
 
     internal void RemoveSlide(SlidePart slide)
     {
         SlideIdOf(slide).Remove();
         Presentation.DeletePart(slide);
+        RefreshSlideNumbers();
     }
 
     internal void MoveSlide(SlidePart slide, int? index)
@@ -159,6 +161,15 @@ public sealed class PptxDocument(PresentationDocument package) : Document
         var ids = SlideIds.Elements<P.SlideId>().ToList();
         if (index is { } i && i >= 1 && i <= ids.Count) SlideIds.InsertBefore(id, ids[i - 1]);
         else SlideIds.Append(id);
+        RefreshSlideNumbers();
+    }
+
+    void RefreshSlideNumbers()
+    {
+        var slides = Slides;
+        for (var i = 0; i < slides.Count; i++)
+            foreach (var field in slides[i].Slide!.Descendants<P.Shape>().Where(s => PptxFields.Read(s) == "slideNumber").SelectMany(s => s.Descendants<DocumentFormat.OpenXml.Drawing.Field>()).Where(f => f.Type?.Value == "slidenum"))
+                (field.Text ??= new DocumentFormat.OpenXml.Drawing.Text()).Text = (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <summary>The slide's notes page, created the way PowerPoint does (with a notes master and its own theme copy when the deck has none).</summary>

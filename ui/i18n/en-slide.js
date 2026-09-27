@@ -1,5 +1,6 @@
 // English UI text, keyed by the Chinese source string (rules in ui/i18n.js). Loaded only when the UI is in English.
 Object.assign(window.I18N_EN = window.I18N_EN || {}, {
+  '查找替换': 'Find & Replace', '查找': 'Find', '替换为': 'Replace with', '替换': 'Replace', '全部替换': 'Replace All', '下一个': 'Next', '区分大小写': 'Match case', '全字匹配': 'Whole words',
   // top bar, thumbnails, zoom bar
   '文件': 'File', '关闭': 'Close', 'AI 助手': 'Assistant',
   '放映': 'Play', '放映@@tab': 'Slide Show', '放映 F5': 'Play F5',

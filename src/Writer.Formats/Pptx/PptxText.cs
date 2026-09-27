@@ -395,7 +395,7 @@ static class PptxText
 
     static bool IsFill(OpenXmlElement e) => e is A.SolidFill or A.NoFill or A.GradientFill or A.BlipFill or A.PatternFill or A.GroupFill;
 
-    public static void SetFont(A.RunProperties rPr, string typeface)
+    public static void SetFont(A.TextCharacterPropertiesType rPr, string typeface)
     {
         foreach (var f in rPr.ChildElements.Where(e => e is A.LatinFont or A.EastAsianFont).ToList()) f.Remove();
         var latin = new A.LatinFont { Typeface = typeface };
@@ -457,6 +457,8 @@ static class PptxText
 
     public static void SetList(A.ParagraphProperties pPr, string kind)
     {
+        var oldNumber = pPr.GetFirstChild<A.AutoNumberedBullet>();
+        var oldBullet = pPr.GetFirstChild<A.CharacterBullet>()?.Char?.Value;
         foreach (var e in pPr.ChildElements.Where(e => e is A.BulletFont or A.CharacterBullet or A.AutoNumberedBullet or A.NoBullet or A.PictureBullet or A.BulletFontText).ToList()) e.Remove();
         var level = pPr.Level?.Value ?? 0;
         if (kind == "none")
@@ -472,9 +474,9 @@ static class PptxText
         {
             var font = new A.BulletFont { Typeface = "Arial" };
             InsertBeforeAny(pPr, font, e => e is A.TabStopList or A.DefaultRunProperties or A.ExtensionList);
-            pPr.InsertAfter(new A.CharacterBullet { Char = "•" }, font);
+            pPr.InsertAfter(new A.CharacterBullet { Char = oldBullet ?? "•" }, font);
         }
-        else InsertBeforeAny(pPr, new A.AutoNumberedBullet { Type = A.TextAutoNumberSchemeValues.ArabicPeriod }, e => e is A.TabStopList or A.DefaultRunProperties or A.ExtensionList);
+        else InsertBeforeAny(pPr, new A.AutoNumberedBullet { Type = oldNumber?.Type ?? A.TextAutoNumberSchemeValues.ArabicPeriod, StartAt = oldNumber?.StartAt }, e => e is A.TabStopList or A.DefaultRunProperties or A.ExtensionList);
     }
 
     public static string Points(int? hundredths) => ((hundredths ?? 0) / 100.0).ToString("0.##", CultureInfo.InvariantCulture);
@@ -489,18 +491,23 @@ static class PptxText
     {
         if (body is null) return;
         var bodyPr = body.GetFirstChild<A.BodyProperties>();
+        if (bodyPr?.Anchor?.InnerText is { } anchor) props["verticalAlign"] = anchor switch { "ctr" => "middle", "b" => "bottom", _ => "top" };
         if (bodyPr?.ColumnCount?.Value is { } cols && cols > 1) props["columns"] = cols.ToString(CultureInfo.InvariantCulture);
         if (bodyPr?.Vertical?.InnerText is { } vert && vert != "horz") props["direction"] = vert;
         if (bodyPr?.GetFirstChild<A.NormalAutoFit>() is { } fit) props["autofit"] = fit.FontScale?.Value is { } scale && scale != 100000 ? "shrink:" + (scale / 1000).ToString(CultureInfo.InvariantCulture) : "shrink";
         else if (bodyPr?.GetFirstChild<A.ShapeAutoFit>() is not null) props["autofit"] = "resize";
         var first = Paragraphs(body).FirstOrDefault();
         var pPr = first?.ParagraphProperties;
+        if (AlignOf(pPr) is { } align) props["align"] = align;
         if (pPr?.LineSpacing?.SpacingPercent?.Val?.Value is { } pct) props["lineSpacing"] = (pct / 100000.0).ToString("0.##", CultureInfo.InvariantCulture);
         if (pPr?.SpaceBefore?.SpacingPoints?.Val?.Value is { } before) props["spaceBefore"] = Points(before) + "pt";
         if (pPr?.SpaceAfter?.SpacingPoints?.Val?.Value is { } after) props["spaceAfter"] = Points(after) + "pt";
-        var rPr = (OpenXmlCompositeElement?)first?.Elements<A.Run>().FirstOrDefault()?.RunProperties ?? first?.GetFirstChild<A.EndParagraphRunProperties>();
+        var rPr = (OpenXmlCompositeElement?)first?.Elements<A.Run>().FirstOrDefault()?.RunProperties ?? (OpenXmlCompositeElement?)first?.GetFirstChild<A.Field>()?.RunProperties ?? first?.GetFirstChild<A.EndParagraphRunProperties>();
         if (rPr is A.TextCharacterPropertiesType t)
         {
+            if (t.Bold is not null) props["bold"] = t.Bold.Value ? "true" : "false";
+            if (t.Italic is not null) props["italic"] = t.Italic.Value ? "true" : "false";
+            if (t.Underline is not null) props["underline"] = t.Underline.Value != A.TextUnderlineValues.None ? "true" : "false";
             if (t.Spacing?.Value is { } spc && spc != 0) props["charSpacing"] = Points(spc);
             if (t.GetFirstChild<A.Outline>()?.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } outline) props["textOutline"] = outline.ToUpperInvariant();
             if (t.GetFirstChild<A.EffectList>()?.GetFirstChild<A.OuterShadow>() is not null) props["textShadow"] = "true";
@@ -515,6 +522,24 @@ static class PptxText
         double Pt(string v) => double.TryParse(v.Trim().TrimEnd('t', 'p'), NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : throw new WriterException(ErrorCode.Validation, $"{name}: '{value}' is not a size in points", $"Example: {name}=6pt");
         switch (name)
         {
+            case "verticalAlign":
+                bodyPr.Anchor = value switch { "middle" => A.TextAnchoringTypeValues.Center, "bottom" => A.TextAnchoringTypeValues.Bottom, _ => A.TextAnchoringTypeValues.Top };
+                return true;
+            case "align":
+                foreach (var p in Paragraphs(body)) (p.ParagraphProperties ??= new A.ParagraphProperties()).Alignment = AlignValue(value);
+                return true;
+            case "bold" or "italic" or "underline" or "font" or "size" or "color":
+                foreach (var rp in RunProperties(body))
+                    switch (name)
+                    {
+                        case "bold": rp.Bold = value == "true"; break;
+                        case "italic": rp.Italic = value == "true"; break;
+                        case "underline": rp.Underline = value == "true" ? A.TextUnderlineValues.Single : A.TextUnderlineValues.None; break;
+                        case "font": SetFont(rp, value); break;
+                        case "size": rp.FontSize = Hundredths(value); break;
+                        case "color": SetColor(rp, value); break;
+                    }
+                return true;
             case "columns":
                 var n = int.Parse(value, CultureInfo.InvariantCulture);
                 bodyPr.ColumnCount = n > 1 ? n : null;
@@ -583,6 +608,7 @@ static class PptxText
         foreach (var p in Paragraphs(body).ToList())
         {
             foreach (var run in p.Elements<A.Run>()) yield return run.RunProperties ??= new A.RunProperties { Language = "en-US" };
+            foreach (var field in p.Elements<A.Field>()) yield return field.RunProperties ??= new A.RunProperties { Language = "en-US" };
             yield return p.GetFirstChild<A.EndParagraphRunProperties>() ?? p.AppendChild(new A.EndParagraphRunProperties { Language = "en-US" });
         }
     }

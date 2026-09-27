@@ -40,6 +40,13 @@ sealed class PptxRoot(PptxDocument doc) : Node
             case "title": doc.Package.PackageProperties.Title = value.Length > 0 ? value : null; break;
             case "palette": PptxDesign.ApplyPalette(doc, PptxTemplate.FindPalette(value)!); break;
             case "fonts": PptxDesign.SetFonts(doc, value); break;
+            case "width" or "height":
+                var length = Units.ParseLength(value);
+                if (length <= 0 || length > 51206400) throw new WriterException(ErrorCode.Validation, "Slide dimensions must be between 0 and 56 inches", "Use a positive slide width or height.");
+                var size = doc.Presentation.Presentation!.SlideSize ??= new P.SlideSize();
+                if (name == "width") size.Cx = (int)length; else size.Cy = (int)length;
+                size.Type = P.SlideSizeValues.Custom;
+                break;
         }
     }
 
@@ -71,7 +78,7 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         var props = new Dictionary<string, string>();
         if (TitleShape() is { } title) props["title"] = PptxText.BodyText(title.TextBody);
         if (slide.SlideLayoutPart is { } layout) props["layout"] = PptxDocument.LayoutName(layout);
-        if (PptxDecor.Background(slide)?.Background.BackgroundProperties is { } bg)
+        if (slide.Slide?.CommonSlideData?.Background?.BackgroundProperties is { } bg)
         {
             if (bg.GetFirstChild<A.SolidFill>()?.RgbColorModelHex?.Val?.Value is { } color) props["background"] = color.ToUpperInvariant();
             if (bg.GetFirstChild<A.BlipFill>() is not null) props["backgroundImage"] = "true";
@@ -92,9 +99,12 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
     /// <summary>The background the slide shows when it declares none of its own: its layout's or master's, theme colours resolved.</summary>
     public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props)
     {
-        if (props.ContainsKey("background") || props.ContainsKey("backgroundImage")) return null;
-        var background = PptxLook.For(slide, doc.Presentation).Background(PptxDecor.Background(slide)?.Background);
-        return background is null or "none" ? null : new Dictionary<string, string> { ["background"] = background };
+        var look = PptxLook.For(slide, doc.Presentation);
+        var result = new Dictionary<string, string>();
+        var inherited = slide.SlideLayoutPart?.SlideLayout?.CommonSlideData?.Background ?? slide.SlideLayoutPart?.SlideMasterPart?.SlideMaster?.CommonSlideData?.Background;
+        if (look.Background(inherited) is { } fallback && fallback != "none") result["inheritedBackground"] = fallback;
+        if (!props.ContainsKey("background") && !props.ContainsKey("backgroundImage") && look.Background(PptxDecor.Background(slide)?.Background) is { } background && background != "none") result["background"] = background;
+        return result.Count == 0 ? null : result;
     }
 
     /// <summary>The child element PowerPoint writes for each transition the engine models.</summary>
@@ -263,7 +273,8 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
             P.Picture pic => new PptxImage(doc, slide, pic),
             P.ConnectionShape cxn => new PptxConnector(doc, slide, cxn),
             P.GroupShape group => new PptxGroup(doc, slide, group),
-            _ => new PptxTable(doc, slide, (P.GraphicFrame)element),
+            P.GraphicFrame frame when PptxTable.TableOf(frame) is not null => new PptxTable(doc, slide, frame),
+            _ => new PptxObject(doc, slide, (P.GraphicFrame)element),
         };
     }
 
@@ -272,7 +283,7 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
     public override Node AddRaw(string raw, int? index)
     {
         var element = RawXml.Parse(Tree, raw, doc.Namespaces);
-        if (element is not (P.Shape or P.Picture or P.ConnectionShape or P.GroupShape) && !(element is P.GraphicFrame frame && PptxTable.TableOf(frame) is not null))
+        if (element is not (P.Shape or P.Picture or P.ConnectionShape or P.GroupShape or P.GraphicFrame))
             throw new WriterException(ErrorCode.Validation, $"Raw XML on a slide must be a shape, picture, connector, group or table, got <{element.Prefix}:{element.LocalName}>",
                 "Pass one <p:sp>, <p:pic>, <p:cxnSp>, <p:grpSp> or table <p:graphicFrame> as 'get --raw' printed it.");
         PptxCopy.Ids(element, slide, keep: true);
@@ -344,7 +355,8 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
         }
         if (shape.NonVisualShapeProperties?.NonVisualShapeDrawingProperties?.ShapeLocks?.NoChangeAspect?.Value == true) props["lockAspect"] = "true";
         PptxText.ReadBox(shape.TextBody, props);
-        var firstRun = PptxText.Paragraphs(shape.TextBody).SelectMany(p => p.Elements<A.Run>()).FirstOrDefault()?.RunProperties;
+        if (PptxFields.Read(shape) is { } field) props["field"] = field;
+        var firstRun = PptxText.Paragraphs(shape.TextBody).SelectMany(p => p.Elements<A.Run>()).FirstOrDefault()?.RunProperties ?? shape.TextBody?.Descendants<A.Field>().FirstOrDefault()?.RunProperties;
         if (firstRun?.GetFirstChild<A.LatinFont>()?.Typeface?.Value is { } font && !font.StartsWith('+')) props["font"] = font;
         if (firstRun?.FontSize?.Value is { } size) props["size"] = PptxText.Points(size);
         if (PptxText.Color(firstRun) is { } color) props["color"] = color;
@@ -415,6 +427,7 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
         if (PptxText.SetBox(Body(), name, value)) return;
         switch (name)
         {
+            case "field": PptxFields.Set(shape, doc, slide, value); break;
             case "text":
                 PptxText.SetBody(Body(), slide, [new RunSpec(value)]);
                 break;
@@ -545,6 +558,8 @@ sealed class PptxParagraph(PptxDocument doc, SlidePart slide, A.Paragraph p) : N
 
     protected override IEnumerable<Node> ProjectChildren() => p.Elements<A.Run>().Select(r => (Node)new PptxRun(doc, slide, r));
 
+    public override IReadOnlyDictionary<string, string>? GetComputed(IReadOnlyDictionary<string, string> props) => PptxLook.For(slide, doc.Presentation).Paragraph(p, props);
+
     public override IReadOnlyDictionary<string, string> GetProps()
     {
         var props = new Dictionary<string, string> { ["text"] = PptxText.ParagraphText(p), ["html"] = Exporter.HtmlOf(this) };
@@ -556,6 +571,8 @@ sealed class PptxParagraph(PptxDocument doc, SlidePart slide, A.Paragraph p) : N
         }
         else if (pPr?.Level?.Value is { } level and > 0) props["level"] = level.ToString(CultureInfo.InvariantCulture);
         if (PptxText.AlignOf(pPr) is { } align) props["align"] = align;
+        if (pPr?.GetFirstChild<A.AutoNumberedBullet>() is { } numbered) { props["numberFormat"] = numbered.Type?.InnerText ?? "arabicPeriod"; if (numbered.StartAt?.Value is { } start) props["listStart"] = start.ToString(CultureInfo.InvariantCulture); }
+        if (pPr?.GetFirstChild<A.CharacterBullet>()?.Char?.Value is { } bullet) props["bullet"] = bullet;
         return props;
     }
 
@@ -576,6 +593,18 @@ sealed class PptxParagraph(PptxDocument doc, SlidePart slide, A.Paragraph p) : N
                 if (PptxText.ListOf(pPr) is { } kind) PptxText.SetList(pPr, kind);
                 break;
             case "align": Properties().Alignment = PptxText.AlignValue(value); break;
+            case "numberFormat":
+                if (Properties().GetFirstChild<A.AutoNumberedBullet>() is null) PptxText.SetList(Properties(), "number");
+                Properties().GetFirstChild<A.AutoNumberedBullet>()!.Type = new A.TextAutoNumberSchemeValues(value);
+                break;
+            case "listStart":
+                if (Properties().GetFirstChild<A.AutoNumberedBullet>() is null) PptxText.SetList(Properties(), "number");
+                Properties().GetFirstChild<A.AutoNumberedBullet>()!.StartAt = int.Parse(value, CultureInfo.InvariantCulture);
+                break;
+            case "bullet":
+                if (Properties().GetFirstChild<A.CharacterBullet>() is null) PptxText.SetList(Properties(), "bullet");
+                Properties().GetFirstChild<A.CharacterBullet>()!.Char = value;
+                break;
         }
     }
 

@@ -20,7 +20,7 @@ public static class Mutations
 
     public static Node Move(Node node, Node newParent, int? index)
     {
-        Registry.CheckParent(node.Format, node.Kind, newParent.Kind);
+        CheckMoveParent(node, newParent);
         node.MoveTo(newParent, index);
         return newParent.FindChild(node.Anchor) ?? node;
     }
@@ -28,9 +28,17 @@ public static class Mutations
     /// <summary>A copy of the node under newParent: the same markup, with what it refers to.</summary>
     public static Node Copy(Node node, Node newParent, int? index)
     {
-        Registry.CheckParent(node.Format, node.Kind, newParent.Kind);
+        CheckMoveParent(node, newParent);
         var copy = node.CopyTo(newParent, index);
         return newParent.FindChild(copy.Anchor) ?? copy;
+    }
+
+    static void CheckMoveParent(Node node, Node parent)
+    {
+        // Imported graphic frames can move/copy while staying non-creatable in the
+        // schema: making an empty chart would lose its required related parts.
+        if (node.Format == "pptx" && node.Kind == "object" && parent.Format == "pptx" && parent.Kind == "slide") return;
+        Registry.CheckParent(node.Format, node.Kind, parent.Kind);
     }
 
     /// <summary>A child made from raw XML, as 'get --raw' printed it; the parent checks what the XML may be.</summary>

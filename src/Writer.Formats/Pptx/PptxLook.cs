@@ -304,9 +304,38 @@ sealed class PptxLook
             var size = sources.Select(s => IntAttr(s, "sz")).FirstOrDefault(s => s is not null);
             if (size is not null) result["size"] = PptxText.Points(size);
         }
+        if (!props.ContainsKey("verticalAlign"))
+        {
+            var anchor = Attr(Child(Child(layoutShape, "txBody"), "bodyPr"), "anchor") ?? Attr(Child(Child(masterShape, "txBody"), "bodyPr"), "anchor");
+            if (anchor is not null) result["verticalAlign"] = anchor switch { "ctr" => "middle", "b" => "bottom", _ => "top" };
+        }
         // bold as the list and master styles set it; a run's own bold is already in the paragraphs' html
         if (sources.Skip(1).Select(s => Attr(s, "b")).FirstOrDefault(b => b is not null) is { } bold)
             result["bold"] = bold is "1" or "true" ? "true" : "false";
+        return result;
+    }
+
+    public IReadOnlyDictionary<string, string> Paragraph(DocumentFormat.OpenXml.Drawing.Paragraph p, IReadOnlyDictionary<string, string> props)
+    {
+        var result = new Dictionary<string, string>();
+        if (p.Ancestors<P.Shape>().FirstOrDefault() is not { } shape) return result;
+        var ph = shape.NonVisualShapeProperties?.ApplicationNonVisualDrawingProperties?.PlaceholderShape;
+        var (layout, master) = ph is null ? (null, null) : Inherited(ph);
+        var level = p.ParagraphProperties?.Level?.Value ?? 0;
+        OpenXmlElement? Level(OpenXmlElement? style) => Child(style, $"lvl{level + 1}pPr") ?? Child(style, "defPPr");
+        var sources = new[] { p.ParagraphProperties, Level(Child(Child(shape, "txBody"), "lstStyle")),
+            Child(Child(layout, "txBody")?.ChildElements.FirstOrDefault(e => e.LocalName == "p"), "pPr"), Level(Child(Child(layout, "txBody"), "lstStyle")),
+            Level(Child(Child(master, "txBody"), "lstStyle")), Level(ph is null ? Child(Child(_master?.SlideMaster, "txStyles"), "otherStyle") : MasterTextStyle(ph)), Level(_defaultText) };
+        foreach (var source in sources)
+        {
+            if (!props.ContainsKey("align") && !result.ContainsKey("align") && Attr(source, "algn") is { } a)
+                result["align"] = a switch { "ctr" => "center", "r" => "right", "just" or "dist" => "justify", _ => "left" };
+            if (result.ContainsKey("list")) continue;
+            if (Child(source, "buNone") is not null) result["list"] = "none";
+            else if (Child(source, "buChar") is { } bullet) { result["list"] = "bullet"; result["bullet"] = Attr(bullet, "char") ?? "•"; }
+            else if (Child(source, "buAutoNum") is { } number) { result["list"] = "number"; result["numberFormat"] = Attr(number, "type") ?? "arabicPeriod"; if (Attr(number, "startAt") is { } start) result["listStart"] = start; }
+            else if (Child(source, "buBlip") is not null) result["list"] = "bullet";
+        }
         return result;
     }
 

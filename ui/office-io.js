@@ -1,6 +1,9 @@
 // Shared slide kit + file import/export/print for 素笺 Office.
+export { formatSlideText } from './slide-format.js';
+export { findSlides, replaceSlideHits } from './slide-find.js';
 import { sheetPrint } from './sheet-print.js';
 import { pictureView, picSrc } from './picture.js';
+import { objectInner } from './office-draw.js';
 // $t under node (this module is node-tested): falls back to the Chinese, vars filled the same way. Only for text a new
 // slide/table is created with — never for existing content, which engine.js reads from the file as it is.
 const T = (s, v) => { if (globalThis.$t) return globalThis.$t(s, v); const b = String(s).split('@@')[0]; return v ? b.replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : b; };
@@ -295,7 +298,7 @@ export function placeholder(slot, ratio) {
 export function makeSlide(layout, ratio) {
   const spec = LAYOUT_SPECS[layout] || LAYOUT_SPECS.blank, ky = slideH(ratio) / 900, k = ptPxOf(ratio);
   const decor = (spec.decor || []).map(d => Object.assign(d.t === 'shape' ? shape({ fill: null, html: '' }) : txt({ fs: Math.round(d.pt * k), color: d.color, font: d.font, html: d.html, lh: d.lh }), { x: d.x, y: Math.round(d.y * ky), w: d.w, h: Math.round(d.h * ky) }));
-  return { id: oid(), layout, decor, objs: spec.ph.map(slot => placeholder(slot, ratio)), notes: '', trans: 'fade', hidden: false, bg: null };
+  return { id: oid(), layout, decor, objs: spec.ph.map(slot => placeholder(slot, ratio)), notes: '', trans: 'none', hidden: false, bg: null };
 }
 
 export function resolveColor(v, th, fallback) { if (v === 'acc') return th.acc; if (v === 'card') return th.card; if (v === 'sub') return th.sub; if (v === 'fg') return th.fg; if (v == null) return fallback; return v; }
@@ -314,20 +317,22 @@ export function objView(o, th, ptPx) {
   const gid = 'g' + String(o.id).replace(/\W/g, '_');
   const svg = isLine ? lineSvg(o, stroke) : poly ? svgOf(o, fill, stroke, sw, o.dash, gid) : '';
   const fs = Math.round(o.fs * (o.autofit === 'shrink' && o.fit ? o.fit : 1) * 10) / 10; // 溢出时缩排文字: the scale the box needs
-  return {
+  const view = {
     left: o.x + 'px', top: o.y + 'px', width: o.w + 'px', height: o.h + 'px', tf: `rotate(${o.rot || 0}deg)`, op: o.op ?? 1,
     flt: o.shadow ? 'drop-shadow(0 3px 6px rgba(0,0,0,0.35))' : 'none',
     bg: poly || isLine ? 'transparent' : fillCss(fill) || 'transparent', radius,
     border: !poly && !isLine && sw && stroke ? `${sw}px ${o.dash === 'dot' || o.dash === 'sysDot' ? 'dotted' : o.dash && o.dash !== 'solid' ? 'dashed' : 'solid'} ${stroke}` : 'none',
-    svg: { __html: svg }, isLine, isGroup, kids: isGroup ? o.kids.map(k => Object.assign(objView(k, th, ptPx), { left: (k.x - o.x) + 'px', top: (k.y - o.y) + 'px' })) : [],
+    svg: { __html: o.t === 'object' ? objectInner(o.data || {}, o.w, o.h) : svg }, isLine, isGroup, kids: isGroup ? o.kids.map(k => Object.assign(objView(k, th, ptPx), { left: (k.x - o.x) + 'px', top: (k.y - o.y) + 'px' })) : [],
     tx: textStyle(o, fs, th),
     color, fs: fs + 'px', font: `'${font}','Noto Sans SC',sans-serif`, fw: o.bold ? 700 : 400, fst: o.italic ? 'italic' : 'normal', td: o.underline ? 'underline' : 'none',
     align: o.align || 'left', va: o.va === 'middle' ? 'center' : o.va === 'bottom' ? 'flex-end' : 'flex-start', lh: o.lh || 1.35,
     pad: o.t === 'text' ? '8px 12px' : '16px 24px', isImg: o.t === 'image', src: picSrc(o.src || ''), picFrame: pic ? pic.frame : '', picImage: pic ? pic.image : '', isTable: o.t === 'table', hasText: o.t === 'text' || o.t === 'shape',
     tcells: o.t === 'table' ? tableCells(o, th) : [], gtc: o.t === 'table' ? colWidths(o).map(w => w + 'px').join(' ') : '', gtr: o.t === 'table' ? `repeat(${Math.max(1, (o.rows || []).length)}, 1fr)` : '',
-    inner: { __html: o.html || '' },
+    inner: { __html: o.autofit === 'shrink' && o.fit && o.fit < 1 ? (o.html || '').replace(/(font-size\s*:\s*)([\d.]+)px/gi, (_, key, n) => key + Number((n * o.fit).toFixed(5)) + 'px') : o.html || '' },
     hint: o.ph && HINTS[o.ph] && !textOf(o.html) ? T(HINTS[o.ph]) : '' // an empty placeholder's prompt, drawn by CSS and never part of the text
   };
+  view.groupInner = { __html: isGroup ? o.kids.map((k, i) => slideObjectHtml(k, view.kids[i])).join('') : '' };
+  return view;
 }
 /** The text container's extra style: paragraph spacing (as variables the .sv-t rules read), character spacing, columns, direction
  *  and the WordArt effects — an outline around the letters, a shadow behind them, a gradient through them. */
@@ -345,20 +350,21 @@ export function textStyle(o, fs, th) {
   return s;
 }
 /** Bullet levels (Tab / ⇧Tab): li and p carry data-lvl 1–4; both editors and the print page use this CSS. */
-export const LVL_CSS = '.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}';
-function slideHtml(s, th, H, scale) {
-  const bg = s.bg || th.bg;
-  let h = `<div class="sl" style="width:${SW}px;height:${H}px;position:relative;overflow:hidden;background:${bg};zoom:${scale}">`;
-  const one = (o, v) => {
+export const LVL_CSS = '.sv-t li[data-marker]::marker{content:attr(data-marker)}.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}';
+export function slideObjectHtml(o, v) {
     let h = `<div style="position:absolute;left:${v.left};top:${v.top};width:${v.width};height:${v.height};transform:${v.tf};opacity:${v.op};filter:${v.flt}">`;
     h += `<div style="position:absolute;inset:0;background:${v.bg};border-radius:${v.radius};border:${v.border};box-sizing:border-box">${v.svg.__html}</div>`;
     if (v.isImg) h += `<div style="position:absolute;inset:0;${v.picFrame}"><img src="${esc(v.src)}" style="${v.picImage}"></div>`;
-    if (v.hasText) h += `<div style="position:absolute;inset:0;padding:${v.pad};display:flex;flex-direction:column;justify-content:${v.va};color:${v.color};font-size:${v.fs};font-family:${v.font};font-weight:${v.fw};font-style:${v.fst};text-decoration:${v.td};text-align:${v.align};line-height:${v.lh};${v.tx}"><div class="sv-t t">${o.html || ''}</div></div>`;
+    if (v.hasText) h += `<div style="position:absolute;inset:0;padding:${v.pad};display:flex;flex-direction:column;justify-content:${v.va};color:${v.color};font-size:${v.fs};font-family:${v.font};font-weight:${v.fw};font-style:${v.fst};text-decoration:${v.td};text-align:${v.align};line-height:${v.lh};${v.tx}"><div class="sv-t t">${v.inner.__html}</div></div>`;
     if (v.isTable) h += `<div style="position:absolute;inset:0;display:grid;grid-template-columns:${v.gtc};grid-template-rows:${v.gtr};font-size:${v.fs};font-family:${v.font}">` + v.tcells.map(c => `<div style="grid-column:${c.gc};grid-row:${c.gr};display:flex;align-items:center;justify-content:${c.jc};padding:0 16px;background:${c.bg};color:${c.color};font-weight:${c.fw};border:${c.border};border-bottom:${c.bb};overflow:hidden;box-sizing:border-box">${esc(c.text)}</div>`).join('') + '</div>';
-    if (v.isGroup) h += o.kids.map((k, i) => one(k, v.kids[i])).join('');
+    if (v.isGroup) h += o.kids.map((k, i) => slideObjectHtml(k, v.kids[i])).join('');
     return h + '</div>';
-  };
-  (s.decor || []).concat(s.objs).forEach(o => { h += one(o, objView(o, th)); });
+  }
+function slideHtml(s, th, H, scale) {
+  const bg = s.bg || s.inheritedBg || th.bg;
+  let h = `<div class="sl" style="width:${SW}px;height:${H}px;position:relative;overflow:hidden;background:${bg};zoom:${scale}">`;
+
+  (s.decor || []).concat(s.objs).forEach(o => { h += slideObjectHtml(o, objView(o, th)); });
   return h + '</div>';
 }
 
@@ -649,7 +655,7 @@ async function pptxSlides(z) {
     }
     for (const pic of desc(x, 'pic')) { const b = desc(pic, 'blip')[0]; const id = b && at(b, 'r:embed'); const p = pos(desc(pic, 'spPr')[0], { x: 400, y: 200, w: 800, h: 450 }); if (id && sr[id]) objs.push(txt({ t: 'image', src: await dataUrl(z, sr[id]), x: p.x, y: p.y, w: p.w, h: p.h, html: '' })); }
     for (const gf of desc(x, 'graphicFrame')) { const tbl = desc(gf, 'tbl')[0]; if (!tbl) continue; const p = pos(desc(gf, 'xfrm')[0], { x: 128, y: 250, w: 1344, h: 400 }); objs.push(txt({ t: 'table', x: p.x, y: p.y, w: p.w, h: p.h, fs: 24, html: '', rows: kids(tbl, 'tr').map(tr => kids(tr, 'tc').map(tc => desc(tc, 't').map(n => n.textContent).join(''))) })); }
-    slides.push({ id: oid(), objs, notes: '', trans: 'fade', hidden: false, bg: bgc ? '#' + at(bgc, 'val') : '#FFFFFF' });
+    slides.push({ id: oid(), objs, notes: '', trans: 'none', hidden: false, bg: bgc ? '#' + at(bgc, 'val') : '#FFFFFF' });
   }
   return { theme: 'paper', ratio, slides: slides.length ? slides : [makeSlide('title', ratio)] };
 }
@@ -750,4 +756,22 @@ export function exportCsv(doc, E) {
   const sh = doc.sheets[doc.active || 0], u = E.usedRange(sh), calc = new E.Calc(doc); let out = '';
   if (u) for (let r = 0; r <= u.r2; r++) { const row = []; for (let c = 0; c <= u.c2; c++) { const v = E.fmt(calc.value(doc.active || 0, r, c), (sh.cells[E.A(r, c)] || {}).s); row.push(/[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v); } out += row.join(',') + '\n'; }
   download(new Blob(['\ufeff' + out], { type: 'text/csv' }), doc.title + '.csv');
+}
+
+export function resizeSlides(doc, ratio) {
+  if ((doc.ratio || '16:9') === ratio) return;
+  const oldH = slideH(doc.ratio), nextH = slideH(ratio), scale = Math.min(1, nextH / oldH), dx = SW * (1 - scale) / 2, dy = (nextH - oldH * scale) / 2;
+  const resize = o => { o.x = dx + o.x * scale; o.y = dy + o.y * scale; o.w *= scale; o.h *= scale;
+    for (const k of ['fs','sw','sb','sa','cs']) if (o[k]) o[k] *= scale;
+    if (o.colW) o.colW = o.colW.map(w => w * scale);
+    if (o.html && scale !== 1) o.html = o.html.replace(/(font-size|letter-spacing)\s*:\s*([\d.]+)px/gi, (_, key, n) => key + ':' + Number((n * scale).toFixed(5)) + 'px');
+    (o.kids || []).forEach(resize);
+  };
+  doc.slides.forEach(s => s.objs.forEach(resize)); doc.ratio = ratio;
+}
+export function slideLinkClick(e) {
+  const a = e.target.closest?.('a'); if (!a) return;
+  e.preventDefault(); e.stopPropagation();
+  const href = a.getAttribute('href') || '';
+  if ((e.ctrlKey || e.metaKey) && /^(https?:|mailto:)/i.test(href)) window.open(href, '_blank', 'noopener,noreferrer');
 }

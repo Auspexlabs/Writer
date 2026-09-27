@@ -265,12 +265,12 @@ test('engine: a duplicated, copied or cut object is saved as a new object, and t
   let doc = await deck(file);
   const c = editor(() => doc, d => { doc = d; }), [text, pic] = doc.slides[0].objs;
   c.setState({ sel: text.id }); key(c, 'd'); // Ctrl+D
-  c.setState({ sel: pic.id, tab: 'picture' }); c.renderVals().ribbon.find(i => i.label === '复制').onClick(); // the 图片 tab's 复制
+  c.select(pic.id, false); c.setState({ tab: 'picture' }); c.renderVals().ribbon.find(i => i.label === '复制').onClick(); // the 图片 tab's 复制
   const held = structuredClone(doc); // the doc the editor holds, had it changed while the save ran
   await EN.save(doc); EN.adopt(held, doc);
   const copy = held.slides[0].objs[3];
   assert.equal(copy.src, '/binary?file=' + encodeURIComponent(file) + '&path=' + encodeURIComponent(copy.path), 'the saved copy loads from its own place in the file');
-  c.setState({ sel: copy.id }); key(c, 'x'); // cut the picture's copy…
+  c.select(copy.id, false); key(c, 'x'); // cut the picture's copy…
   await EN.save(doc); // …which this save takes out of the file
   c.setState({ cur: 1, sel: null }); key(c, 'v'); // …and paste it on slide 2
   await EN.save(doc);
@@ -430,4 +430,18 @@ test('engine: the shape gallery round-trips — a dashed gradient star with a sh
   const flat = await EN.open({ id: file, path: file, type: 'pptx' });
   assert.deepEqual(flat.slides[0].objs.map(o => o.t), ['shape', 'line', 'shape', 'shape']);
   assert.equal(flat.slides[0].objs[2].x, g.kids[0].x + 100, 'the members stay where the group showed them');
+}));
+
+
+test('engine: grouping and ungrouping saved pictures keeps their original bytes and ids', {skip:skip()}, () => engine(async () => {
+  const file=join(dir,'group-saved.pptx'); let doc=await deck(file);
+  const c=editor(()=>doc,d=>{doc=d;}); const [text,pic]=doc.slides[0].objs;
+  c.select(text.id,false); c.select(pic.id,true); c.groupSels();
+  await EN.save(doc); doc=await EN.open(doc);
+  const g=doc.slides[0].objs[0]; assert.equal(g.t,'group'); assert.equal(g.kids.length,2);
+  const image=g.kids.find(o=>o.t==='image'); assert.equal((await EN.run(['get',file,image.path])).props.alt,'logo');
+  assert.equal(await EN.save(doc),0,'an untouched group is not resized to its child bounds');
+  c.select(g.id,false); c.ungroup(); await EN.save(doc); doc=await EN.open(doc);
+  assert.deepEqual(doc.slides[0].objs.map(o=>o.kind),['shape','image']);
+  assert.equal((await EN.run(['get',file,doc.slides[0].objs[1].path])).props.alt,'logo');
 }));

@@ -64,12 +64,13 @@ public class PptxDecorTests
         var layoutOnly = Slide(doc, 4).Children.Where(c => c.Kind == "decor").ToList();  // the layout's showMasterSp="0" hides the master's
         Assert.Equal(["LAYOUT TAG"], layoutOnly.Select(c => c.Text));
         Assert.Equal("layout", layoutOnly[0].GetProps()["source"]);
-        Assert.Equal("101020", Slide(doc, 4).GetProps()["background"]);                  // neither the slide nor its layout has one: the master's
+        Assert.False(Slide(doc, 4).GetProps().ContainsKey("background"));
+        Assert.Equal("101020", Slide(doc, 4).GetComputed(Slide(doc, 4).GetProps())!["background"]); // inherited background stays distinguishable from an explicit override
         Assert.Equal("080A1F", Slide(doc, 1).GetProps()["background"]);                  // the slide's own wins
         Assert.False(Slide(doc, 1).GetProps().ContainsKey("backgroundImage"));
 
         var picture = Slide(doc, 5);
-        Assert.Equal("true", picture.GetProps()["backgroundImage"]);
+        Assert.False(picture.GetProps().ContainsKey("backgroundImage")); // this image belongs to its layout, reported by the decor node below
         Assert.False(picture.GetProps().ContainsKey("background"));
         var bg = picture.Children[0].GetProps();
         Assert.Equal(("decor", "image", "layout", "true"), (picture.Children[0].Kind, bg["type"], bg["source"], bg["background"]));

@@ -254,6 +254,7 @@ sealed class PptxGroup(PptxDocument doc, SlidePart slide, P.GroupShape group) : 
                 case P.Picture pic: yield return new PptxImage(doc, slide, pic) { T = t }; break;
                 case P.ConnectionShape cxn: yield return new PptxConnector(doc, slide, cxn) { T = t }; break;
                 case P.GraphicFrame frame when PptxTable.TableOf(frame) is not null: yield return new PptxTable(doc, slide, frame) { T = t }; break;
+                case P.GraphicFrame frame: yield return new PptxObject(doc, slide, frame) { T = t }; break;
                 case P.GroupShape inner: yield return new PptxGroup(doc, slide, inner) { T = t }; break;
             }
         }

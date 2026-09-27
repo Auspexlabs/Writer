@@ -18,7 +18,7 @@ public sealed class Args
         ["set"] = ("<file> <path> [--prop k=v]... [--raw xml] [--all]", "Change properties, or replace the raw XML", ["prop", "raw"], ["all"]),
         ["remove"] = ("<file> <path> [--all]", "Delete elements", [], ["all"]),
         ["move"] = ("<file> <path> --to parent [--index n | --after path | --before path]", "Move an element under another parent", ["to", "index", "after", "before"], []),
-        ["copy"] = ("<file> <path> --to parent [--index n | --after path | --before path]", "Copy an element under a parent (pptx: a slide, or a shape, picture or table)", ["to", "index", "after", "before"], []),
+        ["copy"] = ("<file> <path> --to parent [--from-file source.pptx] [--index n | --after path | --before path]", "Copy an element under a parent; --from-file imports a drawing from another presentation", ["to", "from-file", "index", "after", "before"], []),
         ["view"] = ("<file> [outline|structure|text|html|json]", "The whole document; structure is the short form: headings, tables, sheets with their header row", [], []),
         ["search"] = ("<file> <text> [--ignore-case]", "Every block whose text contains the words, with its path", [], ["ignore-case"]),
         ["section"] = ("<file> <heading path> [--md markdown | --remove]", "A heading and everything up to the next heading of its level: print it, replace it with the markdown's blocks (heading included), or remove it", ["md"], ["remove"]),

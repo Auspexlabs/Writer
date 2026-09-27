@@ -10,13 +10,20 @@
 <helmet>
 <link rel="stylesheet" href="./theme-dark.css">
 <style>
-.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}
+.sv-t li[data-marker]::marker{content:attr(data-marker)}.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}
 .se-ed:focus{outline:none}
 .se-ed:empty::before{content:attr(data-hint);opacity:.45;pointer-events:none}.se-ed:focus::before{content:none}
 [data-thumbpanel] [draggable="true"]{content-visibility:auto;contain-intrinsic-height:auto 84px}
 </style>
 </helmet>
-<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;padding-right:{{ panelPad }};background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
+<div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" onClick="{{ onLink }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;padding-right:{{ panelPad }};background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
+  <sc-if value="{{ findOpen }}" hint-placeholder-val="{{ false }}">
+    <div role="search" onMouseDown="{{ findMD }}" style="position:absolute;top:58px;left:230px;z-index:70;max-width:calc(100% - 250px);padding:12px;display:flex;flex-direction:column;gap:8px;border-radius:12px;background:var(--fp-bg);box-shadow:var(--fp-sh);font-size:12px">
+      <div style="display:flex;gap:8px;align-items:center"><input data-slide-find="1" aria-label="查找" placeholder="查找" value="{{ findText }}" onChange="{{ onFindText }}" onKeyDown="{{ findKey }}" style="width:190px"><button onClick="{{ findNext }}">下一个</button><span>{{ findCount }}</span><button onClick="{{ closeFind }}" title="关闭">✕</button></div>
+      <div style="display:flex;gap:8px;align-items:center"><input aria-label="替换为" placeholder="替换为" value="{{ replaceText }}" onChange="{{ onReplaceText }}" onKeyDown="{{ findKey }}" style="width:190px"><button onClick="{{ replaceOne }}">替换</button><button onClick="{{ replaceAll }}">全部替换</button></div>
+      <div style="display:flex;gap:12px"><label><input type="checkbox" checked="{{ findCase }}" onChange="{{ onFindCase }}">区分大小写</label><label><input type="checkbox" checked="{{ findWord }}" onChange="{{ onFindWord }}">全字匹配</label></div>
+    </div>
+  </sc-if>
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
     <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
@@ -85,21 +92,13 @@
             <sc-for list="{{ objs }}" as="o" hint-placeholder-count="0">
               <div data-soid="{{ o.id }}" onMouseDown="{{ o.onMD }}" onDoubleClick="{{ o.onDbl }}" style="position:absolute;left:{{ o.left }};top:{{ o.top }};width:{{ o.width }};height:{{ o.height }};transform:{{ o.tf }};opacity:{{ o.op }};cursor:{{ o.cursor }};pointer-events:{{ o.pe }};filter:{{ o.flt }}">
                 <div style="position:absolute;inset:0;background:{{ o.bg }};border-radius:{{ o.radius }};border:{{ o.border }};box-sizing:border-box" dangerouslySetInnerHTML="{{ o.svg }}"></div>
-                <sc-if value="{{ o.isGroup }}" hint-placeholder-val="{{ false }}">
-                  <sc-for list="{{ o.kids }}" as="g" hint-placeholder-count="0">
-                    <div style="position:absolute;left:{{ g.left }};top:{{ g.top }};width:{{ g.width }};height:{{ g.height }};transform:{{ g.tf }};opacity:{{ g.op }};filter:{{ g.flt }};pointer-events:none">
-                      <div style="position:absolute;inset:0;background:{{ g.bg }};border-radius:{{ g.radius }};border:{{ g.border }};box-sizing:border-box" dangerouslySetInnerHTML="{{ g.svg }}"></div>
-                      <sc-if value="{{ g.isImg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;{{ g.picFrame }}"><img src="{{ g.src }}" alt="" draggable="false" style="{{ g.picImage }}"></div></sc-if>
-                      <sc-if value="{{ g.hasText }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;padding:{{ g.pad }};display:flex;flex-direction:column;justify-content:{{ g.va }};color:{{ g.color }};font-size:{{ g.fs }};font-family:{{ g.font }};font-weight:{{ g.fw }};font-style:{{ g.fst }};text-decoration:{{ g.td }};text-align:{{ g.align }};line-height:{{ g.lh }};overflow:hidden;word-break:break-word;{{ g.tx }}"><div class="sv-t" dangerouslySetInnerHTML="{{ g.inner }}"></div></div></sc-if>
-                    </div>
-                  </sc-for>
-                </sc-if>
-                <sc-if value="{{ o.isImg }}" hint-placeholder-val="{{ false }}">
+                <sc-if value="{{ o.isGroup }}" hint-placeholder-val="{{ false }}"><div dangerouslySetInnerHTML="{{ o.groupInner }}"></div></sc-if>
+        <sc-if value="{{ o.isImg }}" hint-placeholder-val="{{ false }}">
                   <div style="position:absolute;inset:0;pointer-events:none;{{ o.picFrame }}"><img src="{{ o.src }}" alt="" draggable="false" style="{{ o.picImage }}"></div>
                 </sc-if>
                 <sc-if value="{{ o.hasText }}" hint-placeholder-val="{{ false }}">
                   <div data-tbox="{{ o.id }}" style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:{{ o.ovf }};word-break:break-word;outline:{{ o.phLine }};{{ o.tx }}">
-                    <div class="sv-t se-ed" data-edit="{{ o.id }}" data-hint="{{ o.hint }}" data-complete="{{ aiHint }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ o.onBlur }}" dangerouslySetInnerHTML="{{ o.inner }}" style="min-height:1em;cursor:{{ o.tcur }};user-select:{{ o.us }};outline:none"></div>
+                    <div class="sv-t se-ed" data-edit="{{ o.id }}" data-hint="{{ o.hint }}" data-complete="{{ aiHint }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ o.onBlur }}" dangerouslySetInnerHTML="{{ o.inner }}" style="zoom:{{ o.editZoom }};min-height:1em;cursor:{{ o.tcur }};user-select:{{ o.us }};outline:none"></div>
                   </div>
                 </sc-if>
                 <sc-if value="{{ o.isTable }}" hint-placeholder-val="{{ false }}">
@@ -294,16 +293,27 @@ class Component extends DCLogic {
   commit(fn, silent) {
     const d = structuredClone(this.doc), s = d.slides[this.ci]; fn(d, s);
     this.K.keepSections(this.doc.slides, d.slides);
+    d.slides.forEach((sl,i) => this.K.flatObjs(sl.objs).forEach(o => { if (o.field === 'slideNumber') o.html = '<p>'+(i+1)+'</p>'; }));
     if (s) { this.K.relinkLines(s); if (s.anims && s.anims.length) { const ids = new Set(this.K.flatObjs(s.objs).map(o => o.id)); s.anims = s.anims.filter(a => !a.id || ids.has(a.id)); } } // an object's effects go with it
     this.props.onChange && this.props.onChange(d, silent ? { silent: true } : undefined);
   }
-  patchObj(id, patch, silent) { this.commit((d, s) => { const o = s.objs.find(x => x.id === id); if (o) Object.assign(o, patch); }, silent); }
+  openFind() { this.endEdit(); this.setState({findOpen:true,findIndex:-1}); requestAnimationFrame(()=>this.stageRef.current?.closest('[data-edroot]')?.querySelector('[data-slide-find]')?.focus()); }
+  findHits() { return this.K.findSlides(this.doc,this.state.findText||'',{caseSensitive:this.state.findCase,wholeWord:this.state.findWord}); }
+  nextFind() { const hits=this.findHits(); if(!hits.length)return; const i=((this.state.findIndex??-1)+1)%hits.length,h=hits[i]; this.setState({cur:h.slide,sel:h.rootId,sels:[h.rootId],editing:null,findIndex:i}); }
+  replaceFind(all) { const hits=this.findHits(); if(!hits.length)return; const selected=all?hits:[hits[Math.max(0,this.state.findIndex||0)%hits.length]]; this.commit(d=>this.K.replaceSlideHits(d,selected,this.state.replaceText||'')); this.setState({findIndex:-1}); }
+  patchObj(id, patch, silent) { this.commit((d, s) => { const o = s.objs.find(x => x.id === id); if (o) Object.assign(o, patch, { html: this.K.formatSlideText(patch.html ?? o.html, patch) }); }, silent); }
   patchSel(patch) { const o = this.obj; if (o) this.patchObj(o.id, patch); }
   /** The same change on every selected object. */
   patchSels(patch) { const ids = this.sels.map(o => o.id); if (ids.length) this.commit((d, s) => s.objs.forEach(o => { if (ids.includes(o.id)) Object.assign(o, typeof patch === 'function' ? patch(o) : patch); })); }
   /** The object clipboard from a menu, as ⌘C / ⌘X / ⌘V use it: objects stay in the app (they are shapes, not text). */
-  copySels(cut) { if (!this.sels.length) return; this.clip = this.sels.map(x => this.clipOf(x)); if (cut) this.deleteSels(); }
-  pasteSels() { const d = this.doc; if (!this.clip || !this.clip.length) return; const same = this.clipDoc === d.id; this.clip.forEach(c => this.dup(same ? c : Object.assign({}, c, { from: null }), 24)); this.clip = this.clip.map(c => Object.assign({}, c, this.moveKids(c, { x: c.x + 24, y: c.y + 24 }))); }
+  copySels(cut) { if (!this.sels.length) return; this.clip = this.sels.map(x => this.clipOf(x)); window.__writerObjectClip = {doc:this.doc.id,objs:this.clip}; if (cut) this.deleteSels(); }
+  pasteSels() {
+    const clip = window.__writerObjectClip || (this.clip ? { doc: this.clipDoc, objs: this.clip } : null); if (!clip?.objs.length) return;
+    const copies = clip.objs.map(c => { const n = this.copyOf(c); Object.assign(n, this.moveKids(n, {x:n.x+24,y:n.y+24}));
+      if (clip.doc === this.doc.id) delete n.importSource;
+      if (clip.doc !== this.doc.id) { const strip = o => { delete o.from; (o.kids || []).forEach(strip); }; strip(n); } return n; });
+    this.commit((d,s) => s.objs.push(...copies)); this.setState({sel:copies.at(-1).id,sels:copies.map(c=>c.id),editing:null});
+  }
   /** Right-click on the slide: the objects' menu when some are selected (the press selected the one under it), else the slide's. */
   onStageCtx = e => { e.preventDefault(); if (this.state.editing) return; this.setState({ pop: { id: 'stagectx', x: e.clientX, y: Math.min(e.clientY, window.innerHeight - 380) } }); };
   deleteSels() { const ids = this.sels.map(o => o.id); if (!ids.length) return; this.commit((d, s) => { s.objs = s.objs.filter(x => !ids.includes(x.id)); }); this.setState({ sel: null, sels: [] }); }
@@ -348,9 +358,9 @@ class Component extends DCLogic {
   }
   insertObj(o) { this.endEdit(); this.commit((d, s) => s.objs.push(o)); this.setState({ sel: o.id, sels: [o.id] }); return o; }
   /** 插入 › 日期: today's date, bottom right. */
-  insertDate() { this.insertObj(this.K.txt({ x: 1100, y: this.H - 90, w: 400, h: 50, fs: 20, align: 'right', color: 'sub', html: `<p>${new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN')}</p>` })); }
+  insertDate() { this.insertObj(this.K.txt({ field:'date', x: 1100, y: this.H - 90, w: 400, h: 50, fs: 20, align: 'right', color: 'sub', html: `<p>${new Date().toLocaleDateString($lang() === 'en' ? 'en-US' : 'zh-CN')}</p>` })); }
   /** 插入 › 页码: a number on every slide, bottom right (the ones there before are replaced). */
-  insertPageNums() { const K = this.K, H = this.H; this.commit(dd => dd.slides.forEach((sl, i) => { sl.objs = sl.objs.filter(x => x.ph !== 'num'); sl.objs.push(K.txt({ ph: 'num', x: 1400, y: H - 80, w: 120, h: 44, fs: 20, align: 'right', color: 'sub', html: `<p>${i + 1}</p>` })); })); }
+  insertPageNums() { const K = this.K, H = this.H; this.commit(dd => dd.slides.forEach((sl, i) => { sl.objs = sl.objs.filter(x => x.ph !== 'num'); sl.objs.push(K.txt({ ph: 'num', field:'slideNumber', x: 1400, y: H - 80, w: 120, h: 44, fs: 20, align: 'right', color: 'sub', html: `<p>${i + 1}</p>` })); })); }
   /** 切换: this slide's transition (none takes its time away); the next look at it plays it. */
   setTrans(key) { this.commit((dd, cs) => { cs.trans = key; if (key === 'none') cs.duration = null; }); if (key !== 'none') this.pendTrans = true; }
   transToAll() { const s = this.slide, t = s && s.trans, du = s && s.duration; this.commit(dd => dd.slides.forEach(x => { x.trans = t; x.duration = du; })); this.toast($t('已应用到全部幻灯片')); }
@@ -377,12 +387,13 @@ class Component extends DCLogic {
     this.patchSels(o => Object.assign({}, this.moveKids(o, { left: { x: b.x }, hc: { x: Math.round(b.x + (b.w - o.w) / 2) }, right: { x: b.x + b.w - o.w }, top: { y: b.y }, vc: { y: Math.round(b.y + (b.h - o.h) / 2) }, bottom: { y: b.y + b.h - o.h } }[kind])));
   }
   /** A box change on a group carries its kids along: the patch, with the kids moved. */
-  moveKids(o, patch) { if (o.t !== 'group') return patch; const nx = patch.x ?? o.x, ny = patch.y ?? o.y, sx = patch.w ? patch.w / o.w : 1, sy = patch.h ? patch.h / o.h : 1; return Object.assign({ kids: o.kids.map(k => Object.assign({}, k, { x: Math.round(nx + (k.x - o.x) * sx), y: Math.round(ny + (k.y - o.y) * sy), w: Math.round(k.w * sx), h: Math.round(k.h * sy) })) }, patch); }
+  moveKids(o, patch) { if (o.t !== 'group') return patch; const nx = patch.x ?? o.x, ny = patch.y ?? o.y, sx = patch.w ? patch.w / o.w : 1, sy = patch.h ? patch.h / o.h : 1; return Object.assign({ kids: o.kids.map(k => Object.assign({}, k, this.moveKids(k, { x: Math.round(nx + (k.x - o.x) * sx), y: Math.round(ny + (k.y - o.y) * sy), w: Math.round(k.w * sx), h: Math.round(k.h * sy) }))) }, patch); }
   /** A copy of object o: its own id and no engine path, and from: where o is in the file, which a save copies exactly (engine.js). */
   copyOf(o) { const n = Object.assign(structuredClone(o), { id: this.K.oid(), from: o.path || o.from }); delete n.path; if (n.kids) n.kids = o.kids.map(k => this.copyOf(k)); return n; }
   /** What Ctrl+C and Ctrl+X keep: a copy whose picture shows its own bytes once read, as a cut one may have left the file by the paste. */
-  clipOf(o) { const c = this.copyOf(o); this.clipDoc = this.doc.id; if (c.t === 'image' && this.EN) this.EN.pictureData(this.doc.path, o).then(u => { if (u) c.src = u; }); return c; }
-  dup(o, dx) { const n = Object.assign(this.copyOf(o), { x: o.x + (dx ?? 32), y: o.y + (dx ?? 32) }); this.commit((d, s) => s.objs.push(n)); this.setState({ sel: n.id }); }
+  clipOf(o) { const c = this.copyOf(o); if (o.path) c.importSource = {file:this.doc.path,path:o.path}; this.clipDoc = this.doc.id; if (this.EN) { const from=this.K.flatObjs([o]), to=this.K.flatObjs([c]); from.forEach((x,i)=>{ if (x.t==='image') this.EN.pictureData(this.doc.path,x).then(u=>{if(u)to[i].src=u;}); }); } return c; }
+  dupSels() { const copies = this.sels.map(o => { const n = this.copyOf(o); return Object.assign(n, this.moveKids(n,{x:o.x+32,y:o.y+32})); }); if (!copies.length) return; this.commit((d,s)=>s.objs.push(...copies)); this.setState({sel:copies.at(-1).id,sels:copies.map(o=>o.id),editing:null}); }
+  dup(o, dx) { const n = this.copyOf(o); Object.assign(n, this.moveKids(n, {x:o.x+(dx??32),y:o.y+(dx??32)})); this.commit((d,s)=>s.objs.push(n)); this.setState({sel:n.id,sels:[n.id],editing:null}); return n; }
   /** Slide i again right after it, made of copies, and shown: 开始 › 复制 and the thumbnail's 复制幻灯片. */
   dupSlide(i) { const n = this.slideCopy(this.doc.slides[i], true); this.commit(d => d.slides.splice(i + 1, 0, n)); this.setState({ cur: i + 1 }); }
   /** A copy of slide s to insert: its objects copies with ids of their own and its effects on them; it starts no section. from (where
@@ -425,8 +436,9 @@ class Component extends DCLogic {
     this.fitKeys = this.fitKeys || {}; const patch = {};
     for (const o of s.objs) {
       if (o.autofit !== 'shrink' || !(o.t === 'text' || o.t === 'shape')) continue;
+      if (this.state.editing === o.id) continue;
       const key = [o.html, o.w, o.h, o.fs, o.lh, o.cols].join('|'), box = st.querySelector(`[data-tbox="${o.id}"]`); if (!box) continue;
-      if (this.fitKeys[o.id] !== key) { this.fitKeys[o.id] = key; if ((o.fit || 1) < 1) { patch[o.id] = 1; continue; } }
+      if (this.fitKeys[o.id] !== key) { const changed = this.fitKeys[o.id] != null; this.fitKeys[o.id] = key; if (changed && (o.fit || 1) < 1) { patch[o.id] = 1; continue; } }
       const over = box.scrollHeight - box.clientHeight;
       if (over > 1) { const fit = Math.max(0.4, Math.round((o.fit || 1) * box.clientHeight / box.scrollHeight * 0.97 * 100) / 100); if (fit < (o.fit || 1) - 0.005) patch[o.id] = fit; }
     }
@@ -479,7 +491,7 @@ class Component extends DCLogic {
   /** The show's keys, from the show or the presenter window: PowerPoint's. A digit typed and Enter jumps to that slide; B / . black and
    *  W / , white the screen until the next key; Ctrl+L the laser pointer, Ctrl+P the pen (E wipes the ink); Esc puts a tool away, then ends. */
   showKey(e) {
-    const sh = this.state.show; if (!sh) return; const k = e.key, ctrl = e.ctrlKey || e.metaKey, set = patch => this.setState({ show: Object.assign({}, this.state.show, patch) });
+    const sh = this.state.show; if (!sh) return; e.stopPropagation?.(); const k = e.key, ctrl = e.ctrlKey || e.metaKey, set = patch => this.setState({ show: Object.assign({}, this.state.show, patch) });
     if (sh.blank) { e.preventDefault(); return set({ blank: null }); }
     if (/^[0-9]$/.test(k)) { this.typed = (this.typed || '') + k; return this.setState({ jump: this.typed }); }
     if (k === 'Enter' && this.typed) { e.preventDefault(); const n = +this.typed - 1; this.typed = ''; this.setState({ jump: '' }); if (n >= 0 && n < this.doc.slides.length && n !== sh.i) this.goSlide(n, sh.i); return; }
@@ -603,7 +615,7 @@ class Component extends DCLogic {
   };
   onWU = () => {
     const op = this.op; this.op = null; if (!op) return; const lives = this.state.lives;
-    if (lives) { this.commit((d, s) => { for (const o of s.objs) { const lv = lives[o.id]; if (!lv) continue; if (o.t === 'group') { const dx = lv.x - o.x, dy = lv.y - o.y, sx = o.w ? lv.w / o.w : 1, sy = o.h ? lv.h / o.h : 1; o.kids.forEach(kd => Object.assign(kd, { x: Math.round(lv.x + (kd.x - o.x) * sx), y: Math.round(lv.y + (kd.y - o.y) * sy), w: Math.round(kd.w * sx), h: Math.round(kd.h * sy) })); void dx; void dy; } Object.assign(o, lv); } }); this.setState({ lives: null, guides: null }); }
+    if (lives) { this.commit((d, s) => { for (const o of s.objs) { const lv = lives[o.id]; if (lv) Object.assign(o, this.moveKids(o, lv)); } }); this.setState({ lives: null, guides: null }); }
   };
   openPop(id, e, x, y, extra) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && x == null ? null : Object.assign({ id, x: x ?? r.left, y: y ?? r.bottom + 4 }, extra), gridHover: null }); }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
@@ -647,7 +659,7 @@ class Component extends DCLogic {
       tab === 'format' && o.t !== 'line' && R(lab('旋转'), sp(), num((o.rot || 0) + '°', dd => this.patchSel({ rot: (((o.rot || 0) + dd * 15) % 360 + 360) % 360 }), t => { const v = secParse(t); if (v != null) this.patchSel({ rot: ((Math.round(v) % 360) + 360) % 360 }); }, { w: 72, title: '旋转' }), sel('rot', $t('旋转'), null, { w: 92, title: '旋转 90°' })));
     const arrange = () => G('排列', R(sel('arr', $t('层次'), null, { title: '置于顶层、上移、下移、置于底层' }), sel('aln', $t('对齐'), null, { title: '对齐幻灯片或所选对象' })),
       R(btn('组合', null, () => this.groupSels(), { dis: this.sels.length < 2, title: '组合 Ctrl+G' }), o.t === 'group' && btn('取消组合', null, () => this.ungroup(), { title: '取消组合 Ctrl+Shift+G' }),
-        btn('复制', 'duplicate', () => this.sels.forEach(x => this.dup(x)), { title: '复制 Ctrl+D' }), btn('删除', 'trash', () => this.deleteSels())));
+        btn('复制', 'duplicate', () => this.dupSels(), { title: '复制 Ctrl+D' }), btn('删除', 'trash', () => this.deleteSels())));
     if (tab === 'picture' && o && o.t === 'image') return { tabs, groups: this.P.picturePanel(k, I, this.picTools(), this.picLook(o), st.picBusy).concat([arrange(), box()]) };
     if (tab === 'table' && o && o.t === 'table') {
       const cell = st.cell || { r: 0, c: 0 }, own = (o.cells || {})[cell.r + ':' + cell.c] || {}, [r1, c1, r2, c2] = this.cellRange(), merged = (o.merges || []).some(m => m.r === cell.r && m.c === cell.c), al = own.align || 'left';
@@ -683,9 +695,9 @@ class Component extends DCLogic {
       G('页面', grid(3, card('新建幻灯片', 'slide', e => this.openGallery('newslide2', 'new', e)), card('日期', 'date', () => this.insertDate()), card('页码', 'pageNumber', () => this.insertPageNums(), { title: '为所有幻灯片添加页码' })))] };
     if (tab === 'design') return { tabs, groups: [
       G('主题', grid(3, Object.keys(K.THEMES).map(key => theme(K.THEMES[key].name, K.THEMES[key], d.theme === key, () => this.commit(dd => { dd.theme = key; }))))),
-      G('背景', R(swatch('本页背景', s && s.bg || th.bg, v => this.commit((dd, cs) => { cs.bg = v; }), { title: '本页背景颜色' }), btn('重置', 'refresh', () => this.commit((dd, cs) => { cs.bg = null; }), { title: '重置背景' })),
+      G('背景', R(swatch('本页背景', s && s.bg || s.inheritedBg || th.bg, v => this.commit((dd, cs) => { cs.bg = v; }), { title: '本页背景颜色' }), btn('重置', 'refresh', () => this.commit((dd, cs) => { cs.bg = null; }), { title: '重置背景' })),
         R(btn('背景应用到全部', null, () => this.commit(dd => { const bg = dd.slides[this.ci].bg; dd.slides.forEach(x => x.bg = bg); })))),
-      G('幻灯片大小', R(seg([['16:9', '宽屏 16:9'], ['4:3', '标准 4:3']].map(([key, l]) => ({ label: l, on: (d.ratio || '16:9') === key, onClick: () => this.commit(dd => { dd.ratio = key; }) })))))] };
+      G('幻灯片大小', R(seg([['16:9', '宽屏 16:9'], ['4:3', '标准 4:3']].map(([key, l]) => ({ label: l, on: (d.ratio || '16:9') === key, onClick: () => this.commit(dd => this.K.resizeSlides(dd, key)) })))))] };
     if (tab === 'trans') {
       const du = s && s.duration ? s.duration / 1000 : s && s.trans === 'morph' ? 1 : 0.7;
       return { tabs, groups: [
@@ -707,12 +719,12 @@ class Component extends DCLogic {
         R(chk('隐藏本页', !!(s && s.hidden), () => this.commit((dd, cs) => { cs.hidden = !cs.hidden; }), { title: '放映时跳过这一页' })))] };
     // 开始: the slide, then the text of what is selected
     const slideG = G('幻灯片', grid(2, btn('新建幻灯片', 'plus', e => this.openGallery('newslide', 'new', e)), btn('版式', 'slide', e => this.openGallery('relayout', 'relayout', e)),
-      btn('复制幻灯片', 'duplicate', () => { if (s) this.dupSlide(this.ci); }), btn('删除幻灯片', 'trash', () => this.deleteSlide(this.ci))), R(menuBtn('beautify', '美化', 'star', null, { title: 'AI 美化本页或整份' })));
+      btn('复制幻灯片', 'duplicate', () => { if (s) this.dupSlide(this.ci); }), btn('删除幻灯片', 'trash', () => this.deleteSlide(this.ci))), R(menuBtn('beautify', '美化', 'star', null, { title: 'AI 美化本页或整份' }), btn('查找替换', 'search', () => this.openFind())));
     if (!o || !(o.t === 'text' || o.t === 'shape')) return { tabs, groups: [slideG, G('文字', R(empty($t('选中文本框或形状后，在这里设置文字'))))] };
-    const fs = o.fs || 32, al = o.align || 'left', va = o.va || 'top', lhs = o.lh ? String(o.lh) : $t('默认');
+    const fontScale = d._orig?.geo?.ptPx || K.ptPxOf(d.ratio), fs = Math.round((o.fs || 32) / fontScale * 10) / 10, al = o.align || 'left', va = o.va || 'top', lhs = o.lh ? String(o.lh) : $t('默认');
     return { tabs, groups: [slideG,
       G('字体', R(pick(o.font && o.font !== 'head' ? o.font : '', FONTS.map(([v, l]) => [v, $t(l)]).concat(o.font && o.font !== 'head' && !FONTS.some(([v]) => v === o.font) ? [[o.font, o.font]] : []), v => this.patchSel({ font: v || null }), { title: '字体' })),
-        R(size(fs, () => this.patchSel({ fs: [...SIZES].reverse().find(n => n < fs) || Math.max(8, fs - 4) }), () => this.patchSel({ fs: SIZES.find(n => n > fs) || fs + 8 }), 'fsize-p', SIZES.map(n => I(String(n), () => this.patchSel({ fs: n }), { on: fs === n })), { w: 116 }), sp(),
+        R(size(fs, () => this.patchSel({ fs: ([...SIZES].reverse().find(n => n < fs) || Math.max(8, fs - 4)) * fontScale }), () => this.patchSel({ fs: (SIZES.find(n => n > fs) || fs + 8) * fontScale }), 'fsize-p', SIZES.map(n => I(String(n), () => this.patchSel({ fs: n * fontScale }), { on: fs === n })), { w: 116 }), sp(),
           seg([{ label: 'B', css: 'font-weight:700', title: '加粗', on: o.bold, onClick: () => this.txtCmd('bold', 'bold') }, { label: 'I', css: 'font-style:italic;font-family:Georgia,serif', title: '斜体', on: o.italic, onClick: () => this.txtCmd('italic', 'italic') },
             { label: 'U', css: 'text-decoration:underline', title: '下划线', on: o.underline, onClick: () => this.txtCmd('underline', 'underline') }], { w: 116 })),
         R(swatch('文字颜色', K.resolveColor(o.color, th, th.fg), v => this.patchSel({ color: v })), sel('art', $t('艺术字'), null, { w: 104, title: '艺术字' }))),
@@ -746,10 +758,11 @@ class Component extends DCLogic {
     const G = (id, label) => M(id, label, [], null, e => this.openGallery(id, id === 'relayout' ? 'relayout' : 'new', e));
     this.menus.beautify = [I('美化本页', () => this.beautify(false)), I('美化整份', () => this.beautify(true))];
     const ptPx = (d._orig && d._orig.geo && d._orig.geo.ptPx) || 1600 / (d.ratio === '4:3' ? 720 : 960);
+    const fontPt = o ? Math.round(o.fs / ptPx * 10) / 10 : 20;
     const textGroup = [
       S(o && o.font && o.font !== 'head' ? o.font : '', FONTS, e => this.patchSel({ font: e.target.value || null }), '92px', '字体'),
-      S(o ? o.fs : 32, SIZES.map(n => [n, n + '']).concat(o && !SIZES.includes(o.fs) ? [[o.fs, o.fs + '']] : []), e => this.patchSel({ fs: +e.target.value }), '58px', '字号'),
-      B('A↑', () => o && this.patchSel({ fs: SIZES.find(n => n > o.fs) || o.fs + 8 }), { title: '增大字号' }), B('A↓', () => o && this.patchSel({ fs: [...SIZES].reverse().find(n => n < o.fs) || Math.max(8, o.fs - 4) }), { title: '减小字号' }),
+      S(fontPt, SIZES.map(n => [n, n + '']).concat(!SIZES.includes(fontPt) ? [[fontPt, fontPt + '']] : []), e => this.patchSel({ fs: +e.target.value * ptPx }), '58px', '字号'),
+      B('A↑', () => o && this.patchSel({ fs: (SIZES.find(n => n > fontPt) || fontPt + 8) * ptPx }), { title: '增大字号' }), B('A↓', () => o && this.patchSel({ fs: ([...SIZES].reverse().find(n => n < fontPt) || Math.max(8, fontPt - 4)) * ptPx }), { title: '减小字号' }),
       B('B', () => this.txtCmd('bold', 'bold'), { on: o && o.bold, fw: 700 }), B('I', () => this.txtCmd('italic', 'italic'), { on: o && o.italic, fs: 'italic' }), B('U', () => this.txtCmd('underline', 'underline'), { on: o && o.underline, td: 'underline' }),
       C('A', o ? K.resolveColor(o.color, th, th.fg) : th.fg, e => this.patchSel({ color: e.target.value }), '文字颜色', 600), SEP,
       AL('left', '左对齐'), AL('center', '居中'), AL('right', '右对齐'),
@@ -782,7 +795,7 @@ class Component extends DCLogic {
     ];
     if (tab === 'design') ribbon = [
       ...Object.keys(K.THEMES).map(key => B(K.THEMES[key].name, () => this.commit(dd => { dd.theme = key; }), { on: d.theme === key, sw: K.THEMES[key].bg })), SEP,
-      C('背景', s && s.bg || th.bg, e => this.commit((dd, cs) => { cs.bg = e.target.value; }), '本页背景颜色'),
+      C('背景', s && s.bg || s.inheritedBg || th.bg, e => this.commit((dd, cs) => { cs.bg = e.target.value; }), '本页背景颜色'),
       B('背景应用到全部', () => this.commit(dd => { const bg = dd.slides[this.ci].bg; dd.slides.forEach(x => x.bg = bg); })), B('重置背景', () => this.commit((dd, cs) => { cs.bg = null; })), SEP,
       M('ratio', '幻灯片大小', [['16:9', '宽屏 16:9'], ['4:3', '标准 4:3']].map(([key, l]) => I(l, () => this.commit(dd => { dd.ratio = key; }), { on: (d.ratio || '16:9') === key })))
     ];
@@ -814,7 +827,7 @@ class Component extends DCLogic {
     const placeTools = () => [
       M('arr', '排列', [I('置于顶层', () => this.arrange('front')), I('上移一层', () => this.arrange('up')), I('下移一层', () => this.arrange('down')), I('置于底层', () => this.arrange('back'))]),
       M('aln', '对齐', [I('左对齐', () => this.alignObj('left')), I('水平居中', () => this.alignObj('hc')), I('右对齐', () => this.alignObj('right')), IS, I('顶端对齐', () => this.alignObj('top')), I('垂直居中', () => this.alignObj('vc')), I('底端对齐', () => this.alignObj('bottom'))])];
-    const copyTools = () => [B('复制@@dup', () => this.sels.forEach(x => this.dup(x)), { title: 'Ctrl+D' }), B('删除', () => this.deleteSels())];
+    const copyTools = () => [B('复制@@dup', () => this.dupSels(), { title: 'Ctrl+D' }), B('删除', () => this.deleteSels())];
     const cm = v => +(v * this.cmU).toFixed(2), px = v => Math.round(v / this.cmU);
     // exact size and position, in centimetres as PowerPoint shows them; a group's members follow its box
     const boxFields = () => [N('X', cm(o.x), v => this.patchSel(this.moveKids(o, { x: px(v) }))), N('Y', cm(o.y), v => this.patchSel(this.moveKids(o, { y: px(v) }))), N('宽', cm(o.w), v => this.patchSel(this.moveKids(o, { w: Math.max(1, px(v)) }))), N('高', cm(o.h), v => this.patchSel(this.moveKids(o, { h: Math.max(0, px(v)) })))];
@@ -874,9 +887,9 @@ class Component extends DCLogic {
           sl.sec ? I('删除节', () => this.commit(dd => { dd.slides[i].sec = ''; })) : I('新增节', () => this.addSection(i)), IS, I('删除幻灯片', () => this.deleteSlide(i))];
       }
       else if (st.pop.id === 'stagectx') {
-        const K = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || '') ? '⌘' : 'Ctrl+', many = this.sels.length, clip = !!(this.clip && this.clip.length), o = this.obj;
+        const K = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || '') ? '⌘' : 'Ctrl+', many = this.sels.length, clip = !!(window.__writerObjectClip || this.clip?.length), o = this.obj;
         popItems = many ? [I('剪切', () => this.copySels(true), { hint: K + 'X' }), I('复制', () => this.copySels(false), { hint: K + 'C' }), ...(clip ? [I('粘贴', () => this.pasteSels(), { hint: K + 'V' })] : []),
-          I('复制一份', () => this.sels.forEach(x => this.dup(x)), { hint: K + 'D' }), I('删除', () => this.deleteSels(), { hint: '⌫' }), IS,
+          I('复制一份', () => this.dupSels(), { hint: K + 'D' }), I('删除', () => this.deleteSels(), { hint: '⌫' }), IS,
           I('置于顶层', () => this.arrange('front')), I('上移一层', () => this.arrange('up')), I('下移一层', () => this.arrange('down')), I('置于底层', () => this.arrange('back')),
           ...(many > 1 ? [IS, I('组合', () => this.groupSels(), { hint: K + 'G' })] : o && o.t === 'group' ? [IS, I('取消组合', () => this.ungroup())] : [])]
           : [...(clip ? [I('粘贴', () => this.pasteSels(), { hint: K + 'V' }), IS] : []), HD('新建幻灯片'), ...layoutItems(key => this.addSlide(key, this.ci + 1)), IS, I('从此页放映', () => this.startShow(this.ci))];
@@ -894,7 +907,7 @@ class Component extends DCLogic {
       const y = livePic(live(x));
       const v = K.objView(y, th, ptPx), editing = st.editing === x.id, isSel = st.sel === x.id;
       return Object.assign(v, {
-        id: x.id, ce: editing, us: editing ? 'text' : 'none', tcur: editing ? 'text' : 'inherit', cursor: editing ? 'text' : 'move', pe: 'auto', ovf: editing ? 'visible' : 'hidden',
+        inner: editing ? {__html:x.html || ''} : v.inner, editZoom: editing && x.autofit === 'shrink' ? (x.fit || 1) : 1, fs: editing ? x.fs + 'px' : v.fs, id: x.id, ce: editing, us: editing ? 'text' : 'none', tcur: editing ? 'text' : 'inherit', cursor: editing ? 'text' : 'move', pe: 'auto', ovf: 'visible',
         op: st.picBusy && isSel ? 0.5 : v.op,
         phLine: x.ph && !isSel && !K.textOf(x.html) ? `${1 / k}px dashed rgba(128,128,128,0.5)` : 'none',
         hasBadge: tab === 'anim' && x.id in fxNo, badge: fxNo[x.id],
@@ -916,7 +929,7 @@ class Component extends DCLogic {
           if (objs.length) this.op = { kind: 'move', o: objs.find(o => o.id === x.id) || objs[objs.length - 1], objs, sx: e.clientX, sy: e.clientY, moved: false };
           e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true });
         },
-        onDbl: e => { e.stopPropagation(); if (x.t === 'image' || x.t === 'line' || x.t === 'group') return; if (x.ph === 'pic') { this.picFor = x.id; this.imgRef.current.click(); return; } this.setState({ editing: x.id, sel: x.id, sels: [x.id] }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = false; },
+        onDbl: e => { e.stopPropagation(); if (x.t === 'image' || x.t === 'line' || x.t === 'group' || x.t === 'object' || x.field === 'slideNumber' || x.field === 'date') return; if (x.ph === 'pic') { this.picFor = x.id; this.imgRef.current.click(); return; } this.setState({ editing: x.id, sel: x.id, sels: [x.id] }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = false; },
         onBlur: e => { const h = e.currentTarget.innerHTML; if (h !== x.html) this.patchObj(x.id, { html: h }); this.setState({ editing: null }); }
       });
     })) : [];
@@ -957,7 +970,7 @@ class Component extends DCLogic {
       beautifyMenu: e => this.openPop('beautify', e), beautifyBg: st.pop && st.pop.id === 'beautify' ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent',
       stageRef: this.stageRef, slideRef: this.slideRef, imgRef: this.imgRef, showRef: this.showRef, showSlideRef: this.showSlideRef,
       onStageDown: e => { this.endEdit(); this.thumbFocus = false; this.setState({ sel: null, sels: [], editing: null, pop: null }); e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true }); },
-      stW: 1600 * k + 'px', stH: H * k + 'px', H: H + 'px', scale: `scale(${k})`, sBg: s ? (s.bg || th.bg) : 'var(--k0, #FFFFFF)', noSlides: !s,
+      stW: 1600 * k + 'px', stH: H * k + 'px', H: H + 'px', scale: `scale(${k})`, sBg: s ? (s.bg || s.inheritedBg || th.bg) : 'var(--k0, #FFFFFF)', noSlides: !s,
       objs,
       guides: ((st.guides && st.guides.lines) || []).map(g => g.axis === 'v' ? { left: g.at + 'px', top: 0, right: 'auto', bottom: 0, bl: `${1.5 / k}px dashed #D9534F`, bt: 'none' } : { top: g.at + 'px', left: 0, right: 0, bottom: 'auto', bt: `${1.5 / k}px dashed #D9534F`, bl: 'none' }),
       hints: ((st.guides && st.guides.hints) || []).map(h => Object.assign({ text: h.text, fs: 11 / k + 'px', pad: `${3 / k}px ${5 / k}px`, rad: 4 / k + 'px' }, h.axis === 'h'
@@ -991,7 +1004,16 @@ class Component extends DCLogic {
           if (ph) { this.commit((dd, cs) => { cs.objs.splice(cs.objs.findIndex(x => x.id === into), 1, pic); }); this.setState({ sel: pic.id }); } else this.insertObj(pic);
         }; img.src = rd.result; }; rd.readAsDataURL(f);
       },
+      findOpen: !!st.findOpen, findText:st.findText||'', replaceText:st.replaceText||'', findCase:!!st.findCase, findWord:!!st.findWord,
+      findCount: st.findOpen ? String(this.findHits().length) : '', findMD:e=>e.stopPropagation(),
+      onFindText:e=>this.setState({findText:e.target.value,findIndex:-1}), onReplaceText:e=>this.setState({replaceText:e.target.value}),
+      onFindCase:e=>this.setState({findCase:e.target.checked,findIndex:-1}), onFindWord:e=>this.setState({findWord:e.target.checked,findIndex:-1}),
+      findNext:()=>this.nextFind(), replaceOne:()=>this.replaceFind(false), replaceAll:()=>this.replaceFind(true), closeFind:()=>this.setState({findOpen:false}),
+      findKey:e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();this.nextFind();}if(e.key==='Escape'){e.preventDefault();this.setState({findOpen:false});}},
+      onLink: K.slideLinkClick,
       onRootKey: e => {
+        if (this.state.show) { this.showKey(e); return; }
+        if ((e.ctrlKey || e.metaKey) && ['f','h'].includes(e.key.toLowerCase())) { e.preventDefault(); e.stopPropagation?.(); this.openFind(); return; }
         const t = e.target; if (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName)) { if (e.key === 'Escape' && t.isContentEditable) t.blur(); else if (e.key === 'Tab' && t.isContentEditable && st.editing) { e.preventDefault(); this.indent(e.shiftKey ? -1 : 1); } return; }
         const ctrl = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
         if (e.key === 'F5') { e.preventDefault(); this.startShow(e.shiftKey || e.altKey ? this.ci : 0, e.altKey); return; }
@@ -1007,9 +1029,9 @@ class Component extends DCLogic {
           if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteSels(); return; }
           const nd = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
           if (nd) { e.preventDefault(); const st2 = e.shiftKey ? 10 : 1; this.patchSels(x => this.moveKids(x, { x: x.x + nd[0] * st2, y: x.y + nd[1] * st2 })); this.follow && this.follow.update('nudge'); return; }
-          if (ctrl && key === 'c') { this.clip = this.sels.map(x => this.clipOf(x)); return; }
-          if (ctrl && key === 'x') { this.clip = this.sels.map(x => this.clipOf(x)); this.deleteSels(); return; }
-          if (ctrl && key === 'd') { e.preventDefault(); this.sels.forEach(x => this.dup(x)); return; }
+          if (ctrl && key === 'c') { this.copySels(false); return; }
+          if (ctrl && key === 'x') { this.copySels(true); return; }
+          if (ctrl && key === 'd') { e.preventDefault(); this.dupSels(); return; }
           if (e.key === 'Enter' && (o.t === 'text' || o.t === 'shape')) { e.preventDefault(); this.setState({ editing: o.id }); this.focusEdit = o.id; return; }
           if (e.key === 'Escape') { this.setState({ sel: null, sels: [] }); return; }
         } else {
@@ -1023,7 +1045,7 @@ class Component extends DCLogic {
           if (st.sorter && e.key === 'Enter') { e.preventDefault(); this.setState({ sorter: false }); return; }
           if ((e.key === 'Delete' || (st.sorter && e.key === 'Backspace')) && d.slides.length > 1) { this.deleteSlide(this.ci); return; }
         }
-        if (ctrl && key === 'v' && this.clip && this.clip.length) { e.preventDefault(); const same = this.clipDoc === d.id; this.clip.forEach(c => this.dup(same ? c : Object.assign({}, c, { from: null }), 24)); this.clip = this.clip.map(c => Object.assign({}, c, this.moveKids(c, { x: c.x + 24, y: c.y + 24 }))); }
+        if (ctrl && key === 'v' && (window.__writerObjectClip || this.clip?.length)) { e.preventDefault(); this.pasteSels(); }
       },
       showing: !!sh, showSlide, showW, showWpx: showW + 'px', showHpx: showW * H / 1600 + 'px',
       showHidden: sh && showSlide ? K.fxHidden(this.animsOf(showSlide), sh.step + this.stepsOf(showSlide).auto, sh.live) : [],

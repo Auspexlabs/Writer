@@ -670,6 +670,7 @@ public sealed class Serve : IDisposable
             // the other files a command names resolve there too: export's output, create's template (move and copy take --to a node)
             if (workspace is not null && argv.Length > 0 && argv[0] is "export" or "create")
                 ResolveOption(argv, argv[0] == "export" ? "--to" : "--from", workspace);
+            if (workspace is not null && argv.Length > 0 && argv[0] == "copy") ResolveOption(argv, "--from-file", workspace);
             code = Runner.Run(argv, stdout, stderr);
         }
         catch (WriterException ex)

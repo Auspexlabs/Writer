@@ -180,7 +180,10 @@ static class Commands
         var file = a.Need(0, "file");
         using var doc = Files.Open(file);
         Files.EnsureWritable(doc);
-        var node = PathResolver.Single(doc.Root, a.Need(1, "path"));
+        using var source = a.Opt("from-file") is { } from ? Files.Open(from) : null;
+        if (source is not null && (source.Format != "pptx" || doc.Format != "pptx")) throw new WriterException(ErrorCode.Validation, "Cross-file copying requires two PowerPoint presentations", "Use .pptx source and destination files.");
+        var node = PathResolver.Single(source?.Root ?? doc.Root, a.Need(1, "path"));
+        if (source is not null && node.Kind == "slide") throw new WriterException(ErrorCode.Validation, "Import drawings into a destination slide", "Copy a shape, group, image, table or object.");
         var to = a.Opt("to") ?? throw new WriterException(ErrorCode.Usage, "--to is required", "Example: --to /slide[2], or --to / --after /slide[1] for a slide");
         var target = PathResolver.Single(doc.Root, to);
         var copy = Mutations.Copy(node, target, Position(a, doc.Root, target));
