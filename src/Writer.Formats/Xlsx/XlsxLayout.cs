@@ -125,9 +125,9 @@ static class XlsxLayout
         return span;
     }
 
-    public static string? Heights(SheetData data)
+    public static string? Heights(SheetData data, bool automatic = false)
     {
-        var rows = data.Elements<Row>().Where(r => r.CustomHeight?.Value == true && r.Height?.Value is not null && r.RowIndex?.Value is not null).ToList();
+        var rows = data.Elements<Row>().Where(r => (r.CustomHeight?.Value == true) != automatic && r.Height?.Value is not null && r.RowIndex?.Value is not null).ToList();
         if (rows.Count == 0) return null;
         return NodeJson.Compact(w =>
         {
@@ -137,7 +137,7 @@ static class XlsxLayout
         });
     }
 
-    public static void SetHeights(SheetData data, string json)
+    public static void SetHeights(SheetData data, string json, bool automatic = false)
     {
         foreach (var (index, height) in Entries(json, "heights", "{\"3\":24}", 409.5, RowOf))
         {
@@ -145,7 +145,7 @@ static class XlsxLayout
             {
                 var row = XlsxCells.GetOrCreateRow(data, index);
                 row.Height = h;
-                row.CustomHeight = true;
+                row.CustomHeight = !automatic;
                 continue;
             }
             if (XlsxCells.FindRow(data, index) is not { } existing) continue;
@@ -388,9 +388,10 @@ static class XlsxRefs
     /// <summary>Rewrites references to a renamed sheet in the formula text.</summary>
     public static string Renamed(string formula, string oldName, string newName)
     {
-        var bang = formula.LastIndexOf('!');
-        if (bang < 0 || !string.Equals(Unquote(formula[..bang]), oldName, StringComparison.OrdinalIgnoreCase)) return formula;
-        return Quote(newName) + formula[bang..];
+        var quoted = "'" + oldName.Replace("'", "''") + "'";
+        var names = System.Text.RegularExpressions.Regex.Escape(quoted) + "|" + System.Text.RegularExpressions.Regex.Escape(oldName);
+        return System.Text.RegularExpressions.Regex.Replace(formula, "\"(?:[^\"]|\"\")*\"|(?<![\\w.'\\]])(?:" + names + ")!", match => match.Value.StartsWith('"') ? match.Value : Quote(newName) + "!", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
     }
 
     /// <summary>A1-style references in a formula, outside string literals; the groups are the optional $ signs, the column and the row.</summary>

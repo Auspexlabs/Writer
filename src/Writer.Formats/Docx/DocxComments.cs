@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using Writer.Core;
@@ -22,6 +23,7 @@ sealed class DocxComment(DocxDocument doc, W.Comment comment) : Node
         if (comment.Date?.InnerText is { } date) props["date"] = date;
         props["text"] = DocxComments.Text(comment);
         props["quote"] = DocxComments.Quote(doc, comment.Id?.Value ?? "");
+        if (DocxComments.Range(doc, comment.Id?.Value ?? "") is { } range) props["range"] = range;
         if (DocxComments.Resolved(doc, comment)) props["resolved"] = "true";
         if (DocxComments.ParentOf(doc, comment)?.Id?.Value is { } parent) props["parent"] = parent;
         return props;
@@ -43,6 +45,7 @@ sealed class DocxComment(DocxDocument doc, W.Comment comment) : Node
                 DocxComments.Unanchor(doc, comment.Id.Value!);
                 DocxComments.Anchor(paragraph, comment.Id.Value!, value);
                 break;
+            case "range": DocxComments.AnchorRange(doc, comment.Id!.Value!, value); break;
             case "resolved": DocxComments.SetResolved(doc, comment, value == "true"); break;
             case "parent": DocxComments.SetParent(doc, comment, value); break;
         }
@@ -73,6 +76,7 @@ static class DocxComments
             ? All(doc).FirstOrDefault(c => c.Id?.Value == parentId) ?? throw new WriterException(ErrorCode.Validation, $"No comment {parentId} to reply to", "Give the id of a comment in the document.")
             : null;
         if (parent is not null) AnchorBeside(doc, parent.Id!.Value!, id); // a reply shares its comment's place, as Word writes it
+        else if (props.GetValueOrDefault("range") is { } range) AnchorRange(doc, id, range);
         else Anchor(p, id, props.GetValueOrDefault("quote")); // validates the quote before anything is added
         var part = doc.Main.WordprocessingCommentsPart ?? doc.Main.AddNewPart<WordprocessingCommentsPart>();
         var comments = part.Comments ??= new W.Comments();
@@ -124,6 +128,41 @@ static class DocxComments
             if (e is W.Run run && DocxRuns.HasText(run) && DocxRuns.Revision(run) is not W.DeletedRun) text.Append(DocxRuns.RunText(run));
         }
         return text.ToString();
+    }
+
+    public static string? Range(DocxDocument doc, string id)
+    {
+        var body = doc.Main.Document!.Body!;
+        var start = body.Descendants<W.CommentRangeStart>().FirstOrDefault(x => x.Id?.Value == id);
+        var end = body.Descendants<W.CommentRangeEnd>().FirstOrDefault(x => x.Id?.Value == id);
+        var a = start?.Ancestors<W.Paragraph>().FirstOrDefault();
+        var b = end?.Ancestors<W.Paragraph>().FirstOrDefault();
+        if (a is null || b is null) return null;
+        var nodes = PathResolver.Query(doc.Root, "//*");
+        var first = nodes.FirstOrDefault(n => ReferenceEquals(n.Anchor, a));
+        var last = nodes.FirstOrDefault(n => ReferenceEquals(n.Anchor, b));
+        if (first is null || last is null) return null;
+        return new System.Text.Json.Nodes.JsonObject { ["start"] = first.Path, ["startOffset"] = DocxFootnotes.OffsetOf(a, start!), ["end"] = last.Path, ["endOffset"] = DocxFootnotes.OffsetOf(b, end!) }.ToJsonString();
+    }
+
+    // Resolve and validate both ends before touching the old anchor. Text stays inside its original paragraphs and runs.
+    public static void AnchorRange(DocxDocument doc, string id, string json)
+    {
+        using var value = JsonDocument.Parse(json);
+        var range = value.RootElement;
+        var first = PathResolver.Single(doc.Root, range.GetProperty("start").GetString()!);
+        var last = PathResolver.Single(doc.Root, range.GetProperty("end").GetString()!);
+        var startOffset = range.GetProperty("startOffset").GetInt32();
+        var endOffset = range.GetProperty("endOffset").GetInt32();
+        if (first.Anchor is not W.Paragraph a || last.Anchor is not W.Paragraph b || startOffset < 0 || endOffset < 0
+            || startOffset > DocxRuns.ParagraphText(a).Length || endOffset > DocxRuns.ParagraphText(b).Length
+            || (ReferenceEquals(a, b) ? endOffset < startOffset : !a.IsBefore(b)))
+            throw new WriterException(ErrorCode.Validation, "Invalid comment range", "Use ordered paragraph paths and character offsets within their visible text.");
+        Unanchor(doc, id);
+        var end = new W.CommentRangeEnd { Id = id };
+        DocxFootnotes.Place(b, end, endOffset);
+        DocxFootnotes.Place(a, new W.CommentRangeStart { Id = id }, startOffset);
+        end.InsertAfterSelf(new W.Run(new W.RunProperties(new W.RunStyle { Val = "CommentReference" }), new W.CommentReference { Id = id }));
     }
 
     /// <summary>A reply's range and reference mark, right after its comment's.</summary>

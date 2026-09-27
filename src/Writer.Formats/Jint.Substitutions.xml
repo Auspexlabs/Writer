@@ -1,0 +1,39 @@
+<linker>
+  <!-- Writer executes only the embedded Calc implementation. CLR namespaces, CLR delegates constructed
+       by scripts, and conversion of arbitrary JsonNode host objects are never available to formulas.
+       Remove these optional Jint reflection paths for NativeAOT instead of suppressing trim diagnostics. -->
+  <assembly fullname="Jint">
+    <type fullname="Jint.Options">
+      <method signature="System.Void AttachExtensionMethodsToPrototypes(Jint.Engine)" body="stub" />
+    </type>
+    <type fullname="Jint.Native.JsValue">
+      <method signature="Jint.Native.JsValue FromObject(Jint.Engine,System.Object)" body="remove" />
+      <method signature="Jint.Native.JsValue FromObjectWithType(Jint.Engine,System.Object,System.Type)" body="remove" />
+    </type>
+    <type fullname="Jint.Native.Object.ObjectInstance"><method signature="System.Object ToObject()" body="remove" /></type>
+    <type fullname="Jint.Runtime.Interop.ObjectWrapper">
+      <method signature="Jint.Native.Object.ObjectInstance Create(Jint.Engine,System.Object,System.Type)" body="remove" />
+    </type>
+    <type fullname="Jint.Options/InteropOptions">
+      <method signature="System.Boolean get_Enabled()" body="stub" value="false" />
+      <method signature="System.Boolean get_AllowOperatorOverloading()" body="stub" value="false" />
+    </type>
+    <type fullname="Jint.DefaultObjectConverter">
+      <method signature="System.Boolean TryConvert(Jint.Engine,System.Object,System.Type,Jint.Native.JsValue&amp;)" body="remove" />
+      <method signature="Jint.Native.JsValue ConvertSystemTextJsonValue(Jint.Engine,System.Text.Json.Nodes.JsonNode)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.DefaultTypeConverter">
+      <method signature="System.Object Convert(System.Object,System.Type,System.IFormatProvider)" body="remove" />
+      <method signature="System.Boolean TryConvert(System.Object,System.Type,System.IFormatProvider,System.Object&amp;)" body="remove" />
+      <method signature="System.Linq.Expressions.LambdaExpression BuildDelegate(System.Type,System.Func`3&lt;Jint.Native.JsValue,Jint.Native.JsValue[],Jint.Native.JsValue&gt;,System.Linq.Expressions.Expression)" body="remove" />
+    </type>
+    <type fullname="Jint.Runtime.Interop.TypeDescriptor"><method signature="Jint.Runtime.Interop.TypeDescriptor Get(System.Type)" body="remove" /></type>
+    <type fullname="Jint.Runtime.Interop.Reflection.ExtensionMethodCache"><method signature="Jint.Runtime.Interop.Reflection.ExtensionMethodCache BuildCore(System.Type[])" body="remove" /></type>
+    <type fullname="Jint.Runtime.Interop.TypeResolver"><method signature="Jint.Runtime.Interop.Reflection.ReflectionAccessor GetAccessor(Jint.Engine,System.Type,System.String,Jint.Runtime.Interop.MemberResolutionRequirement,System.Boolean,System.Func`1&lt;Jint.Runtime.Interop.Reflection.ReflectionAccessor&gt;)" body="remove" /></type>
+    <type fullname="Jint.Runtime.Interpreter.Expressions.JintBinaryExpression"><method signature="System.Boolean TryOperatorOverloading(Jint.Runtime.Interpreter.EvaluationContext,Jint.Native.JsValue,Jint.Native.JsValue,System.String,System.Object&amp;)" body="stub" value="false" /></type>
+    <type fullname="Jint.Runtime.Interpreter.Expressions.JintUnaryExpression"><method signature="System.Boolean TryOperatorOverloading(Jint.Runtime.Interpreter.EvaluationContext,Jint.Native.JsValue,System.String,Jint.Native.JsValue&amp;)" body="stub" value="false" /></type>
+    <type fullname="Jint.Runtime.Interop.MethodDescriptor"><method signature="Jint.Native.JsValue Call(Jint.Engine,System.Object,Jint.Native.JsValue[])" body="remove" /></type>
+    <type fullname="Jint.Runtime.Interop.Reflection.ReflectionAccessor"><method signature="System.Void SetValue(Jint.Engine,System.Object,System.String,Jint.Native.JsValue)" body="remove" /><method signature="System.Object ConvertValueToSet(Jint.Engine,System.Object)" body="remove" /></type>
+    <type fullname="Jint.Runtime.Interop.InteropHelper"><method signature="System.Int32 CalculateParameterTypeScore(Jint.Engine,System.Type,System.Boolean,Jint.Native.JsValue)" body="remove" /></type>
+  </assembly>
+</linker>

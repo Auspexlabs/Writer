@@ -56,6 +56,10 @@ static class XlsxRules
                 {
                     w.WriteString("iconSet", icons.IconSetValue?.InnerText ?? "3TrafficLights1");
                     if (icons.Reverse?.Value == true) w.WriteBoolean("reverse", true);
+                    if (icons.ShowValue?.Value == false) w.WriteBoolean("showValue", false);
+                    w.WritePropertyName("thresholds"); w.WriteStartArray();
+                    foreach (var threshold in icons.Elements<ConditionalFormatValueObject>()) { w.WriteStartObject(); w.WriteString("type", threshold.Type?.InnerText ?? "percent"); if (threshold.Val?.Value is { } val) w.WriteString("value", val); if (threshold.GreaterThanOrEqual?.Value == false) w.WriteBoolean("gte", false); w.WriteEndObject(); }
+                    w.WriteEndArray();
                 }
                 if (r.FormatId?.Value is { } dxf)
                     foreach (var (k, v) in styles.Dxf(dxf)) { if (v == "true") w.WriteBoolean(k, true); else w.WriteString(k, v); }
@@ -160,7 +164,10 @@ static class XlsxRules
                         try { set = new IconSet { IconSetValue = new IconSetValues(name) }; }
                         catch (ArgumentOutOfRangeException) { throw new WriterException(ErrorCode.Validation, $"cf: '{name}' is not an icon set", "Excel's names, e.g. 3TrafficLights1, 3Arrows, 4Rating, 5Quarters."); }
                         if (Bool(e, "reverse")) set.Reverse = true;
-                        for (var i = 0; i < n; i++) set.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Percent, Val = (i * 100 / n).ToString(Inv) });
+                        if (e.TryGetProperty("showValue", out var shown) && shown.ValueKind == JsonValueKind.False) set.ShowValue = false;
+                        if (e.TryGetProperty("thresholds", out var thresholds) && thresholds.ValueKind == JsonValueKind.Array && thresholds.GetArrayLength() == n)
+                            foreach (var threshold in thresholds.EnumerateArray()) set.Append(new ConditionalFormatValueObject { Type = new ConditionalFormatValueObjectValues(Str(threshold, "type") ?? "percent"), Val = threshold.TryGetProperty("value", out var val) ? val.ToString() : "0", GreaterThanOrEqual = !(threshold.TryGetProperty("gte", out var gte) && gte.ValueKind == JsonValueKind.False) });
+                        else for (var i = 0; i < n; i++) set.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Percent, Val = (i * 100 / n).ToString(Inv) });
                         rule.Append(set);
                         break;
                     case "timePeriod":

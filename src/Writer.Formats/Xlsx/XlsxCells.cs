@@ -161,7 +161,9 @@ static class XlsxCells
     {
         if (cell.CellFormula is null) return;
         Unshare(sheet, cell);
+        sheet.ClearArray(cell);
         cell.RemoveAllChildren<CellFormula>();
+        doc.RecalculateOnLoad(sheet.SheetName, cell.CellReference!.Value!);
         doc.DropCalcChain();
     }
 
@@ -178,6 +180,7 @@ static class XlsxCells
         var kind = trimmed.Length == 0 ? null : isBool ? "bool" : isNumber ? "number" : isDate ? "date" : "string";
         if (kind is not null && cell.CellFormula is null && TypeOf(doc, cell) == kind && Display(doc, cell) == value) return;
         DropFormula(doc, sheet, cell);
+        doc.RecalculateOnLoad(sheet.SheetName, cell.CellReference!.Value!);
         if (kind is null)
         {
             cell.RemoveAllChildren<InlineString>();
@@ -263,7 +266,7 @@ static class XlsxCells
 
     /// <summary>Writes a formula. The same text as the cell already computes changes nothing (a shared group stays shared, the cached
     /// result stays). A new text first gives every cell of a shared group its own formula; an array formula keeps its range. The
-    /// cell's last result is kept for readers that do not calculate, and Excel is asked to recalculate on load.</summary>
+    /// cached result is recalculated on save, and Excel is also asked to recalculate on load.</summary>
     public static void SetFormula(XlsxDocument doc, XlsxSheet sheet, Cell cell, string formula)
     {
         var text = formula.Trim().TrimStart('=');
@@ -275,6 +278,7 @@ static class XlsxCells
         if (text == Formula(sheet, cell)) return;
         Unshare(sheet, cell);
         var old = cell.CellFormula;
+        cell.CellValue = null; cell.DataType = null;
         if (old is null || cell.DataType?.InnerText is "s" or "inlineStr")
         {
             // a constant becoming a formula: its text was never this formula's result
@@ -286,7 +290,7 @@ static class XlsxCells
             ? new CellFormula(text) { FormulaType = CellFormulaValues.Array, Reference = old.Reference?.Value }
             : new CellFormula(text);
         doc.DropCalcChain();
-        doc.RecalculateOnLoad();
+        doc.RecalculateOnLoad(sheet.SheetName, cell.CellReference!.Value!);
     }
 
     /// <summary>Minimal CSV: commas (or the given delimiter), quotes, doubled quotes, CRLF or LF lines.</summary>

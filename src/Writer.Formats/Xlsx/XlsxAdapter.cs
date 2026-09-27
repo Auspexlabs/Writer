@@ -72,8 +72,13 @@ public sealed class XlsxDocument : Document
     /// <summary>The workbook counts days from 1904-01-01 (Excel for Mac's old default) instead of 1900.</summary>
     internal bool Date1904 => Workbook.Workbook!.WorkbookProperties?.Date1904?.Value == true;
 
+    internal bool CalculationPending { get; set; }
+    internal bool CalculateAll { get; private set; }
+    internal HashSet<(string Sheet, string Cell)> CalculationChanges { get; } = [];
+
     public override void Save(Stream stream)
     {
+        if (CalculationPending) { XlsxCalculation.Recalculate(this); CalculationPending = false; CalculateAll = false; CalculationChanges.Clear(); }
         Styles.Trim(Sheets.Select(s => s.Part));
         using var clone = Package.Clone(stream);
     }
@@ -167,8 +172,10 @@ public sealed class XlsxDocument : Document
         Workbook.Workbook!.DefinedNames?.Elements<DefinedName>().Where(n => n.LocalSheetId?.Value is not null).ToList() ?? [];
 
     /// <summary>Asks Excel to recalculate on open, so formulas written here get results.</summary>
-    internal void RecalculateOnLoad()
+    internal void RecalculateOnLoad(string? sheet = null, string? cell = null)
     {
+        CalculationPending = true;
+        if (sheet is null || cell is null) CalculateAll = true; else CalculationChanges.Add((sheet, cell));
         var calc = Workbook.Workbook!.CalculationProperties ??= new CalculationProperties { CalculationId = 0U };
         calc.FullCalculationOnLoad = true;
     }

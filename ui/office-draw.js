@@ -255,7 +255,7 @@ export function objectInner(o, w, h, src) {
   if (chart) return chartSvg(chart, w, h);
   if (sa) return smartArtSvg(sa, w, h);
   if (src) return `<img src="${esc(src)}" alt="${esc(o.alt || objectLabel(o))}" draggable="false" style="display:block;width:100%;height:100%;object-fit:fill">`;
-  if (o.text) return `<div style="width:100%;height:100%;box-sizing:border-box;border:1px solid #7F7F7F;padding:4px 7px;font-size:10.5pt;white-space:pre-wrap;overflow:hidden">${esc(o.text)}</div>`;
+  if (o.text) return `<span style="display:block;width:100%;height:100%;box-sizing:border-box;border:1px solid #7F7F7F;padding:4px 7px;font-size:10.5pt;white-space:pre-wrap;overflow:hidden">${esc(o.text)}</span>`;
   const small = h < 40;
-  return `<div class="wd-obj-ph" style="width:100%;height:100%;box-sizing:border-box;border:1px dashed #A6A6A6;background:repeating-linear-gradient(135deg,rgba(0,0,0,0.025) 0 6px,transparent 6px 12px);display:flex;align-items:center;justify-content:center;gap:6px;font:${small ? 10 : 12}px ${FONT};color:#7F7F7F;overflow:hidden;white-space:nowrap">${esc(objectLabel(o))}${o.title ? '：' + esc(clip(o.title, 30)) : ''}</div>`;
+  return `<span class="wd-obj-ph" style="width:100%;height:100%;box-sizing:border-box;border:1px dashed #A6A6A6;background:repeating-linear-gradient(135deg,rgba(0,0,0,0.025) 0 6px,transparent 6px 12px);display:flex;align-items:center;justify-content:center;gap:6px;font:${small ? 10 : 12}px ${FONT};color:#7F7F7F;overflow:hidden;white-space:nowrap">${esc(objectLabel(o))}${o.title ? '：' + esc(clip(o.title, 30)) : ''}</span>`;
 }

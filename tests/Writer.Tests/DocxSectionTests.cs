@@ -11,6 +11,47 @@ namespace Writer.Tests;
 /// <summary>Page setup, header and footer on the document node, and page breaks in the body.</summary>
 public class DocxSectionTests
 {
+    [Fact]
+    public void Watermark_and_background_roundtrip_and_survive_header_edits()
+    {
+        using var doc = new DocxAdapter().Create();
+        Mutations.Set(doc.Root, new Dictionary<string, string> { ["pageColor"] = "FFF4DD", ["watermark"] = "机密 & Draft" });
+        Mutations.Set(doc.Root, new Dictionary<string, string> { ["header"] = "New header" });
+        Assert.Equal("机密 & Draft", doc.Root.GetProps()["watermark"]);
+        Assert.Equal("New header", doc.Root.GetProps()["header"]);
+        using var bytes = new MemoryStream(); doc.Save(bytes);
+        using var reopened = OpenDocx(bytes.ToArray());
+        Assert.Equal("FFF4DD", reopened.Root.GetProps()["pageColor"]);
+        Assert.Equal("机密 & Draft", reopened.Root.GetProps()["watermark"]);
+        Mutations.Set(reopened.Root, new Dictionary<string, string> { ["watermark"] = "", ["pageColor"] = "none" });
+        Assert.False(reopened.Root.GetProps().ContainsKey("watermark"));
+        Assert.False(reopened.Root.GetProps().ContainsKey("pageColor"));
+        Assert.Equal("New header", reopened.Root.GetProps()["header"]);
+    }
+
+    [Fact]
+    public void Document_header_footer_updates_every_section_and_can_be_removed()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        Mutations.Add(body, "paragraph", new Dictionary<string, string> { ["text"] = "first", ["sectionBreak"] = "nextPage" }, null);
+        Mutations.Add(body, "paragraph", new Dictionary<string, string> { ["text"] = "second", ["sectionBreak"] = "nextPage" }, null);
+        Mutations.Set(doc.Root, new Dictionary<string, string> { ["header"] = "All sections", ["footer"] = "{page}", ["titlePg"] = "true" });
+        var package = ((DocxDocument)doc).Package;
+        var sections = package.MainDocumentPart!.Document!.Body!.Descendants<DocumentFormat.OpenXml.Wordprocessing.SectionProperties>().ToArray();
+        Assert.Equal(3, sections.Length);
+        foreach (var section in sections)
+        {
+            Assert.Single(section.Elements<DocumentFormat.OpenXml.Wordprocessing.HeaderReference>());
+            Assert.Single(section.Elements<DocumentFormat.OpenXml.Wordprocessing.FooterReference>());
+            Assert.NotNull(section.GetFirstChild<DocumentFormat.OpenXml.Wordprocessing.TitlePage>());
+        }
+        Mutations.Set(doc.Root, new Dictionary<string, string> { ["header"] = "", ["footer"] = "", ["titlePg"] = "false" });
+        Assert.Empty(package.MainDocumentPart.HeaderParts);
+        Assert.Empty(package.MainDocumentPart.FooterParts);
+        Assert.All(sections, section => Assert.Empty(section.Elements<DocumentFormat.OpenXml.Wordprocessing.HeaderFooterReferenceType>()));
+    }
+
     static Dictionary<string, string> Props(params (string Name, string Value)[] pairs) => pairs.ToDictionary(p => p.Name, p => p.Value);
 
     static byte[] Save(Document doc)

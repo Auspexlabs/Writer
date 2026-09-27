@@ -217,7 +217,7 @@ test('Excel pictures come with their sheet, and a save sends an undone look back
   const s = EN.sheetModel({ kind: 'sheet', path: '/sheet[1]', props: { name: 'S' }, children: [
     { kind: 'image', path: '/sheet[1]/image[1]', props: { id: '3', x: '2cm', y: '1cm', w: '4cm', h: '3cm', flipH: 'true', alt: 'logo' } }] }, 'book.xlsx');
   assert.deepEqual(plain(s.images), [{ id: '/sheet[1]/image[@id=3]', path: '/sheet[1]/image[@id=3]', src: '/binary?file=book.xlsx&path=%2Fsheet%5B1%5D%2Fimage%5B%40id%3D3%5D', x: 76, y: 38, w: 151, h: 113, alt: 'logo', look: { flipH: 'true' } }]);
-  const before = structuredClone([s]), after = structuredClone([s]);
+  const before = plain([s]), after = plain([s]);
   after[0].images[0].look = {};
   const cmds = [];
   await EN.planXlsx('book.xlsx', before, after, async argv => { cmds.push(argv); return {}; });
@@ -373,7 +373,7 @@ test('engine: a copied sheet\'s pictures and charts are new objects, saved with 
     for (const s of copies) assert.deepEqual(s.slice(1), orig.slice(1), 'the copy has the original\'s picture and chart');
     // S (2)'s picture, selected on its sheet: a picture tool changes it, and only it
     const pp = { doc }; c.renderVals().sheetTabs[2].onClick(); c.componentDidUpdate(pp);
-    c.renderVals().pics[0].onSel({ stopPropagation() { } }); c.componentDidUpdate({ doc });
+    c.renderVals().pics[0].onSel({ preventDefault() {}, stopPropagation() { } }); c.componentDidUpdate({ doc });
     const toasts = []; c.props.toast = m => toasts.push(m);
     await c.picTools().set({ grayscale: 'true' });
     assert.deepEqual(toasts, []);

@@ -16,10 +16,10 @@ test('page breaks: tree → block → html', () => {
 });
 
 test('pageOf maps engine props to the editor page: the panel\'s papers and margin presets, custom margins as the engine prints them, other sizes kept in raw', () => {
-  assert.deepEqual(EN.pageOf({ page: 'Letter', orientation: 'landscape', margin: 'moderate', columns: '2' }), { size: 'Letter', orient: 'landscape', margin: 'moderate', cols: 2, raw: { size: 'Letter', margin: 'moderate' } });
-  assert.deepEqual(EN.pageOf({ page: 'Legal', margin: '2cm 1cm 2cm 1cm' }), { size: 'Legal', orient: 'portrait', margin: '2cm 1cm 2cm 1cm', cols: 1, raw: { size: 'Legal', margin: '2cm 1cm 2cm 1cm' } });
-  assert.deepEqual(EN.pageOf({ page: '18.4cm x 26cm', margin: 'mirrored' }), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, raw: { size: '18.4cm x 26cm', margin: 'mirrored' } });
-  assert.deepEqual(EN.pageOf(undefined), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, raw: { size: '', margin: '' } });
+  assert.deepEqual(EN.pageOf({ page: 'Letter', orientation: 'landscape', margin: 'moderate', columns: '2' }), { size: 'Letter', orient: 'landscape', margin: 'moderate', cols: 2, color: '', wm: '', raw: { size: 'Letter', margin: 'moderate' } });
+  assert.deepEqual(EN.pageOf({ page: 'Legal', margin: '2cm 1cm 2cm 1cm' }), { size: 'Legal', orient: 'portrait', margin: '2cm 1cm 2cm 1cm', cols: 1, color: '', wm: '', raw: { size: 'Legal', margin: '2cm 1cm 2cm 1cm' } });
+  assert.deepEqual(EN.pageOf({ page: '18.4cm x 26cm', margin: 'mirrored' }), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, color: '', wm: '', raw: { size: '18.4cm x 26cm', margin: 'mirrored' } });
+  assert.deepEqual(EN.pageOf(undefined), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, color: '', wm: '', raw: { size: '', margin: '' } });
 });
 
 test('plainOf strips header html but keeps page tokens and lines', () => {
@@ -34,7 +34,7 @@ test('pageDiff emits only the changed set props, and a header or footer only onc
   assert.deepEqual(EN.pageDiff(orig, { page: { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1 }, header: logo, footer: '' }), {}, 'untouched: the file keeps what the editor only shows');
   const footer = '<p style="text-align:center"><b>第 {page} 页</b></p>';
   assert.deepEqual(EN.pageDiff(orig, { page: { size: 'Letter', orient: 'landscape', margin: 'wide', cols: 2, color: '#fff', wm: '草稿', hf: false }, header: logo, footer, titlePg: true, firstFooter: '<p style="text-align:left">cover</p>' }),
-    { page: 'Letter', orientation: 'landscape', margin: 'wide', columns: '2', footer, firstFooter: '<p style="text-align:left">cover</p>', titlePg: 'true' });
+    { page: 'Letter', orientation: 'landscape', margin: 'wide', columns: '2', pageColor: 'FFFFFF', watermark: '草稿', footer, firstFooter: '<p style="text-align:left">cover</p>', titlePg: 'true' });
   assert.deepEqual(EN.pageDiff({ page: {}, header: 'x' }, { page: { size: 'A4' }, header: '' }), { header: '' }, 'an emptied header is sent as an empty string so the engine removes it');
 });
 

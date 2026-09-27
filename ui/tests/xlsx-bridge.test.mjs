@@ -42,7 +42,7 @@ test('tree → model maps sheet props and charts', () => {
 
 test('freeze none / no sheet props → defaults', () => {
   const m = sheetModel({ kind: 'sheet', path: '/sheet[2]', props: { name: 'S2', freeze: 'none', filter: 'none' }, children: [] });
-  assert.deepEqual(m, { name: 'S2', path: '/sheet[2]', cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, filters: {}, frows: [], cf: [], dv: [], hiddenRows: [], hiddenCols: [], color: null, charts: [], images: [] });
+  assert.deepEqual(m, { name: 'S2', path: '/sheet[2]', print: {}, protected: false, visibility: 'visible', autoH: {}, cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, filters: {}, frows: [], cf: [], dv: [], hiddenRows: [], hiddenCols: [], color: null, charts: [], images: [] });
 });
 
 test('sheet rules: cf, validations, filter criteria, hidden lines and the tab colour map both ways; filter-hidden rows are the filter\'s, not the user\'s', async () => {

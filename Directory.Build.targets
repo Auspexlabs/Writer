@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Writer.Cli' or '$(MSBuildProjectName)' == 'Writer.Browser'">
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)src/Writer.Formats/Jint.Substitutions.xml&quot;</_ExtraTrimmerArgs>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Writer.Cli'">
+    <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)src/Writer.Formats/Jint.Substitutions.xml" />
+    <!-- Jint 4.16.3 annotates ReflectionAccessor.ConvertValueToSet's object parameter with
+         DynamicallyAccessedMembers, which is invalid metadata (IL2098). That CLR-only method
+         and its callers are removed above. Keep the diagnostic visible; all other AOT/trim
+         diagnostics and the C# source analyzers remain errors. See docs/0.1.7-work.md. -->
+    <IlcArg Include="--nosinglewarnassembly:Jint" />
+    <IlcArg Include="--nowarnaserr:IL2098" />
+  </ItemGroup>
+</Project>

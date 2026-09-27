@@ -4,6 +4,10 @@
 // The file on disk is the only source of truth; the engine keeps everything the editor does not model.
 import { txt, shape as mkShape, line as mkLine, SW, slideH, THEMES, phFamily, resolveColor, POLY, union, flatObjs } from './office-io.js';
 import { lookFrom, pictureView, picSrc, placeStyle, PLACE } from './picture.js';
+import { objectInner, objectLabel } from './office-draw.js';
+import { shareCells, changedCellKeys, editWorkbook, cloneWorkbook } from './sheet-model.js';
+import { autoRowHeights } from './sheet-layout.js';
+import { Calc as SheetCalc, parseA as sheetParseA, colName as sheetColName } from './sheet-engine.js';
 import * as PK from './pdf-kit.js';
 import * as MM from './mindmap.js';
 
@@ -722,6 +726,7 @@ export function blocksOf(nodes, file) {
     else if (n.kind === 'toc') b.props = { levels: p.levels || '3', title: p.title || '', text: p.text || '', style: p.style || 'classic' };
     else if (n.kind === 'bibliography') b.props = { title: p.title || '', html: p.html || '' };
     else if (n.kind === 'image') Object.assign(b, picOf(n, file, byId));
+    else if (n.kind === 'object') Object.assign(b, officeObjectOf(n, file));
     else if (n.kind === 'pagebreak') { }
     else b.props.html = esc(p.text || '');
     return b;
@@ -795,6 +800,7 @@ export function blocksToHtml(blocks) {
       out += tocHtml({ path: b.path, levels: b.props.levels, title: b.props.title, entries, style: b.props.style });
     }
     else if (b.kind === 'image') out += picHtml(b);
+    else if (b.kind === 'object') out += officeObjectHtml(b, true);
     else if (b.kind === 'pagebreak') out += `<hr data-pb="1" data-path="${esc(b.path)}">`;
     else out += pa(b, 'p');
   }
@@ -808,7 +814,7 @@ const PAPERS = ['A4', 'Letter', 'A5', 'B5', 'A3', 'Legal'], MARGINS = ['narrow',
  *  prints (2.54cm 3.18cm 2.54cm 3.18cm); a paper size the editor cannot show falls back to A4 but stays in `raw`. */
 export function pageOf(p) {
   p = p || {};
-  return { size: PAPERS.includes(p.page) ? p.page : 'A4', orient: p.orientation === 'landscape' ? 'landscape' : 'portrait', margin: MARGINS.includes(p.margin) || /\d/.test(p.margin || '') ? p.margin : 'normal', cols: Math.max(1, +p.columns || 1), raw: { size: p.page || '', margin: p.margin || '' } };
+  return { size: PAPERS.includes(p.page) ? p.page : 'A4', orient: p.orientation === 'landscape' ? 'landscape' : 'portrait', margin: MARGINS.includes(p.margin) || /\d/.test(p.margin || '') ? p.margin : 'normal', cols: Math.max(1, +p.columns || 1), color: p.pageColor && p.pageColor !== 'none' ? '#' + p.pageColor : '', wm: p.watermark || '', raw: { size: p.page || '', margin: p.margin || '' } };
 }
 /** Header or footer text for the editor: inline html → plain lines, {page}/{pages} kept. */
 export function plainOf(html) {
@@ -825,6 +831,8 @@ export function pageDiff(orig, doc) {
   if (n.orient !== o.orient) p.orientation = n.orient;
   if (n.margin !== o.margin) p.margin = n.margin;
   if (+n.cols !== +o.cols) p.columns = String(+n.cols || 1);
+  if ((n.color || '') !== (o.color || '')) p.pageColor = n.color ? colorHex(n.color) || n.color.replace(/^#/, '').toUpperCase() : 'none';
+  if ((n.wm || '') !== (o.wm || '')) p.watermark = n.wm || '';
   for (const k of HF) if ((doc[k] || '') !== (orig[k] || '')) p[k] = doc[k] || '';
   if (!!doc.titlePg !== !!orig.titlePg) p.titlePg = doc.titlePg ? 'true' : 'false';
   for (const k of ['lineNumbers', 'hyphenation']) if (!!doc[k] !== !!orig[k]) p[k] = doc[k] ? 'true' : 'false';
@@ -840,13 +848,14 @@ async function openDocx(doc) {
   const blocks = blocksOf(body.children, doc.path);
   const page = Object.assign({ hf: true }, doc.page || {}, pageOf(p));
   const comments = commentsOf(body.children, p.author || 'Writer'), track = p.track === 'true'; // the engine writes comments as the document's author, else Writer
+  const officeObjects = officeObjectsOf(body.children, doc.path);
   const notes = notesOf(body.children), eqs = eqsOf(body.children), shapes = shapesOf(body.children), cites = citesOf(body.children);
-  const html = wrapTabs(inkFills(parseHtml(anchorCites(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes), cites)))).innerHTML;
+  const html = wrapTabs(inkFills(parseHtml(anchorCites(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes, officeObjects), cites)))).innerHTML;
   const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true', noteFormat: p.noteFormat || '' };
   return { html, rev: (doc.rev || 0) + 1, track, comments: comments.map(c => ({ id: c.cid, author: c.author, initials: c.initials, mine: c.mine, time: c.time, text: c.text, quote: c.quote, path: c.path, resolved: c.resolved, parent: c.parent })),
     notes: notes.map(noteOf), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
     sources: sourcesOf(p.sources), citeStyle: p.citationStyle || '',
-    _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes, cites } };
+    _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns, pageColor: p.pageColor, watermark: p.watermark }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes, cites, officeObjects } };
 }
 
 // ----- docx: footnotes and endnotes -----
@@ -866,7 +875,7 @@ const noteOf = x => Object.assign({ id: x.nid, kind: x.kind, text: x.text }, x.h
 /** A note's mark in the text: a superscript number the caret steps over; numbered by order of its kind. */
 const NOTE_MARK = 'sup[data-fn]';
 /** What sits in a paragraph beside its text: deleted text, notes' marks, equations and shapes. Character offsets leave them out. */
-export const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape],span[data-cite]';
+export const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape],span[data-cite],[data-office-object]';
 /** The character offset of `node` in block `el`: the visible text before it (a br and a page break one character each). */
 export function offsetIn(el, node) {
   let at = 0; const w = el.ownerDocument.createTreeWalker(el, 5); let n;
@@ -1062,6 +1071,45 @@ export async function lookupSource(q) {
   return C.lookup(q, { page: async url => { const r = await http('/cite/page?url=' + enc(url)); return r.text(); } });
 }
 
+// Office objects keep their own paths. Their SVG/preview text is never part of an editable paragraph.
+const officeObjectOf = (n, file) => ({ path: n.path, props: { ...n.props }, src: n.props?.src ? binaryUrl(file, n.path) : '' });
+export function officeObjectHtml(o, block = false) {
+  const p = o.props || {}, w = p.width ? cmOf(p.width) / 2.54 * 96 : 240, h = p.height ? cmOf(p.height) / 2.54 * 96 : 120;
+  const tag = block ? 'div' : 'span';
+  return `<${tag} data-office-object="1" data-path="${esc(o.path)}" contenteditable="false" role="img" aria-label="${esc(p.alt || p.name || objectLabel(p))}" style="display:${block ? 'block' : 'inline-block'};width:${w}px;height:${h}px;max-width:100%;vertical-align:middle;user-select:all">${objectInner(p, w, h, o.src)}</${tag}>`;
+}
+export function officeObjectsOf(nodes, file) {
+  const out = [];
+  const walk = list => { for (const n of list || []) {
+    if (n.kind === 'object' && !/^\/body\/object\[/.test(n.path)) out.push({ ...officeObjectOf(n, file), parent: n.path.replace(/\/object\[[^\]]*\]$/, ''), at: +n.props?.at || 0 });
+    walk(n.children);
+  } };
+  walk(nodes); return out;
+}
+export async function planOfficeObjects(file, before, root, exec = run) {
+  let count = 0; const list = [], groups = new Map();
+  for (const o of before) { if (!groups.has(o.parent)) groups.set(o.parent, []); groups.get(o.parent).push(o); }
+  for (const [parent, objects] of groups) {
+    const kept = objects.map(o => ({ ...o, el: root.querySelector(`[data-office-object][data-path="${o.path}"]`) }));
+    // If the paragraph itself was removed the block diff takes its objects with it.
+    if (!root.querySelector(`[data-path="${parent}"]`)) continue;
+    for (const o of kept.slice().reverse()) if (!o.el) { await exec(['remove', file, o.path]); count++; }
+    let ordinal = 0;
+    for (const o of kept) if (o.el) {
+      o.path = `${parent}/object[${++ordinal}]`; o.el.setAttribute('data-path', o.path);
+      list.push(o);
+    }
+  }
+  return { count, list };
+}
+function remapOfficeObjects(objects, blocks, was) {
+  const all = blocks.concat(blocks.flatMap(b => (b.rows || []).flatMap(r => r.cells || [])));
+  for (const o of objects) {
+    const b = all.find(b => was.get(b) === o.parent || was.get(b) + '/paragraph[1]' === o.parent);
+    if (b) { o.parent = b.path + (b.kind === 'cell' ? '/paragraph[1]' : ''); o.path = o.parent + '/' + seg(o.path); o.el.setAttribute('data-path', o.path); }
+  }
+}
+
 // ----- docx: equations and shapes in paragraphs -----
 /** Every equation in the tree: the paragraph it sits in, its offset there, its LaTeX and whether it has a line of its own. */
 export function eqsOf(nodes) {
@@ -1094,12 +1142,13 @@ export function shapeHtml(x) {
   return `<span data-shape="1"${x.id ? ` data-sid="${esc(x.id)}"` : ''}${attrs} contenteditable="false"><span class="wd-shtext" contenteditable="true">${esc(p.text || '').replace(/\n/g, '<br>')}</span></span>`;
 }
 /** Puts equations at their offsets and shapes at the start of their paragraphs. */
-export function anchorObjects(html, eqs, shapes) {
-  if (!eqs.length && !shapes.length) return html;
+export function anchorObjects(html, eqs, shapes, officeObjects = []) {
+  if (!eqs.length && !shapes.length && !officeObjects.length) return html;
   const root = parseHtml(html), d = root.ownerDocument, box = d.createElement('div');
   const make = h => { box.innerHTML = h; return box.firstChild; };
   for (const x of eqs) { const el = root.querySelector(`[data-path="${x.path}"]`); if (el) placeAt(el, x.at, make(eqHtml(x.latex, x.display))); }
   for (const x of shapes.slice().reverse()) { const el = root.querySelector(`[data-path="${x.path}"]`); if (el) el.insertBefore(make(shapeHtml(x)), el.firstChild); }
+  for (const x of officeObjects.slice().reverse()) { const el = root.querySelector(`[data-path="${x.parent}"]`); if (el) placeAt(el, x.at, make(officeObjectHtml(x))); }
   return root.innerHTML;
 }
 /** The paragraphs of the editor's blocks (a table cell counts as its first paragraph) with what sits in them: equations with their
@@ -1216,15 +1265,43 @@ const fmtTime = iso => {
  * text, quote, and whether it is mine (written as `me`, the author this app writes comments as). */
 export function commentsOf(nodes, me) {
   const out = [];
-  const walk = list => { for (const n of list || []) { if (n.kind === 'comment') { const q = n.props || {}; out.push({ cid: String(q.id), id: String(q.id), path: n.path.replace(/\/comment\[[^\]]*\]$/, ''), author: q.author || '', initials: q.initials || '', mine: !!me && q.author === me, date: q.date || '', time: [q.author, fmtTime(q.date)].filter(Boolean).join(' · '), text: q.text || '', quote: q.quote || '', resolved: q.resolved === 'true', parent: q.parent ? String(q.parent) : '' }); } walk(n.children); } };
+  const walk = list => { for (const n of list || []) { if (n.kind === 'comment') { const q = n.props || {}; out.push({ cid: String(q.id), id: String(q.id), path: n.path.replace(/\/comment\[[^\]]*\]$/, ''), author: q.author || '', initials: q.initials || '', mine: !!me && q.author === me, date: q.date || '', time: [q.author, fmtTime(q.date)].filter(Boolean).join(' · '), text: q.text || '', quote: q.quote || '', resolved: q.resolved === 'true', parent: q.parent ? String(q.parent) : '', ...(q.range ? { range: typeof q.range === 'string' ? JSON.parse(q.range) : q.range } : {}) }); } walk(n.children); } };
   walk(nodes);
   return out;
+}
+/** Wrap selected text nodes individually; extracting a cross-paragraph range would nest whole paragraphs inside a span. */
+export function wrapCommentSelection(root, range, id) {
+  const d = root.ownerDocument, walker = d.createTreeWalker(root, 4), selected = []; let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement.closest(MARKS) || !range.intersectsNode(node)) continue;
+    const start = node === range.startContainer ? range.startOffset : 0, end = node === range.endContainer ? range.endOffset : node.nodeValue.length;
+    if (end > start) selected.push({ node, start, end });
+  }
+  const spans = [];
+  for (const { node, start, end } of selected.reverse()) {
+    const r = d.createRange(); r.setStart(node, start); r.setEnd(node, end);
+    const span = d.createElement('span'); span.setAttribute('data-cid', id);
+    span.appendChild(r.extractContents()); r.insertNode(span); spans.unshift(span);
+  }
+  return spans;
+}
+function textPoint(el, offset) {
+  const w = el.ownerDocument.createTreeWalker(el, 4); let n, last, at = offset;
+  while ((n = w.nextNode())) { if (n.parentElement.closest(MARKS)) continue; last = n; if (at <= n.nodeValue.length) return [n, at]; at -= n.nodeValue.length; }
+  return last ? [last, last.nodeValue.length] : [el, 0];
+}
+function anchorCommentRange(root, r, id) {
+  const a = root.querySelector(`[data-path="${r.start}"]`), b = root.querySelector(`[data-path="${r.end}"]`);
+  if (!a || !b || !root.ownerDocument.createRange().intersectsNode) return false;
+  const range = root.ownerDocument.createRange(); range.setStart(...textPoint(a, r.startOffset)); range.setEnd(...textPoint(b, r.endOffset));
+  wrapCommentSelection(root, range, id); return true;
 }
 /** Wraps each comment's quoted text in its paragraph with <span data-cid>, so the side panel can find and highlight it. */
 export function anchorComments(html, comments) {
   if (!comments.some(c => c.quote)) return html;
   const root = parseHtml(html), d = root.ownerDocument;
   for (const c of comments) {
+    if (c.range && anchorCommentRange(root, c.range, c.cid)) continue;
     const el = c.quote && root.querySelector(`[data-path="${c.path}"]`); if (!el) continue;
     const nodes = []; const w = d.createTreeWalker(el, 4); let n; while ((n = w.nextNode())) if (!n.parentElement.closest('del')) nodes.push(n); // the engine's quote leaves deleted text out
     const at = nodes.map(x => x.nodeValue).join('').indexOf(c.quote); if (at < 0) continue;
@@ -1242,15 +1319,17 @@ export function anchorComments(html, comments) {
 }
 /** The editor's comments as the engine sees them: the paragraph each anchor span sits in now (`parent`, a table cell counts as
  * its first paragraph) and sat in when last saved (`origin`, from `was`), and the quoted text without deleted text. */
-function commentsIn(doc, el, blocks, was) {
+export function commentsIn(doc, el, blocks, was) {
   const cells = blocks.filter(b => b.rows).flatMap(b => b.rows.flatMap(r => r.cells));
+  const owner = span => blocks.find(x => (x.kind === 'paragraph' || x.kind === 'heading') && x.el?.contains(span)) || cells.find(x => x.el?.contains(span));
+  const at = (b, previous = false) => { const path = b && (previous ? was.get(b) : b.path); return path ? path + (b.kind === 'cell' ? '/paragraph[1]' : '') : null; };
+  const text = span => { const q = span.cloneNode(true); q.querySelectorAll(MARKS).forEach(x => x.remove()); return q.textContent.replace(/\u00a0/g, ' ').replace(/\u200B/g, ''); };
   return (doc.comments || []).map(c => {
-    const span = el.querySelector(`[data-cid="${c.parent || c.id}"]`); // a reply sits where its comment does
-    const b = span && (blocks.find(x => (x.kind === 'paragraph' || x.kind === 'heading') && x.el && x.el.contains(span)) || cells.find(x => x.el && x.el.contains(span)));
-    const at = path => path ? (b.kind === 'cell' ? path + '/paragraph[1]' : path) : null;
-    const q = span && span.cloneNode(true); if (q) q.querySelectorAll('del').forEach(x => x.remove());
-    return { cid: String(c.id), thread: c.parent ? String(c.parent) : '', text: c.text || '', resolved: !!c.resolved, parent: b ? at(b.path) : null, origin: b ? at(was.get(b)) : null,
-      quote: q ? q.textContent.replace(/\u00a0/g, ' ').replace(/\u200B/g, '') : '' };
+    const spans = Array.from(el.querySelectorAll(`[data-cid="${c.parent || c.id}"]`)), first = spans[0], last = spans[spans.length - 1];
+    const start = first && owner(first), end = last && owner(last);
+    const range = at(start) && at(end) ? { start: at(start), startOffset: offsetIn(start.el, first), end: at(end), endOffset: offsetIn(end.el, last) + text(last).length } : null;
+    return { cid: String(c.id), thread: c.parent ? String(c.parent) : '', text: c.text || '', resolved: !!c.resolved,
+      parent: at(end), origin: at(end, true), quote: spans.map(text).join(''), ...(range ? { range } : {}) };
   });
 }
 /** Commands that take the file's comments (`orig`, as saved last) to the editor's (`current`): add / set / remove by engine id.
@@ -1263,13 +1342,13 @@ export async function planComments(file, orig, current, log, exec = run) {
   const tolerant = async argv => { try { await exec(argv); n++; log && log(argv[0], argv[2]); return true; } catch (e) { log && log('skip', argv[2], e.message); return false; } };
   const add = async (c, keep) => {
     const up = c.thread && (list.find(x => x.cid === c.thread) || byCid.get(c.thread)); // a reply goes beside its comment, by that comment's id now
-    const props = Object.assign({ text: c.text }, keep || {}, up ? { parent: up.id } : c.quote ? { quote: c.quote } : {}, c.resolved ? { resolved: 'true' } : {});
+    const props = Object.assign({ text: c.text }, keep || {}, up ? { parent: up.id } : c.range ? { range: JSON.stringify(c.range) } : c.quote ? { quote: c.quote } : {}, c.resolved ? { resolved: 'true' } : {});
     let r;
     try { r = await exec(['add', file, c.parent, '--type', 'comment', ...propsArgs(props)]); }
     catch (e) { if (!props.quote) throw e; delete props.quote; r = await exec(['add', file, c.parent, '--type', 'comment', ...propsArgs(props)]); }
     n++; log && log('add', r.path, 'comment');
     const p = r.props || {};
-    return { cid: c.cid, id: String(p.id), path: c.parent, author: p.author || '', initials: p.initials || '', date: p.date || '', text: c.text, resolved: c.resolved };
+    return { cid: c.cid, id: String(p.id), path: c.parent, author: p.author || '', initials: p.initials || '', date: p.date || '', text: c.text, resolved: c.resolved, ...(c.range ? { range: c.range } : {}) };
   };
   for (const c of current) {
     const o = byCid.get(c.cid);
@@ -1280,9 +1359,10 @@ export async function planComments(file, orig, current, log, exec = run) {
       } else if (o) {
         const diff = {};
         if ((o.text || '') !== c.text) diff.text = c.text;
+        if (!c.thread && c.range && JSON.stringify(o.range) !== JSON.stringify(c.range)) diff.range = JSON.stringify(c.range);
         if (!!o.resolved !== c.resolved) diff.resolved = c.resolved ? 'true' : 'false';
         if (Object.keys(diff).length && !await tolerant(['set', file, `//comment[@id=${o.id}]`, ...propsArgs(diff)])) continue;
-        list.push(Object.assign({}, o, { text: c.text, resolved: c.resolved }, c.parent ? { path: c.parent } : {}));
+        list.push(Object.assign({}, o, { text: c.text, resolved: c.resolved, ...(c.range ? { range: c.range } : {}) }, c.parent ? { path: c.parent } : {}));
       } else if (c.parent) list.push(await add(c));
     } catch (e) { log && log('skip', c.parent, e.message); }
   }
@@ -1305,6 +1385,7 @@ export function blocksFromHtml(root) {
       if (c.nodeType === 3) { if (c.nodeValue.trim()) out.push({ kind: 'paragraph', path: null, props: { html: esc(c.nodeValue.trim()) }, el: null }); continue; }
       if (c.nodeType !== 1) continue;
       const tag = c.tagName;
+      if (c.hasAttribute('data-office-object')) { out.push({ kind: 'object', path: pathOf(c), props: {}, el: c }); continue; }
       if (tag === 'UL' || tag === 'OL') { walk(c, listKind(c, listType), level + 1); continue; }
       if (tag === 'LI') {
         const inner = c.cloneNode(true); Array.from(inner.querySelectorAll('ul,ol')).forEach(x => x.remove());
@@ -1404,7 +1485,7 @@ const imgBlock = img => Object.assign({ kind: 'image' }, picOfEl(img));
 const isFloat = img => (img.getAttribute('data-w-wrap') || 'inline') !== 'inline';
 const PIC_BLOCKS = 'p,h1,h2,h3,h4,h5,h6,li,blockquote,td,th';
 /** The pictures of one block (not those of a block nested in it: a list's sub-items, a cell's paragraphs). */
-const picsIn = el => { const nested = Array.from(el.querySelectorAll(PIC_BLOCKS)); return Array.from(el.querySelectorAll('img')).filter(i => !nested.some(b => b.contains(i))).map(picOfEl); };
+const picsIn = el => { const nested = Array.from(el.querySelectorAll(PIC_BLOCKS)); return Array.from(el.querySelectorAll('img')).filter(i => !i.closest('[data-office-object]') && !nested.some(b => b.contains(i))).map(picOfEl); };
 const withPics = (b, pics) => { if (pics.length) b.pics = pics; return b; };
 const alignOf = el => { const st = el.style || {}, a = st.textAlign; if (!a || a === 'start' || a === 'left') return null; return a === 'justify' && st.textAlignLast === 'justify' ? 'distribute' : a === 'end' ? 'right' : a; };
 /** A block's inline html for the engine: without the AI change marks, comment anchor spans (the file keeps anchors itself), the
@@ -1472,7 +1553,7 @@ function inlineHtml(el) {
   Array.from(c.querySelectorAll('img,figure[data-pic]')).forEach(x => x.remove());
   Array.from(c.querySelectorAll('[data-ai]')).forEach(x => x.removeAttribute('data-ai'));
   Array.from(c.querySelectorAll('[data-cid]')).forEach(x => { while (x.firstChild) x.parentNode.insertBefore(x.firstChild, x); x.remove(); });
-  Array.from(c.querySelectorAll('sup[data-fn],span[data-eq],span[data-shape],span[data-cite]')).forEach(x => x.remove());
+  Array.from(c.querySelectorAll('sup[data-fn],span[data-eq],span[data-shape],span[data-cite],[data-office-object]')).forEach(x => x.remove());
   return pbOut(c.innerHTML.replace(/\u200B/g, ''));
 }
 
@@ -1611,6 +1692,7 @@ const CLEARED = { fill: 'none', colspan: '1', rowspan: '1', header: 'false', sty
 
 function changedProps(orig, b) {
   const p = {};
+  if (b.kind === 'object') return p;
   if (b.kind === 'heading' || b.kind === 'paragraph' || b.kind === 'cell') { if (!sameRuns(orig.props.html, b.props.html)) p.html = b.props.html; }
   if (b.kind === 'code' && (orig.props.text || '') !== (b.props.text || '')) p.text = b.props.text;
   if (b.kind === 'image') Object.assign(p, lookDiff(orig.props, b.props));
@@ -1824,11 +1906,14 @@ async function saveDocx(doc, root, log) {
   const tocs = blocks.filter(b => b.kind === 'toc'), tocAdded = tocs.some(b => !b.path || !opened.has(b.path));
   const was = new Map(), remember = list => list.forEach(b => { was.set(b, b.path); if (b.rows) remember(b.rows); if (b.cells) remember(b.cells); });
   remember(blocks);
+  const officeObjects = await planOfficeObjects(doc.path, orig.officeObjects || [], el, run);
+  n += officeObjects.count;
   const mv = pictureMoves(orig.blocks || [], blocks), byId = orig.ids !== false;
   n += await planPicturesBefore(doc.path, orig.blocks || [], blocks, run, log);
   n += await planDocxBlocks(doc.path, (orig.blocks || []).filter(o => !mv.out.has(o.path)), blocks.filter(b => !mv.in.has(b)), run, log);
   if (byId) for (const b of blocks) if (b.kind === 'image' && b.id && !/^\/\//.test(b.path || '')) { b.path = `//image[@id=${b.id}]`; if (b.el) b.el.setAttribute('data-path', b.path); }
   renumber('/body', blocks);
+  remapOfficeObjects(officeObjects.list, blocks, was);
   n += await planPicturesAfter(doc.path, orig.blocks || [], blocks, run, log, byId);
   // a table of contents lists the headings: build it again in the file, and show it, once headings or contents changed
   if (tocs.length && (tocAdded || tocs.some(b => b.refresh) || headingsOf(orig.blocks || []) !== headingsOf(blocks))) {
@@ -1848,9 +1933,9 @@ async function saveDocx(doc, root, log) {
   doc.notes = notes.list.map(noteOf);
   const cites = await planCites(doc.path, orig.cites || [], citesIn(el, blocks), log);
   n += cites.count;
-  const pageProps = Object.fromEntries(['page', 'orientation', 'margin', 'columns'].filter(k => k in pp).map(k => [k, pp[k]]));
+  const pageProps = Object.fromEntries(['page', 'orientation', 'margin', 'columns', 'pageColor', 'watermark'].filter(k => k in pp).map(k => [k, pp[k]]));
   const now = Object.assign({}, orig, { titlePg: String(!!orig.titlePg) }, pp); // headers and footers as the file has them now
-  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list, cites: cites.list });
+  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list, cites: cites.list, officeObjects: officeObjects.list.map(({ el, ...o }) => o) });
   // a citation, a note that cites or a works-cited list saved: the engine drew them all again (a source's first note in full, APA's
   // 2015a and 2015b…): show what it drew
   const bibs = blocks.filter(b => b.kind === 'bibliography');
@@ -1926,7 +2011,7 @@ export function cellModel(p) {
   Object.assign(s, fmtOf(p.format));
   if (p.type === 'date' && s.fmt !== 'date' && s.fmt !== 'time') s.fmt = 'date'; // the engine knows a date by its format; the formatter then reads the code
   if (p.type === 'string' && p.formula == null && v.trim() !== '' && !isNaN(Number(v.replace(/,/g, ''))) && !s.fmt) s.fmt = 'text'; // "007" stays text, not 7
-  return Object.keys(s).length ? { v, s } : { v };
+  return Object.assign(Object.keys(s).length ? { v, s } : { v }, p.spill ? { spill: p.spill } : {});
 }
 const pxOfCm = v => Math.round(cmOf(v) * CM_PX), cmOfPx = px => cmStr(px / CM_PX);
 /** A chart on a sheet: `eid` is the engine's id, which every sheet numbers anew, so the editor's id adds the sheet. */
@@ -1961,20 +2046,22 @@ export function sheetModel(s, file) {
   const hid = jsonOr(p.hidden, {}), fb = filter && Object.keys(filters).length ? filter.split(':').map(xParse) : null, hiddenRows = [], frows = [];
   (hid.rows || []).forEach(n => { const r = +n - 1; if (r < 0) return; (fb && fb[0] && r > fb[0].r && r <= (fb[1] || fb[0]).r ? frows : hiddenRows).push(r); });
   const hiddenCols = (hid.cols || []).map(k => xParse(String(k) + '1')).filter(Boolean).map(a => a.c);
-  const m = { name: p.name, path: sheetPath, cells, colW, rowH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, charts, images };
+  const autoH = Object.fromEntries(Object.entries(jsonOr(p.autoHeights, {})).map(([r, h]) => [r, Math.round(+h * PT_PX)]));
+  const m = { name: p.name, path: sheetPath, cells: shareCells(cells), colW, rowH, autoH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, print: jsonOr(p.print, {}), visibility: p.visibility || 'visible', protected: p.protected === 'true' || p.protected === true, charts, images };
   if (p.gridlines === 'false' || p.gridlines === false) m.noGrid = true; // the file hides them; otherwise the settings decide
   return m;
 }
 /** A conditional format's colours (fill, color, colors) through `f`: hex adds the #, unhex takes it away. */
 const ruleColors = (r, f) => { const o = Object.assign({}, r); if (o.fill) o.fill = f(o.fill); if (o.color) o.color = f(o.color); if (Array.isArray(o.colors)) o.colors = o.colors.map(f); return o; };
 /** The snapshot a later save is diffed against. */
-const origOf = sheets => ({ sheets: JSON.parse(JSON.stringify(sheets.map(s => ({ path: s.path, name: s.name, cells: s.cells, colW: s.colW || {}, rowH: s.rowH || {}, merges: s.merges || [], frR: s.frR || 0, frC: s.frC || 0, filter: s.filter || null,
-  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, noGrid: !!s.noGrid, charts: s.charts || [], images: s.images || [] })))) });
+const origOf = (sheets, names = {}) => ({ names: { ...names }, sheets: sheets.map(s => ({ ...JSON.parse(JSON.stringify({ path: s.path, name: s.name, colW: s.colW || {}, rowH: s.rowH || {}, autoH: s.autoH || {}, merges: s.merges || [], frR: s.frR || 0, frC: s.frC || 0, filter: s.filter || null,
+  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, print: s.print || {}, visibility: s.visibility || 'visible', protected: !!s.protected, noGrid: !!s.noGrid, charts: s.charts || [], images: s.images || [] })), cells: shareCells(s.cells) })) });
 async function openXlsx(doc) {
   const t = await tree(doc.path);
   const sheets = (t.children || []).filter(s => s.kind === 'sheet').map(s => sheetModel(s, doc.path)), tp = t.props || {};
   // the workbook's default font: cells without their own show it, as in Excel
-  return { active: Math.min(doc.active || 0, sheets.length - 1), sheets, font: tp.font || null, fs: ptOfSize(tp.size) || null, _orig: origOf(sheets) };
+  const names = jsonOr(tp.names, {}), preferred = Math.min(doc.active || 0, sheets.length - 1);
+  return { active: sheets[preferred]?.visibility === 'visible' ? preferred : Math.max(0, sheets.findIndex(s => s.visibility === 'visible')), sheets, names, font: tp.font || null, fs: ptOfSize(tp.size) || null, _orig: origOf(sheets, names) };
 }
 const same = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
 export function cellProps(o, c) {
@@ -2006,6 +2093,9 @@ const RANGE_MIN = 8;
 /** Sheet-level props that differ between the saved snapshot and the model. */
 export function sheetProps(o, s) {
   const p = {};
+  if (!same(o.print || {}, s.print || {})) p.print = JSON.stringify(s.print || {});
+  if ((o.visibility || 'visible') !== (s.visibility || 'visible')) p.visibility = s.visibility || 'visible';
+  if (!!o.protected !== !!s.protected) p.protected = String(!!s.protected);
   const mg = x => JSON.stringify((x.merges || []).map(m => xRef(m.r, m.c) + ':' + xRef(m.r + m.rs - 1, m.c + m.cs - 1)));
   const wd = x => Object.fromEntries(Object.entries(x.colW || {}).filter(([, px]) => px > 0).map(([k, px]) => [k, +((px - CHAR_PAD) / CHAR_PX).toFixed(2)]));
   const ht = x => Object.fromEntries(Object.entries(x.rowH || {}).filter(([, px]) => px > 0).map(([k, px]) => [k, +(px / PT_PX).toFixed(2)]));
@@ -2016,6 +2106,7 @@ export function sheetProps(o, s) {
   const w = sizes(wd(o), wd(s)), h = sizes(ht(o), ht(s));
   if (w) p.widths = w;
   if (h) p.heights = h;
+  const ah = sizes(ht({ rowH: o.autoH }), ht({ rowH: s.autoH })); if (ah) p.autoHeights = ah;
   if (fz(o) !== fz(s)) p.freeze = fz(s);
   if ((o.filter || 'none') !== (s.filter || 'none')) p.filter = s.filter || 'none';
   // the rules: whole sets, sent when they differ (filters only while there is a filter range to hold them; the range goes first in the same set)
@@ -2039,7 +2130,7 @@ const chartKey = ch => ch.eid || ch.id;
  * ponytail: only exact rectangles are batched, a ragged block falls back to per-cell sets. */
 function planCells(file, sheetPath, o, s, exec, log) {
   const cmds = [], sets = [];
-  for (const ref of new Set([...Object.keys(o.cells), ...Object.keys(s.cells)])) {
+  for (const ref of changedCellKeys(o.cells, s.cells).sort((a, b) => { const p = xParse(a), q = xParse(b); return p.r - q.r || p.c - q.c; })) {
     const oc = o.cells[ref], nc = s.cells[ref];
     const styled = nc && nc.s && Object.keys(nc.s).some(k => k !== 'dv');
     if (!nc || ((nc.v == null || nc.v === '') && !styled)) { if (oc) cmds.push({ argv: ['remove', file, `${sheetPath}/cell[${ref}]`], what: ['remove', `${sheetPath}/cell[${ref}]`] }); continue; }
@@ -2061,7 +2152,7 @@ function planCells(file, sheetPath, o, s, exec, log) {
   return cmds;
 }
 /** A picture's bytes as a data: URL, which `add --type image --prop src=` takes. */
-async function dataUrlOf(src) {
+export async function dataUrlOf(src) {
   if (src.startsWith('data:')) return src;
   const res = await http(src), bytes = new Uint8Array(await res.arrayBuffer());
   let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -2106,21 +2197,31 @@ export async function planXlsx(file, origSheets, sheets, exec, log) {
     // pictures: the 图片 tab writes each change at once, so a difference here is an undo, sent back as the look it returns to. One
     // with no path yet (a copied sheet's) is new: added from the bytes it shows, then given its look with the frame after it (a crop shrinks the frame)
     for (const im of s.images || []) {
-      if (!im.path) {
+      const previous = (o.images || []).find(x => x.id === im.id);
+      if (!im.path || !previous) {
         const box = { x: cmOfPx(im.x), y: cmOfPx(im.y), w: cmOfPx(im.w), h: cmOfPx(im.h) };
         const r = await go(['add', file, o.path, '--type', 'image', '--prop', 'src=' + await dataUrlOf(im.src), ...propsArgs(Object.assign({}, box, im.alt ? { alt: im.alt } : {}))], ['add', o.path, 'image']);
         im.path = `${o.path}/image[@id=${r.props.id}]`; im.src = binaryUrl(file, im.path);
         if (Object.keys(im.look || {}).length) await go(['set', file, im.path, ...propsArgs(Object.assign({}, im.look, box))], ['set', im.path, im.look]);
         continue;
       }
-      const old = (o.images || []).find(x => x.id === im.id), d = old ? lookDiff(old.look, im.look) : {};
+      const old = previous, d = lookDiff(old.look, im.look);
+      for (const key of ['x', 'y', 'w', 'h']) if (old[key] !== im[key]) d[key] = cmOfPx(im[key]);
+      if ((old.alt || '') !== (im.alt || '')) d.alt = im.alt || '';
       if (Object.keys(d).length) await go(['set', file, im.path, ...propsArgs(d)], ['set', im.path, d]);
     }
+    for (const old of o.images || []) if (!(s.images || []).some(im => im.id === old.id)) await go(['remove', file, old.path], ['remove', old.path]);
   }
   for (const o of origSheets.slice().reverse()) if (!used.has(o.path)) await go(['remove', file, o.path], ['remove', o.path]);
   return n;
 }
-async function saveXlsx(doc, log) { return planXlsx(doc.path, doc._orig ? doc._orig.sheets : [], doc.sheets, run, log); }
+async function saveXlsx(doc, log) {
+  const calc = new SheetCalc(doc);
+  doc.sheets.forEach((s, i) => { const old = doc._orig?.sheets.find(o => o.path === s.path); if (!old || old.cells !== s.cells || !same(old.colW, s.colW) || !same(old.merges, s.merges)) s.autoH = Object.fromEntries(Object.entries(autoRowHeights(s, sheetParseA, sheetColName, (r, c) => calc.value(i, r, c), doc.fs || 11, doc)).filter(([r]) => !s.rowH?.[r])); });
+  let n = await planXlsx(doc.path, doc._orig ? doc._orig.sheets : [], doc.sheets, run, log);
+  if (!same(doc._orig?.names || {}, doc.names || {})) { const props = { names: JSON.stringify(doc.names || {}) }; await run(['set', doc.path, '/', ...propsArgs(props)]); if (log) log('set', '/', props); n++; }
+  return n;
+}
 
 // ----- pptx -----
 /** The editor's shape key for a DrawingML preset (POLY's are their own), and back. Presets the editor cannot draw show as rectangles. */
@@ -2593,7 +2694,7 @@ async function saveNow(doc, opts) {
   let n = 0;
   if (doc.type === 'mm') n = await saveMm(doc, log);
   else if (doc.type === 'docx') n = await saveDocx(doc, root, log);
-  else if (doc.type === 'xlsx') { n = await saveXlsx(doc, log); if (n) doc._orig = origOf(doc.sheets); }
+  else if (doc.type === 'xlsx') { n = await saveXlsx(doc, log); if (n) doc._orig = origOf(doc.sheets, doc.names); }
   else if (doc.type === 'pptx') { n = await savePptx(doc, log); if (n) doc._orig = Object.assign({}, doc._orig, { slides: pptxSnapshot(doc.slides) }); }
   // these save through many small engine commands, not one PUT, so there is no ifMtime guard for them (see checkExternal
   // in the shell, which catches a conflict before scheduling a save rather than mid-flight): just remember the mtime our
@@ -2701,7 +2802,7 @@ export function diffMark(before, after) {
       const o = before.sheets[to[i]];
       if (!o) { items.push([_t('新增'), _t('工作表 {name}', { name: s.name })]); return; }
       let n = 0;
-      for (const ref of new Set([...Object.keys(o.cells), ...Object.keys(s.cells)])) if (!same(o.cells[ref], s.cells[ref])) { if (s.cells[ref]) s.cells[ref].ai = true; n++; }
+      const marked = editWorkbook({ sheets: [s] }, sh => { for (const ref of changedCellKeys(o.cells, s.cells)) if (!same(o.cells[ref], s.cells[ref])) { if (sh.cells[ref]) sh.cells[ref].ai = true; n++; } }); s.cells = marked.sheets[0].cells;
       if (n) items.push([_t('修改'), _t('{name} · {n} 个单元格', { name: s.name, n })]);
       const oc = new Map((o.charts || []).map(ch => [chartKey(ch), ch]));
       (s.charts || []).forEach(ch => { const x = oc.get(chartKey(ch)); if (!x || !same(chartProps(x), chartProps(ch))) { ch.ai = true; items.push([_t(x ? '修改' : '新增'), _t('{name} · 图表 {title}', { name: s.name, title: ch.title || ch.type })]); } });

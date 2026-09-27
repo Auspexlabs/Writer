@@ -467,7 +467,7 @@ const SHORT = { anthropic: 'Claude', glm: '智谱', ollama: 'Ollama', lmstudio: 
 const STARTERS = { docx: ['写一份新员工入职指南', '起草一份合作意向书', '整理本周例会纪要'], xlsx: ['做一个家庭月度记账表', '做一个项目进度跟踪表'], pptx: ['做一份产品发布会演示', '做一份季度工作汇报'], md: ['写一篇产品更新日志', '整理读书笔记', '写一份技术方案'], mm: ['做一份产品发布计划的思维导图', '整理一本书的读书笔记', '拆解一个季度目标'] };
 const EXT_TYPE = { docx: 'docx', xlsx: 'xlsx', pptx: 'pptx', md: 'md', markdown: 'md', txt: 'md', mm: 'mm', xmind: 'mm', pdf: 'pdf' };
 const TPL_RATIO = { docx: '1 / 1.3', md: '3 / 4', xlsx: '4 / 3', pptx: '16 / 9', mm: '16 / 10' }; // the thumbnail box of a template card, the shape of that type's page, grid, slide or map
-const clone = o => structuredClone(o);
+const clone = o => o?.type === 'xlsx' ? Object.assign({}, o, { sheets: o.sheets.map(s => Object.assign(structuredClone(Object.assign({}, s, { cells: undefined })), { cells: s.cells })) }) : structuredClone(o);
 const countTopics = n => 1 + (n.children || []).reduce((a, c) => a + countTopics(c), 0);
 const clearAi = n => { delete n.ai; (n.children || []).forEach(clearAi); };
 function cleanTitle(p, type) { const t = p.replace(/^(帮我|请|给我)?(写|做|生成|创建|起草|整理)(一份|一个|一套|一下)?/, '').replace(/[，。,.].*$/, '').trim(); return (t || $t('未命名{n}', { n: $t(TAG[type].n) })).slice(0, 18); }
@@ -697,8 +697,9 @@ class Component extends DCLogic {
   }
   onKey = e => {
     if (e.key === 'Escape' && this.state.ask) { this.state.ask.res('cancel'); return; }
+    if (e.defaultPrevented) return;
     const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
-    if (ctrl && e.shiftKey && k === 'l') { e.preventDefault(); this.toggleDark(); return; }
+    if (ctrl && e.shiftKey && k === 'l' && !(this.state.view === 'doc' && this.doc?.type === 'xlsx')) { e.preventDefault(); this.toggleDark(); return; }
     if (ctrl && e.key === ',') { e.preventDefault(); this.openSettings(); return; }
     if (e.key === 'Escape' && this.state.ov) { this.setState({ ov: null }); return; }
     if (e.key === 'Escape' && this.state.view === 'doc' && this.doc && this.state.showFormat && !this.state.showAI) { e.preventDefault(); this.panelTo({ showFormat: false }); return; }

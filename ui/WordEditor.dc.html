@@ -926,7 +926,7 @@ class Component extends DCLogic {
     return tools;
   }
   sync(typed) { if (!typed) this.pgDirty = true; clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 350); }
-  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(!this.pgDirty); this.citeScan(); }
+  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }); this.refreshInfo(!this.pgDirty); this.citeScan(); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
   ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.EN.numberLists(ed); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
   /** The pages, as [top, bottom] of the text as it flows without page gaps. A paragraph that runs past the end of a page goes on
@@ -1359,8 +1359,13 @@ class Component extends DCLogic {
     if (this.range && ed.contains(this.range.startContainer)) { s.removeAllRanges(); s.addRange(this.range); }
     else if (!s.rangeCount || !ed.contains(s.anchorNode)) { const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); s.removeAllRanges(); s.addRange(r); }
   }
+  history(redo) {
+    if (this.syncT) { clearTimeout(this.syncT); this.flush(); }
+    this.picUndo = []; this.picUndoAt = null;
+    const go = redo ? this.props.onRedo : this.props.onUndo; if (go) go();
+  }
   exec(cmd, val) {
-    if (cmd === 'undo' && this.undoPic()) return;
+    if ((cmd === 'undo' || cmd === 'redo') && this.props.onUndo) return this.history(cmd === 'redo');
     if (this.state.hf && /^justify/.test(cmd)) return this.hfAlign({ justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' }[cmd] || 'left');
     this.restore();
     if (cmd === 'fontName' && this.caretOnly()) { const w = this.caretWord(); if (w) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(w); } else return this.typeWith({ 'font-family': `'${val}'` }); } // Word: the caret's word, or what is typed next
@@ -1955,10 +1960,12 @@ class Component extends DCLogic {
   addComment() {
     this.restore(); const s = window.getSelection(), r = s.getRangeAt(0);
     if (r.collapsed) return this.props.toast && this.props.toast($t('先选中要批注的文字'));
-    const id = 'c' + Date.now().toString(36); const sp = document.createElement('span'); sp.setAttribute('data-cid', id);
-    sp.appendChild(r.extractContents()); r.insertNode(sp); s.removeAllRanges();
+    if (!this.EN) return;
+    const id = 'c' + Date.now().toString(36), spans = this.EN.wrapCommentSelection(this.edRef.current, r, id);
+    if (!spans.length) return;
+    const quote = spans.map(sp => sp.textContent).join(''); s.removeAllRanges();
     const now = new Date();
-    const cm = (this.doc.comments || []).concat([{ id, mine: true, text: '', quote: sp.innerText.slice(0, 40), time: `${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` }]); // i18n-ok — matches engine.js fmtTime (shared, unconverted)
+    const cm = (this.doc.comments || []).concat([{ id, mine: true, text: '', quote: quote.slice(0, 40), time: `${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` }]); // i18n-ok — matches engine.js fmtTime (shared, unconverted)
     this.change({ html: this.edRef.current.innerHTML, comments: cm }); this.setState({ activeCid: id });
   }
   delComment(id) {
@@ -1987,6 +1994,7 @@ class Component extends DCLogic {
   }
   onCS = () => { if (this.doc.track) this.ensureIns(); };
   onBI = e => {
+    if ((e.inputType === 'historyUndo' || e.inputType === 'historyRedo') && this.props.onUndo) { e.preventDefault(); this.history(e.inputType === 'historyRedo'); return; }
     if (!this.doc.track) return;
     const t = e.inputType || '', s = window.getSelection();
     if (t === 'insertText' && e.data) {
@@ -2121,7 +2129,7 @@ class Component extends DCLogic {
     else if (ctrl && e.key === 'Enter' && !e.shiftKey && !e.altKey) { e.preventDefault(); this.onSel(); this.insertHTML('<hr data-pb="1"><p><br></p>'); } // 分页符, as Word; at the caret as it is now
     else if (ctrl && e.shiftKey && (e.key === '>' || e.key === '.')) { e.preventDefault(); this.bump(1); }
     else if (ctrl && e.shiftKey && (e.key === '<' || e.key === ',')) { e.preventDefault(); this.bump(-1); }
-    else if (ctrl && k === 'z' && !e.shiftKey && this.undoPic()) e.preventDefault();
+    else if (ctrl && (k === 'z' || k === 'y') && this.props.onUndo) { e.preventDefault(); e.stopPropagation(); this.history(k === 'y' || e.shiftKey); }
     else if (/^Arrow/.test(e.key) && !ctrl && this.selImg && this.selImg.isConnected && this.P && this.nudge(this.selImg, e.key, e.shiftKey ? 10 : 1)) e.preventDefault();
     else if ((e.key === 'Delete' || e.key === 'Backspace') && this.selShape && this.selShape.isConnected && !(this.caretEl() && this.caretEl().closest && this.caretEl().closest('.wd-shtext'))) { e.preventDefault(); const el = this.selShape; this.selectShape(null); el.remove(); this.after(); }
     else if (e.key === 'Tab') {

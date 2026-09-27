@@ -1,4 +1,5 @@
 // Shared slide kit + file import/export/print for 素笺 Office.
+import { sheetPrint } from './sheet-print.js';
 import { pictureView, picSrc } from './picture.js';
 // $t under node (this module is node-tested): falls back to the Chinese, vars filled the same way. Only for text a new
 // slide/table is created with — never for existing content, which engine.js reads from the file as it is.
@@ -491,18 +492,7 @@ export function printDoc(doc, ctx) {
     css = `@page{size:${w} ${h};margin:${marginsCm(pg.margin).map(x => +x.toFixed(2) + 'cm').join(' ')}}body{margin:0;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;color:#1D1D1F}.hd,.ft{font-size:9pt;color:#8E8E93}.ed{column-count:${pg.cols || 1};column-gap:32px}` + DOC_CSS;
     body = (doc.header ? `<div class="hd">${doc.header}</div>` : '') + `<div class="ed">${doc.html}</div>` + (doc.footer ? `<div class="ft">${doc.footer}</div>` : ''); // header html as the engine gives it
   } else if (doc.type === 'xlsx') {
-    const E = ctx.E, calc = new E.Calc(doc);
-    css = `@page{size:A4 landscape;margin:12mm}body{font-family:'Noto Sans SC',sans-serif;font-size:10pt}table{border-collapse:collapse;margin-bottom:24px}td{border:1px solid #D1D1D6;padding:4px 8px;white-space:nowrap}h2{font-size:12pt}`;
-    doc.sheets.forEach((sh, si) => {
-      const u = E.usedRange(sh); if (!u) return;
-      body += `<h2>${esc(sh.name)}</h2><table>`;
-      for (let r = u.r1; r <= u.r2; r++) {
-        body += '<tr>';
-        for (let c = u.c1; c <= u.c2; c++) { const cell = sh.cells[E.A(r, c)], s = (cell && cell.s) || {}, v = calc.value(si, r, c); body += `<td style="${s.b ? 'font-weight:700;' : ''}${s.fill ? 'background:' + s.fill + ';' : ''}${s.color ? 'color:' + s.color + ';' : ''}text-align:${s.align || (typeof v === 'number' ? 'right' : 'left')}">${esc(E.fmt(v, s))}</td>`; }
-        body += '</tr>';
-      }
-      body += '</table>';
-    });
+    ({ css, body } = sheetPrint(doc, ctx.E));
   } else {
     const th = THEMES[doc.theme] || THEMES.paper, H = slideH(doc.ratio);
     css = `@page{size:${SW * 0.6}px ${H * 0.6}px;margin:0}body{margin:0}.sl{break-after:page}` + LVL_CSS;

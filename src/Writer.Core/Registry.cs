@@ -103,6 +103,7 @@ public static class Registry
             Formats = All,
             Props =
             [
+                new("names", PropType.Json, "Workbook names mapped to ranges or formulas. Sheet-local and built-in names are preserved.") { Formats = Xlsx },
                 new("format", PropType.String, "File format.") { ReadOnly = true },
                 new("title", PropType.String, "Title in the file properties.") { Example = "Q4 Report", Formats = Office },
                 new("page", PropType.String, "Paper: A4, Letter, Legal, A3, A5, B5, or a size like 21cm x 29.7cm.") { Example = "A4", Formats = Docx },
@@ -112,6 +113,8 @@ public static class Registry
                 new("header", PropType.Html, "Default header as inline HTML, lines split by br or paragraphs as <p style=\"text-align:center\">; {page} and {pages} become page number fields; pictures and other content it cannot express read as <img data-keep> / <span data-keep> placeholders that keep them when written back; empty removes it.") { Example = "Q3 report", Formats = Docx },
                 new("footer", PropType.Html, "Default footer, as header.") { Example = "Page {page} of {pages}", Formats = Docx },
                 new("titlePg", PropType.Bool, "The first page has its own header and footer (firstHeader, firstFooter; empty unless set).") { Example = "true", Formats = Docx },
+                new("pageColor", PropType.Color, "Document page background; none removes it.") { Formats = Docx, Example = "FFF2CC" },
+                new("watermark", PropType.String, "Text watermark on every section; empty removes it.") { Formats = Docx, Example = "Draft" },
                 new("firstHeader", PropType.Html, "First-page header, shown when titlePg is true; as header.") { Example = "Cover", Formats = Docx },
                 new("firstFooter", PropType.Html, "First-page footer, shown when titlePg is true; as header.") { Example = "Draft", Formats = Docx },
                 new("lineNumbers", PropType.Bool, "Line numbers in the margin, counted through the document.") { Example = "true", Formats = Docx },
@@ -187,11 +190,15 @@ public static class Registry
             Formats = Xlsx, Parents = ["document"], Summary = true,
             Props =
             [
+                new("print", PropType.Json, "Page setup: orientation, paper (9=A4), scale, fitWidth, fitHeight, margins in inches, area, titles, header, footer and gridlines."),
+                new("visibility", PropType.Enum, "Worksheet visibility.") { Values = ["visible", "hidden", "veryHidden"] },
+                new("protected", PropType.Bool, "Protect the worksheet from ordinary edits."),
                 new("name", PropType.String, "Sheet name.") { Example = "Sales" },
                 new("range", PropType.String, "Used range, e.g. A1:F20.") { ReadOnly = true },
                 Id(Xlsx),
                 new("merges", PropType.Json, "Merged ranges as a JSON array. Writing replaces the whole list; ranges may not overlap.") { Example = "[\"A1:C1\"]" },
                 new("widths", PropType.Json, "Custom column widths in characters, column letter to width. Writing sets those columns and keeps the rest; null or \"default\" resets one.") { Example = "{\"A\":12.5,\"C\":30}" },
+                new("autoHeights", PropType.Json, "Calculated row heights in points. These remain eligible for automatic fitting."),
                 new("heights", PropType.Json, "Custom row heights in points, row number to height. Writing sets those rows and keeps the rest; null or \"default\" resets one.") { Example = "{\"3\":24}" },
                 new("freeze", PropType.String, "Top-left cell of the scrolling area: A2 freezes row 1, B1 column A, B2 both. none unfreezes.") { Example = "A2" },
                 new("gridlines", PropType.Bool, "Grid lines shown on screen; reading gives false only when the sheet hides them.") { Example = "false" },
@@ -308,6 +315,7 @@ public static class Registry
                 new("initials", PropType.String, "The author's initials, as Word shows them; empty removes them.") { Example = "AL" },
                 new("date", PropType.String, "When it was written (ISO 8601).") { Example = "2026-01-15T09:30:00Z" },
                 new("text", PropType.String, "The comment; paragraphs joined by newlines.") { Example = "Please check this figure" },
+                new("range", PropType.Json, "Exact comment range: {start: paragraph path, startOffset: character offset, end: paragraph path, endOffset: character offset}; may span paragraphs.") { Formats = Docx, Example = "{\"start\":\"/body/paragraph[1]\",\"startOffset\":0,\"end\":\"/body/paragraph[1]\",\"endOffset\":3}" },
                 new("quote", PropType.String, "Text of the paragraph the comment is attached to; the whole paragraph when omitted on add. Writing it moves the anchor.") { Example = "paragraph" },
                 new("resolved", PropType.Bool, "Marked as done.") { Example = "true" },
                 new("parent", PropType.String, "The id of the comment this one replies to (a reply added with it shares that comment's place); none makes it a comment of its own. Removing a comment removes its replies.") { Example = "0" },
@@ -478,7 +486,8 @@ public static class Registry
                 new("text", PropType.String, "Displayed value.") { ReadOnly = true, Formats = Xlsx },
                 new("value", PropType.String, "Value to store. Numbers, true/false and ISO dates are typed automatically.") { Example = "42", Formats = Xlsx },
                 new("type", PropType.Enum, "Stored type; forces a conversion when written.") { Values = ["number", "string", "bool", "date"], Example = "number", Formats = Xlsx },
-                new("formula", PropType.String, "Formula without the leading =. Results appear when the file is next recalculated.") { Example = "SUM(A1:A3)", Formats = Xlsx },
+                new("spill", PropType.String, "Anchor of a dynamic-array result cell.") { ReadOnly = true, Formats = Xlsx },
+                new("formula", PropType.String, "Formula without the leading =. Results are recalculated when saving.") { Example = "SUM(A1:A3)", Formats = Xlsx },
                 .. XlsxStyle,
                 new("link", PropType.String, "Hyperlink: a URL, or #Sheet2!A1 for a place in the workbook. Empty removes it.") { Example = "https://example.com", Formats = Xlsx },
                 new("note", PropType.String, "Comment shown when the cell is hovered. Empty removes it.") { Example = "Reviewed by Ann", Formats = Xlsx },
@@ -507,6 +516,7 @@ public static class Registry
             Formats = Docx, Parents = [],
             Props =
             [
+                new("at", PropType.Int, "Character offset in its paragraph, excluding object previews.") { Min = 0, Example = "3" },
                 new("type", PropType.Enum, "What it is.") { Values = ["chart", "smartart", "ole", "group", "canvas", "vml", "drawing"], ReadOnly = true },
                 new("width", PropType.Length, "Width on the page.") { ReadOnly = true },
                 new("height", PropType.Length, "Height on the page.") { ReadOnly = true },

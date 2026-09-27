@@ -258,7 +258,7 @@ public class XlsxTests
         Assert.Equal(("SUM(C9:F9)", "375000"), (Prop(reopened, "G9", "formula"), Prop(reopened, "G9", "value")));
         Assert.Equal(("SUM(C14:F14)", "95000"), (Prop(reopened, "G14", "formula"), Prop(reopened, "G14", "value")));
         Assert.Equal(("", "1"), (Prop(reopened, "H9", "formula"), Prop(reopened, "H9", "value")));
-        Assert.Equal(("G10/B10", "0.95"), (Prop(reopened, "H10", "formula"), Prop(reopened, "H10", "value")));
+        Assert.Equal(("G10/B10", "0.79"), (Prop(reopened, "H10", "formula"), Prop(reopened, "H10", "value")));
         Assert.Equal("SUM(B8:B14)", Prop(reopened, "B15", "formula"));
     }
 

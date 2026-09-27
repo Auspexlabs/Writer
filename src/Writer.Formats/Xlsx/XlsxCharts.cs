@@ -181,6 +181,10 @@ static class XlsxCharts
             foreach (var chart in part.DrawingsPart?.ChartParts ?? [])
                 foreach (var f in chart.ChartSpace?.Descendants<C.Formula>() ?? [])
                     f.Text = XlsxRefs.Renamed(f.Text, oldName, newName);
+        foreach (var (_, part) in doc.Sheets)
+            foreach (var formula in part.Worksheet?.Descendants<DocumentFormat.OpenXml.Spreadsheet.CellFormula>() ?? [])
+                if (formula.Text.Length > 0) formula.Text = XlsxRefs.Renamed(formula.Text, oldName, newName);
+        doc.RecalculateOnLoad();
         foreach (var name in doc.Workbook.Workbook!.DefinedNames?.Elements<DefinedName>() ?? [])
             name.Text = XlsxRefs.Renamed(name.Text, oldName, newName);
     }

@@ -44,6 +44,8 @@ sealed class DocxRoot(DocxDocument doc) : Node
     {
         switch (name)
         {
+            case "watermark": DocxSection.SetWatermark(doc, value); break;
+            case "pageColor": DocxSection.SetPageColor(doc, value); break;
             case "title": doc.Package.PackageProperties.Title = value.Length > 0 ? value : null; break;
             case "style": DocxStyleGallery.Define(doc, value); break;
             case "page": DocxSection.SetPage(doc, value); break;

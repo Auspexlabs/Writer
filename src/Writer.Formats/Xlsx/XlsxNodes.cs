@@ -18,6 +18,7 @@ sealed class XlsxRoot(XlsxDocument doc) : Node
     public override IReadOnlyDictionary<string, string> GetProps()
     {
         var props = new Dictionary<string, string> { ["format"] = "xlsx", ["sheets"] = doc.Sheets.Count.ToString(CultureInfo.InvariantCulture) };
+        props["names"] = XlsxBookFeatures.Names(doc);
         if (doc.Package.PackageProperties.Title is { Length: > 0 } title) props["title"] = title;
         var (font, size) = doc.Styles.Normal;
         if (font is not null) props["font"] = font;
@@ -27,6 +28,7 @@ sealed class XlsxRoot(XlsxDocument doc) : Node
 
     public override void SetProp(string name, string value)
     {
+        if (name == "names") { XlsxBookFeatures.SetNames(doc, value); return; }
         if (name == "title") doc.Package.PackageProperties.Title = value.Length > 0 ? value : null;
     }
 
@@ -62,6 +64,29 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
         return _masters.GetValueOrDefault(si);
     }
 
+    List<(string Address, int C1, int R1, int C2, int R2)>? _arrays;
+    internal string? ArrayOwner(int col, int row)
+    {
+        _arrays ??= Data.Descendants<CellFormula>().Where(f => f.FormulaType?.InnerText == "array" && f.Reference?.Value is not null && f.Parent is Cell).Select(f =>
+        {
+            var box = XlsxCells.ParseRange(f.Reference!.Value!);
+            return (((Cell)f.Parent!).CellReference!.Value!, box.Col1, box.Row1, box.Col2, box.Row2);
+        }).ToList();
+        foreach (var a in _arrays) if (col >= a.C1 && col <= a.C2 && row >= a.R1 && row <= a.R2 && XlsxCells.Reference(col, row) != a.Address) return a.Address;
+        return null;
+    }
+    internal void ClearArray(Cell cell)
+    {
+        if (cell.CellFormula?.FormulaType?.InnerText != "array" || cell.CellFormula.Reference?.Value is not { } reference) return;
+        var (c1, r1, c2, r2) = XlsxCells.ParseRange(reference);
+        foreach (var child in Data.Elements<Row>().Where(r => r.RowIndex?.Value >= r1 && r.RowIndex?.Value <= r2).SelectMany(r => r.Elements<Cell>()))
+        {
+            var (c, _) = XlsxCells.Position(child);
+            if (c < c1 || c > c2 || ReferenceEquals(child, cell) || child.CellFormula is not null) continue;
+            child.CellValue = null; child.DataType = null;
+        }
+        _arrays = null;
+    }
     internal void ForgetShared() => _masters = null;
 
     protected override IEnumerable<Node> ProjectChildren() =>
@@ -74,9 +99,11 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
             .Select(XlsxCells.Position).ToList();
         if (cells.Count > 0)
             props["range"] = XlsxCells.Reference(cells.Min(c => c.Col), cells.Min(c => c.Row)) + ":" + XlsxCells.Reference(cells.Max(c => c.Col), cells.Max(c => c.Row));
+        props["print"] = XlsxBookFeatures.Print(doc, this);
         if (sheet.SheetId?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
         if (XlsxLayout.Merges(Ws) is { } merges) props["merges"] = merges;
         if (XlsxLayout.Widths(Ws) is { } widths) props["widths"] = widths;
+        if (XlsxLayout.Heights(Data, true) is { } autoHeights) props["autoHeights"] = autoHeights;
         if (XlsxLayout.Heights(Data) is { } heights) props["heights"] = heights;
         if (XlsxLayout.Freeze(Ws) is { } freeze) props["freeze"] = freeze;
         if (XlsxLayout.Gridlines(Ws) is { } gridlines) props["gridlines"] = gridlines;
@@ -86,6 +113,8 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
         if (XlsxRules.Validations(Ws) is { } validations) props["validations"] = validations;
         if (XlsxRules.Hidden(Ws) is { } hidden) props["hidden"] = hidden;
         if (XlsxRules.TabColor(Ws, doc.Styles) is { } color) props["color"] = color;
+        props["visibility"] = sheet.State?.InnerText ?? "visible";
+        props["protected"] = (Ws.GetFirstChild<SheetProtection>()?.Sheet?.Value == true).ToString().ToLowerInvariant();
         return props;
     }
 
@@ -112,8 +141,15 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
                 sheet.Name = XlsxDocument.ValidName(value);
                 if (sheet.Name.Value != old) XlsxCharts.RenameSheet(doc, old, sheet.Name.Value!);
                 break;
+            case "print": XlsxBookFeatures.SetPrint(doc, this, value); break;
+            case "protected": XlsxBookFeatures.SetProtection(Ws, value); break;
+            case "visibility":
+                if (value != "visible" && doc.Sheets.Count(s => s.Sheet.State is null || s.Sheet.State.Value == SheetStateValues.Visible) <= 1 && (sheet.State is null || sheet.State.Value == SheetStateValues.Visible)) throw new WriterException(ErrorCode.Validation, "At least one worksheet must stay visible", "Unhide another worksheet first.");
+                sheet.State = value == "hidden" ? SheetStateValues.Hidden : value == "veryHidden" ? SheetStateValues.VeryHidden : SheetStateValues.Visible;
+                break;
             case "merges": XlsxLayout.SetMerges(Ws, value); break;
             case "widths": XlsxLayout.SetWidths(Ws, value); break;
+            case "autoHeights": XlsxLayout.SetHeights(Data, value, true); break;
             case "heights": XlsxLayout.SetHeights(Data, value); break;
             case "freeze": XlsxLayout.SetFreeze(Ws, value); break;
             case "gridlines": XlsxLayout.SetGridlines(Ws, value); break;
@@ -230,6 +266,7 @@ sealed class XlsxRow(XlsxDocument doc, XlsxSheet sheet, int index, Row? hint = n
     public override void SetRaw(string raw)
     {
         RawXml.Replace(Current ?? XlsxCells.GetOrCreateRow(sheet.Data, index), raw, doc.Namespaces);
+        doc.RecalculateOnLoad();
         sheet.ForgetShared();
     }
 
@@ -237,6 +274,7 @@ sealed class XlsxRow(XlsxDocument doc, XlsxSheet sheet, int index, Row? hint = n
     {
         foreach (var cell in Current?.Elements<Cell>().Where(c => c.CellFormula is not null).ToList() ?? []) XlsxCells.Unshare(sheet, cell);
         Current?.Remove();
+        doc.RecalculateOnLoad();
     }
 }
 
@@ -268,6 +306,7 @@ sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row, Cell?
         {
             if (XlsxCells.TypeOf(doc, cell) is { } type) props["type"] = type;
             if (XlsxCells.Formula(sheet, cell) is { Length: > 0 } formula) props["formula"] = formula;
+            else if (sheet.ArrayOwner(col, row) is { } owner) props["spill"] = owner;
             doc.Styles.Read(cell, props);
         }
         if (XlsxNotes.Link(Part, Key) is { } link) props["link"] = link;
@@ -284,7 +323,7 @@ sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row, Cell?
                 _written = value;
                 XlsxCells.SetValue(doc, sheet, cell, value);
                 break;
-            case "type": XlsxCells.SetTyped(doc, sheet, cell, value, _written ?? XlsxCells.Display(doc, cell)); break;
+            case "type": XlsxCells.SetTyped(doc, sheet, cell, value, _written ?? XlsxCells.Display(doc, cell)); doc.RecalculateOnLoad(sheet.SheetName, Key); break;
             case "formula": XlsxCells.SetFormula(doc, sheet, cell, value); break;
             case "link": XlsxNotes.SetLink(Part, Key, value); break;
             case "note": XlsxNotes.SetNote(Part, Key, value); break;
@@ -308,6 +347,7 @@ sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row, Cell?
     public override void SetRaw(string raw)
     {
         RawXml.Replace(Ensure(), raw, doc.Namespaces);
+        doc.RecalculateOnLoad(sheet.SheetName, Key);
         sheet.ForgetShared();
     }
 
@@ -316,7 +356,9 @@ sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row, Cell?
         if (Current is { } cell)
         {
             XlsxCells.Unshare(sheet, cell);
+            sheet.ClearArray(cell);
             cell.Remove();
+            doc.RecalculateOnLoad(sheet.SheetName, Key);
         }
         XlsxNotes.RemoveLink(Part, Key);
         XlsxNotes.RemoveNote(Part, Key);

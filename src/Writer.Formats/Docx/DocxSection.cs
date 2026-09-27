@@ -28,6 +28,7 @@ static partial class DocxSection
         var section = doc.Main.Document!.Body!.GetFirstChild<W.SectionProperties>();
         if (section is null) return;
         ReadPage(section, props);
+        ReadDecorations(doc, props);
         foreach (var (name, header, first) in Slots)
             if (Part(doc, section, header, first) is { } part && Html(doc, part) is { Length: > 0 } html) props[name] = html;
         if (DocxRun.On(section.GetFirstChild<W.TitlePage>())) props["titlePg"] = "true";
@@ -131,9 +132,11 @@ static partial class DocxSection
     /// <summary>titlePg: the first page shows the first-page header and footer (empty when there are none).</summary>
     public static void SetTitlePage(DocxDocument doc, bool on)
     {
-        var section = Section(doc);
-        section.RemoveAllChildren<W.TitlePage>();
-        if (on) section.AddChild(new W.TitlePage());
+        foreach (var section in Sections(doc))
+        {
+            section.RemoveAllChildren<W.TitlePage>();
+            if (on) section.AddChild(new W.TitlePage());
+        }
     }
 
     static bool Near(long a, long b) => Math.Abs(a - b) <= 20;
@@ -262,7 +265,7 @@ static partial class DocxSection
         if (container is null) return "";
         var lines = new List<(string? Align, string Html)>();
         var keep = 0;
-        foreach (var p in container.Elements<W.Paragraph>())
+        foreach (var p in container.Elements<W.Paragraph>().Where(p => !WatermarkParagraph(p)))
         {
             var html = new StringBuilder();
             var runs = new List<RunSpec>();
@@ -353,12 +356,22 @@ static partial class DocxSection
 
     /// <summary>Replaces a header (or footer) with the given html; empty removes it. Its paragraphs are rewritten in place, so their
     /// styles and borders stay, and tables and what the html shows as placeholders are kept.</summary>
+    static List<W.SectionProperties> Sections(DocxDocument doc)
+    {
+        _ = Section(doc);
+        return doc.Main.Document!.Body!.Descendants<W.SectionProperties>().ToList();
+    }
+
     public static void SetHeaderFooter(DocxDocument doc, bool header, bool first, string html)
     {
-        var section = Section(doc);
+        foreach (var section in Sections(doc)) SetHeaderFooter(doc, section, header, first, html);
+    }
+
+    static void SetHeaderFooter(DocxDocument doc, W.SectionProperties section, bool header, bool first, string html)
+    {
         var main = doc.Main;
         var part = Part(doc, section, header, first);
-        if (html.Trim().Length == 0)
+        if (html.Trim().Length == 0 && !(part is HeaderPart watermarkPart && watermarkPart.Header?.Elements<W.Paragraph>().Any(WatermarkParagraph) == true))
         {
             if (Reference(section, header, first) is not { } reference) return;
             var id = reference.Id?.Value;
@@ -373,9 +386,9 @@ static partial class DocxSection
             AddReference(section, header ? new W.HeaderReference { Type = type, Id = main.GetIdOfPart(part) } : new W.FooterReference { Type = type, Id = main.GetIdOfPart(part) });
         }
         OpenXmlCompositeElement container = part is HeaderPart hp ? hp.Header ??= new W.Header() : ((FooterPart)part).Footer ??= new W.Footer();
-        var kept = container.Elements<W.Paragraph>().SelectMany(p => Items(doc, p)).Where(x => x.Keep is not null).Select(x => x.Keep!).ToList();
+        var kept = container.Elements<W.Paragraph>().Where(p => !WatermarkParagraph(p)).SelectMany(p => Items(doc, p)).Where(x => x.Keep is not null).Select(x => x.Keep!).ToList();
         var used = new HashSet<int>();
-        var slots = container.Elements<W.Paragraph>().ToList();
+        var slots = container.Elements<W.Paragraph>().Where(p => !WatermarkParagraph(p)).ToList();
         var lines = Lines(html);
         W.Paragraph? last = null;
         for (var i = 0; i < lines.Count; i++)

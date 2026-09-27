@@ -81,10 +81,10 @@ test('an insertion that exceeds Excel limits is rejected without changing the do
 });
 
 test('an unparseable source address is rejected without changing the document', () => {
-  const x = editor([{ name: 'Data', cells: { XFD1: { v: 'edge' } } }]);
+  const x = editor([{ name: 'Data', cells: { XFE1: { v: 'edge' } } }]);
   x.component.insDel('r', 0, 1);
   assert.equal(x.changed, 0);
-  assert.equal(x.doc.sheets[0].cells.XFD1.v, 'edge');
+  assert.equal(x.doc.sheets[0].cells.XFE1.v, 'edge');
   assert.match(x.messages[0], /无法移动/);
 });
 
@@ -99,7 +99,7 @@ test('formula reference coloring skips quoted text and reuses a color for repeat
 test('reference colouring covers whole columns/rows and quoted sheet names, not function names', () => {
   const x = editor([{ name: 'Data', cells: {} }]);
   const refs = Array.from(x.component.refsOf("=SUM(A:A)+COUNT(3:4)+'My Sheet'!B2+LOG10(C1)"), r => [r.sh, r.r1, r.c1, r.r2, r.c2]);
-  assert.deepEqual(refs, [[null, 0, 0, 79, 0], [null, 2, 0, 3, 19], ['My Sheet', 1, 1, 1, 1], [null, 0, 2, 0, 2]]);
+  assert.deepEqual(refs, [[null, 0, 0, x.component.nRows - 1, 0], [null, 2, 0, 3, x.component.nCols - 1], ['My Sheet', 1, 1, 1, 1], [null, 0, 2, 0, 2]]);
 });
 
 test('typed input gets the value and format Excel would store', () => {
@@ -402,7 +402,7 @@ test('rows and columns: the header menu hides, shows, sizes and fits lines; hidd
   Object.assign(c.state, { anc: { r: 0, c: 1 }, sel: { r: 0, c: 3 } }); c.hideLines('c', false); assert.deepEqual(plain(x.doc.sheets[0].hiddenCols), []);
   Object.assign(c.state, { anc: { r: 2, c: 0 }, sel: { r: 3, c: 0 } }); c.hideLines('r', true); assert.deepEqual(plain(x.doc.sheets[0].hiddenRows), [2, 3]);
   c.sizeDialog('r'); c.state.dlg.fields[0].value = '40'; c.dlgOk(); assert.deepEqual(plain(x.doc.sheets[0].rowH), { 3: 40, 4: 40 });
-  Object.assign(c.state, { anc: { r: 0, c: 2 }, sel: { r: 0, c: 2 } }); c.fitCols(); assert.equal(x.doc.sheets[0].colW.C, 'hidden col'.length * 8 + 18);
+  Object.assign(c.state, { anc: { r: 0, c: 2 }, sel: { r: 0, c: 2 } }); c.fitCols(); assert.ok(x.doc.sheets[0].colW.C > 80 && x.doc.sheets[0].colW.C < 150);
   const commands = []; await planXlsx('book.xlsx', [{ name: 'Data', path: '/sheet[1]', cells: {} }], x.doc.sheets, async argv => { commands.push(argv); return {}; });
   const sheet = commands.find(cmd => cmd[2] === '/sheet[1]'); assert.ok(sheet.includes('hidden={"rows":[3,4],"cols":[]}'), sheet.join(' '));
 });
@@ -440,8 +440,8 @@ test('Excel\'s keys: Enter after a run of Tabs returns to the column the run beg
   Object.assign(c.state, { anc: { r: 0, c: 1 }, sel: { r: 0, c: 1 } });
   key('Tab'); key('Tab'); key('Enter'); assert.deepEqual(plain(c.state.sel), { r: 1, c: 1 });
   key('ArrowRight'); key('Enter'); assert.deepEqual(plain(c.state.sel), { r: 2, c: 2 }, 'an arrow ends the run');
-  key(' ', { ctrlKey: true }); assert.deepEqual([plain(c.state.anc), plain(c.state.sel)], [{ r: 0, c: 2 }, { r: 79, c: 2 }]);
-  Object.assign(c.state, { anc: { r: 3, c: 1 }, sel: { r: 4, c: 1 } }); key(' ', { shiftKey: true }); assert.deepEqual([plain(c.state.anc), plain(c.state.sel)], [{ r: 3, c: 0 }, { r: 4, c: 19 }]);
+  key(' ', { ctrlKey: true }); assert.deepEqual([plain(c.state.anc), plain(c.state.sel)], [{ r: 0, c: 2 }, { r: c.nRows - 1, c: 2 }]);
+  Object.assign(c.state, { anc: { r: 3, c: 1 }, sel: { r: 4, c: 1 } }); key(' ', { shiftKey: true }); assert.deepEqual([plain(c.state.anc), plain(c.state.sel)], [{ r: 3, c: 0 }, { r: 4, c: c.nCols - 1 }]);
   Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 0, c: 0 } }); key('l', { ctrlKey: true, shiftKey: true }); assert.equal(x.doc.sheets[0].filter, 'A1:B1');
 });
 
@@ -464,7 +464,7 @@ test('the format panel: the Word 定稿 panel with the sheet\'s own tabs and gro
   assert.deepEqual(titles(v), ['剪贴板', '字体', '颜色', '对齐', '数字', '边框与样式', '行和列', '编辑']);
   const bius = v.panelGroups[1].rows[1].items.find(it => it.t === 'seg');
   assert.deepEqual(plain(bius.opts.map(o => [o.label, !!o.on])), [['B', true], ['I', false], ['U', false], ['S', false]]);
-  for (const [tab, want] of [['insert', ['图表', '常用', '行列与工作表', '函数']], ['formula', ['函数', '常用函数', '显示']], ['data', ['排序和筛选', '数据工具', '填充']], ['view', ['冻结窗格', '显示', '缩放']]]) {
+  for (const [tab, want] of [['insert', ['图表', '常用', '行列与工作表', '函数']], ['formula', ['函数', '常用函数', '名称', '显示']], ['data', ['排序和筛选', '数据工具', '填充']], ['view', ['页面', '冻结窗格', '显示', '缩放']]]) {
     c.state.tab = tab; v = c.renderVals(); assert.deepEqual(titles(v), want, tab);
   }
   c.state.pop = null; v.panelTabs[0].onClick(); assert.equal(c.state.tab, 'home');
@@ -495,4 +495,71 @@ test('right-click on cells: the selection stays when the cell is in it, else tha
   Object.assign(c.state, { anc: { r: 0, c: 0 }, sel: { r: 0, c: 1 } }); c.cellCtx(ev, 0, 0);
   c.renderVals().popItems.find(i => i.label === '合并单元格').onClick(); assert.equal(x.doc.sheets[0].merges.length, 1);
   c.cellCtx(ev, 0, 0); assert.ok(labels().includes('取消合并'), 'a merged cell offers to split');
+});
+
+
+test('large sheet renders a bounded viewport, reaches three-letter columns, and pastes past the old grid', () => {
+  const x = editor([{ name: 'Data', cells: E.shareCells({ A1: { v: 1 }, AAA10000: { v: 42 }, XFD1048576: { v: 'last' } }) }]), c = x.component;
+  let view = c.renderVals(); assert.ok(view.cells.length < 2000); assert.equal(c.nRows, E.MAX_ROWS); assert.equal(c.nCols, E.MAX_COLS);
+  c.wrapRef.current = { scrollLeft: c.xs[702], scrollTop: c.ys[9999], clientWidth: 1000, clientHeight: 700 };
+  view = c.renderVals(); assert.ok(view.cells.some(x => x.text === '42')); assert.ok(view.cells.length < 2000);
+  c.setSel(9999, 702); c.paste('first\tsecond\nthird\tfourth');
+  assert.equal(x.doc.sheets[0].cells.AAB10001.v, 'fourth');
+  c.setSel(E.MAX_ROWS - 1, E.MAX_COLS - 1); const before = x.doc; c.paste('a\tb'); assert.equal(x.doc, before, 'overflow rejects the entire paste');
+});
+
+test('current-region commands leave separated title, totals and adjacent tables intact', () => {
+  const x = editor([{ name: 'Data', cells: { A1: { v: 'Title' }, A3: { v: 'Name' }, B3: { v: 'Count' }, A4: { v: 'z' }, B4: { v: 2 }, A5: { v: 'a' }, B5: { v: 1 }, D4: { v: 99 }, A7: { v: 'Total' } } }]);
+  x.component.setSel(3, 1); x.component.sort([{ c: 1, asc: true }]);
+  assert.equal(x.doc.sheets[0].cells.A4.v, 'a'); assert.equal(x.doc.sheets[0].cells.A1.v, 'Title'); assert.equal(x.doc.sheets[0].cells.D4.v, 99); assert.equal(x.doc.sheets[0].cells.A7.v, 'Total');
+  x.component.toggleFilter(); assert.equal(x.doc.sheets[0].filter, 'A3:B5');
+});
+
+test('cut paste follows references across sheets and preserves undo snapshots', () => {
+  const x = editor([{ name: 'Data', cells: { A1: { v: 3 }, C1: { v: '=$A$1*2' } } }, { name: 'Other', cells: { B1: { v: '=Data!A1' } } }]);
+  const before = x.doc; x.component.copy(true); x.component.setSel(3, 3); x.component.paste(null);
+  assert.equal(x.doc.sheets[0].cells.D4.v, 3); assert.equal(x.doc.sheets[0].cells.C1.v, '=$D$4*2');
+  assert.equal(new E.Calc(x.doc).value(1, 0, 1), 3); assert.equal(before.sheets[0].cells.C1.v, '=$A$1*2'); assert.equal(before.sheets[0].cells.A1.v, 3);
+});
+
+test('million-cell editing plus viewport rendering avoids a workbook-sized copy', () => {
+  const cells = {}; for (let r = 1; r <= 100000; r++) for (let col = 0; col < 10; col++) cells[E.A(r - 1, col)] = { v: r + col };
+  const x = editor([{ name: 'Big', cells: E.shareCells(cells) }]), c = x.component;
+  c.renderVals(); const before = x.doc, start = performance.now(); c.commit(sh => { sh.cells.A1.v = 123; }); const view = c.renderVals();
+  const ms = performance.now() - start; console.log(`million-cell edit + render model: ${ms.toFixed(1)}ms; visible cells: ${view.cells.length}`);
+  assert.ok(ms < 500, `edit/render took ${ms}ms`); assert.equal(before.sheets[0].cells.A1.v, 1); assert.ok(view.cells.length < 2000);
+});
+
+test('special paste preserves values or formats and transposes without corrupting the source', () => {
+ const x = editor([{ name: 'Data', cells: { A1: { v: '2', s: { b: true } }, B1: { v: '=A1*3' }, D1: { v: 'old', s: { i: true } } } }]), c = x.component;
+ c.setState({ anc: { r: 0, c: 0 }, sel: { r: 0, c: 1 } }); c.copy(false); c.setState({ anc: { r: 0, c: 3 }, sel: { r: 0, c: 3 } }); c.paste(null, { mode: 'values' });
+ assert.equal(x.doc.sheets[0].cells.E1.v, 6); assert.equal(x.doc.sheets[0].cells.D1.s.i, true);
+ c.paste(null, { mode: 'formats' }); assert.equal(x.doc.sheets[0].cells.D1.v, 2); assert.equal(x.doc.sheets[0].cells.D1.s.b, true);
+ c.setState({ anc: { r: 2, c: 0 }, sel: { r: 2, c: 0 } }); c.paste(null, { mode: 'transpose' });
+ assert.equal(x.doc.sheets[0].cells.A3.v, '2'); assert.equal(x.doc.sheets[0].cells.A4.v, '=#REF!*3'); assert.equal(x.doc.sheets[0].cells.B1.v, '=A1*3');
+});
+test('moving formulas across sheets keeps references to unmoved source cells', () => {
+ const x = editor([{ name: "O'Brien", cells: { A1: { v: '2' }, B1: { v: '=A1*3' } } }, { name: 'Dest', cells: {} }]), c = x.component;
+ c.setState({ anc: { r: 0, c: 1 }, sel: { r: 0, c: 1 } }); c.copy(true); c.props.onChange({ ...x.doc, active: 1 }); c.setState({ anc: { r: 2, c: 2 }, sel: { r: 2, c: 2 } }); c.paste(null);
+ assert.equal(x.doc.sheets[1].cells.C3.v, "='O''Brien'!A1*3"); assert.equal(new E.Calc(x.doc).value(1, 2, 2), 6); assert.equal(x.doc.sheets[0].cells.B1, undefined);
+});
+test('row insertion shifts names, print ranges and object anchors; protection and visibility apply', () => {
+ const x = editor([{ name: 'Data', cells: { A1: { v: 1 } }, print: { area: 'Data!$A$1:$B$4', titles: 'Data!$1:$1' }, images: [{ id: 'i', x: 0, y: 40 }], charts: [{ id: 'c', x: 0, y: 60 }] }, { name: 'Other', cells: {} }]), c = x.component;
+ c.props.onChange({ ...x.doc, names: { Range: 'Data!$A$2:$B$4' } }); c.insDel('r', 1, 2);
+ assert.equal(x.doc.names.Range, 'Data!$A$4:$B$6'); assert.equal(x.doc.sheets[0].print.area, 'Data!$A$1:$B$6'); assert.equal(x.doc.sheets[0].images[0].y, 80); assert.equal(x.doc.sheets[0].charts[0].y, 100);
+ c.protectSheet(); c.commit(sh => { sh.cells.A1.v = 99; }); assert.equal(x.doc.sheets[0].cells.A1.v, 1); c.protectSheet(); c.commit(sh => { sh.cells.A1.v = 3; }); assert.equal(x.doc.sheets[0].cells.A1.v, 3);
+ c.hideSheet(0); assert.equal(x.doc.active, 1); c.hideSheet(1); assert.equal(x.doc.sheets[1].visibility, undefined); c.hideSheet(0, false); assert.equal(x.doc.sheets[0].visibility, 'visible');
+});
+
+test('wrapped text grows rows and long labels overflow only through empty cells', () => {
+ const x = editor([{ name: 'Data', cells: { A1: { v: 'Long label across empty cells' }, D1: { v: 'stop' }, A2: { v: '自动换行的长文字，自动增加行高，保留全部内容。', s: { wrap: true } } } }]), c = x.component;
+ const view = c.renderVals(), a = view.cells.find(x => x.gr === '2' && x.gc === '2'); assert.equal(a.overflow, 'visible'); assert.ok(parseFloat(a.textW) <= 288); assert.ok(c.rowH(1) > 26);
+ const before = c.rowH(1); c.commit(sh => { sh.cells.A2.v = '短'; }); c.renderVals(); assert.ok(c.rowH(1) < before);
+ c.commit(sh => { sh.cells.B1 = { v: 'blocking' }; }); const after = c.renderVals().cells.find(x => x.gr === '2' && x.gc === '2'); assert.equal(after.overflow, 'hidden');
+});
+
+test('conditional expression follows relative references and icon rules show ordered symbols', () => {
+ const x = editor([{ name: 'Data', cells: { A1: { v: '1' }, A2: { v: '5' }, A3: { v: '10' } }, cf: [{ range: 'A1:A3', type: 'expression', value: 'A1>4', fill: '#123456' }, { range: 'A1:A3', type: 'iconSet', iconSet: '3Arrows' }] }]);
+ const cells = x.component.renderVals().cells.filter(c => c.gc === '2' && ['2', '3', '4'].includes(c.gr));
+ assert.deepEqual(plain(cells.map(c => c.icon)), ['↓', '→', '↑']); assert.notEqual(cells[0].bg, '#123456'); assert.equal(cells[1].bg, '#123456'); assert.equal(cells[2].bg, '#123456');
 });

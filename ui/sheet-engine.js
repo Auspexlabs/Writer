@@ -1,10 +1,15 @@
+export { textWidth, autoRowHeights } from './sheet-layout.js';
+export { readTSV, writeTSV, readTableHTML } from './sheet-clipboard.js';
+import { cellStats, isSpillFormula } from './sheet-model.js';
+export { MAX_ROWS, MAX_COLS, axisCoordinates, gridWindow } from './sheet-grid.js';
+export { editWorkbook, cloneWorkbook, changedCellKeys, shareCells, cloneValue, cellStats } from './sheet-model.js';
 // Spreadsheet formula engine: tokenizer, parser, evaluator, formatting, ref shifting.
 // Values: number | string | boolean | '' (empty) | {err} (error) | {range: rows[][]} (range or array result).
 export const NC = 20, NR = 80;
 export const colName = c => { let s = ''; c++; while (c > 0) { const m = (c - 1) % 26; s = String.fromCharCode(65 + m) + s; c = Math.floor((c - 1) / 26); } return s; };
 export const colIdx = s => { let n = 0; for (const ch of s.toUpperCase()) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
 export const A = (r, c) => colName(c) + (r + 1);
-export const parseA = a => { const m = /^\$?([A-Z]{1,2})\$?(\d+)$/i.exec(a); return m ? { r: +m[2] - 1, c: colIdx(m[1]) } : null; };
+export const parseA = a => { const m = /^\$?([A-Z]{1,3})\$?(\d+)$/i.exec(a); return m && +m[2] >= 1 && +m[2] <= 1048576 && colIdx(m[1]) < 16384 ? { r: +m[2] - 1, c: colIdx(m[1]) } : null; };
 export const isErr = v => !!v && typeof v === 'object' && 'err' in v;
 class FErr { constructor(e) { this.e = e; } }
 const fail = e => { throw new FErr(e); };
@@ -14,10 +19,10 @@ const MAXCELLS = 1e6; // ponytail: hard cap on range size, sparse ranges if some
 
 // ---- tokenizer / parser ----
 // A reference: optional sheet prefix, then A1 / A1:B2 / A:C (whole columns) / 3:5 (whole rows), $ allowed.
-const SHEET = "(?:(?:'[^']+'|[A-Za-z_\\u4e00-\\u9fa5][\\w\\u4e00-\\u9fa5]*)!)?";
-const REFSRC = SHEET + '(?:\\$?[A-Za-z]{1,2}\\$?\\d+(?::\\$?[A-Za-z]{1,2}\\$?\\d+)?|\\$?[A-Za-z]{1,2}:\\$?[A-Za-z]{1,2}|\\$?\\d+:\\$?\\d+)';
+const SHEET = "(?:(?:'(?:[^']|'')+'|[A-Za-z_\\u4e00-\\u9fa5][\\w\\u4e00-\\u9fa5]*)!)?";
+const REFSRC = SHEET + '(?:\\$?[A-Za-z]{1,3}\\$?\\d+(?::\\$?[A-Za-z]{1,3}\\$?\\d+)?|\\$?[A-Za-z]{1,3}:\\$?[A-Za-z]{1,3}|\\$?\\d+:\\$?\\d+)';
 const REFSTR = new RegExp('^' + REFSRC + '$', 'i');
-const TK = new RegExp('\\s*(?:(' + REFSRC + ')(?![\\w(])|(\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?|\\.\\d+(?:[eE][+-]?\\d+)?)|("(?:[^"]|"")*")|(#N\\/A|#DIV\\/0!|#VALUE!|#REF!|#NAME\\?|#NUM!|#NULL!|#SPILL!|#CALC!)|([A-Za-z_][\\w.]*)(?=\\s*\\()|(TRUE|FALSE)\\b|([A-Za-z_][\\w.]*)|(<=|>=|<>|[-+*/^&=<>%(),{};]))', 'iy');
+const TK = new RegExp('\\s*(?:(' + REFSRC + ')(?![\\w(])|(\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?|\\.\\d+(?:[eE][+-]?\\d+)?)|("(?:[^"]|"")*")|(#N\\/A|#DIV\\/0!|#VALUE!|#REF!|#NAME\\?|#NUM!|#NULL!|#SPILL!|#CALC!)|([A-Za-z_][\\w.]*)(?=\\s*\\()|(TRUE|FALSE)\\b|([A-Za-z_一-龥][\\w.一-龥]*)|(<=|>=|<>|[-+*/^&=<>%(),{};#]))', 'iy');
 function tokenize(s) {
   if (/[:!]\s*#REF!|#REF!\s*:/.test(s)) fail(E.REF);
   const out = []; let i = 0;
@@ -38,11 +43,11 @@ function tokenize(s) {
 // Whole-column ranges carry r2 = null, whole-row ranges c2 = null; Calc resolves them against the used range.
 function refNode(s) {
   let sh = null; const i = s.lastIndexOf('!');
-  if (i >= 0) { sh = s.slice(0, i).replace(/^'|'$/g, ''); s = s.slice(i + 1); }
+  if (i >= 0) { sh = s.slice(0, i).replace(/^'|'$/g, '').replace(/''/g, "'"); s = s.slice(i + 1); }
   const [a, b] = s.split(':');
   if (b === undefined) { const p = parseA(a); if (!p) fail(E.REF); return { t: 'ref', sh, r: p.r, c: p.c }; }
   let m;
-  if ((m = /^\$?([A-Za-z]{1,2})$/.exec(a))) { const c1 = colIdx(m[1]), c2 = colIdx(b.replace('$', '')); return { t: 'rng', sh, r1: 0, c1: Math.min(c1, c2), r2: null, c2: Math.max(c1, c2) }; }
+  if ((m = /^\$?([A-Za-z]{1,3})$/.exec(a))) { const c1 = colIdx(m[1]), c2 = colIdx(b.replace('$', '')); return { t: 'rng', sh, r1: 0, c1: Math.min(c1, c2), r2: null, c2: Math.max(c1, c2) }; }
   if ((m = /^\$?(\d+)$/.exec(a))) { const r1 = +m[1] - 1, r2 = +b.replace('$', '') - 1; return { t: 'rng', sh, r1: Math.min(r1, r2), c1: 0, r2: Math.max(r1, r2), c2: null }; }
   const p1 = parseA(a), p2 = parseA(b); if (!p1 || !p2) fail(E.REF);
   return { t: 'rng', sh, r1: Math.min(p1.r, p2.r), c1: Math.min(p1.c, p2.c), r2: Math.max(p1.r, p2.r), c2: Math.max(p1.c, p2.c) };
@@ -56,7 +61,7 @@ function parse(src) {
   const add = () => { let a = mul(); while (isOp('+') || isOp('-')) { const op = next().v; a = { t: 'op', op, a, b: mul() }; } return a; };
   const mul = () => { let a = pw(); while (isOp('*') || isOp('/')) { const op = next().v; a = { t: 'op', op, a, b: pw() }; } return a; };
   const pw = () => { let a = un(); while (isOp('^')) { next(); a = { t: 'op', op: '^', a, b: un() }; } return a; };
-  const un = () => { if (isOp('-')) { next(); return { t: 'neg', a: un() }; } if (isOp('+')) { next(); return un(); } let a = prim(); while (isOp('%')) { next(); a = { t: 'pct', a }; } return a; };
+  const un = () => { if (isOp('-')) { next(); return { t: 'neg', a: un() }; } if (isOp('+')) { next(); return un(); } let a = prim(); while (isOp('%') || isOp('#')) { const op = next().v; a = { t: op === '%' ? 'pct' : 'spill', a }; } return a; };
   const prim = () => {
     const k = next(); if (!k) fail(E.VALUE);
     if (k.t === 'n' || k.t === 's' || k.t === 'b') return { t: k.t, v: k.v };
@@ -66,7 +71,7 @@ function parse(src) {
     if (k.t === 'fn') {
       if (!isOp('(')) fail(E.NAME); next(); const args = [];
       if (!isOp(')')) { const arg = () => args.push(isOp(',') || isOp(')') ? { t: 'empty' } : cmp()); arg(); while (isOp(',')) { next(); arg(); } }
-      if (!isOp(')')) fail(E.VALUE); next(); return { t: 'fn', name: k.v, args };
+      if (!isOp(')')) fail(E.VALUE); next(); return { t: 'fn', name: k.v.replace(/^_xlfn\./i, '').replace(/^_xlws\./i, ''), args };
     }
     if (k.t === 'op' && k.v === '(') { const e = cmp(); if (!isOp(')')) fail(E.VALUE); next(); return e; }
     if (k.t === 'op' && k.v === '{') { // array constant {1,2;3,4}: "," separates columns, ";" rows
@@ -857,6 +862,67 @@ Object.assign(FN, {
   }, 3),
   DELTA: S((a, b) => P15(num(a)) === P15(oNum(b, 0)) ? 1 : 0, 1),
 });
+// Common mathematical, array, database and text functions share the evaluator used by every host.
+for (const [name, fn] of Object.entries({ SIN: Math.sin, COS: Math.cos, TAN: Math.tan, ASIN: Math.asin, ACOS: Math.acos, ATAN: Math.atan, SINH: Math.sinh, COSH: Math.cosh, TANH: Math.tanh, ASINH: Math.asinh, ACOSH: Math.acosh, ATANH: Math.atanh })) FN[name] = S(x => { const v = fn(num(x)); if (!isFinite(v)) fail(E.NUM); return P15(v); }, 1);
+Object.assign(FN, {
+  PI: () => Math.PI, RADIANS: S(x => num(x) * Math.PI / 180, 1), DEGREES: S(x => num(x) * 180 / Math.PI, 1),
+  ATAN2: S((x, y) => { x = num(x); y = num(y); if (!x && !y) fail(E.DIV0); return Math.atan2(y, x); }, 2),
+  COT: S(x => { const t = Math.tan(num(x)); if (!t) fail(E.DIV0); return 1 / t; }, 1),
+  SEC: S(x => 1 / Math.cos(num(x)), 1), CSC: S(x => { const t = Math.sin(num(x)); if (!t) fail(E.DIV0); return 1 / t; }, 1),
+  SUMSQ: (a, ev) => nums(a, ev).reduce((s, v) => s + v * v, 0),
+  HYPERLINK: S((url, label) => label === undefined ? str(url) : label, 1),
+  ROMAN: S((value, form) => {
+    let n = Math.trunc(num(value)), f = form === false ? 4 : form === true ? 0 : Math.trunc(oNum(form, 0));
+    if (n < 0 || n > 3999 || f < 0 || f > 4) fail(E.VALUE);
+    const symbols = ['M', 'D', 'C', 'L', 'X', 'V', 'I'], values = [1000, 500, 100, 50, 10, 5, 1]; let out = '';
+    for (let i = 0; i < values.length; i++) {
+      while (n >= values[i]) { out += symbols[i]; n -= values[i]; }
+      if (i === 6) continue;
+      // Classic subtractive pairs can use successively smaller powers at forms 1–4.
+      const base = i + (i % 2 === 0 ? 2 : 1), last = Math.min(6, base + f);
+      for (let j = last; j >= base; j--) if (n >= values[i] - values[j]) { out += symbols[j] + symbols[i]; n -= values[i] - values[j]; break; }
+    }
+    return out;
+  }, 1),
+  ARABIC: S(value => { const s = str(value).toUpperCase(), map = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 }; let total = 0; if (!/^-?[IVXLCDM]*$/.test(s)) fail(E.VALUE); const t = s.replace(/^-/, ''); for (let i = 0; i < t.length; i++) total += map[t[i]] * (map[t[i]] < (map[t[i + 1]] || 0) ? -1 : 1); return s[0] === '-' ? -total : total; }, 1),
+  HSTACK: (a, ev) => { const ms = a.map(x => rng(ev(x))), R = Math.max(...ms.map(m => m.length)); return { range: Array.from({ length: R }, (_, r) => ms.flatMap(m => m[r] || Array(m[0].length).fill({ err: E.NA }))) }; },
+  VSTACK: (a, ev) => { const ms = a.map(x => rng(ev(x))), C = Math.max(...ms.map(m => m[0].length)); return { range: ms.flatMap(m => m.map(row => row.concat(Array(C - row.length).fill({ err: E.NA })))) }; },
+  TAKE: (a, ev) => sliceArray(a, ev, false), DROP: (a, ev) => sliceArray(a, ev, true),
+  CHOOSECOLS: (a, ev) => chooseArray(a, ev, false), CHOOSEROWS: (a, ev) => chooseArray(a, ev, true),
+  REGEXTEST: S((text, pattern, casing) => { try { return new RegExp(str(pattern), oNum(casing, 0) ? 'i' : '').test(str(text)); } catch { fail(E.VALUE); } }, 2),
+  REGEXEXTRACT: S((text, pattern, mode, casing) => {
+    try { const re = new RegExp(str(pattern), (oNum(casing, 0) ? 'i' : '') + 'g'), ms = [...str(text).matchAll(re)], k = oNum(mode, 0); if (!ms.length) fail(E.NA); if (k === 0) return ms[0][0]; if (k === 1) return { range: ms.map(m => [m[0]]) }; if (k === 2) return { range: [ms[0].slice(1).map(s => s ?? '')] }; fail(E.VALUE); } catch (e) { if (e instanceof FErr) throw e; fail(E.VALUE); }
+  }, 2),
+  REGEXREPLACE: S((text, pattern, replacement, occurrence, casing) => { try { const k = Math.trunc(oNum(occurrence, 0)), re = new RegExp(str(pattern), (oNum(casing, 0) ? 'i' : '') + 'g'); let n = 0; const s = str(text), matches = [...s.matchAll(re)], wanted = k < 0 ? matches.length + k + 1 : k; return s.replace(re, (...args) => { n++; if (k && n !== wanted) return args[0]; return str(replacement).replace(/\$(\d+|\$|&)/g, (_, group) => group === '$' ? '$' : group === '&' ? args[0] : args[+group] ?? ''); }); } catch { fail(E.VALUE); } }, 3),
+});
+function sliceArray(a, ev, drop) {
+  const m = rngv(a, 0, ev), counts = [Math.trunc(num(ev(a[1]))), has(a, 2) ? Math.trunc(num(ev(a[2]))) : undefined];
+  const bounds = (len, n) => n === undefined ? [0, len] : drop ? n >= 0 ? [Math.min(n, len), len] : [0, Math.max(0, len + n)] : n >= 0 ? [0, Math.min(n, len)] : [Math.max(0, len + n), len];
+  const [r1, r2] = bounds(m.length, counts[0]), [c1, c2] = bounds(m[0].length, counts[1]); if (r1 === r2 || c1 === c2) fail(E.CALC);
+  return { range: m.slice(r1, r2).map(row => row.slice(c1, c2)) };
+}
+function chooseArray(a, ev, rows) {
+  const m = rngv(a, 0, ev), n = rows ? m.length : m[0].length, ids = a.slice(1).flatMap(x => rng(ev(x)).flat()).map(v => { let i = Math.trunc(num(v)); if (!i || Math.abs(i) > n) fail(E.VALUE); return i < 0 ? n + i : i - 1; });
+  if (!ids.length) fail(E.VALUE); return { range: rows ? ids.map(i => m[i]) : m.map(row => ids.map(i => row[i])) };
+}
+function database(a, ev) {
+  const db = rngv(a, 0, ev), field = sc(ev(a[1])), conditions = rngv(a, 2, ev), header = db[0].map(v => str(v).toLowerCase());
+  const col = typeof field === 'number' ? field - 1 : header.indexOf(str(field).toLowerCase()); if (col < 0 || col >= header.length) fail(E.VALUE);
+  const keys = conditions[0].map(v => header.indexOf(str(v).toLowerCase())); if (keys.some(k => k < 0)) fail(E.VALUE);
+  const checks = conditions.slice(1).map(row => row.map(v => v === '' ? null : crit(v)));
+  return db.slice(1).filter(row => !checks.length || checks.some(cs => cs.every((check, i) => !check || check(row[keys[i]])))).map(row => row[col]);
+}
+for (const name of ['DSUM', 'DAVERAGE', 'DCOUNT', 'DCOUNTA', 'DMAX', 'DMIN', 'DPRODUCT', 'DSTDEV', 'DSTDEVP', 'DVAR', 'DVARP', 'DGET']) FN[name] = (a, ev) => {
+  if (a.length < 3) fail(E.VALUE); const all = database(a, ev), ns = all.filter(v => typeof v === 'number'), sum = ns.reduce((x, y) => x + y, 0);
+  if (name === 'DGET') { if (!all.length) fail(E.VALUE); if (all.length > 1) fail(E.NUM); return all[0]; }
+  if (name === 'DCOUNT') return ns.length; if (name === 'DCOUNTA') return all.filter(v => v !== '' && v != null).length;
+  if (name === 'DSUM') return sum; if (name === 'DMAX') return ns.length ? Math.max(...ns) : 0; if (name === 'DMIN') return ns.length ? Math.min(...ns) : 0;
+  if (name === 'DPRODUCT') return ns.length ? ns.reduce((x, y) => x * y, 1) : 0;
+  const denominator = ns.length - (name.endsWith('P') || name === 'DAVERAGE' ? 0 : 1); if (denominator <= 0) fail(E.DIV0);
+  if (name === 'DAVERAGE') return sum / ns.length;
+  const variance = ns.reduce((s, n) => s + (n - sum / ns.length) ** 2, 0) / denominator; return name.startsWith('DSTDEV') ? Math.sqrt(variance) : variance;
+};
+
 export const FUNCS = Object.keys(FN);
 export const REF_SRC = REFSRC; // the reference grammar, for editors that colour or point at references
 // Groups for the function picker: [group, [[name, 中文说明], …]].
@@ -872,11 +938,34 @@ export const FUNC_GROUPS = [
   ['工程', [['DEC2BIN', '十进制转二进制'], ['BIN2DEC', '二进制转十进制'], ['DEC2HEX', '十进制转十六进制'], ['HEX2DEC', '十六进制转十进制'], ['DEC2OCT', '十进制转八进制'], ['OCT2DEC', '八进制转十进制'], ['CONVERT', '单位换算'], ['DELTA', '两值是否相等']]]
 ];
 
+FUNC_GROUPS.push(['更多函数', FUNCS.filter(name => !FUNC_GROUPS.some(([, fs]) => fs.some(([n]) => n === name))).map(name => [name, '数学、数组、文本或数据库函数'])]);
+
 export class Calc {
-  constructor(doc) { this.doc = doc; this.cache = new Map(); this.stack = new Set(); this.scope = new Map(); this.cur = { r: 0, c: 0 }; }
+  constructor(doc) { this.doc = doc; this.cache = new Map(); this.stack = new Set(); this.scope = new Map(); this.cur = { r: 0, c: 0 }; this.spills = new Map(); this.arrays = new Map(); this.spillSheets = new Set(); this.affected = new Set(); }
+  ensureSpills(si) {
+    if (this.spillSheets.has(si)) return;
+    this.spillSheets.add(si);
+    const sh = this.doc.sheets[si], candidates = sh.formulas ? sh.formulas.filter(a => isSpillFormula(sh.cells[a]?.v)) : cellStats(sh.cells).spills;
+    for (const a of candidates) { const p = parseA(a), key = `${si}:${p.r}:${p.c}`; if (!this.stack.has(key)) this.value(si, p.r, p.c); }
+  }
+  spill(si, r, c, matrix) {
+    const sh = this.doc.sheets[si], owner = `${si}:${r}:${c}`, R = matrix.length, C = matrix[0]?.length || 0;
+    if (!R || !C) return { err: E.CALC };
+    if (r + R > 1048576 || c + C > 16384) return { err: E.SPILL };
+    for (let i = 0; i < R; i++) for (let j = 0; j < C; j++) {
+      const x = sh.cells[A(r + i, c + j)], key = `${si}:${r + i}:${c + j}`;
+      if ((i || j) && x && !x.spill && x.v !== '' && x.v != null || (sh.merges || []).some(m => r + i >= m.r && r + i < m.r + m.rs && c + j >= m.c && c + j < m.c + m.cs) || (this.spills.has(key) && this.spills.get(key).owner !== owner)) return { err: E.SPILL };
+    }
+    this.arrays.set(owner, matrix);
+    for (let i = 0; i < R; i++) for (let j = 0; j < C; j++) {
+      const key = `${si}:${r + i}:${c + j}`, v = matrix[i][j] ?? '';
+      if (i || j) { this.spills.set(key, { owner, value: v }); this.cache.set(key, v); }
+    }
+    return matrix[0][0] ?? '';
+  }
   sheetIdx(name, cur) { if (name == null) return cur; let i = this.doc.sheets.findIndex(s => s.name === name); if (i < 0) i = this.doc.sheets.findIndex(s => sameSheet(s.name, name)); if (i < 0) fail(E.REF); return i; }
   nameNode(name) {
-    const raw = this.doc.names && (this.doc.names[name] ?? this.doc.names[name.toUpperCase()]);
+    const raw = this.doc.names && (this.doc.names[name] ?? this.doc.names[Object.keys(this.doc.names).find(k => k.toUpperCase() === name.toUpperCase())]);
     if (typeof raw !== 'string') return null;
     const ref = raw.replace(/^=/, ''); return REFSTR.test(ref) ? refNode(ref) : ast(ref);
   }
@@ -891,9 +980,11 @@ export class Calc {
     if (r1 < 0 || c1 < 0 || r2 < r1 || c2 < c1 || (r2 - r1 + 1) * (c2 - c1 + 1) > MAXCELLS) fail(E.REF);
     return { si: s2, r1, c1, r2, c2 };
   }
+  touch(key) { if (this.affected.has(key) && this.stack.size) this.affected.add([...this.stack].at(-1)); }
   value(si, r, c) {
-    const key = `${si}:${r}:${c}`; if (this.cache.has(key)) return this.cache.get(key);
+    const key = `${si}:${r}:${c}`; this.touch(key); if (this.cache.has(key)) return this.cache.get(key);
     const sh = this.doc.sheets[si], cell = sh && sh.cells[A(r, c)]; let v = '';
+    if (!cell || cell.spill || cell.v === '' || cell.v == null) { this.ensureSpills(si); const spill = this.spills.get(key); if (spill && this.affected.has(spill.owner)) this.affected.add(key); this.touch(key); return spill?.value ?? ''; }
     if (cell && cell.v !== '' && cell.v != null) {
       const raw = String(cell.v);
       if (raw[0] === '=' && raw.length > 1) {
@@ -901,15 +992,16 @@ export class Calc {
         this.stack.add(key); const prior = this.cur; this.cur = { r, c };
         // A formula whose result is a blank cell shows 0 (=A1 with A1 empty); a text result stays "" (=MID(...), =A1&"").
         // ponytail: IF/CHOOSE returning a blank reference show "" rather than Excel's 0, reference semantics would be needed.
-        try { const root = ast(raw.slice(1)); v = this.ev(root, si); if (isRng(v)) v = v.range[0]?.[0] ?? ''; if (v == null || (v === '' && (root.t === 'ref' || root.t === 'rng' || root.t === 'name'))) v = 0; if (typeof v === 'number' && !isFinite(v)) v = { err: E.NUM }; }
+        try { const root = ast(raw.slice(1)); v = this.ev(root, si); if (isRng(v)) v = this.spill(si, r, c, v.range); if (v == null || (v === '' && (root.t === 'ref' || root.t === 'rng' || root.t === 'name'))) v = 0; if (typeof v === 'number' && !isFinite(v)) v = { err: E.NUM }; }
         catch (e) { v = { err: e instanceof FErr ? e.e : E.VALUE }; }
         finally { this.cur = prior; this.stack.delete(key); }
       } else if (cell.s && cell.s.fmt === 'text') v = raw;
       else if (cell.s && /^(date|time|datetime)$/.test(cell.s.fmt) && isNaN(Number(raw))) v = parseDate(raw) ?? raw; // "2024-01-01" typed as a date is its serial
       else { const n = Number(raw.replace(/,/g, '')); v = raw.trim() !== '' && !isNaN(n) ? n : /^(true|false)$/i.test(raw) ? raw.toUpperCase() === 'TRUE' : raw; }
     }
-    this.cache.set(key, v); return v;
+    this.cache.set(key, v); this.touch(key); return v;
   }
+  evaluate(formula, si = 0, r = 0, c = 0) { const was = this.cur; this.cur = { r, c }; try { return sc(this.ev(ast(String(formula).replace(/^=/, '')), si)); } catch (e) { return { err: e instanceof FErr ? e.e : E.VALUE }; } finally { this.cur = was; } }
   ev(n, si) {
     const ev = x => this.ev(x, si);
     switch (n.t) {
@@ -921,6 +1013,7 @@ export class Calc {
         const named = this.nameNode(n.v); if (!named) fail(E.NAME); return this.ev(named, si);
       }
       case 'ref': { const v = this.value(this.sheetIdx(n.sh, si), n.r, n.c); if (isErr(v)) fail(v.err); return v; }
+      case 'spill': { if (n.a.t !== 'ref') fail(E.REF); const s = this.sheetIdx(n.a.sh, si), key = `${s}:${n.a.r}:${n.a.c}`; this.value(s, n.a.r, n.a.c); const matrix = this.arrays.get(key); if (!matrix) fail(E.REF); return { range: matrix }; }
       case 'rng': { const b = this.bounds(n, si); return { range: grid(b.r2 - b.r1 + 1, b.c2 - b.c1 + 1, (i, j) => this.value(b.si, b.r1 + i, b.c1 + j)) }; }
       case 'arr': return { range: n.v.map(row => row.map(x => { try { return sc(ev(x)); } catch (e) { return { err: e instanceof FErr ? e.e : E.VALUE }; } })) };
       case 'neg': return lift2([ev(n.a)], x => -num(x));
@@ -944,9 +1037,9 @@ export class Calc {
 }
 
 // References inside string literals and function names must not be rewritten. Cells: A1 / $A$1; whole columns A:C and whole rows 3:5 in a second pass.
-const SHEETRE = "((?:'[^']+'|[A-Za-z_\\u4e00-\\u9fa5][\\w\\u4e00-\\u9fa5]*)!)?";
-const REFRE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(\\$?)([A-Za-z]{1,2})(\\$?)(\\d+)(?![\\w(])', 'g');
-const WHOLERE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(?:(\\$?)([A-Za-z]{1,2}):(\\$?)([A-Za-z]{1,2})|(\\$?)(\\d+):(\\$?)(\\d+))(?![\\w(:])', 'g');
+const SHEETRE = "((?:'(?:[^']|'')+'|[A-Za-z_\\u4e00-\\u9fa5][\\w\\u4e00-\\u9fa5]*)!)?";
+const REFRE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(\\$?)([A-Za-z]{1,3})(\\$?)(\\d+)(?![\\w(])', 'g');
+const WHOLERE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(?:(\\$?)([A-Za-z]{1,3}):(\\$?)([A-Za-z]{1,3})|(\\$?)(\\d+):(\\$?)(\\d+))(?![\\w(:])', 'g');
 const nameChar = ch => ch && /[A-Za-z0-9_.\u4e00-\u9fa5]/.test(ch);
 // Rewrites every reference: cells through `cell(sh, abs1, col, abs2, row)`, whole columns/rows through `whole(sh, axis, abs1, i1, abs2, i2)` (0-based indexes).
 function mapRefs(f, cell, whole) {
@@ -957,13 +1050,17 @@ function mapRefs(f, cell, whole) {
   });
 }
 const wholeStr = (sh, axis, d1, i1, d2, i2) => sh + d1 + (axis === 'c' ? colName(i1) : i1 + 1) + ':' + d2 + (axis === 'c' ? colName(i2) : i2 + 1);
+export function renameSheetRefs(formula, from, to) {
+  const prefix = sh => sh && sameSheet(sh.slice(0, -1).replace(/^'|'$/g, '').replace(/''/g, "'"), from) ? "'" + to.replace(/'/g, "''") + "'!" : sh;
+  return mapRefs(formula, (sh, d1, c, d2, r) => prefix(sh) + d1 + colName(c) + d2 + (r + 1), (sh, axis, d1, i1, d2, i2) => wholeStr(prefix(sh), axis, d1, i1, d2, i2));
+}
 export function shiftF(f, dr, dc) {
   return mapRefs(f,
     (sh, d1, c, d2, r) => { if (!d1) c += dc; if (!d2) r += dr; return c < 0 || r < 0 ? E.REF : sh + d1 + colName(c) + d2 + (r + 1); },
     (sh, axis, d1, i1, d2, i2) => { const d = axis === 'c' ? dc : dr; if (!d1) i1 += d; if (!d2) i2 += d; return i1 < 0 || i2 < 0 ? E.REF : wholeStr(sh, axis, d1, i1, d2, i2); });
 }
 export function adjF(f, curName, target, axis, at, n) {
-  const onTarget = sh => sameSheet(sh ? sh.slice(0, -1).replace(/^'|'$/g, '') : curName, target);
+  const onTarget = sh => sameSheet(sh ? sh.slice(0, -1).replace(/^'|'$/g, '').replace(/''/g, "'") : curName, target);
   const move = idx => { if (n > 0) return idx >= at ? idx + n : idx; if (idx >= at && idx < at - n) return null; return idx >= at - n ? idx + n : idx; }; // null: deleted
   return mapRefs(f,
     (sh, d1, c, d2, r) => { if (!onTarget(sh)) return sh + d1 + colName(c) + d2 + (r + 1); const i = move(axis === 'r' ? r : c); if (i == null) return E.REF; return sh + d1 + colName(axis === 'r' ? c : i) + d2 + ((axis === 'r' ? i : r) + 1); },
@@ -972,8 +1069,31 @@ export function adjF(f, curName, target, axis, at, n) {
 // Upper-cases function names and references as typed, leaving string literals and sheet names ('My Sheet'!, Other!) as written.
 export function upperF(f) { return f.split(/("(?:[^"]|"")*"|'[^']*'!|[A-Za-z_一-龥][\w.一-龥]*!)/).map((p, i) => i % 2 ? p : p.toUpperCase()).join(''); }
 const sameSheet = (a, b) => a === b || (a != null && b != null && a.toLowerCase() === b.toLowerCase()); // sheet names compare case-insensitively, as in Excel
-export function usedRange(sh) {
-  let r1 = Infinity, c1 = Infinity, r2 = -1, c2 = -1;
-  Object.keys(sh.cells).forEach(a => { const cell = sh.cells[a]; if (!cell || cell.v === '' || cell.v == null) return; const p = parseA(a); if (!p) return; r1 = Math.min(r1, p.r); c1 = Math.min(c1, p.c); r2 = Math.max(r2, p.r); c2 = Math.max(c2, p.c); });
-  return r2 < 0 ? null : { r1, c1, r2, c2 };
+export function usedRange(sh) { return sh._used || cellStats(sh.cells).used; }
+
+/** The rectangular data island around a single-cell selection, bounded by empty rows/columns. */
+export function currentRegion(sh, r, c) {
+  const present = (r, c) => { const x = sh.cells[A(r, c)]; return x && x.v !== '' && x.v != null; };
+  let r1 = r, c1 = c, r2 = r, c2 = c, changed = true;
+  const row = n => { for (let x = c1; x <= c2; x++) if (present(n, x)) return true; return false; };
+  const col = n => { for (let y = r1; y <= r2; y++) if (present(y, n)) return true; return false; };
+  while (changed) {
+    changed = false;
+    if (r1 > 0 && row(r1 - 1)) { r1--; changed = true; }
+    if (r2 < 1048575 && row(r2 + 1)) { r2++; changed = true; }
+    if (c1 > 0 && col(c1 - 1)) { c1--; changed = true; }
+    if (c2 < 16383 && col(c2 + 1)) { c2++; changed = true; }
+  }
+  return r1 === r2 && c1 === c2 && !present(r, c) ? null : { r1, c1, r2, c2 };
+}
+export function moveRefs(formula, currentSheet, sourceSheet, targetSheet, box, dr, dc, formulaSheet = currentSheet) {
+  const quote = name => "'" + name.replace(/'/g, "''") + "'!";
+  return formula.replace(new RegExp('("(?:[^"]|"")*")|(' + REFSRC + ')(?![\\w(])', 'gi'), (m, str, ref, off, full) => {
+    if (str || /[\w.]/.test(full[off - 1] || '')) return m;
+    const bang = ref.lastIndexOf('!'), prefix = bang < 0 ? '' : ref.slice(0, bang + 1), name = prefix ? prefix.slice(0, -1).replace(/^'|'$/g, '').replace(/''/g, "'") : currentSheet;
+    if (!sameSheet(name, sourceSheet)) return m;
+    const parts = (prefix ? ref.slice(bang + 1) : ref).split(':'), ps = parts.map(parseA);
+    if (ps.some(p => !p || p.r < box.r1 || p.r > box.r2 || p.c < box.c1 || p.c > box.c2)) return !prefix && !sameSheet(currentSheet, formulaSheet) ? quote(currentSheet) + ref : m;
+    return (sameSheet(formulaSheet, targetSheet) ? (prefix ? quote(targetSheet) : '') : quote(targetSheet)) + parts.map((s, i) => { const p = ps[i]; return (s.startsWith('$') ? '$' : '') + colName(p.c + dc) + (/\$\d/.test(s) ? '$' : '') + (p.r + dr + 1); }).join(':');
+  });
 }

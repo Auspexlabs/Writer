@@ -140,6 +140,8 @@ sealed class DocxObject(DocxDocument doc, OpenXmlElement element, W.Paragraph? b
         var type = Type;
         var props = new Dictionary<string, string> { ["type"] = type };
         var (w, h) = Size;
+        if (block is null && element.Ancestors<W.Paragraph>().FirstOrDefault() is { } para)
+            props["at"] = DocxFootnotes.OffsetOf(para, element).ToString(Inv);
         if (w > 0) props["width"] = w.ToString(Inv);
         if (h > 0) props["height"] = h.ToString(Inv);
         var docPr = Holder?.GetFirstChild<DW.DocProperties>();
@@ -184,6 +186,15 @@ sealed class DocxObject(DocxDocument doc, OpenXmlElement element, W.Paragraph? b
     }
 
     public override string GetRaw() => (block ?? element).OuterXml;
+
+    public override void SetProp(string name, string value)
+    {
+        if (name != "at" || block is not null) return;
+        var paragraph = element.Ancestors<W.Paragraph>().FirstOrDefault();
+        if (paragraph is null) return;
+        var run = TakeRun();
+        DocxFootnotes.Place(paragraph, run, int.Parse(value, Inv));
+    }
 
     // ---- where it lives ----
 
