@@ -53,6 +53,15 @@ test('page thumbnails split where the status bar counts pages: every page break 
   assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(2){margin-top:243px!important}`, 'the page view moves it to the top of page 2 (1123px + 20px gap)');
 });
 
+test('a block taller than a page starts right under what comes before it, as Word starts a long table, and runs on over the pages', () => {
+  const c = editor({ id: 'd', html: '' });
+  assert.deepEqual(pages(c, [[0, 25], [33, 2500]]).text, '共 3 页');
+  assert.equal(c.pgCss.textContent, '', 'not moved to page 2: that only left page 1 empty under its heading');
+  assert.deepEqual(pages(c, [[0, 25], [33, 800]]).text, '共 1 页', 'one that fits the page stays too');
+  assert.deepEqual(pages(c, [[0, 500], [508, 800]]).text, '共 2 页');
+  assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(2){margin-top:643px!important}`, 'one that fits a page but not what is left of this one starts the next (8px gap + 635px to page 2)');
+});
+
 test('a page break inside a paragraph and a paragraph that starts a page split pages too, and never make an empty one', () => {
   const c = editor({ id: 'd', html: '' });
   assert.deepEqual(pages(c, [['p', 0, 200, 88]]), { text: '共 2 页', thumbs: [['0px', '14px'], ['-117px', '13px']] }, 'Ctrl+Enter after text');
