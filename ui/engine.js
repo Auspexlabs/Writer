@@ -842,7 +842,7 @@ const noteOf = x => Object.assign({ id: x.nid, kind: x.kind, text: x.text }, x.h
 /** A note's mark in the text: a superscript number the caret steps over; numbered by order of its kind. */
 const NOTE_MARK = 'sup[data-fn]';
 /** What sits in a paragraph beside its text: deleted text, notes' marks, equations and shapes. Character offsets leave them out. */
-const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape],span[data-cite]';
+export const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape],span[data-cite]';
 /** The character offset of `node` in block `el`: the visible text before it (a br and a page break one character each). */
 export function offsetIn(el, node) {
   let at = 0; const w = el.ownerDocument.createTreeWalker(el, 5); let n;

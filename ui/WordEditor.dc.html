@@ -83,6 +83,13 @@
 .wd-fn-n{font-size:.72em;vertical-align:super;line-height:0;margin-right:.3em;cursor:pointer;user-select:none}
 .wd-fn-c{margin-right:.3em;user-select:none;cursor:default}
 .wd-fn[data-empty]:focus::after{content:attr(data-ph);color:var(--k47, #C7C7CC);pointer-events:none}
+/* 引文建议: the citation a sentence would get, grey where it goes (Tab puts it in); as a chip under the line mid-paragraph */
+.wd-cg{position:absolute;z-index:3;display:none;white-space:nowrap;color:var(--k8, #8E8E93);cursor:pointer;pointer-events:auto}
+.wd-cg sup{font-size:.72em;vertical-align:super;line-height:0;margin-right:.2em}
+.wd-cg{white-space:pre}
+.wd-cg-p{color:var(--k1, #1D1D1F)}
+.wd-cg-chip{padding:2px 8px;border-radius:8px;background:var(--k0, #FFFFFF);box-shadow:0 2px 10px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.06);font:12px/20px 'Noto Sans SC',sans-serif!important;color:var(--k11, #6E6E73)}
+.wd-cg-k{margin-left:8px;padding:0 5px;border-radius:4px;background:var(--k12, #F2F2F7);font-size:11px;color:var(--k11, #6E6E73)}
 .wd-ed span[data-cite]{cursor:pointer;border-radius:3px;user-select:none;transition:background .12s}
 .wd-ed span[data-cite]:hover,.wd-ed span[data-cite][data-on]{background:var(--k48, rgba(47,93,138,0.1))}
 .wd-ed nav[data-bib]{display:block;cursor:default;user-select:none;text-indent:0}
@@ -553,9 +560,12 @@ class Component extends DCLogic {
     import('./picture.js').then(m => { this.P = m; this.layoutPics(); this.drawShapes(); }); // the 图片 tab, and where pictures sit
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./md.js').then(m => { this.MD = m; this.drawEqs(); }); // KaTeX, for the equations
+    import('./cite-suggest.js').then(m => { this.CS = m; this.citeScan(); }); // 引文建议: which sentences want a citation
     this.load();
     document.addEventListener('selectionchange', this.onSel); document.addEventListener('mousedown', this.ctxAway, true); document.addEventListener('keydown', this.ctxKey, true);
     const ed = this.edRef.current;
+    ed.__complete = () => this.citeSug ? null : undefined; // AI 自动补全 waits while a citation is offered at the caret (Tab is the citation's)
+    ed.addEventListener('keydown', this.onCiteKey);
     ed.addEventListener('beforeinput', this.onBI);
     ed.addEventListener('compositionstart', this.onCS);
     ed.addEventListener('pointerdown', this.onPicDown);
@@ -581,6 +591,7 @@ class Component extends DCLogic {
     if (this.syncT) { clearTimeout(this.syncT); this.flush(); }
     this.commitHF(); this.pgCss && this.pgCss.remove(); this.stCss && this.stCss.remove();
     this.gone = true; this.follow && this.follow.detach(); this.hb && this.hb.remove(); this.shb && this.shb.remove();
+    clearTimeout(this.csT); clearTimeout(this.fnT); if (window.CSS && CSS.highlights) CSS.highlights.delete('wdcite' + this.pgId); // 引文建议's grey lines
   }
   onCvScroll = () => { this.hb && this.hb.layout(); this.shb && this.shb.layout(); if (this.state.ctxBar) this.setState({ ctxBar: null }); };
   /** Right-click in the page: the design's selection bar at the pointer, in place of the system menu (in 沉浸书写 too). WebKit
@@ -622,6 +633,7 @@ class Component extends DCLogic {
     }
     else if (o.page !== d.page || this.shownView !== this.state.view) { this.shownView = this.state.view; this.refreshInfo(); } // the text reflows into other pages
     else if (o.notes !== d.notes && this.paged) this.refreshInfo(); // a note typed, cited or gone: its entry at the foot of the page, and the room it takes
+    if (o.sources !== d.sources || o.citeStyle !== d.citeStyle || o.id !== d.id || (o.rev || 0) !== (d.rev || 0)) this.citeScan();
     if (this.focusFind && this.findRef.current) { this.findRef.current.focus(); this.findRef.current.select(); this.focusFind = false; }
   }
   get doc() { return this.props.doc; }
@@ -638,7 +650,9 @@ class Component extends DCLogic {
   }
   // ----- the style gallery (样式): the document's styles, drawn as they look, applied as pStyle / rStyle rather than direct formatting -----
   /** A stylesheet that draws the document's own styles on the page: [data-style] blocks and spans, and h1–h3 for its heading styles. */
-  styleSheet() { if (!this.EN) return; this.stCss = this.stCss || document.head.appendChild(document.createElement('style')); const css = this.EN.styleCss(this.doc.styles, `[data-pg="${this.pgId}"]`, this.doc.base) + '\n' + this.EN.styleCss(this.doc.styles, `[data-fnpg="${this.pgId}"]`, this.doc.base); if (this.stCss.textContent !== css) this.stCss.textContent = css; } // the notes at the foot of the page too (FootnoteText)
+  styleSheet() { if (!this.EN) return; this.stCss = this.stCss || document.head.appendChild(document.createElement('style')); const css = this.EN.styleCss(this.doc.styles, `[data-pg="${this.pgId}"]`, this.doc.base) + '\n' + this.EN.styleCss(this.doc.styles, `[data-fnpg="${this.pgId}"]`, this.doc.base)
+      + `\n::highlight(wdcite${this.pgId}){text-decoration:underline dotted rgba(142,142,147,.95);text-decoration-thickness:1.5px;text-underline-offset:3px;background-color:rgba(142,142,147,.1)}`; // 引文建议's grey
+    if (this.stCss.textContent !== css) this.stCss.textContent = css; } // the notes at the foot of the page too (FootnoteText)
   /** The gallery: the document's quick styles first (by the names Word gives them), then the built-in ones it lacks, then its other styles. */
   gallery() {
     const docs = this.doc.styles || [], byName = new Map(docs.map(s => [String(s.name || '').toLowerCase(), s])), seen = new Set(), out = [];
@@ -875,7 +889,7 @@ class Component extends DCLogic {
     return tools;
   }
   sync(typed) { if (!typed) this.pgDirty = true; clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 350); }
-  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(!this.pgDirty); }
+  flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(!this.pgDirty); this.citeScan(); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
   ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
   /** The pages, as [top, bottom] of the text as it flows without page gaps. A paragraph that runs past the end of a page goes on
@@ -1136,11 +1150,119 @@ class Component extends DCLogic {
     for (const el of els.values()) if (!placed.has(el) && el.parentNode !== bin) put(el, bin, null);
     if (this.fnFocus && this.toNote(this.fnFocus)) this.fnFocus = null;
   }
+  // ----- 引文建议: a sentence that draws on a source and cites none, marked in grey; at its end, the citation it would get -----
+  /** Looks for them again once the typing has paused (cite-suggest.js: the sources' own words, nothing asked of a model). Only in a
+   *  document with sources: the writer cites in it. */
+  citeScan() { clearTimeout(this.csT); this.csT = setTimeout(() => this.citeFind(), 600); }
+  citeFind() {
+    const ed = this.edRef.current, CS = this.CS, EN = this.EN, d = this.doc; if (!ed || !CS || !EN || this.gone) return;
+    const on = (d.sources || []).length > 0 && !this.state.hf && this.citeHints();
+    const blocks = on ? Array.from(ed.querySelectorAll('p,li,blockquote')).filter(b => !b.closest('nav,table,figure,[data-caption]') && !b.querySelector('p,li')) : [];
+    const texts = blocks.map(b => this.blockText(b));
+    this.citeNo = this.citeNo || new Set();
+    this.citeSugs = CS.suggest(texts, d.sources || [], this.citeNo).map(x => Object.assign(x, { block: blocks[x.para], t: texts[x.para] }));
+    if (window.CSS && CSS.highlights && window.Highlight) { // the grey dotted line under each (the text itself untouched)
+      const rs = this.citeSugs.map(x => this.textRange(x.t, x.start, x.end)).filter(Boolean);
+      if (rs.length) CSS.highlights.set('wdcite' + this.pgId, new Highlight(...rs)); else CSS.highlights.delete('wdcite' + this.pgId);
+    }
+    this.citeCaret();
+  }
+  /** Whether the writer wants the suggestions (引用 tab › 引文建议; on unless turned off, per viewer). */
+  citeHints() { try { return localStorage.getItem('writerCiteHints') !== 'off'; } catch (e) { return true; } }
+  /** A block's text as the detector reads it (deleted text, notes' marks, citations and equations left out, a line break one character),
+   *  where each text node starts in it, and where its citations and notes' marks sit. */
+  blockText(el) {
+    const marks = this.EN.MARKS, segs = [], cited = []; let text = '';
+    const w = document.createTreeWalker(el, 5); let n;
+    while ((n = w.nextNode())) {
+      if (n.nodeType === 1) { if (n.matches('span[data-cite],sup[data-fn]')) cited.push(text.length); else if (n.tagName === 'BR' || n.hasAttribute('data-pb')) text += '\n'; continue; }
+      if (n.parentElement.closest(marks)) continue;
+      segs.push({ node: n, at: text.length }); text += n.nodeValue;
+    }
+    return { text, cited, segs, el };
+  }
+  /** A range of a block's text by the detector's offsets (collapsed when end is start). */
+  textRange(t, start, end) {
+    const at = off => { for (let i = t.segs.length - 1; i >= 0; i--) { const g = t.segs[i]; if (off >= g.at) return [g.node, Math.min(off - g.at, g.node.nodeValue.length)]; } return null; };
+    const a = at(start), b = at(end); if (!a || !b || !a[0].isConnected || !b[0].isConnected) return null;
+    const r = document.createRange(); try { r.setStart(a[0], a[1]); r.setEnd(b[0], b[1]); } catch (e) { return null; } return r;
+  }
+  /** The suggestion the caret is in, shown grey where its citation would go: inline when the caret ends the paragraph (typing it), as
+   *  a chip under the line otherwise. None when the caret is elsewhere, or text is selected. */
+  citeCaret() {
+    const s = window.getSelection(), ed = this.edRef.current;
+    let hit = null;
+    if (this.citeSugs && this.citeSugs.length && ed && s.rangeCount && s.isCollapsed && ed.contains(s.anchorNode) && !this.state.hf) {
+      const block = (this.citeSugs.find(x => x.block.isConnected && x.block.contains(s.anchorNode)) || {}).block;
+      if (block && this.blockText(block).text === this.citeSugs.find(x => x.block === block).t.text) { // typed in since the look: wait for the next
+        const head = document.createRange(); head.setStart(block, 0); head.setEnd(s.anchorNode, s.anchorOffset);
+        const off = this.fragText(head);
+        hit = this.citeSugs.find(x => x.block === block && off >= x.start && off <= x.end + 1) || null;
+      }
+    }
+    if (hit !== this.citeSug) { this.citeSug = hit; this.citeDraw(); }
+  }
+  /** The detector's text of a range's contents (as blockText reads it). */
+  fragText(r) { const box = document.createElement('div'); box.appendChild(r.cloneContents()); return this.blockText(box).text.length; }
+  /** Draws the offered citation: its text as the engine would write it in the document's style (asked once per source and style). */
+  async citeDraw() {
+    const x = this.citeSug, sheet = this.fnRef.current && this.fnRef.current.parentElement; if (!sheet) return;
+    let g = this.ghostEl; if (!g) { g = this.ghostEl = document.createElement('div'); g.className = 'wd-cg'; g.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); this.citeAccept(); }); sheet.appendChild(g); }
+    if (!x) { g.style.display = 'none'; return; }
+    if (document.__writerComplete) document.__writerComplete.clear(); // one grey suggestion at a time: the citation's
+    const style = this.doc.citeStyle || 'mla', notes = style === 'chicago' && !!x.tag, label = x.tag ? await this.citeLabel(x.tag, style) : $t('需要引文？Tab 添加来源');
+    if (x !== this.citeSug || !label) return;
+    const pl = this.CS.placeOf(x.t.text, x.end, notes), r = this.textRange(x.t, pl.at, pl.at); if (!r) return;
+    const box = r.getClientRects()[0] || r.getBoundingClientRect(), sr = sheet.getBoundingClientRect(), z = sr.width / (sheet.offsetWidth || sr.width || 1) || 1;
+    const tail = document.createRange(); tail.setStart(r.startContainer, r.startOffset); tail.setEnd(x.block, x.block.childNodes.length);
+    const rest = tail.toString(), inline = !this.fragText(tail) || /^\s*[.!?。！？]["”’]?\s*$/.test(rest); // nothing after it but its period: the citation reads on from the text
+    g.classList.toggle('wd-cg-chip', !inline);
+    // inline, it shows the sentence's end as it will read: over its period, " (Pegg)." — the period after the citation
+    const end = inline && !notes ? rest.trim() + (pl.after || '') : '';
+    g.innerHTML = (notes ? '<sup>' + this.EN.esc(String(this.edRef.current.querySelectorAll('sup[data-fn]').length + 1)) + '</sup>' : '') + this.EN.esc((inline && !notes && x.tag ? ' ' : '') + label) + (end ? `<span class="wd-cg-p">${this.EN.esc(end)}</span>` : '') + (inline ? '' : `<span class="wd-cg-k">Tab</span>`);
+    g.style.background = inline && end ? (this.page.color || 'var(--kpage, #FFFFFF)') : '';
+    const cs = getComputedStyle(x.block); g.style.fontSize = inline ? cs.fontSize : ''; g.style.fontFamily = inline ? cs.fontFamily : '';
+    g.style.left = (box.left - sr.left) / z + 'px';
+    g.style.top = (inline ? box.top - sr.top : box.bottom - sr.top + 4) / z + 'px';
+    g.style.lineHeight = inline ? box.height / z + 'px' : '';
+    g.title = x.tag ? $t('Tab 插入这条引文，Esc 忽略') : $t('这句话像是引用了资料：Tab 添加来源并插入引文，Esc 忽略');
+    g.style.display = 'block';
+  }
+  /** A source's citation as the engine writes it: in the text (MLA, APA, author-date), or its short note (Chicago's notes). */
+  async citeLabel(tag, style) {
+    const src = (this.doc.sources || []).find(y => y.tag === tag); if (!src || !this.EN) return '';
+    const key = style + '|' + JSON.stringify(src), memo = this.citeMemo || (this.citeMemo = new Map());
+    if (!memo.has(key)) memo.set(key, this.EN.run(['cite', '--style', style, '--source', JSON.stringify(src)]).then(r => style === 'chicago' ? (r.shortNote || '').replace(/\.$/, '') : r.inText || '').catch(() => ''));
+    return memo.get(key);
+  }
+  /** Tab: the citation where it goes — before the sentence's period (after a closing quotation mark, the period moved out), or a note
+   *  after it (Chicago); with no source to give, 管理源 opens to add one and cite it there. */
+  citeAccept() {
+    const x = this.citeSug; if (!x) return false;
+    const notes = (this.doc.citeStyle || 'mla') === 'chicago' && !!x.tag, pl = this.CS.placeOf(x.t.text, x.end, notes), s = window.getSelection();
+    this.citeSug = null; this.citeDraw();
+    if (pl.drop >= 0) { const r = this.textRange(x.t, pl.drop, pl.drop + 1); if (r) { s.removeAllRanges(); s.addRange(r); document.execCommand('delete'); } }
+    const t = this.blockText(x.block), at = pl.drop >= 0 ? pl.at - 1 : pl.at, r = this.textRange(t, at, at); if (!r) return true;
+    s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange();
+    if (!x.tag) { this.openSources('cite'); return true; }
+    this.insertCite(x.tag);
+    if (pl.after && !notes) { this.restore(); document.execCommand('insertText', false, pl.after); }
+    this.citeScan();
+    return true;
+  }
+  /** Tab takes the citation offered at the caret, Esc says no to it. */
+  onCiteKey = e => {
+    if (!this.citeSug || e.isComposing || e.keyCode === 229 || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || (e.key !== 'Tab' && e.key !== 'Escape')) return;
+    e.preventDefault(); e.stopPropagation(); if (e.key === 'Tab') this.citeAccept(); else this.citeDismiss();
+  };
+  /** Esc: not this sentence (for as long as the document is open), and nothing more offered for it. */
+  citeDismiss() { const x = this.citeSug; if (!x) return; (this.citeNo = this.citeNo || new Set()).add(x.t.text.slice(x.start, x.end).trim()); this.citeSug = null; this.citeDraw(); this.citeFind(); }
   /** Where typing and the ribbon go: the header or footer being edited, else the text. */
   /** The canvas's padding above the page: under the title bar, or in 纯净模式 clear of the lights. */
   get cvTop() { return CV_PAD[0]; } // 沉浸书写 keeps the page where it is: only the chrome around it goes
   get root() { return (this.state.hf && this.hfRef.current) || this.edRef.current; }
   onSel = () => {
+    this.citeCaret();
     const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) return;
     const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return;
     this.range = r.cloneRange();
@@ -2004,7 +2126,7 @@ class Component extends DCLogic {
     ];
   }
   panelRefs(k, c) {
-    const { G, R, btn, menuBtn, sel, lab, sp } = k, { st, d, I, HD, notes } = c, EN = this.EN;
+    const { G, R, btn, menuBtn, sel, lab, sp, chk } = k, { st, d, I, HD, notes } = c, EN = this.EN;
     const targets = this.refTargets(), toc = this.edRef.current && this.edRef.current.querySelector('[data-toc]');
     const kinds = [['heading', '标题'], ['caption', '题注'], ['bookmark', '书签']], kind = st.xrefKind || 'heading', capLabel = st.capLabel || CAPTIONS[0];
     const list = targets.filter(t => t.kind === kind), marks = targets.filter(t => t.kind === 'bookmark' && !t.el.getAttribute('data-w-bookmark').startsWith('_'));
@@ -2019,7 +2141,8 @@ class Component extends DCLogic {
           ph: n.ph, reply: false, ai: 'a footnote in a Word document', cite: n.hasCite ? n.cite.__html : '', noEdit: n.foot }] }))),
       G('引文与书目', R(lab('样式@@cite'), sp(), sel('cstyle', $t(((EN && EN.CITE_STYLES) || []).find(x => x[0] === (d.citeStyle || 'mla'))?.[1] || 'MLA 第 9 版'), ((EN && EN.CITE_STYLES) || []).map(([key, l]) => I(l, () => this.setCiteStyle(key), { on: (d.citeStyle || 'mla') === key })), { w: 190, title: '引文和书目的格式；换样式后所有引文和书目自动改写' })),
         R(menuBtn('cite-go', '插入引文', 'cite', this.citeItems(I, HD), { title: '在光标处插入所选来源的引文；Chicago 脚注样式插入脚注' }), btn('管理源', 'sources', () => this.openSources(), { title: '粘贴 DOI、ISBN、网址或整条参考文献，自动查到来源' })),
-        R(btn('插入书目', 'bib', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }), btn('更新@@cite', 'refresh', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' }))),
+        R(btn('插入书目', 'bib', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }), btn('更新@@cite', 'refresh', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' })),
+        R(chk('引文建议', this.citeHints(), v => { try { localStorage.setItem('writerCiteHints', v ? 'on' : 'off'); } catch (e) { } this.citeFind(); this.forceUpdate(); }, { title: '像是用了某个来源却没有引文的句子标成灰色，句末给出建议的引文，按 Tab 插入' }))),
       G('题注', R(btn('插入题注', 'picture', () => this.insertCaption(capLabel), { title: '图、表、公式的题注，编号自动更新' }),
         sel('caplab', $t('标签：{l}', { l: capLabel }), CAPTIONS.map(l => I(l, () => this.setState({ capLabel: l }), { on: capLabel === l })), { w: 120, title: '题注标签' }))),
       G('交叉引用', R(sel('xkind', $t('引用：{k}', { k: $t(kinds.find(x => x[0] === kind)[1]) }), kinds.map(([key, l]) => I(l, () => this.setState({ xrefKind: key }), { on: kind === key })), { title: '引用的类型' }),
