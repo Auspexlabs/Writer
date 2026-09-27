@@ -28,15 +28,32 @@ static class Writers
 
     // ---------- docx ----------
 
-    public static Document Docx(IReadOnlyList<Block> blocks, List<string> warnings)
+    /// <param name="page">The page the file was set up with; null keeps the new document's (A4).</param>
+    public static Document Docx(IReadOnlyList<Block> blocks, List<string> warnings, PageModel? page = null)
     {
         var doc = new DocxAdapter().Create();
+        if (page is not null)
+        {
+            try
+            {
+                var landscape = page.WidthCm > page.HeightCm;
+                Mutations.Set(doc.Root, Props(("page", $"{Cm(Math.Min(page.WidthCm, page.HeightCm))} x {Cm(Math.Max(page.WidthCm, page.HeightCm))}"),
+                    ("orientation", landscape ? "landscape" : "portrait"), ("margin", string.Join(' ', new[] { page.TopCm, page.RightCm, page.BottomCm, page.LeftCm }.Select(Cm)))));
+            }
+            catch (WriterException ex)
+            {
+                warnings.Add($"page setup: {ex.Message}");
+            }
+        }
         var body = doc.Root.Children.First(c => c.Kind == "body");
-        Blocks(body, blocks, warnings);
+        Blocks(body, blocks, warnings, TextWidthCm((DocxDocument)doc));
         return doc;
     }
 
-    static void Blocks(Node parent, IReadOnlyList<Block> blocks, List<string> warnings)
+    /// <summary>The width between the margins, where a table has to fit.</summary>
+    static double TextWidthCm(DocxDocument doc) => DocxTable.ContentWidthTwips(doc) / 567.0;
+
+    static void Blocks(Node parent, IReadOnlyList<Block> blocks, List<string> warnings, double textCm)
     {
         foreach (var b in blocks)
         {
@@ -51,7 +68,7 @@ static class Writers
                         Mutations.Add(parent, "paragraph", Props(("html", b.Html), ("list", b.List), ("level", b.List is null ? null : b.Level), ("align", b.Align), ("style", b.Style)), null);
                         break;
                     case BlockKind.Table when b.Rows is { Count: > 0 }:
-                        Table(parent, b.Rows, warnings);
+                        Table(parent, b.Rows, warnings, b.ColumnsCm, textCm);
                         break;
                     case BlockKind.Image when b.Image is { Length: > 0 }:
                         Mutations.Add(parent, "image", Props(("src", DataUrl(b.Image)), ("width", b.WidthCm is > 0 ? Cm(b.WidthCm.Value) : null), ("height", b.HeightCm is > 0 ? Cm(b.HeightCm.Value) : null)), null);
@@ -69,8 +86,9 @@ static class Writers
     }
 
     /// <summary>Cells take the next free grid column, as in html; spans reserve the columns to the right and below.
-    /// The text goes in first, then the merges (merging moves absorbed cells' text in, and those are empty).</summary>
-    static void Table(Node parent, List<List<TableCell>> rows, List<string> warnings)
+    /// The text goes in first, then the merges (merging moves absorbed cells' text in, and those are empty), then the column
+    /// widths the file gave, narrowed to the text width when the table is wider than the page between its margins.</summary>
+    static void Table(Node parent, List<List<TableCell>> rows, List<string> warnings, List<double>? columnsCm = null, double textCm = 0)
     {
         var origins = new List<(int R, int C, TableCell Cell)>();
         var reserved = new HashSet<(int R, int C)>();
@@ -96,7 +114,7 @@ static class Writers
         {
             var td = trs[r].Children.Where(x => x.Kind == "cell").ElementAtOrDefault(c);
             if (td is null) continue;
-            try { Mutations.Set(td, Props(("html", cell.Html), ("fill", cell.Fill))); }
+            try { Mutations.Set(td, Props(("html", cell.Html), ("fill", cell.Fill), ("align", cell.Align), ("valign", cell.VAlign))); }
             catch (WriterException ex) { warnings.Add($"table cell: {ex.Message}"); }
         }
         // bottom-right first: a merge only moves cells to its right and below, so earlier positions stay addressable
@@ -112,6 +130,13 @@ static class Writers
                 if (cell.RowSpan > 1) Mutations.Set(td, Props(("rowspan", cell.RowSpan)));
             }
             catch (WriterException ex) { warnings.Add($"table merge: {ex.Message}"); }
+        }
+        if (columnsCm is { Count: > 0 } widths && widths.Count == cols && widths.All(w => w > 0))
+        {
+            var total = widths.Sum();
+            var scale = textCm > 0 && total > textCm ? textCm / total : 1;
+            try { Mutations.Set(table, Props(("widths", "[" + string.Join(",", widths.Select(w => "\"" + Cm(Math.Max(0.1, w * scale)) + "\"")) + "]"))); }
+            catch (WriterException ex) { warnings.Add($"table widths: {ex.Message}"); }
         }
     }
 

@@ -9,8 +9,12 @@ namespace Writer.Formats.Compat;
 /// hidden text, field codes and floating drawings, one warning line each.</summary>
 public static partial class DocReader
 {
-    public static List<Block> Read(byte[] file, List<string> warnings)
+    public static List<Block> Read(byte[] file, List<string> warnings) => Read(file, warnings, out _);
+
+    /// <param name="page">The first section's page size and margins, or null when the file does not say.</param>
+    public static List<Block> Read(byte[] file, List<string> warnings, out PageModel? page)
     {
+        page = null;
         var cfb = new Cfb(file);
         var wd = cfb.Stream("WordDocument")
             ?? throw new WriterException(ErrorCode.FormatError, "Not a Word document", "The file has no WordDocument stream; it may be another kind of Office 97-2003 file.");
@@ -25,7 +29,10 @@ public static partial class DocReader
         var counts = new Dictionary<string, int>();
         try
         {
-            return new Doc(wd, table, cfb.Stream("Data") ?? [], counts).Run();
+            var doc = new Doc(wd, table, cfb.Stream("Data") ?? [], counts);
+            var blocks = doc.Run();
+            page = doc.Page;
+            return blocks;
         }
         catch (WriterException) { throw; }
         catch (Exception e)
@@ -110,9 +117,14 @@ public static partial class DocReader
         readonly List<Seg> _segs = [];
         Seg? _cur;
         readonly List<Field> _fields = [];
-        List<List<TableCell>> _rows = [];
+        /// <summary>The table being read: each row's cells with their left and right edges (twips, -1 unknown) and TC flags.</summary>
+        List<(List<TableCell> Cells, List<int> Left, List<int> Right, List<int> Flags)> _rows = [];
+
+        /// <summary>The first section's page (ReadSections).</summary>
+        public PageModel? Page { get; private set; }
         List<TableCell> _cells = [];
         readonly List<string> _cellParas = [];
+        string? _cellAlign;
         readonly List<Block> _tablePics = [];
 
         void Warn(string message) => _warn[message] = _warn.GetValueOrDefault(message) + 1;
@@ -229,6 +241,33 @@ public static partial class DocReader
             int fc = I32(_wd, 0xCA), lcb = I32(_wd, 0xCE);
             var n = (lcb - 4) / 16;
             for (var i = 1; i < n; i++) _sectionMarks.Add(I32(_tbl, fc + 4 * i) - 1);
+            if (n >= 1) Page = SectionPage(I32(_tbl, fc + 4 * (n + 1) + 2));
+        }
+
+        /// <summary>A section's page from its SEPX (fcSepx in the WordDocument stream: a 2-byte size, then the sprms). What the
+        /// sprms leave out is Word's default: US Letter, 2.54 cm top and bottom, 3.17 cm sides.</summary>
+        PageModel? SectionPage(int fcSepx)
+        {
+            if (fcSepx <= 0 || fcSepx + 2 > _wd.Length) return null;
+            int w = 12240, h = 15840, top = 1440, bottom = 1440, left = 1800, right = 1800, orient = 0;
+            var pos = fcSepx + 2;
+            var end = Math.Min(pos + I16(_wd, fcSepx), _wd.Length);
+            while (Next(_wd, ref pos, end, out var op, out var off, out _))
+                switch (op)
+                {
+                    case 0xB01F: w = U16(_wd, off); break;
+                    case 0xB020: h = U16(_wd, off); break;
+                    case 0xB021: left = U16(_wd, off); break;
+                    case 0xB022: right = U16(_wd, off); break;
+                    case 0x9023: top = Math.Abs(I16(_wd, off)); break;
+                    case 0x9024: bottom = Math.Abs(I16(_wd, off)); break;
+                    case 0x301D: orient = _wd[off]; break;
+                }
+            if (orient == 2 && w < h) (w, h) = (h, w); // landscape saved with the portrait size
+            // a page from 5 cm to 3 m with room for the text, or the file is not telling the truth
+            if (w is < 2835 or > 170100 || h is < 2835 or > 170100 || left + right >= w - 567 || top + bottom >= h - 567) return null;
+            static double Cm(int twips) => Math.Round(twips / 567.0, 2);
+            return new PageModel(Cm(w), Cm(h), Cm(top), Cm(right), Cm(bottom), Cm(left));
         }
 
         void StoryWarnings()
@@ -412,11 +451,17 @@ public static partial class DocReader
                 {
                     var html = Html(pap, _tablePics, null, null);
                     if (html.Length > 0 || _cellParas.Count > 0) _cellParas.Add(html);
-                    _cells.Add(new TableCell(string.Join("<br>", _cellParas)));
+                    _cellAlign ??= Align(pap.Jc);
+                    _cells.Add(new TableCell(string.Join("<br>", _cellParas)) { Align = _cellAlign });
                     _cellParas.Clear();
+                    _cellAlign = null;
                 }
             }
-            else if (depth >= 1) _cellParas.Add(Html(pap, _tablePics, null, null));
+            else if (depth >= 1)
+            {
+                if (_cellParas.Count == 0) _cellAlign = Align(pap.Jc); // a cell is aligned as its first paragraph is
+                _cellParas.Add(Html(pap, _tablePics, null, null));
+            }
             else
             {
                 FlushTable();
@@ -426,31 +471,44 @@ public static partial class DocReader
             _cur = null;
         }
 
+        static string? Align(int jc) => jc switch { 1 => "center", 2 => "right", >= 3 => "justify", _ => null };
+
+        /// <summary>A row is complete: its cell definitions (sprmTDefTable) give each cell's edges and flags; cells merged
+        /// across (fMerged) join the one before them.</summary>
         void EndRow(Pap pap)
         {
+            List<int> lefts = [], rights = [], flags = [];
             if (pap.TDef is { Length: >= 1 } t)
             {
                 int itc = t[0], tcOff = 1 + 2 * (itc + 1);
-                foreach (var (first, shd) in pap.Shd ?? [])
+                int Edge(int i) => i <= itc && 1 + 2 * i + 2 <= t.Length ? I16(t, 1 + 2 * i) : -1;
+                foreach (var (first, shd, wide) in pap.Shd ?? [])
                     for (var k = 0; first + k < _cells.Count; k++)
                     {
-                        var fill = shd.Length % 10 == 0 ? Shd(shd, k) : Shd80(shd, k);
+                        var fill = wide ? Shd(shd, k) : Shd80(shd, k);
                         if (fill is not null) _cells[first + k].Fill = fill;
                     }
                 var merged = new List<TableCell>();
                 for (var i = 0; i < _cells.Count; i++)
                 {
-                    var flags = i < itc && tcOff + 20 * i + 2 <= t.Length ? U16(t, tcOff + 20 * i) : 0;
-                    if ((flags & 0x0002) != 0 && merged.Count > 0)
+                    var f = i < itc && tcOff + 20 * i + 2 <= t.Length ? U16(t, tcOff + 20 * i) : 0;
+                    if ((f & 0x0002) != 0 && merged.Count > 0)
                     {
                         merged[^1].ColSpan++;
+                        rights[^1] = Edge(i + 1);
                         if (_cells[i].Html.Length > 0) merged[^1].Html += (merged[^1].Html.Length > 0 ? "<br>" : "") + _cells[i].Html;
                     }
-                    else merged.Add(_cells[i]);
+                    else
+                    {
+                        merged.Add(_cells[i]);
+                        lefts.Add(Edge(i));
+                        rights.Add(Edge(i + 1));
+                        flags.Add(f);
+                    }
                 }
                 _cells = merged;
             }
-            if (_cells.Count > 0) _rows.Add(_cells);
+            if (_cells.Count > 0) _rows.Add((_cells, lefts, rights, flags));
             _cells = [];
         }
 
@@ -459,13 +517,59 @@ public static partial class DocReader
             if (_cells.Count > 0 || _cellParas.Count > 0)
             {
                 if (_cellParas.Count > 0) { _cells.Add(new TableCell(string.Join("<br>", _cellParas))); _cellParas.Clear(); }
-                _rows.Add(_cells);
+                _rows.Add((_cells, [], [], []));
                 _cells = [];
             }
-            if (_rows.Count > 0) Add(Block.Table(_rows));
+            if (_rows.Count > 0) Add(Grid(_rows));
             _rows = [];
             foreach (var p in _tablePics) Add(p);
             _tablePics.Clear();
+        }
+
+        /// <summary>The table as Word lays it out. Its columns are the edges of every row's cells (edges within 20 twips of each
+        /// other are one), so a row of fewer, wider cells (a title across the form) spans the columns under it; a cell merged
+        /// down (fVertMerge without fVertRestart) makes the one above it taller; the columns keep their widths.</summary>
+        static Block Grid(List<(List<TableCell> Cells, List<int> Left, List<int> Right, List<int> Flags)> rows)
+        {
+            var lines = new List<int>();
+            foreach (var x in rows.SelectMany(r => r.Left.Concat(r.Right)).Where(x => x >= 0).Order())
+                if (lines.Count == 0 || x - lines[^1] > 20) lines.Add(x);
+            int Line(int x)
+            {
+                var best = 0;
+                for (var i = 1; i < lines.Count; i++)
+                    if (Math.Abs(lines[i] - x) < Math.Abs(lines[best] - x)) best = i;
+                return best;
+            }
+            var table = new List<List<TableCell>>();
+            var down = new Dictionary<int, TableCell>(); // grid column → the cell a vertical merge started with
+            foreach (var (cells, left, right, flags) in rows)
+            {
+                var row = new List<TableCell>();
+                for (var i = 0; i < cells.Count; i++)
+                {
+                    var cell = cells[i];
+                    var known = lines.Count > 1 && i < left.Count && left[i] >= 0 && right[i] > left[i];
+                    if (!known) { row.Add(cell); continue; }
+                    var start = Line(left[i]);
+                    cell.ColSpan = Math.Max(1, Line(right[i]) - start);
+                    var f = flags[i];
+                    cell.VAlign = (f >> 7 & 3) switch { 1 => "middle", 2 => "bottom", _ => null }; // TC80's vertAlign
+                    if ((f & 0x0060) == 0x0020 && down.TryGetValue(start, out var top) && top.ColSpan == cell.ColSpan)
+                    {
+                        top.RowSpan++;
+                        if (cell.Html.Length > 0) top.Html += (top.Html.Length > 0 ? "<br>" : "") + cell.Html;
+                        continue;
+                    }
+                    for (var c = start; c < start + cell.ColSpan; c++) down.Remove(c);
+                    if ((f & 0x0020) != 0) down[start] = cell;
+                    row.Add(cell);
+                }
+                if (row.Count > 0) table.Add(row);
+            }
+            var block = Block.Table(table);
+            if (lines.Count > 1) block.ColumnsCm = [.. lines.Zip(lines.Skip(1), (a, b) => (b - a) / 567.0)];
+            return block;
         }
 
         void EmitParagraph(Pap pap)
@@ -512,7 +616,7 @@ public static partial class DocReader
                 pics.Clear();
                 html = Html(pap, pics, baseline, null);
             }
-            var align = pap.Jc switch { 1 => "center", 2 => "right", >= 3 => "justify", _ => null };
+            var align = Align(pap.Jc);
             if (html.Length == 0)
             {
                 if (pics.Count == 0 && _blocks.Count > 0 && _blocks[^1].Kind != BlockKind.PageBreak) _blocks.Add(Block.Paragraph(""));

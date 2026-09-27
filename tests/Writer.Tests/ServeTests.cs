@@ -339,6 +339,24 @@ public class ServeTests : IDisposable
         Directory.Delete(_dir, true);
     }
 
+    [Fact]
+    public async Task Export_and_create_put_the_files_they_name_in_the_workspace_too()
+    {
+        // opening a .doc in the browser version exports it to a draft beside it: that draft landed in the engine's current folder
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "compat", "sample.doc"), Path.Combine(_dir, "old.doc"));
+        Doc("template.docx", P("From the template"));
+        async Task<int> Run(params string[] argv) =>
+            JsonDocument.Parse(await (await _client.SendAsync(Request(HttpMethod.Post, "/run", JsonSerializer.Serialize(new { argv })))).Content.ReadAsStringAsync()).RootElement.GetProperty("code").GetInt32();
+
+        Assert.Equal(0, await Run("export", "old.doc", "--to", "old.docx"));
+        Assert.Equal(0, await Run("export", "old.doc", "--to=old.md"));
+        Assert.Equal(0, await Run("create", "new.docx", "--from", "template.docx"));
+        Assert.True(File.Exists(Path.Combine(_dir, "old.docx")) && File.Exists(Path.Combine(_dir, "old.md")));
+        Assert.Contains("From the template", Serve.RunArgv(["view", "new.docx", "text"], _dir).Text);
+        Assert.False(File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "old.docx")), "not the engine's own folder");
+        Assert.Equal(0, await Run("move", "old.docx", "/body/paragraph[1]", "--to", "/body")); // move's --to is a place in the document
+    }
+
     HttpRequestMessage Request(HttpMethod method, string path, string? body = null, bool auth = true)
     {
         var request = new HttpRequestMessage(method, path);

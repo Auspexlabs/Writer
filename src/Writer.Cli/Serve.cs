@@ -664,6 +664,9 @@ public sealed class Serve : IDisposable
                 throw new WriterException(ErrorCode.Usage, $"'{argv[0]}' cannot run inside the server", "Run a document command.");
             if (workspace is not null && argv.Length > 1 && argv[0] is not "help" && !Path.IsPathRooted(argv[1]) && !argv[1].StartsWith('-'))
                 argv[1] = Path.Combine(workspace, argv[1]);
+            // the other files a command names resolve there too: export's output, create's template (move and copy take --to a node)
+            if (workspace is not null && argv.Length > 0 && argv[0] is "export" or "create")
+                ResolveOption(argv, argv[0] == "export" ? "--to" : "--from", workspace);
             code = Runner.Run(argv, stdout, stderr);
         }
         catch (WriterException ex)
@@ -672,6 +675,21 @@ public sealed class Serve : IDisposable
             code = ex.ExitCode;
         }
         return (code, code == 0 ? stdout.ToString() : stderr.ToString());
+    }
+
+    /// <summary>A relative file path given to <paramref name="option"/> (as --to path or --to=path) made absolute under the workspace.</summary>
+    static void ResolveOption(string[] argv, string option, string workspace)
+    {
+        for (var i = 2; i < argv.Length; i++)
+        {
+            if (argv[i] == option && i + 1 < argv.Length)
+            {
+                if (!Path.IsPathRooted(argv[i + 1])) argv[i + 1] = Path.Combine(workspace, argv[i + 1]);
+                i++;
+            }
+            else if (argv[i].StartsWith(option + "=", StringComparison.Ordinal) && argv[i][(option.Length + 1)..] is var value && !Path.IsPathRooted(value))
+                argv[i] = option + "=" + Path.Combine(workspace, value);
+        }
     }
 
     /// <summary>POST /chat: {"file": "a.docx", "messages": [{"role","content"}...], "instructions"?: "...", "selection"?: "..."}

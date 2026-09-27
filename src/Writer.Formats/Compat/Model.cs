@@ -27,6 +27,8 @@ public sealed class Block
     /// <summary>Picture bytes (PNG, JPEG, GIF or BMP) with its display size in cm when known.</summary>
     public byte[]? Image;
     public double? WidthCm, HeightCm;
+    /// <summary>A table's column widths in cm, left to right, when the format gives them.</summary>
+    public List<double>? ColumnsCm;
 
     public static Block Heading(int level, string html) => new() { Kind = BlockKind.Heading, Level = Math.Clamp(level, 1, 6), Html = html };
     public static Block Paragraph(string html) => new() { Kind = BlockKind.Paragraph, Html = html };
@@ -35,12 +37,17 @@ public sealed class Block
     public static Block PageBreak() => new() { Kind = BlockKind.PageBreak };
 }
 
+/// <summary>A document's page as the file sets it up, in cm (width and height as the page lies: landscape is wider than tall).</summary>
+public sealed record PageModel(double WidthCm, double HeightCm, double TopCm, double RightCm, double BottomCm, double LeftCm);
+
 public sealed class TableCell
 {
     public string Html = "";
     public int ColSpan = 1, RowSpan = 1;
     /// <summary>Background as RRGGBB, or null.</summary>
     public string? Fill;
+    /// <summary>The text's alignment in the cell (left, center, right, justify) and the cell's vertical one (top, middle, bottom), or null.</summary>
+    public string? Align, VAlign;
     public TableCell() { }
     public TableCell(string html) { Html = html; }
 }

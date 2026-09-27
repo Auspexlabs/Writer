@@ -24,7 +24,7 @@ public static partial class DocReader
         public int OutLvl = 9;
         public bool InTable, Ttp, PageBreakBefore;
         public byte[]? TDef;
-        public List<(int First, byte[] Shd)>? Shd;
+        public List<(int First, byte[] Shd, bool Wide)>? Shd;
         public Pap() { }
     }
 
@@ -206,8 +206,15 @@ public static partial class DocReader
                     case 0x2640: pap.OutLvl = b[off]; break;
                     case 0x2407: pap.PageBreakBefore = b[off] != 0; break;
                     case 0xD608 or 0xD606: if (n > 2) pap.TDef = b[(off + 2)..(off + n)]; break;
-                    case 0xD609 or 0xD612 or 0xD616 or 0xD60C:
-                        if (n > 1) (pap.Shd ??= []).Add((op == 0xD616 ? 22 : op == 0xD60C ? 44 : 0, b[(off + 1)..(off + n)]));
+                    case 0xD609 or 0xD612 or 0xD616 or 0xD60C: // the older 2-byte SHD80 (D609), or 10-byte SHD from cell 0, 22, 44
+                        if (n > 1) (pap.Shd ??= []).Add((op == 0xD616 ? 22 : op == 0xD60C ? 44 : 0, b[(off + 1)..(off + n)], op != 0xD609));
+                        break;
+                    case 0x6646 or 0x6645 when b != _data:
+                        // sprmPHugePapx: properties too big for the FKP (a table row of many cells: its cell definitions, and the
+                        // mark that ends the row) are in the Data stream, a 2-byte size and then the sprms
+                        var at = U32(b, off);
+                        var cb = at + 2 <= (uint)_data.Length ? U16(_data, at) : 0;
+                        if (cb > 0) ApplyParaSprms(ref pap, _data, (int)at + 2, cb);
                         break;
                 }
             }
@@ -312,8 +319,8 @@ public static partial class DocReader
         {
             if (10 * k + 10 > shd.Length) return null;
             int fore = I32(shd, 10 * k), back = I32(shd, 10 * k + 4), ipat = U16(shd, 10 * k + 8);
-            var c = ipat == 1 ? fore : back;
-            return ipat is 0 or 1 && c >> 24 != 0xFF ? Inline.Bgr((uint)c) : null;
+            var c = (uint)(ipat == 1 ? fore : back);
+            return ipat is 0 or 1 && c >> 24 != 0xFF ? Inline.Bgr(c) : null; // 0xFF000000 is automatic: no fill
         }
 
         static string? Shd80(byte[] shd, int k)

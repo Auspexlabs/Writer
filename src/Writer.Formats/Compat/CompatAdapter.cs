@@ -59,7 +59,11 @@ public static class Compat
         if (Cfb.IsCfb(bytes))
         {
             var cfb = new Cfb(bytes);
-            if (cfb.Has("WordDocument")) return Writers.Docx(DocReader.Read(bytes, warnings), warnings);
+            if (cfb.Has("WordDocument"))
+            {
+                var blocks = DocReader.Read(bytes, warnings, out var page);
+                return Writers.Docx(blocks, warnings, page);
+            }
             if (cfb.Has("Workbook") || cfb.Has("Book")) return Writers.Xlsx(XlsReader.Read(bytes, warnings), warnings);
             if (cfb.Has("PowerPoint Document")) return Writers.Pptx(PptReader.Read(bytes, warnings), warnings);
             if (cfb.Has("EncryptedPackage")) throw new WriterException(ErrorCode.FormatError, "This file is password-protected", "Remove the password in Office, then open it again.");

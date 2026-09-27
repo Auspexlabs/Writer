@@ -12,3 +12,7 @@ slide and a timed push transition on slide 2. They are licensed under the Apache
 colours, highlight, double and wavy underlines, double strike, sub- and superscript, caps, spacing, kerning, languages, a
 link with a tooltip and an `extLst`, whose paragraphs carry their own alignment, spacing, bullet, numbering, level and
 end marks around a line break and a slide-number field, and a vertical box with its own insets and list style.
+
+`compat/` holds our own Office 97-2003 samples, each beside the page it was made from: `sample.doc` is macOS textutil's
+Word save of `sample.doc.html`; `form-table.doc` is LibreOffice 24.2's "MS Word 97" save of `form-table.doc.html`, a
+13-column form on an A4 landscape page whose rows are wide enough to keep their cell definitions in the Data stream.
