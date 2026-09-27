@@ -567,6 +567,7 @@ class Component extends DCLogic {
     const ed = this.edRef.current;
     ed.__complete = () => this.citeSug ? null : undefined; // AI 自动补全 waits while a citation is offered at the caret (Tab is the citation's)
     ed.addEventListener('keydown', this.onCiteKey);
+    ed.addEventListener('paste', this.onPaste);
     ed.addEventListener('beforeinput', this.onBI);
     ed.addEventListener('compositionstart', this.onCS);
     ed.addEventListener('pointerdown', this.onPicDown);
@@ -1257,6 +1258,17 @@ class Component extends DCLogic {
     this.citeScan();
     return true;
   }
+  /** A paste of text: what the clipboard holds, cleaned as the page shows it (engine.js pasteHtml / pasteText), put in through the
+   *  editor's own input path. A picture is pasted by the browser as before. */
+  onPaste = e => {
+    const dt = e.clipboardData; if (!dt || !this.EN || this.state.hf) return;
+    if (Array.from(dt.items || []).some(i => i.kind === 'file')) return;
+    const html = dt.getData('text/html'), text = dt.getData('text/plain'); if (!html && !text) return;
+    e.preventDefault();
+    document.execCommand('insertHTML', false, html ? this.EN.pasteHtml(html) : this.EN.pasteText(text));
+    this.EN.tidyPaste(this.edRef.current, el => Math.round(parseFloat(getComputedStyle(el).fontSize) * 0.75 * 2) / 2 + 'pt');
+    this.after();
+  };
   /** Tab takes the citation offered at the caret, Esc says no to it. */
   onCiteKey = e => {
     if (!this.citeSug || e.isComposing || e.keyCode === 229 || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || (e.key !== 'Tab' && e.key !== 'Escape')) return;

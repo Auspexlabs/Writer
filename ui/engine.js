@@ -1398,6 +1398,47 @@ export function wrapTabs(root) {
   }
   return root;
 }
+/** What a paste puts in the text, from the clipboard's html (Word, a web page, this editor): the whitespace in its text as the
+ *  page draws it — a run of spaces, tabs and line breaks is one space (a pre and a kept tab aside), or the save would write line
+ *  breaks and tabs no one saw — without its style sheets, comments, Word's empty o:p, and without this editor's identities
+ *  (a paragraph's path, a comment's or a citation's id, a note's mark), which belong to what was copied, not to the copy. */
+export function pasteHtml(html) {
+  const root = new DOMParser().parseFromString(String(html || ''), 'text/html').body, d = root.ownerDocument || document;
+  root.querySelectorAll('style,script,meta,link,title,xml,template').forEach(x => x.remove());
+  const walk = (show, keep) => { const w = d.createTreeWalker(root, show), out = []; let n; while ((n = w.nextNode())) if (keep(n)) out.push(n); return out; };
+  walk(128, () => true).forEach(n => n.remove()); // comments (Word's conditional ones)
+  root.querySelectorAll('*').forEach(el => { if (/^o:p$/i.test(el.tagName)) el.remove(); });
+  const kept = el => el && el.closest && el.closest('pre,.wd-tab,[style*="white-space: pre"],[style*="white-space:pre"]');
+  for (const t of walk(4, t => !kept(t.parentElement))) {
+    const block = /^(P|DIV|LI|TD|TH|TR|TBODY|TABLE|UL|OL|H[1-6]|BLOCKQUOTE|BODY)$/;
+    const v = t.nodeValue.replace(/[ \t\n\r\f]+/g, ' ');
+    // only whitespace between blocks: the line breaks of the html's own layout, not a space in the text
+    if (!v.trim() && (!t.previousSibling || block.test(t.previousSibling.tagName || '')) && (!t.nextSibling || block.test(t.nextSibling.tagName || '')) && block.test((t.parentElement || {}).tagName || '')) { t.remove(); continue; }
+    if (v !== t.nodeValue) t.nodeValue = v;
+  }
+  root.querySelectorAll('sup[data-fn]').forEach(x => x.remove());
+  root.querySelectorAll('[data-path],[data-citeid],[data-cid],[data-ghost-root]').forEach(el => ['data-path', 'data-citeid', 'data-cid', 'data-ghost-root'].forEach(a => el.removeAttribute(a)));
+  return root.innerHTML;
+}
+/** After a paste: the browser wraps what it put in to look as it did where it was copied, in the page's own terms — the app's
+ *  theme colours (var(--…)), a transparent fill, the size the paragraph has anyway. Those are the page's, not the text's: taken
+ *  off (a span left with nothing to say is unwrapped). `sizeOf(el)` is the size the element would have without its own. */
+export function tidyPaste(root, sizeOf) {
+  for (const el of Array.from(root.querySelectorAll('[style*="var("]'))) {
+    const st = el.style; if (!st) continue;
+    for (const k of ['color', 'background-color', 'background']) { const v = st.getPropertyValue(k); if (/var\(|transparent|rgba\(0, 0, 0, 0\)/.test(v)) st.removeProperty(k); }
+    if (st.getPropertyValue('font-size') && sizeOf && el.parentElement && st.getPropertyValue('font-size') === sizeOf(el.parentElement)) st.removeProperty('font-size');
+    if (!(el.getAttribute('style') || '').trim()) el.removeAttribute('style');
+    if (el.tagName === 'SPAN' && !el.attributes.length) { while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el); el.remove(); }
+  }
+  return root;
+}
+/** What a paste of plain text puts in: its lines as paragraphs, its tabs as tabs (TAB_HTML), the rest as text. */
+export function pasteText(text) {
+  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n'), line = l => esc(l).replace(/\t/g, TAB_HTML);
+  if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+  return lines.length === 1 ? line(lines[0]) : lines.map(l => `<p>${line(l) || '<br>'}</p>`).join('');
+}
 function inlineHtml(el) {
   const c = el.cloneNode(true);
   Array.from(c.querySelectorAll('span.wd-tab')).forEach(x => x.replaceWith(x.textContent)); // the tab alone

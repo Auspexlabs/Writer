@@ -7,7 +7,8 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 const node = n => typeof n === 'string' ? new Text(n) : n; // before, after and replaceWith take text as the DOM does
 
 export class Text { constructor(t) { this.nodeType = 3; this.nodeValue = t; this.parentNode = null; } get textContent() { return this.nodeValue; } get ownerDocument() { return document; }
-  get parentElement() { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null; } get nextSibling() { const s = this.parentNode ? this.parentNode.childNodes : []; return s[s.indexOf(this) + 1] || null; } cloneNode() { return new Text(this.nodeValue); } remove() { const p = this.parentNode; if (p) p.childNodes.splice(p.childNodes.indexOf(this), 1); this.parentNode = null; } }
+  get parentElement() { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null; } get nextSibling() { const s = this.parentNode ? this.parentNode.childNodes : []; return s[s.indexOf(this) + 1] || null; }
+  get previousSibling() { const s = this.parentNode ? this.parentNode.childNodes : []; return s[s.indexOf(this) - 1] || null; } cloneNode() { return new Text(this.nodeValue); } remove() { const p = this.parentNode; if (p) p.childNodes.splice(p.childNodes.indexOf(this), 1); this.parentNode = null; } }
 
 export class Element {
   constructor(tag, attrs = {}) { this.nodeType = 1; this.tagName = tag.toUpperCase(); this.attrs = {}; this.childNodes = []; this.parentNode = null; this.style = styleProxy(this); for (const [k, v] of Object.entries(attrs)) this.attrs[k] = v; }
@@ -20,9 +21,11 @@ export class Element {
   get previousElementSibling() { const s = this.parentNode ? this.parentNode.children : []; return s[s.indexOf(this) - 1] || null; }
   get nextElementSibling() { const s = this.parentNode ? this.parentNode.children : []; return s[s.indexOf(this) + 1] || null; }
   get nextSibling() { const s = this.parentNode ? this.parentNode.childNodes : []; return s[s.indexOf(this) + 1] || null; }
+  get previousSibling() { const s = this.parentNode ? this.parentNode.childNodes : []; return s[s.indexOf(this) - 1] || null; }
   get colSpan() { return +this.attrs.colspan || 1; } set colSpan(v) { this.attrs.colspan = String(v); }
   get rowSpan() { return +this.attrs.rowspan || 1; } set rowSpan(v) { this.attrs.rowspan = String(v); }
   get id() { return this.attrs.id || ''; } set id(v) { this.attrs.id = v; }
+  get attributes() { return Object.entries(this.attrs).map(([name, value]) => ({ name, value })); }
   get className() { return this.attrs.class || ''; }
   get classList() { const el = this; return { contains: c => el.className.split(/\s+/).includes(c), add: c => { if (!this.contains(c)) el.attrs.class = (el.className + ' ' + c).trim(); }, remove: c => { el.attrs.class = el.className.split(/\s+/).filter(x => x !== c).join(' '); }, toggle: (c, on) => (on ?? !this.contains(c)) ? this.add(c) : this.remove(c) }; }
   getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }
@@ -95,7 +98,7 @@ export function parseNodes(html) {
     let gt = lt + 1, q = null; for (; gt < html.length; gt++) { const ch = html[gt]; if (q) { if (ch === q) q = null; } else if (ch === '"' || ch === "'") q = ch; else if (ch === '>') break; }
     const raw = html.slice(lt + 1, gt); i = gt + 1;
     if (raw[0] === '/') { const name = raw.slice(1).trim().toUpperCase(); for (let e = cur; e && e !== root; e = e.parentElement) if (e.tagName === name) { cur = e.parentElement; break; } continue; }
-    const name = /^[a-zA-Z0-9-]+/.exec(raw)?.[0]; if (!name) continue;
+    const name = /^[a-zA-Z0-9:-]+/.exec(raw)?.[0]; if (!name) continue; // o:p is one name, as a browser reads it
     const el = new Element(name); const re = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g; let m; const rest = raw.slice(name.length);
     while ((m = re.exec(rest))) el.attrs[m[1].toLowerCase()] = decode(m[2] ?? m[3] ?? m[4] ?? '');
     cur.appendChild(el);

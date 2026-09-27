@@ -71,6 +71,17 @@ test('a tab shows in a span of its own that keeps it (Word\'s half-inch stops); 
   EN.wrapTabs(el); assert.equal(el.querySelectorAll('.wd-tab').length, 3, 'once only');
 });
 
+test('a paste: the whitespace of the html as the page draws it (not line breaks and tabs no one saw), no copied identities', () => {
+  const html = '<p class="MsoNormal">Hello\n   world,\nthis is\tpasted <b>bold</b><o:p></o:p></p>\n<p data-path="/body/paragraph[3]">Next <span data-cite="Peg15" data-citeid="77">(Pegg)</span><sup data-fn="n1">1</sup></p><pre>keep\n  this</pre>';
+  const out = EN.pasteHtml(html);
+  assert.equal(out, '<p class="MsoNormal">Hello world, this is pasted <b>bold</b></p><p>Next <span data-cite="Peg15">(Pegg)</span></p><pre>keep\n  this</pre>');
+  assert.equal(EN.pasteText('Name:\tValue'), 'Name:<span class="wd-tab">\t</span>Value');
+  const el = parse('<p data-path="/body/paragraph[1]">Start<span style="font-size: 11pt; background-color: transparent; color: var(--k1, #1D1D1F);">Hello</span><b style="font-size: 11pt; color: var(--k1, #1D1D1F);">bold</b><span style="color: #C00000;">red</span></p>');
+  EN.tidyPaste(el, () => '11pt');
+  assert.equal(el.innerHTML, '<p data-path="/body/paragraph[1]">StartHello<b>bold</b><span style="color: #C00000;">red</span></p>', 'the page\'s own colours and size go; the text\'s red stays');
+  assert.equal(EN.pasteText('one\r\n\nthree <x>\n'), '<p>one</p><p><br></p><p>three &lt;x&gt;</p>');
+});
+
 // ----- round trips through the engine -----
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const cli = join(root, 'src/Writer.Cli/bin/Debug/net10.0/writer.dll');
