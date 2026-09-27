@@ -62,6 +62,41 @@ test('a block taller than a page starts right under what comes before it, as Wor
   assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(2){margin-top:643px!important}`, 'one that fits a page but not what is left of this one starts the next (8px gap + 635px to page 2)');
 });
 
+/** Blocks of text as the page view measures them, [tag, top, height, line height, attributes]: a P, H2… with a line height has
+ *  lines that linesOf reads (as the glyph boxes of a real paragraph give them); a TABLE has none. */
+function textLaidOut(blocks) {
+  const ed = { innerText: 'text', querySelectorAll: () => [] };
+  ed.children = blocks.map(([tag, top, h, lh, attrs = {}]) => ({ tagName: tag, offsetTop: top, offsetHeight: h, offsetParent: ed, parentElement: ed, children: [],
+    querySelectorAll: () => [], querySelector: () => null, matches: () => false, getAttribute: n => attrs[n] ?? null,
+    lines: lh ? Array.from({ length: Math.round(h / lh) }, (_, i) => [top + i * lh, top + (i + 1) * lh, top + i * lh + lh / 2]) : null }));
+  return ed;
+}
+const textPages = (c, blocks) => { c.linesOf = el => el.lines; c.edRef.current = textLaidOut(blocks); c.refreshInfo(); return plain(c.state.info.at); };
+
+test('a paragraph that runs past the end of a page goes on on the next from the first line that does not fit, as Word breaks it', () => {
+  const c = editor({ id: 'd', html: '' }); // A4, normal margins: 931px of text a page, pages 1143px apart in the page view
+  assert.deepEqual(textPages(c, [['P', 0, 800, 30], ['P', 808, 300, 30]]), [[0, 928], [928, 1108]], 'four of its ten lines end page 1');
+  assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(2)::before{content:''!important;float:left!important;width:100%!important;height:335px!important;margin:0!important;padding:0!important;border:0!important;shape-outside:polygon(0 135px,100% 135px,100% 335px,0 335px)!important}`,
+    'the fifth line is pushed down to the top of page 2 by a band the lines keep out of (215px from 928 to 1143), from inside that line; the html is not touched');
+  assert.deepEqual(textPages(c, [['P', 0, 800, 30], ['P', 808, 150, 30]]), [[0, 898], [898, 958]], '孤行控制: not the last line alone on page 2, two of them');
+  assert.deepEqual(textPages(c, [['P', 0, 800, 30], ['P', 808, 150, 30, { 'data-widow': 'off' }]]), [[0, 928], [928, 958]], 'with it off, the last line alone');
+  assert.deepEqual(textPages(c, [['P', 0, 870, 30], ['P', 878, 150, 30]]), [[0, 870], [878, 1028]], 'nor its first line alone at the bottom of page 1: the paragraph starts page 2');
+  assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(2){margin-top:273px!important}`);
+  assert.deepEqual(textPages(c, [['P', 0, 800, 30], ['P', 808, 300, 30, { 'data-w-keeplines': 'true' }]]), [[0, 800], [808, 1108]], '段中不分页 keeps it whole');
+  assert.deepEqual(textPages(c, [['P', 0, 800, 30], ['H2', 808, 30, 30], ['P', 846, 100, 50]]), [[0, 800], [808, 946]], 'a heading goes on with the paragraph that cannot start under it');
+  assert.equal(c.pgCss.textContent, `[data-pg="${c.pgId}"]>:nth-child(2){margin-top:343px!important}`);
+  assert.deepEqual(textPages(c, [['P', 0, 800, 30], ['H2', 808, 30, 30, { 'data-style': 'Normal' }], ['P', 846, 100, 50]]), [[0, 838], [846, 946]], 'not a paragraph drawn as 正文 that only has an outline level');
+  assert.deepEqual(textPages(c, [['P', 0, 2400, 30]]), [[0, 930], [930, 1860], [1860, 2400]], 'a paragraph longer than a page breaks at every page\'s end, and is pushed down each time');
+  assert.match(c.pgCss.textContent, /shape-outside:polygon\(0 945px,100% 945px,100% 1143px,0 1143px,0 2088px,100% 2088px,100% 2286px,0 2286px\)/);
+  assert.deepEqual(textPages(c, [['P', 0, 800, 30], ['TABLE', 808, 300]]), [[0, 800], [808, 1108]], 'a table still starts the next page whole');
+  const t = editor({ id: 'd', html: '' }), ed = textLaidOut([['P', 0, 800, 30], ['P', 808, 300, 30]]);
+  Object.defineProperty(ed.children[1], 'offsetHeight', { get: () => 300 + (/::before/.test(t.pgCss.textContent) ? 215 : 0) }); // the band makes it that much taller
+  t.linesOf = el => el.lines; t.edRef.current = ed; t.refreshInfo();
+  let writes = 0; const css = t.pgCss.textContent;
+  t.pgCss = { get textContent() { return css; }, set textContent(v) { writes++; } };
+  t.refreshInfo(true); assert.equal(writes, 0, 'typing that moves no line keeps the pages: the split paragraph counts as tall as the page view draws it');
+});
+
 test('a page break inside a paragraph and a paragraph that starts a page split pages too, and never make an empty one', () => {
   const c = editor({ id: 'd', html: '' });
   assert.deepEqual(pages(c, [['p', 0, 200, 88]]), { text: '共 2 页', thumbs: [['0px', '14px'], ['-117px', '13px']] }, 'Ctrl+Enter after text');

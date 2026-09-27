@@ -19,7 +19,7 @@ const FORMAT = { lineSpacing: '1.5', spaceBefore: '6pt', spaceAfter: '8pt', inde
 test('the editor draws a paragraph\'s own 段落 settings as CSS and keeps them on the element for the save', () => {
   const html = EN.blocksToHtml(EN.blocksOf([{ kind: 'paragraph', path: '/body/paragraph[1]', props: Object.assign({ html: 'text', align: 'distribute' }, FORMAT) },
     { kind: 'paragraph', path: '/body/paragraph[2]', props: { html: 'hang', indentFirst: '-2ch', lineSpacing: '18pt', border: 'box' } }], 'a.docx'));
-  assert.match(html, /<p data-path="\/body\/paragraph\[1\]" data-w-linespacing="1.5" data-w-spacebefore="6pt" data-w-spaceafter="8pt" data-w-indentleft="1cm" data-w-indentfirst="2ch" data-w-border="top bottom" data-w-keepnext="true" data-w-tabs="left 2cm, right 15cm" style="text-align:justify;text-align-last:justify;line-height:2.25;margin-top:6pt;margin-bottom:8pt;margin-left:1cm;text-indent:2em;border-top:1px solid currentColor;border-bottom:1px solid currentColor;padding:1px 4px">text<\/p>/);
+  assert.match(html, /<p data-path="\/body\/paragraph\[1\]" data-w-linespacing="1.5" data-w-spacebefore="6pt" data-w-spaceafter="8pt" data-w-indentleft="1cm" data-w-indentfirst="2ch" data-w-border="top bottom" data-w-keepnext="true" data-w-tabs="left 2cm, right 15cm" style="text-align:justify;text-align-last:justify;line-height:calc\(1\.5 \* var\(--wd-lh, 1\.5\)\);margin-top:6pt;margin-bottom:8pt;margin-left:1cm;text-indent:2em;border-top:1px solid currentColor;border-bottom:1px solid currentColor;padding:1px 4px">text<\/p>/);
   assert.match(html, /style="line-height:18pt;text-indent:-2em;padding-left:2em;border-top:1px solid currentColor;border-bottom:1px solid currentColor;border-left:1px solid currentColor;border-right:1px solid currentColor;padding:1px 4px">hang</, 'a hanging indent pulls the first line back; box is all four sides');
   const back = EN.blocksFromHtml(parse(html));
   assert.deepEqual([back[0].align, back[1].align], ['distribute', null]);
@@ -31,6 +31,17 @@ test('the editor draws a paragraph\'s own 段落 settings as CSS and keeps them 
   const el = parse('<p data-w-spaceafter="12pt" data-w-fill="D9D9D9" style="text-align:center;margin-top:6pt;line-height:1.5">x</p>').firstChild;
   EN.drawPara(el);
   assert.equal(el.getAttribute('style'), 'text-align: center; margin-bottom: 12pt; background: #D9D9D9;', 'the old spacing goes, the alignment stays');
+});
+
+test('a paragraph whose text is all in runs of their own size is drawn at its mark\'s (¶) size, as Word sizes its lines by the text and the mark alone', () => {
+  const html = EN.blocksToHtml(EN.blocksOf([
+    { kind: 'heading', path: '/body/heading[1]', props: { html: '<span style="font-size:12pt">Annotated Bibliography</span>', level: '2', markSize: '12pt' } },
+    { kind: 'paragraph', path: '/body/paragraph[1]', props: { html: 'plain <span style="font-size:12pt">sized</span>', markSize: '12pt' } },
+    { kind: 'paragraph', path: '/body/paragraph[2]', props: { html: '', text: '', markSize: '12pt' } }], 'a.docx'));
+  assert.match(html, /<h2 data-path="\/body\/heading\[1\]" style="font-size:12pt">/, 'its style\'s 18pt only made its line taller');
+  assert.match(html, /<p data-path="\/body\/paragraph\[1\]">plain/, 'text in the paragraph\'s own size keeps that size');
+  assert.match(html, /<p data-path="\/body\/paragraph\[2\]" style="font-size:12pt"><br><\/p>/, 'an empty paragraph is as tall as its mark');
+  assert.deepEqual(EN.blocksFromHtml(parse(html)).map(b => b.props.markSize), [undefined, undefined, undefined], 'drawn, not saved');
 });
 
 test('段前 / 段后 in lines (行) draw 12pt a line; 孤行控制 off is the paragraph\'s own, and one its style turns off shows on data-widow', () => {

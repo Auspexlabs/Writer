@@ -12,9 +12,10 @@
 <link rel="stylesheet" href="./vendor/katex/katex.min.css">
 <style>
 .wd-ed{outline:none;word-break:break-word}
-.wd-ed h1{font-size:26px;font-weight:700;margin:18px 0 8px;line-height:1.4}
-.wd-ed h2{font-size:20px;font-weight:600;margin:16px 0 6px;line-height:1.45}
-.wd-ed h3{font-size:16px;font-weight:600;margin:14px 0 4px}
+.wd-ed h1:where(:not([data-style])){font-size:26px;font-weight:700;margin:18px 0 8px;line-height:1.4}
+.wd-ed h2:where(:not([data-style])){font-size:20px;font-weight:600;margin:16px 0 6px;line-height:1.45}
+.wd-ed h3:where(:not([data-style])){font-size:16px;font-weight:600;margin:14px 0 4px}
+:where(.wd-ed) :where(h1,h2,h3)[data-style]{font-size:inherit;font-weight:inherit;margin:0 0 8px} /* drawn by its own style (a paragraph with an outline level, Title): not as a heading */
 .wd-ed p{margin:0 0 8px}
 .wd-ed blockquote{margin:8px 0;padding:4px 14px;border-left:3px solid var(--k10, #D1D1D6);color:var(--k11, #6E6E73)}
 .wd-ed pre{font-family:'IBM Plex Mono',monospace;background:var(--k48, #F5F5F7);padding:10px 12px;font-size:13px;white-space:pre-wrap;border-radius:4px}
@@ -417,6 +418,8 @@ const AV_ME = 'oklch(0.56 0.1 45)', AV_HUES = [225, 345, 165, 285, 105]; // comm
 const initialsOf = name => { const w = String(name || '').trim().split(/\s+/).filter(Boolean), first = s => Array.from(s)[0]; return !w.length ? '?' : /^[\p{Lu}\p{Ll}]/u.test(w[0]) ? (first(w[0]) + (w.length > 1 ? first(w[w.length - 1]) : '')).toUpperCase() : first(w[0]); };
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 const GAP = 20; // px between the pages of the page view
+const TEXT_BLOCK = /^(P|H[1-6]|BLOCKQUOTE|PRE)$/; // blocks whose lines pagesOf breaks over two pages
+const NO_SPLIT = '[data-shape],img[data-w-wrap]:not([data-w-wrap="inline"])'; // what lies over a paragraph's lines rather than in them
 /** Input that only changes text inside the blocks already there: after it the pages can only move if a block's height did. */
 const TYPED = /^(insertText|insertCompositionText|insertReplacementText|delete(Content|Word|SoftLine|HardLine)(Backward|Forward))$/;
 const HF_PRESETS = ['{page}', '第 {page} 页', '{page} / {pages}', '第 {page} 页 / 共 {pages} 页', '- {page} -', 'Page {page} of {pages}']; // 样式 button, 插入 › 页码 — i18n-ok: written into headers/footers as-is, never translated
@@ -457,7 +460,7 @@ class Component extends DCLogic {
     document.documentElement.style.setProperty('--wd-hf-hint', JSON.stringify($t('输入文字，点「页码」插入自动变化的页码')));
     for (const [k, l] of SECTION_BREAKS) document.documentElement.style.setProperty('--wd-sb-' + k, JSON.stringify($t('分节符（{kind}）', { kind: $t(l) }))); // the break's line on the page
     import('./glass.js');
-    import('./engine.js').then(m => { this.EN = m; }); // the table and contents commands share their model with the save
+    import('./engine.js').then(m => this.engineReady(m)); // the table and contents commands share their model with the save
     import('./picture.js').then(m => { this.P = m; this.layoutPics(); this.drawShapes(); }); // the 图片 tab, and where pictures sit
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./md.js').then(m => { this.MD = m; this.drawEqs(); }); // KaTeX, for the equations
@@ -476,6 +479,9 @@ class Component extends DCLogic {
     this.attachWheel();
     import('./follow.js').then(F => { this.F = F; this.attachFollow(); });
   }
+  /** engine.js has loaded: the text shown before it came gets what needs it, the document's own styles above all (its fonts, sizes,
+   *  heading looks, italic Emphasis), and the notes' and captions' numbers; the pages are measured again in those fonts. */
+  engineReady(m) { this.EN = m; if (this.gone || !this.edRef.current) return; this.ink(); this.styleSheet(); this.refreshInfo(); }
   /** Caret follow (镜头跟随): the caret inside edRef or a .wd-hf keeps the canvas scrolled with it; bound once the canvas element exists, re-bound if it changes. */
   attachFollow() { const cv = this.cvRef.current; if (this.gone || !this.F || !cv || (this.follow && this.follow.el === cv)) return; this.follow && this.follow.detach(); this.follow = this.F.attach(cv); }
   /** Ctrl/⌘ + wheel and trackpad pinch zoom the document instead of the browser page: a native non-passive listener on the editor root. */
@@ -548,7 +554,7 @@ class Component extends DCLogic {
     const docs = this.doc.styles || [], byName = new Map(docs.map(s => [String(s.name || '').toLowerCase(), s])), seen = new Set(), out = [];
     const label = s => { const l = STYLE_LABELS[String(s.name || '').toLowerCase()]; return l ? $t(l) : s.name || s.id; };
     for (const [id, name, type] of BUILTIN_STYLES) { const s = byName.get(name.toLowerCase()) || { id, name, type, heading: /^heading (\d)$/.test(name) ? +name.slice(8) : undefined, look: {} }; seen.add(s.id); out.push(Object.assign({ label: label(s) }, s)); }
-    for (const s of docs) if (!seen.has(s.id) && !/^toc /i.test(s.name || '')) out.push(Object.assign({ label: label(s) }, s));
+    for (const s of docs) if (!seen.has(s.id) && !s.hidden && !/^toc /i.test(s.name || '')) out.push(Object.assign({ label: label(s) }, s)); // hidden: drawn, not offered
     return out;
   }
   styleLabel(id) { const s = this.gallery().find(x => x.id === id); return s ? s.label : id || $t('正文'); }
@@ -560,7 +566,7 @@ class Component extends DCLogic {
     const tag = h >= 1 && h <= 3 ? 'h' + h : name === 'quote' ? 'blockquote' : name === 'code' ? 'pre' : name === 'title' ? 'h1' : name === 'subtitle' ? 'h2' : 'p';
     this.exec('formatBlock', '<' + tag + '>');
     const own = !(h >= 1 && h <= 3) && name !== 'normal' && name !== 'code'; // what the tag alone does not say rides on data-style
-    this.blocks().forEach(b => { if (own) b.setAttribute('data-style', s.id); else b.removeAttribute('data-style'); });
+    this.blocks().forEach(b => { b.removeAttribute('data-level'); if (own) b.setAttribute('data-style', s.id); else b.removeAttribute('data-style'); }); // the level is the tag's now
     this.after();
   }
   /** A character style (强调, 明显强调, the document's own) on the selected text as <span data-style>, which the save writes as rStyle; '' clears it. */
@@ -782,40 +788,95 @@ class Component extends DCLogic {
   flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }, true); this.refreshInfo(!this.pgDirty); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
   ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
-  /** The pages, as [top, bottom] of the text as it flows without page gaps. A block that does not fit what is left of a page starts
-   *  the next one, and so does what follows a page break: a paragraph of its own (hr[data-pb]), one inside a paragraph (span[data-pb]:
-   *  the rest of that paragraph moves on), a paragraph that starts a page (data-pb="before", unless at the top of one already). A
-   *  block taller than a page runs on over the next. `push` moves each page's first block down to its page in the page view, where
-   *  pages are `step` apart: [element, css property, px]. The status bar counts the pages, the thumbnails draw them, and the page
-   *  view draws a sheet with its header and footer for each. A block taller than a whole page starts where it is, as Word starts
-   *  a long table right under what comes before it: moving it on would only leave the rest of this page empty. ponytail: blocks
-   *  never split, so a table longer than a page overlaps the page gap; splitting rows needs real layout. */
+  /** The pages, as [top, bottom] of the text as it flows without page gaps. A paragraph that runs past the end of a page goes on
+   *  on the next one from the line that does not fit, as Word breaks it: at least two of its lines on either side (孤行控制, unless
+   *  turned off), none when 段中不分页 keeps it whole, and a heading or a paragraph set to 与下段同页 goes on with it when its first
+   *  lines do. Other blocks (a table, a picture) that do not fit what is left of a page start the next one, and so does what follows
+   *  a page break: a paragraph of its own (hr[data-pb]), one inside a paragraph (span[data-pb]: the rest of that paragraph moves on),
+   *  a paragraph that starts a page (data-pb="before", unless at the top of one already). A list breaks between its items. `push`
+   *  moves each page's first block down to its page in the page view, where pages are `step` apart: [element, css property, px],
+   *  or [paragraph, 'lines', [[top, bottom]…]] for a paragraph whose lines go on over pages: the bands of it, from its top, where no
+   *  line may be (linesCss). The status bar counts the pages, the thumbnails draw them, and the page view draws a sheet with its header and
+   *  footer for each. A table or picture taller than a whole page starts where it is, as Word starts a long table right under what
+   *  comes before it: moving it on would only leave the rest of this page empty. ponytail: tables never split, so one longer than a
+   *  page overlaps the page gap; splitting rows needs real layout. */
   pagesOf(ed, contentH, step) {
     const y = el => { let t = 0; for (let e = el; e && e !== ed; e = e.offsetParent) t += e.offsetTop; return t; };
     const pieces = [], tops = []; let brk = false, inner = false;
+    const piece = (el, top, forced) => ({ top, bottom: y(el) + el.offsetHeight, el, css: 'margin-top', forced, text: TEXT_BLOCK.test(el.tagName || '') && !el.querySelector(NO_SPLIT),
+      keep: el.getAttribute('data-w-keeplines') === 'true', next: el.getAttribute('data-w-keepnext') ? el.getAttribute('data-w-keepnext') === 'true' : /^H[1-6]$/.test(el.tagName || '') && !el.getAttribute('data-style'), // Word's heading styles keep with the next
+      widow: el.getAttribute('data-widow') !== 'off' && el.getAttribute('data-w-widowcontrol') !== 'false' });
     for (const c of Array.from(ed.children)) {
       let top = y(c), el = c, css = 'margin-top', forced = brk || c.getAttribute('data-pb') === 'before'; tops.push(top);
-      for (const s of c.matches('hr') ? [] : Array.from(c.querySelectorAll('span[data-pb]'))) {
+      const spans = c.matches('hr') ? [] : Array.from(c.querySelectorAll('span[data-pb]'));
+      for (const s of spans) {
         const end = y(s) + s.offsetHeight; pieces.push({ top, bottom: end, el, css, forced }); inner = true;
         top = end + (parseFloat(getComputedStyle(s).marginBottom) || 0); el = s; css = 'margin-bottom'; forced = true;
       }
-      pieces.push({ top, bottom: y(c) + c.offsetHeight, el, css, forced });
+      const items = spans.length || !/^(UL|OL)$/.test(c.tagName || '') ? [] : Array.from(c.children).filter(li => li.tagName === 'LI');
+      if (spans.length) pieces.push({ top, bottom: y(c) + c.offsetHeight, el, css, forced });
+      else if (items.length) items.forEach((li, i) => pieces.push(Object.assign(piece(i ? li : c, i ? y(li) : top, !i && forced), { text: false, bottom: i === items.length - 1 ? y(c) + c.offsetHeight : y(li) + li.offsetHeight }))); // the list itself moves its first item
+      else pieces.push(piece(c, top, forced));
       brk = c.matches('hr[data-pb]') || /^(nextPage|evenPage|oddPage)$/.test(c.getAttribute('data-w-sectionbreak') || ''); // a section that starts on a new page
     }
     const at = [], push = []; let k = 0, shift = 0, top = null, bottom = 0;
     const turn = () => { at.push([top, bottom]); k++; };
-    for (const p of pieces) {
-      if (top === null) top = p.top;
-      else if (p.forced || (p.bottom + shift > k * step + contentH + 1 && p.bottom - p.top <= contentH)) {
-        const gap = p.top - bottom; turn();
-        const d = Math.max(0, k * step - (p.top + shift));
-        push.push([p.el, p.css, gap + d]); shift += d; top = p.top;
+    const over = b => b + shift > k * step + contentH + 1; // runs past the text of this page
+    const moveOn = p => { const gap = p.top - bottom; turn(); const d = Math.max(0, k * step - (p.top + shift)); push.push([p.el, p.css, gap + d]); shift += d; top = p.top; };
+    /** Where a paragraph's lines from `j` (the first on this page) break: the first line that goes on to the next page; 0 when none
+     *  stays (the paragraph starts the next page), -1 when all fit. `atTop`: line j is at the top of its page, so one must stay. */
+    const breakAt = (p, ls, j, atTop) => {
+      let n = ls.findIndex((l, i) => i >= j && over(l[1])); if (n < 0) return -1;
+      if (j === 0 && !atTop && p.keep && ls[ls.length - 1][1] - ls[0][0] <= contentH) return 0;
+      if (p.widow) { if (ls.length - n < 2) n = Math.max(j + (atTop ? 1 : 0), ls.length - 2); if (j === 0 && !atTop && n < 2) n = 0; }
+      return n > j || (n === 0 && !atTop) ? n : ls.findIndex((l, i) => i > j && over(l[1]));
+    };
+    for (let i = 0; i < pieces.length; i++) {
+      const p = pieces[i], before = bottom; if (top === null) top = p.top;
+      else if (p.forced) moveOn(p);
+      else if (over(p.bottom)) {
+        const ls = p.text ? this.linesOf(p.el, ed) : null, n = ls && ls.length > 1 ? breakAt(p, ls, 0, p.top === top) : ls ? 0 : -1;
+        const whole = ls ? n === 0 : p.bottom - p.top <= contentH, q = pieces[i - 1];
+        if (whole && q && q.next && !q.forced && q.top > top && push.every(x => x[0] !== q.el)) { bottom = q.before; moveOn(q); bottom = q.bottom; } // a heading (与下段同页) goes on with it
+        else if (whole) moveOn(p);
+        else if (n > 0) p.ls = ls;
       }
-      bottom = p.bottom;
+      if (p.text && over(p.bottom)) { // its lines that run past the page go on on the next one, from its top
+        const ls = p.ls || this.linesOf(p.el, ed), at0 = y(p.el), cut = []; let moved = 0;
+        for (let j = 0, n; ls.length > 1 && (n = breakAt(p, ls, j, j > 0 || p.top === top)) > j; j = n) {
+          bottom = ls[n - 1][1]; turn(); top = ls[n][0];
+          const d = k * step - (ls[n][0] + shift); cut.push([Math.floor(ls[n][2] - at0 + moved), ls[n][0] - at0 + moved + d]); shift += d; moved += d;
+        }
+        if (cut.length) push.push([p.el, 'lines', cut]);
+      }
+      p.before = before; bottom = p.bottom;
       while (bottom + shift > k * step + contentH + 1 && (k + 1) * step < bottom + shift) { const b = bottom; bottom = k * step + contentH - shift; turn(); top = k * step - shift; bottom = b; }
     }
     at.push([top === null ? 0 : top, bottom]);
     return { at, push, inner, tops };
+  }
+  /** A paragraph's lines as [top, bottom, middle] in the text as pagesOf measures it: the boxes of its glyphs, grouped by line, each
+   *  line reaching halfway to the next (the leading between them), the first from the paragraph's top and the last to its bottom. */
+  linesOf(el, ed) {
+    const r = document.createRange(); r.selectNodeContents(el);
+    const eb = ed.getBoundingClientRect(), z = eb.width / (ed.offsetWidth || eb.width || 1) || 1, rows = [];
+    for (const b of Array.from(r.getClientRects()).filter(b => b.width > 0.5 && b.height > 0.5).sort((a, b) => a.top - b.top)) {
+      const t = (b.top - eb.top) / z, h = b.height / z, row = rows[rows.length - 1];
+      if (row && Math.min(row[1], t + h) - Math.max(row[0], t) > Math.min(h, row[1] - row[0]) / 2) { row[0] = Math.min(row[0], t); row[1] = Math.max(row[1], t + h); }
+      else rows.push([t, t + h]);
+    }
+    let top = 0; for (let e = el; e && e !== ed; e = e.offsetParent) top += e.offsetTop;
+    const mid = row => (row[0] + row[1]) / 2;
+    return rows.map((row, i) => [i ? (mid(rows[i - 1]) + mid(row)) / 2 : top, i < rows.length - 1 ? (mid(row) + mid(rows[i + 1])) / 2 : top + el.offsetHeight, mid(row)]);
+  }
+  /** The page view's rule that moves a paragraph's lines down onto the next page: a float as wide as the paragraph, before its text,
+   *  whose shape (shape-outside) is only the bands [top, bottom] of the paragraph where no line may be, so the line there goes on
+   *  below the band, at the top of the next page. The html that is saved is not touched. */
+  linesCss(el, bands) {
+    const cs = getComputedStyle(el), ct = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.borderTopWidth) || 0);
+    const b = bands.map(([t, e]) => [Math.max(0, Math.floor(t - ct)), Math.round(e - ct)]);
+    const pts = b.flatMap(([t, e]) => [`0 ${t}px`, `100% ${t}px`, `100% ${e}px`, `0 ${e}px`]).join(',');
+    return `${this.cssPath(el)}::before{content:''!important;float:left!important;width:100%!important;height:${b[b.length - 1][1]}px!important;margin:0!important;padding:0!important;border:0!important;shape-outside:polygon(${pts})!important}`;
   }
   /** What each page thumbnail copies (the first THUMB_PAGES): [first, last, px] — the blocks from the one before the page's first
    *  (so a rule such as hr + p holds as it does in the text) to its last, under an empty block `px` tall that stands in for all the
@@ -854,7 +915,10 @@ class Component extends DCLogic {
     const t = ed.innerText || '';
     const cjk = (t.match(/[\u4e00-\u9fa5]/g) || []).length, words = (t.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9]+/g) || []).length;
     const heads = Array.from(ed.querySelectorAll('h1,h2,h3')).map((h, i) => ({ lvl: +h.tagName[1], text: h.innerText.trim() || $t('（空标题）'), i }));
-    if (push && this.pgCss && this.paged) this.pgCss.textContent = push.map(([el, css, px]) => `${this.cssPath(el)}{${css}:${Math.round(px)}px!important}`).join('\n');
+    if (push && this.pgCss && this.paged) {
+      this.pgCss.textContent = push.map(([el, css, v]) => css === 'lines' ? this.linesCss(el, v) : `${this.cssPath(el)}{${css}:${Math.round(v)}px!important}`).join('\n');
+      if (this.pgSeen) for (const [el, css] of push) { const i = css === 'lines' ? kids.indexOf(el) : -1; if (i >= 0) this.pgSeen.h[i] = el.offsetHeight; } // its lines moved on: as tall as the page view draws it
+    }
     const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, cuts, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
     this.layoutPics(); this.drawShapes(); // floating pictures and shapes follow their paragraphs onto their pages
     if (JSON.stringify(next) !== JSON.stringify({ info: this.state.info, heads: this.state.heads })) this.setState(next); // an unchanged count re-renders nothing

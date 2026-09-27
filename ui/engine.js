@@ -588,7 +588,7 @@ export function tocHtml({ path, levels, title, entries, style }) {
 }
 /** Headings of the live editor that a contents of `levels` levels lists, each with an id to jump to. */
 export function editorHeadings(root, levels) {
-  return Array.from(root.querySelectorAll('h1,h2,h3')).filter(h => !h.closest('[data-toc]') && !h.hasAttribute('data-style'))
+  return Array.from(root.querySelectorAll('h1,h2,h3')).filter(h => !h.closest('[data-toc]') && (!h.hasAttribute('data-style') || h.hasAttribute('data-level'))) // Title is no heading; a paragraph with an outline level is
     .map((h, i) => { if (!h.id) h.id = 'h' + Date.now().toString(36) + i; return { level: +(h.getAttribute('data-level') || h.tagName[1]), text: h.innerText.replace(/\s+/g, ' ').trim(), href: h.id }; })
     .filter(e => e.text && e.level <= (+levels || 3));
 }
@@ -673,8 +673,12 @@ const PB_WORD = '<br style="page-break-before:always">', PB_LINE = '<span data-p
 export const pbIn = html => String(html).split(PB_WORD).join(PB_LINE);
 export const pbOut = html => String(html).replace(/<span data-pb="1"[^>]*><\/span>/g, PB_WORD);
 /** A heading or paragraph's own props (kept for the save), and how it shows, its own or its style's: a page break above it, a fill;
- *  widow control its style turns off rides on data-widow, for the panel's 孤行控制. */
-const paraOf = (b, p, n) => { const c = n.computed || {}; for (const k of PARA_OWN) if (p[k]) b.props[k] = p[k]; b.pbb = (p.pageBreakBefore || c.pageBreakBefore) === 'true'; b.shade = p.fill || c.fill; b.widowOff = !p.widowControl && c.widowControl === 'false'; };
+ *  widow control its style turns off rides on data-widow, for the panel's 孤行控制; the size of its mark (¶), which its lines take. */
+const paraOf = (b, p, n) => { const c = n.computed || {}; for (const k of PARA_OWN) if (p[k]) b.props[k] = p[k]; b.pbb = (p.pageBreakBefore || c.pageBreakBefore) === 'true'; b.shade = p.fill || c.fill; b.widowOff = !p.widowControl && c.widowControl === 'false'; if (parseFloat(p.markSize) > 0 && sizedAll(p.html)) b.mark = parseFloat(p.markSize); }; // markSize reads 12pt
+/** Whether every letter of a paragraph's html is in a run with a size of its own: then the paragraph's own size (the font-size of
+ *  its element, which sets the height of each of its lines in CSS) can be its mark's, as Word sizes the lines by the text and the
+ *  mark alone: a heading in 12pt text and mark is no taller for its style's 18pt. */
+const sizedAll = html => { const all = (n, sized) => Array.from(n.childNodes || []).every(c => c.nodeType === 3 ? sized || !c.nodeValue.trim() : all(c, sized || /font-size/i.test((c.getAttribute && c.getAttribute('style')) || ''))); return all(parseHtml(html || ''), false); };
 
 /** Word pictures are addressed by id (//image[@id=n], their wp:docPr) when the file gives every picture one of its own: the address
  *  survives every move and renumbering; else by their place (/body/image[n]). */
@@ -693,7 +697,7 @@ export function blocksOf(nodes, file) {
     const p = n.props || {}, b = { kind: n.kind, path: n.path, props: {} };
     const pics = (n.children || []).filter(c => c.kind === 'image'); // a paragraph's own pictures: floating in it, or in its line of text
     if (pics.length && (n.kind === 'heading' || n.kind === 'paragraph')) b.pics = pics.map(c => picOf(c, file, byId));
-    if (n.kind === 'heading') { b.props.html = p.html || esc(p.text); b.props.level = p.level || '1'; if (p.align) b.props.align = p.align; paraOf(b, p, n); }
+    if (n.kind === 'heading') { b.props.html = p.html || esc(p.text); b.props.level = p.level || '1'; if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
     else if (n.kind === 'paragraph') { b.props.html = p.html || esc(p.text); if (p.list && p.list !== 'none') { b.props.list = p.list; b.props.level = p.level || '0'; if (p.restart === 'true') b.props.restart = 'true'; } if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
     else if (n.kind === 'code') b.props.text = p.text || '';
     else if (n.kind === 'table') {
@@ -724,7 +728,7 @@ export function blocksToHtml(blocks) {
   let out = ''; const stack = []; // open lists: {type, kind}
   const closeLists = n => { while (stack.length > n) { out += '</' + stack.pop().type + '>'; } };
   const pa = (b, tag, extra) => {
-    const css = [alignCss(b.props.align), b.shade ? 'background:#' + esc(b.shade) : '', paraCss(b.props)].filter(Boolean).join(';');
+    const css = [alignCss(b.props.align), b.shade ? 'background:#' + esc(b.shade) : '', b.mark ? 'font-size:' + b.mark + 'pt' : '', paraCss(b.props)].filter(Boolean).join(';');
     return `<${tag} data-path="${esc(b.path)}"${extra || ''}${attrs(b.props, PARA_OWN)}${b.pbb ? ' data-pb="before"' : ''}${b.widowOff ? ' data-widow="off"' : ''}${css ? ` style="${css}"` : ''}>${(b.pics || []).map(x => picHtml(x, true)).join('')}${pbIn(b.props.html || '<br>')}</${tag}>`;
   };
   const attrs = (p, keys) => keys.map(k => p?.[k] != null ? ` data-w-${k.toLowerCase()}="${esc(p[k])}"` : '').join('');
@@ -743,7 +747,9 @@ export function blocksToHtml(blocks) {
       continue;
     }
     closeLists(0);
-    if (b.kind === 'heading') out += pa(b, 'h' + Math.min(3, +b.props.level || 1), +b.props.level > 3 ? ` data-level="${b.props.level}"` : '');
+    // a heading drawn by another style than Word's heading style of its level (a paragraph with an outline level of its own, or a
+    // custom heading style) says which, and its level: that keeps it a heading when the save reads it (Title is an h1 with a style alone)
+    if (b.kind === 'heading') out += pa(b, 'h' + Math.min(3, +b.props.level || 1), (+b.props.level > 3 || b.props.style ? ` data-level="${b.props.level}"` : '') + (b.props.style ? ` data-style="${esc(b.props.style)}"` : ''));
     else if (b.kind === 'paragraph') {
       const st = b.props.style || '';
       if (/^title$/i.test(st)) out += pa(b, 'h1', ' data-style="Title"');
@@ -1020,16 +1026,28 @@ export function lookCss(look) {
 export function styleCss(styles, scope, base) {
   const b = base || {}, rules = [];
   if (base) {
+    // Word's single line is the font's own height: about 1.15 of the size for Latin fonts (Times New Roman, Calibri, Arial). A
+    // document set in them draws its line spacing on that; one with an East Asian font keeps the 1.5 its document grid gives
+    const latin = !cjkFont(b.fontEa) && !cjkFont(b.font);
+    if (latin) rules.push(`${scope}{--wd-lh:${LATIN_LINE}}`);
     const text = lookCss({ font: b.font, fontEa: b.fontEa, size: b.size, color: b.color }), para = paraCss(b);
-    if (text) rules.push(`${scope} > *{${text}}`);
+    const lh = latin && !b.lineSpacing ? 'line-height:' + LATIN_LINE : '';
+    if (text || lh) rules.push(`${scope} > *{${[text, lh].filter(Boolean).join(';')}}`);
     if (para) rules.push(`${scope} p:not([data-style]){${para}}`);
   }
   return rules.concat((styles || []).map(s => {
     const css = lookCss(base && s.type !== 'character' ? Object.assign({}, b, s.look) : s.look); if (!css) return '';
-    const sel = [`${scope} [data-style="${s.id}"]`]; if (s.heading >= 1 && s.heading <= 3) sel.push(`${scope} h${s.heading}:not([data-style])`);
+    // h1–h3 without a style of their own are Word's heading styles: only those draw them (a custom heading style names itself)
+    const sel = [`${scope} [data-style="${s.id}"]`]; if (s.heading >= 1 && s.heading <= 3 && headingStyle(s)) sel.push(`${scope} h${s.heading}:not([data-style])`);
     return `${sel.join(',')}{${css}}`;
   })).filter(Boolean).join('\n');
 }
+/** Word's own heading style of a level: "heading 2" by name, or Heading2 by id. */
+const headingStyle = s => /^heading [1-9]$/i.test(s.name || '') || /^heading[1-9]$/i.test(s.id || '');
+/** Word's single line spacing for Latin fonts, as a multiple of the size (Times New Roman and Arial 1.15, Calibri 1.22). */
+const LATIN_LINE = 1.15;
+/** A font for Chinese, Japanese or Korean: named in those scripts, or one of their usual faces (not Century Gothic, a Latin one). */
+export const cjkFont = f => !!f && /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]|yahei|jhenghei|simsun|simhei|simkai|simfang|songti|stsong|fangsong|kaiti|heiti|dengxian|deng xian|mingliu|mincho|(ms|yu) p?gothic|meiryo|pingfang|hiragino|noto (sans|serif) (sc|tc|hk|jp|kr|cjk)|source han|malgun|batang|gulim|dotum|gungsuh|nanum|apple ?sd gothic/i.test(f);
 
 // ----- docx: tracked changes and comments -----
 /** The engine's <ins>/<del> become the editor's tracked-change markup (ins[data-t] / del[data-t]). */
@@ -1142,9 +1160,11 @@ export function blocksFromHtml(root) {
         continue;
       }
       if (/^H[1-6]$/.test(tag)) {
-        const st = c.getAttribute('data-style');
-        if (st) out.push(withPics({ kind: 'paragraph', path: pathOf(c), props: Object.assign({ html: inlineHtml(c), style: st }, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c)));
-        else out.push(withPics({ kind: 'heading', path: pathOf(c), props: Object.assign({ html: inlineHtml(c), level: c.getAttribute('data-level') || tag[1] }, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c)));
+        // an h with a style and no level is a paragraph style drawn as a heading (Title, Subtitle); with a level, a heading drawn by
+        // that style. The tag says levels 1–3, data-level the deeper ones an h3 draws
+        const st = c.getAttribute('data-style'), dl = c.getAttribute('data-level');
+        if (st && dl == null) out.push(withPics({ kind: 'paragraph', path: pathOf(c), props: Object.assign({ html: inlineHtml(c), style: st }, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c)));
+        else out.push(withPics({ kind: 'heading', path: pathOf(c), props: Object.assign({ html: inlineHtml(c), level: +dl > 3 ? dl : tag[1] }, st ? { style: st } : {}, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c)));
         continue;
       }
       if (tag === 'PRE') { out.push({ kind: 'code', path: pathOf(c), props: { text: c.innerText.replace(/\n$/, '') }, el: c }); continue; }
@@ -1190,12 +1210,13 @@ const paraAttrs = el => docxAttrs(el, PARA_OWN);
 const lenCss = v => /(ch|em)$/i.test(v) ? parseFloat(v) + 'em' : /lines?$/i.test(v) ? Math.round(parseFloat(v) * 1200) / 100 + 'pt' : v;
 /** text-align for a paragraph alignment; distribute (分散对齐) also spreads the last line. */
 const alignCss = a => !a || a === 'left' ? '' : a === 'distribute' ? 'text-align:justify;text-align-last:justify' : 'text-align:' + a;
-/** The CSS a paragraph's own 段落 settings draw: line spacing (a multiple of Word's single, 1.5 here, so the template's 1.15 is the
- *  editor's usual 1.8; an exact height as it is), space before and after, indents (a hanging indent pulls the first line back),
- *  borders. Tab stops and keep-with-next draw nothing; the ruler shows the stops. */
+/** The CSS a paragraph's own 段落 settings draw: line spacing (a multiple of Word's single line, --wd-lh: 1.5 for a document in an
+ *  East Asian font, where the template's 1.15 is the editor's usual 1.8, and 1.15 for one in a Latin font, as styleCss sets it; an
+ *  exact height as it is), space before and after, indents (a hanging indent pulls the first line back), borders. Tab stops and
+ *  keep-with-next draw nothing; the ruler shows the stops. */
 export function paraCss(p) {
   const css = [];
-  if (p.lineSpacing && p.lineSpacing !== 'none') { const m = /^min\s+(.+)$/i.exec(p.lineSpacing), v = m ? m[1] : p.lineSpacing; css.push(isFinite(v) ? 'line-height:' + Math.round(+v * 150) / 100 : m ? 'min-height:' + v : 'line-height:' + v); }
+  if (p.lineSpacing && p.lineSpacing !== 'none') { const m = /^min\s+(.+)$/i.exec(p.lineSpacing), v = m ? m[1] : p.lineSpacing; css.push(isFinite(v) ? 'line-height:calc(' + +v + ' * var(--wd-lh, 1.5))' : m ? 'min-height:' + v : 'line-height:' + v); }
   if (p.spaceBefore) css.push('margin-top:' + lenCss(p.spaceBefore));
   if (p.spaceAfter) css.push('margin-bottom:' + lenCss(p.spaceAfter));
   if (p.indentLeft) css.push('margin-left:' + lenCss(p.indentLeft));
@@ -1374,7 +1395,8 @@ function changedProps(orig, b) {
   if (b.kind === 'heading' || b.kind === 'paragraph' || b.kind === 'cell') { if (!sameRuns(orig.props.html, b.props.html)) p.html = b.props.html; }
   if (b.kind === 'code' && (orig.props.text || '') !== (b.props.text || '')) p.text = b.props.text;
   if (b.kind === 'image') Object.assign(p, lookDiff(orig.props, b.props));
-  if (b.kind === 'heading' && String(orig.props.level) !== String(b.props.level)) p.level = b.props.level;
+  // a heading drawn by a style of its own that 标题 N was applied to takes that heading style
+  if (b.kind === 'heading' && (String(orig.props.level) !== String(b.props.level) || (orig.props.style && !b.props.style))) p.level = b.props.level;
   if (b.kind === 'heading' || b.kind === 'paragraph') for (const k of PARA_OWN) if ((orig.props[k] || '') !== (b.props[k] || '') && (b.props.sectionBreak || !SECTION_PROPS.includes(k))) p[k] = b.props[k] || PARA_OFF[k];
   if (b.kind === 'paragraph') {
     const ol = orig.props.list || 'none', nl = b.props.list || 'none';
