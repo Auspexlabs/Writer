@@ -38,6 +38,9 @@ public sealed class Serve : IDisposable
     readonly CancellationTokenSource _stop = new();
     readonly AiStore? _ai;
     readonly Lock _aiGate = new();
+    /// <summary>用 ChatGPT 登录 under way (or just finished), or null.</summary>
+    volatile ChatGptLogin? _login;
+    readonly Lock _loginGate = new();
     volatile Live _live;
     readonly int _listDepth;
     string? _bootstrap;
@@ -149,6 +152,7 @@ public sealed class Serve : IDisposable
     {
         _stop.Cancel();
         _listener.Close();
+        _login?.Dispose();
     }
 
     /// <summary>Runs until the process is stopped.</summary>
@@ -286,8 +290,25 @@ public sealed class Serve : IDisposable
                 case "/complete" when request.HttpMethod == "POST":
                     if (await JsonBody(request, response, CompleteExample) is { } typed) await Complete(response, typed);
                     break;
+                case "/ai/chatgpt/login" when request.HttpMethod == "POST":
+                    if (await JsonBody(request, response, "{}") is not null) await Json(response, 200, StartLogin());
+                    break;
+                case "/ai/chatgpt/login" when request.HttpMethod == "GET":
+                    AiSettings();
+                    await Json(response, 200, LoginState());
+                    break;
+                case "/ai/chatgpt/cancel" when request.HttpMethod == "POST":
+                    if (await JsonBody(request, response, "{}") is not null)
+                    {
+                        _login?.Cancel();
+                        await Json(response, 200, LoginState());
+                    }
+                    break;
+                case "/ai/chatgpt/logout" when request.HttpMethod == "POST":
+                    if (await JsonBody(request, response, "{}") is not null) await Json(response, 200, AiJson(Logout()));
+                    break;
                 default:
-                    await Json(response, 404, Error("NOT_FOUND", "No such endpoint", "Endpoints: POST /run, POST /chat, POST /complete, GET /files, /file, /stat, /binary, /html, /json, /outline, /text, /events, PUT /file, DELETE /file, GET/PUT /ai, POST /ai/test, POST /ai/models, /app/."));
+                    await Json(response, 404, Error("NOT_FOUND", "No such endpoint", "Endpoints: POST /run, POST /chat, POST /complete, GET /files, /file, /stat, /binary, /html, /json, /outline, /text, /events, PUT /file, DELETE /file, GET/PUT /ai, POST /ai/test, POST /ai/models, GET/POST /ai/chatgpt/login, POST /ai/chatgpt/cancel, POST /ai/chatgpt/logout, /app/."));
                     break;
             }
         }
@@ -785,7 +806,8 @@ public sealed class Serve : IDisposable
         return null;
     }
 
-    /// <summary>GET /ai: {provider, baseUrl, model, completeModel, hasKey, source}; source is env, file or none. Never the key.</summary>
+    /// <summary>GET /ai: {provider, baseUrl, model, completeModel, hasKey, source, account?}; source is env, file or none; account
+    /// {email, plan} is the ChatGPT sign-in, whichever service is in use. Never the key, never a token.</summary>
     static string AiJson(AiConfig c) => NodeJson.Write(w =>
     {
         w.WriteStartObject();
@@ -795,18 +817,32 @@ public sealed class Serve : IDisposable
         w.WriteString("completeModel", c.CompleteModel);
         w.WriteBoolean("hasKey", c.HasKey);
         w.WriteString("source", c.Source);
+        if (c.Account is { } a)
+        {
+            w.WriteStartObject("account");
+            w.WriteString("email", a.Email);
+            w.WriteString("plan", a.Plan);
+            w.WriteEndObject();
+        }
         w.WriteEndObject();
     });
 
     /// <summary>{provider, baseUrl, model, completeModel?, apiKey?} checked. Without apiKey the key of <paramref name="keep"/> is used, but
     /// only while the address stays on its server, so a stored key never travels to another one; "" clears it. With
-    /// <paramref name="needModel"/> false (listing the models) the model may be missing.</summary>
+    /// <paramref name="needModel"/> false (listing the models) the model may be missing. The ChatGPT sign-in of <paramref name="keep"/>
+    /// stays whatever the body says; for "chatgpt" the address is the Codex backend's and no key is kept.</summary>
     static AiConfig ParseAi(JsonElement root, AiConfig? keep, bool needModel = true)
     {
         if (root.ValueKind != JsonValueKind.Object) throw new WriterException(ErrorCode.Usage, "Body must be a JSON object", AiExample);
         var provider = Text(root, "provider")?.Trim() ?? "";
         if (!AiConfig.Providers.ContainsKey(provider))
             throw new WriterException(ErrorCode.Validation, $"不认识的服务商「{provider}」", "可选：" + string.Join("、", AiConfig.Providers.Keys));
+        if (provider == "chatgpt")
+        {
+            var chosen = (Text(root, "model") ?? "").Trim();
+            if (chosen.Length == 0 && needModel) throw new WriterException(ErrorCode.Validation, "请选择模型", "在模型列表里选一个。");
+            return new AiConfig(provider, ChatGpt.BaseUrl, chosen, "", "file") { CompleteModel = (Text(root, "completeModel") ?? "").Trim(), Account = keep?.Account };
+        }
         var baseUrl = (Text(root, "baseUrl") ?? "").Trim().TrimEnd('/');
         if (!AiConfig.IsHttpUrl(baseUrl)) throw new WriterException(ErrorCode.Validation, "接口地址要以 http:// 或 https:// 开头", "例如 https://api.deepseek.com");
         var model = (Text(root, "model") ?? "").Trim();
@@ -814,7 +850,7 @@ public sealed class Serve : IDisposable
         var key = Text(root, "apiKey") is { } typed ? typed.Trim() : keep is not null && AiConfig.SameOrigin(keep.BaseUrl, baseUrl) ? keep.Key : "";
         // a key travels in a request header: a space, line break or full-width character pasted along would break the request
         if (key.Any(c => c is < '!' or > '~')) throw new WriterException(ErrorCode.Validation, "API Key 里有空格、换行或中文字符", "重新复制服务商给的 Key 再粘贴。");
-        return new AiConfig(provider, baseUrl, model, key, "file") { CompleteModel = (Text(root, "completeModel") ?? "").Trim() };
+        return new AiConfig(provider, baseUrl, model, key, "file") { CompleteModel = (Text(root, "completeModel") ?? "").Trim(), Account = keep?.Account };
     }
 
     static JsonElement ParseBody(string body)
@@ -851,7 +887,7 @@ public sealed class Serve : IDisposable
         var live = Ai().Config;
         var config = root.ValueKind == JsonValueKind.Object && !root.TryGetProperty("provider", out _) ? live : ParseAi(root, live);
         var error = config.Usable ? await store.Chat(config).TestAsync(_stop.Token)
-            : config.Model.Length == 0 ? "请选择模型" : !AiConfig.IsHttpUrl(config.BaseUrl) ? "接口地址不对" : "请填写 API Key";
+            : config.Model.Length == 0 ? "请选择模型" : config.Codex ? "请先用 ChatGPT 登录" : !AiConfig.IsHttpUrl(config.BaseUrl) ? "接口地址不对" : "请填写 API Key";
         return NodeJson.Write(w =>
         {
             w.WriteStartObject();
@@ -886,6 +922,91 @@ public sealed class Serve : IDisposable
             w.WriteEndArray();
             w.WriteEndObject();
         });
+    }
+
+    /// <summary>POST /ai/chatgpt/login: starts 用 ChatGPT 登录 (dropping one already under way) and opens its page in the system's
+    /// browser → {url, opened}; while opened is false the page shows url as a link. GET /ai/chatgpt/login follows it.</summary>
+    string StartLogin()
+    {
+        var store = AiSettings();
+        ChatGptLogin login;
+        lock (_loginGate)
+        {
+            _login?.Dispose();
+            _login = login = new ChatGptLogin(store.Handler, store.LoginPort, tokens => SignedIn(store, tokens));
+        }
+        var opened = store.Browser(login.Url);
+        return NodeJson.Write(w =>
+        {
+            w.WriteStartObject();
+            w.WriteString("url", login.Url);
+            w.WriteBoolean("opened", opened);
+            w.WriteEndObject();
+        });
+    }
+
+    /// <summary>GET /ai/chatgpt/login: {state: none, waiting, done, error or cancelled, error?, email?, plan?}.</summary>
+    string LoginState()
+    {
+        var login = _login;
+        return NodeJson.Write(w =>
+        {
+            w.WriteStartObject();
+            w.WriteString("state", login?.State ?? "none");
+            if (login is { State: "error" }) w.WriteString("error", login.Error);
+            if (login?.Tokens is { } t)
+            {
+                w.WriteString("email", t.Email);
+                w.WriteString("plan", t.Plan);
+            }
+            w.WriteEndObject();
+        });
+    }
+
+    /// <summary>The browser came back signed in: the tokens are saved and ChatGPT becomes the assistant's service, with the model it had
+    /// if it was the service before, else the recommended one of what the plan lists (the defaults when the list cannot be read) and
+    /// a fast one for the autocomplete.</summary>
+    async Task SignedIn(AiStore store, ChatGptTokens tokens)
+    {
+        var before = store.Stored();
+        var (model, complete) = (ChatGpt.DefaultModel, ChatGpt.DefaultCompleteModel);
+        if (before is { Codex: true, Model.Length: > 0 }) (model, complete) = (before.Model, before.CompleteModel);
+        else
+        {
+            try
+            {
+                using var limit = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
+                limit.CancelAfter(TimeSpan.FromSeconds(10));
+                var chat = new Chat("", "-", ChatGpt.BaseUrl, store.Handler, openAi: true, "chatgpt") { Account = (_, _) => Task.FromResult(tokens) };
+                var listed = (await chat.ModelsAsync(limit.Token)).Select(m => m.Id).ToList();
+                if (listed.Count > 0)
+                {
+                    model = listed.Contains(ChatGpt.DefaultModel) ? ChatGpt.DefaultModel : listed[0];
+                    complete = listed.Contains(ChatGpt.DefaultCompleteModel) ? ChatGpt.DefaultCompleteModel
+                        : listed.FirstOrDefault(id => id.Contains("luna", StringComparison.Ordinal) || id.Contains("mini", StringComparison.Ordinal)) ?? "";
+                }
+            }
+            catch (Exception e) when (e is WriterException or OperationCanceledException)
+            {
+                // the plan's list could not be read: the defaults
+            }
+        }
+        lock (_aiGate)
+        {
+            store.Save(new AiConfig("chatgpt", ChatGpt.BaseUrl, model, "", "file") { CompleteModel = complete, Account = tokens });
+            _live = Current(store);
+        }
+    }
+
+    /// <summary>POST /ai/chatgpt/logout: the sign-in's tokens are deleted from the settings file → the settings as GET /ai gives them.</summary>
+    AiConfig Logout()
+    {
+        var store = AiSettings();
+        lock (_aiGate)
+        {
+            if (store.Stored() is { Account: not null } stored) store.Save(stored with { Account = null });
+            return (_live = Current(store)).Config;
+        }
     }
 
     const string CompleteExample = "{\"before\":\"The text up to the caret\",\"after\":\"the text after it\",\"hint\":\"the body of a Word document\"}";

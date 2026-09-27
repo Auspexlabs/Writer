@@ -27,7 +27,8 @@ public sealed partial class Chat
         var user = Assistant.CompleteMessage(before, after, hint);
         try
         {
-            var text = _openAi ? await OpenAiComplete(model, user, limit.Token) : await AnthropicComplete(model, user, limit.Token);
+            var text = Codex ? await CodexComplete(model, user, limit.Token)
+                : _openAi ? await OpenAiComplete(model, user, limit.Token) : await AnthropicComplete(model, user, limit.Token);
             return Assistant.CleanCompletion(text, before);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
@@ -112,7 +113,8 @@ public sealed partial class Chat
         && (Says(ex, "thinking") || Says(ex, "reasoning_effort") || Says(ex, "max_completion_tokens") || Says(ex, "parameter") || Says(ex, "参数"));
 
     /// <summary>POST /ai/models: the models the provider's API lists for this key (GET {base}/v1/models on Anthropic, {base}/models
-    /// elsewhere), as (id, display name). Embedding, speech, image and moderation models are left out: the assistant cannot use them.</summary>
+    /// elsewhere; the plan's models for a ChatGPT sign-in), as (id, display name). Embedding, speech, image and moderation models are
+    /// left out: the assistant cannot use them.</summary>
     public async Task<List<(string Id, string Name)>> ModelsAsync(CancellationToken ct)
     {
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -127,7 +129,7 @@ public sealed partial class Chat
         JsonObject reply;
         try
         {
-            reply = await ReadJson(request, limit.Token);
+            reply = Codex ? await CodexModels(limit.Token) : await ReadJson(request, limit.Token);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -137,7 +139,7 @@ public sealed partial class Chat
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var m in ((reply["data"] ?? reply["models"]) as JsonArray ?? []).OfType<JsonObject>())
         {
-            var id = Str(m["id"]) ?? Str(m["name"]) ?? Str(m["model"]);
+            var id = Str(m["id"]) ?? Str(m["slug"]) ?? Str(m["name"]) ?? Str(m["model"]);
             if (string.IsNullOrWhiteSpace(id) || NotForChat.IsMatch(id) || !seen.Add(id)) continue;
             list.Add((id, Str(m["display_name"]) ?? ""));
         }

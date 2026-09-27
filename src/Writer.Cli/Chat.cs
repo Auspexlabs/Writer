@@ -95,7 +95,8 @@ public sealed partial class Chat
             Reply reply;
             try
             {
-                reply = _openAi ? await OpenAiTurn(system, messages, web, Delta, ct) : await AnthropicTurn(system, messages, web, Delta, ct);
+                reply = Codex ? await CodexTurn(system, messages, web, Delta, ct)
+                    : _openAi ? await OpenAiTurn(system, messages, web, Delta, ct) : await AnthropicTurn(system, messages, web, Delta, ct);
             }
             catch (WriterException ex)
             {
@@ -118,7 +119,7 @@ public sealed partial class Chat
             }
             messages.Add((JsonNode)reply.Message);
             if (!reply.WantsTools || results.Count == 0) break;
-            if (_openAi)
+            if (_openAi || Codex)
                 foreach (var (id, output, _) in results)
                     messages.Add((JsonNode)new JsonObject { ["role"] = "tool", ["tool_call_id"] = id, ["content"] = output });
             else
@@ -141,7 +142,8 @@ public sealed partial class Chat
         var messages = new JsonArray(new JsonObject { ["role"] = "user", ["content"] = "Reply with one word: ok" });
         try
         {
-            _ = _openAi ? await OpenAiTurn(system, messages, false, null, limit.Token) : await AnthropicTurn(system, messages, false, null, limit.Token);
+            _ = Codex ? await CodexTurn(system, messages, false, null, limit.Token)
+                : _openAi ? await OpenAiTurn(system, messages, false, null, limit.Token) : await AnthropicTurn(system, messages, false, null, limit.Token);
             return null;
         }
         catch (WriterException ex)
@@ -364,7 +366,11 @@ public sealed partial class Chat
 
     WriterException NotAnApi(string body) => new(ErrorCode.Io, "接口地址不对：那里返回的不是模型接口的数据", Trim(Redact(body), 200));
 
-    string Redact(string s) => _apiKey.Length >= 8 ? s.Replace(_apiKey, "***", StringComparison.Ordinal) : s;
+    string Redact(string s)
+    {
+        if (_apiKey.Length >= 8) s = s.Replace(_apiKey, "***", StringComparison.Ordinal);
+        return _access.Length >= 8 ? s.Replace(_access, "***", StringComparison.Ordinal) : s;
+    }
 
     /// <summary>The message of an API error body ({"error": {"message"}}, {"error": "..."}, {"message": "..."}), else the body.</summary>
     static string ErrorText(string body)
