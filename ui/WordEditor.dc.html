@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="./vendor/katex/katex.min.css">
 <style>
 .wd-ed{outline:none;word-break:break-word}
+.wd-ed .wd-tab{white-space:pre;tab-size:.5in} /* a tab goes on to Word's next default stop, every half inch */
 .wd-ed h1:where(:not([data-style])){font-size:26px;font-weight:700;margin:18px 0 8px;line-height:1.4}
 .wd-ed h2:where(:not([data-style])){font-size:20px;font-weight:600;margin:16px 0 6px;line-height:1.45}
 .wd-ed h3:where(:not([data-style])){font-size:16px;font-weight:600;margin:14px 0 4px}
@@ -1997,7 +1998,7 @@ class Component extends DCLogic {
     const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
     if (ctrl && k === 'f') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
     else if (ctrl && k === 'h') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
-    else if (ctrl && k === 's') { e.preventDefault(); this.flush(); this.props.toast && this.props.toast($t('已保存')); }
+    else if (ctrl && k === 's') this.flush(); // the typing in, before the shell's save (Ctrl+S there says where it went)
     else if (ctrl && k === 'k') { e.preventDefault(); this.linkDlg(); }
     else if (ctrl && e.shiftKey && (e.key === '>' || e.key === '.')) { e.preventDefault(); this.bump(1); }
     else if (ctrl && e.shiftKey && (e.key === '<' || e.key === ',')) { e.preventDefault(); this.bump(-1); }
@@ -2005,10 +2006,15 @@ class Component extends DCLogic {
     else if (/^Arrow/.test(e.key) && !ctrl && this.selImg && this.selImg.isConnected && this.P && this.nudge(this.selImg, e.key, e.shiftKey ? 10 : 1)) e.preventDefault();
     else if ((e.key === 'Delete' || e.key === 'Backspace') && this.selShape && this.selShape.isConnected && !(this.caretEl() && this.caretEl().closest && this.caretEl().closest('.wd-shtext'))) { e.preventDefault(); const el = this.selShape; this.selectShape(null); el.remove(); this.after(); }
     else if (e.key === 'Tab') {
-      e.preventDefault(); const td = this.cell();
-      if (td) { const cells = Array.from(td.closest('table').querySelectorAll('td,th')); let nx = cells[cells.indexOf(td) + (e.shiftKey ? -1 : 1)]; if (!nx && !e.shiftKey) { this.tbl('rowBelow'); nx = td.closest('table').rows[td.parentNode.rowIndex + 1].cells[0]; } if (nx) { const r = document.createRange(); r.selectNodeContents(nx); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } }
-      else if (this.state.fmt.ul || this.state.fmt.ol) document.execCommand(e.shiftKey ? 'outdent' : 'indent');
-      else document.execCommand('insertText', false, '\u3000\u3000');
+      e.preventDefault(); const at = this.caretEl(), ed = this.edRef.current, tdAt = at && at.closest && at.closest('td,th'), td = tdAt && ed.contains(tdAt) ? tdAt : null, li = at && at.closest && at.closest('li'); // where the caret is now (this.range may be a keystroke behind)
+      if (td) { const s0 = window.getSelection(); if (s0.rangeCount) this.range = s0.getRangeAt(0).cloneRange(); // 在下方插入行 works from the saved caret
+        const cells = Array.from(td.closest('table').querySelectorAll('td,th')); let nx = cells[cells.indexOf(td) + (e.shiftKey ? -1 : 1)]; if (!nx && !e.shiftKey) { this.tbl('rowBelow'); nx = td.closest('table').rows[td.parentNode.rowIndex + 1].cells[0]; } if (nx) { const r = document.createRange(); r.selectNodeContents(nx); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); } }
+      else if (li && ed.contains(li)) document.execCommand(e.shiftKey ? 'outdent' : 'indent');
+      else if (!e.shiftKey) { // a tab (Word's next half-inch stop); Chinese text is indented by two full-width spaces instead
+        const b = at && at.closest && at.closest('p,h1,h2,h3,h4,h5,h6,blockquote,li');
+        if (/[\u3400-\u9fff]/.test(b ? b.textContent : '')) document.execCommand('insertText', false, '\u3000\u3000');
+        else { const s = window.getSelection(); if (s.rangeCount) { const r = s.getRangeAt(0); r.deleteContents(); const t = document.createElement('span'); t.className = 'wd-tab'; t.textContent = '\t'; r.insertNode(t); r.setStartAfter(t); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); } }
+      }
       this.after();
     }
   };
@@ -2483,6 +2489,7 @@ class Component extends DCLogic {
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
       onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); // double-click the text: back to it
         const mk = !hf && e.target.closest && e.target.closest('.wd-ed sup[data-fn]'); if (mk && this.paged) this.toNote(mk.getAttribute('data-fn')); }, // a note's mark: to the note, as Word
+      onKey: this.onKey, // the text's own keys (查找 Ctrl+F, 链接 Ctrl+K, Tab in tables and lists…)
       onInput: e => { if (this.selImg) this.selectImg(null); if (this.state.ctxBar) this.setState({ ctxBar: null }); this.sync(TYPED.test((e && (e.nativeEvent || e).inputType) || '')); },
       onEdClick: e => {
         const t = e.target;

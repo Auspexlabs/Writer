@@ -4,6 +4,7 @@
 const VOID = /^(br|hr|img|input|col|wbr)$/i;
 const camel = k => k.replace(/-([a-z])/g, (m, c) => c.toUpperCase());
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const node = n => typeof n === 'string' ? new Text(n) : n; // before, after and replaceWith take text as the DOM does
 
 export class Text { constructor(t) { this.nodeType = 3; this.nodeValue = t; this.parentNode = null; } get textContent() { return this.nodeValue; } get ownerDocument() { return document; }
   get parentElement() { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null; } get nextSibling() { const s = this.parentNode ? this.parentNode.childNodes : []; return s[s.indexOf(this) + 1] || null; } cloneNode() { return new Text(this.nodeValue); } remove() { const p = this.parentNode; if (p) p.childNodes.splice(p.childNodes.indexOf(this), 1); this.parentNode = null; } }
@@ -32,9 +33,9 @@ export class Element {
   append(...ns) { ns.forEach(n => this.appendChild(typeof n === 'string' ? new Text(n) : n)); }
   prepend(...ns) { ns.forEach(n => this.insertBefore(n, this.firstChild)); }
   insertBefore(n, ref) { n.remove && n.remove(); n.parentNode = this; const i = ref ? this.childNodes.indexOf(ref) : -1; if (i < 0) this.childNodes.push(n); else this.childNodes.splice(i, 0, n); return n; }
-  after(...ns) { const p = this.parentNode; let ref = this.nextSibling; ns.forEach(n => p.insertBefore(n, ref)); }
-  before(...ns) { const p = this.parentNode; ns.forEach(n => p.insertBefore(n, this)); }
-  replaceWith(n) { const p = this.parentNode; p.insertBefore(n, this); this.remove(); }
+  after(...ns) { const p = this.parentNode; let ref = this.nextSibling; ns.forEach(n => p.insertBefore(node(n), ref)); }
+  before(...ns) { const p = this.parentNode; ns.forEach(n => p.insertBefore(node(n), this)); }
+  replaceWith(...ns) { const p = this.parentNode; ns.forEach(n => p.insertBefore(node(n), this)); this.remove(); }
   replaceChildren(...ns) { this.childNodes.slice().forEach(n => n.remove()); this.append(...ns); }
   remove() { const p = this.parentNode; if (p) p.childNodes.splice(p.childNodes.indexOf(this), 1); this.parentNode = null; }
   cloneNode(deep) { const c = new Element(this.tagName, this.attrs); if (deep) this.childNodes.forEach(n => c.appendChild(n.cloneNode(true))); return c; }

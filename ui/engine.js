@@ -817,7 +817,7 @@ async function openDocx(doc) {
   const page = Object.assign({ hf: true }, doc.page || {}, pageOf(p));
   const comments = commentsOf(body.children, p.author || 'Writer'), track = p.track === 'true'; // the engine writes comments as the document's author, else Writer
   const notes = notesOf(body.children), eqs = eqsOf(body.children), shapes = shapesOf(body.children), cites = citesOf(body.children);
-  const html = inkFills(parseHtml(anchorCites(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes), cites))).innerHTML;
+  const html = wrapTabs(inkFills(parseHtml(anchorCites(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes), cites)))).innerHTML;
   const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true', noteFormat: p.noteFormat || '' };
   return { html, rev: (doc.rev || 0) + 1, track, comments: comments.map(c => ({ id: c.cid, author: c.author, initials: c.initials, mine: c.mine, time: c.time, text: c.text, quote: c.quote, path: c.path, resolved: c.resolved, parent: c.parent })),
     notes: notes.map(noteOf), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
@@ -1382,8 +1382,25 @@ const withPics = (b, pics) => { if (pics.length) b.pics = pics; return b; };
 const alignOf = el => { const st = el.style || {}, a = st.textAlign; if (!a || a === 'start' || a === 'left') return null; return a === 'justify' && st.textAlignLast === 'justify' ? 'distribute' : a === 'end' ? 'right' : a; };
 /** A block's inline html for the engine: without the AI change marks, comment anchor spans (the file keeps anchors itself), the
  *  editor's zero-width fillers and the block's pictures (they are the block's `pics`), and with its page break lines as Word's page breaks. */
+/** A tab in the text as the editor shows it: in a span of its own that keeps it (white-space: pre), so it goes on to the next
+ *  of Word's default stops (every half inch, .wd-tab in WordEditor) rather than being a space. The save writes the tab alone. */
+export const TAB_HTML = '<span class="wd-tab">\t</span>';
+/** Puts each tab of root's text in its own .wd-tab span. Returns root. */
+export function wrapTabs(root) {
+  if (!String(root.textContent || '').includes('\t')) return root;
+  const d = root.ownerDocument || document, w = d.createTreeWalker(root, 4), hits = []; let t;
+  while ((t = w.nextNode())) if (t.nodeValue.includes('\t') && !(t.parentElement && t.parentElement.classList.contains('wd-tab'))) hits.push(t);
+  for (const n of hits) {
+    const parts = n.nodeValue.split('\t'), frag = [];
+    parts.forEach((x, i) => { if (i) { const s = d.createElement('span'); s.setAttribute('class', 'wd-tab'); s.textContent = '\t'; frag.push(s); } if (x) frag.push(d.createTextNode(x)); });
+    for (const f of frag) n.parentNode.insertBefore(f, n);
+    n.remove();
+  }
+  return root;
+}
 function inlineHtml(el) {
   const c = el.cloneNode(true);
+  Array.from(c.querySelectorAll('span.wd-tab')).forEach(x => x.replaceWith(x.textContent)); // the tab alone
   Array.from(c.querySelectorAll('img,figure[data-pic]')).forEach(x => x.remove());
   Array.from(c.querySelectorAll('[data-ai]')).forEach(x => x.removeAttribute('data-ai'));
   Array.from(c.querySelectorAll('[data-cid]')).forEach(x => { while (x.firstChild) x.parentNode.insertBefore(x.firstChild, x); x.remove(); });

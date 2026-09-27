@@ -63,6 +63,14 @@ test('a note\'s citation as the engine drew it at the save reaches the editor: a
   assert.deepEqual(typed.notes.map(x => [x.text, x.citeHtml]), [['See also', 'Ian L. Pegg, “Behavior”'], ['', 'Kuhn']], 'what was typed since stays; a note citing another source now keeps its own');
 });
 
+test('a tab shows in a span of its own that keeps it (Word\'s half-inch stops); the save writes the tab alone', () => {
+  const el = parse('<p data-path="/body/paragraph[1]">Name:\tValue\tand <b>more\there</b></p>');
+  EN.wrapTabs(el);
+  assert.equal(el.innerHTML, '<p data-path="/body/paragraph[1]">Name:<span class="wd-tab">\t</span>Value<span class="wd-tab">\t</span>and <b>more<span class="wd-tab">\t</span>here</b></p>');
+  assert.equal(EN.blocksFromHtml(el)[0].props.html, 'Name:\tValue\tand <b>more\there</b>');
+  EN.wrapTabs(el); assert.equal(el.querySelectorAll('.wd-tab').length, 3, 'once only');
+});
+
 // ----- round trips through the engine -----
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const cli = join(root, 'src/Writer.Cli/bin/Debug/net10.0/writer.dll');
