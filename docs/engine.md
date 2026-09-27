@@ -115,9 +115,27 @@ preview with a one-time code that the first visit swaps for an HttpOnly cookie, 
 | `GET /file?file=`, `PUT /file?file=` (`&from=` renames) | raw bytes of a workspace file, served as a download; uploads and renames |
 | `GET /binary?file=&path=` | the bytes of an image node |
 | `POST /chat` with `{"file","messages":[{"role","content"}]}` | the assistant: server-sent events `delta` (streamed text), `text`, `tool` (with `wrote`), `done`, `error`; needs a configured model |
+| `GET /ai`, `PUT /ai` with `{"provider","baseUrl","model","completeModel","apiKey"}` | the assistant's model settings; the key and the ChatGPT sign-in's tokens never come back (`hasKey`, `account {email, plan}`) |
+| `POST /ai/test`, `POST /ai/models` | one small request with the given (or saved) settings → `{ok, error}`; the models a service lists → `{models:[{id, name}]}` |
+| `POST /complete` with `{"before","after","hint"}` | AI autocomplete: `{"text"}`, one line to show after the caret |
+| `POST /ai/chatgpt/login`, `GET /ai/chatgpt/login`, `POST /ai/chatgpt/cancel`, `POST /ai/chatgpt/logout` | ChatGPT sign-in (below): start it (`{url, opened}`), follow it (`{state}`: waiting, done, error, cancelled), stop it, delete its tokens |
 | `GET /app/` | the editor app |
 
 Relative file paths in every endpoint and in `/run` commands resolve against the workspace folder.
+
+### ChatGPT sign-in
+
+Besides an API key, the assistant can use a ChatGPT plan (Plus, Pro, Business…) the way OpenClaw and other tools do: with
+the Codex CLI's own sign-in, which OpenAI does not offer to other apps, so it may change or stop working. `POST
+/ai/chatgpt/login` opens `auth.openai.com` in the system's browser with the Codex CLI's client id, PKCE and its loopback
+callback on `http://localhost:1455/auth/callback`; the engine listens there until the browser comes back (ten minutes at
+most), swaps the code for tokens and makes ChatGPT the assistant's service with the plan's models. The tokens are kept in
+the settings file (`ai.json`, readable by the user only), refreshed five minutes before they lapse (under a lock, since
+every refresh replaces the refresh token), and sent nowhere but OpenAI's sign-in service and the Codex backend
+(`https://chatgpt.com/backend-api/codex`, its Responses API, `store: false`). Autocomplete requests count toward the
+plan's usage like the assistant's. `WRITER_CHATGPT_ISSUER`, `WRITER_CHATGPT_BASE_URL`, `WRITER_CHATGPT_PORT` and
+`WRITER_CHATGPT_CLIENT_VERSION` move the endpoints (for tests) or follow a newer Codex CLI; `WRITER_NO_BROWSER=1` leaves the
+browser closed and the app shows the link instead.
 
 See [SKILL.md](../SKILL.md) for the agent workflow and path syntax.
 

@@ -50,7 +50,9 @@ This repository holds two things built from the same code:
 - **An AI assistant with your own model.** Say what to change and the assistant edits the document. The changes are
   listed under its reply: keep them, or undo them with one click. It works with Anthropic, OpenAI, DeepSeek, Qwen, Kimi,
   Zhipu GLM, Doubao, any OpenAI-compatible service, and local models through Ollama or LM Studio, each service's models
-  picked from a list. Your API key stays on your computer.
+  picked from a list. Your API key stays on your computer. You can also sign in with ChatGPT and use a Plus, Pro or
+  other plan instead of an API key (this borrows the Codex sign-in, which OpenAI does not offer to other apps, so it may
+  stop working).
 - **AI autocomplete.** Pause while typing and a grey suggestion appears after the cursor; press Tab to take it. It works
   wherever you write: Word, sheets, slides, Markdown and mind maps.
 - **Picture tools.** Remove a photo's background (with the Mac's own Apple Vision, on your Mac), crop, rotate and
