@@ -65,7 +65,7 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
     internal void ForgetShared() => _masters = null;
 
     protected override IEnumerable<Node> ProjectChildren() =>
-        Data.Elements<Row>().Where(r => r.RowIndex?.Value is not null).Select(r => (Node)new XlsxRow(doc, this, (int)r.RowIndex!.Value)).Concat(XlsxCharts.Of(doc, this)).Concat(XlsxImages.Of(doc, this));
+        Data.Elements<Row>().Where(r => r.RowIndex?.Value is not null).Select(r => (Node)new XlsxRow(doc, this, (int)r.RowIndex!.Value, r)).Concat(XlsxCharts.Of(doc, this)).Concat(XlsxImages.Of(doc, this));
 
     public override IReadOnlyDictionary<string, string> GetProps()
     {
@@ -164,18 +164,21 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
     }
 }
 
-sealed class XlsxRow(XlsxDocument doc, XlsxSheet sheet, int index) : Node
+/// <summary>A row by its number. `hint` is the row element the sheet listed it from: used while it is still that row (a sheet of
+/// 10,000 rows is not searched from the top for each of them), found again by number once an edit has moved things.</summary>
+sealed class XlsxRow(XlsxDocument doc, XlsxSheet sheet, int index, Row? hint = null) : Node
 {
     readonly object _placeholder = new();
+    Row? _hint = hint;
 
     public override string Kind => "row";
     public override string Key => index.ToString(CultureInfo.InvariantCulture);
     public override object Anchor => (object?)Current ?? _placeholder;
 
-    Row? Current => XlsxCells.FindRow(sheet.Data, index);
+    Row? Current => _hint is { } h && ReferenceEquals(h.Parent, sheet.Data) && h.RowIndex?.Value == (uint)index ? h : _hint = XlsxCells.FindRow(sheet.Data, index);
 
     protected override IEnumerable<Node> ProjectChildren() =>
-        Current?.Elements<Cell>().Select(c => (Node)new XlsxCell(doc, sheet, XlsxCells.Position(c).Col, index)) ?? [];
+        Current?.Elements<Cell>().Select(c => (Node)new XlsxCell(doc, sheet, XlsxCells.Position(c).Col, index, c)) ?? [];
 
     public override IReadOnlyDictionary<string, string> GetProps() =>
         new Dictionary<string, string> { ["data"] = NodeJson.Compact(w => WriteData(w)) };
@@ -237,17 +240,20 @@ sealed class XlsxRow(XlsxDocument doc, XlsxSheet sheet, int index) : Node
     }
 }
 
-sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row) : Node
+/// <summary>A cell by its place. `hint` is the cell element its row listed it from, used while it is still that cell (see XlsxRow).</summary>
+sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row, Cell? hint = null) : Node
 {
     readonly object _placeholder = new();
     string? _written;
     string? _borderColor;
+    Cell? _hint = hint;
 
     public override string Kind => "cell";
     public override string Key => XlsxCells.Reference(col, row);
     public override object Anchor => (object?)Current ?? _placeholder;
 
-    Cell? Current => XlsxCells.FindRow(sheet.Data, row) is { } r ? XlsxCells.FindCell(r, col) : null;
+    Cell? Current => _hint is { Parent: Row r } h && ReferenceEquals(r.Parent, sheet.Data) && r.RowIndex?.Value == (uint)row && XlsxCells.Position(h) == (col, row)
+        ? h : _hint = XlsxCells.FindRow(sheet.Data, row) is { } found ? XlsxCells.FindCell(found, col) : null;
     Cell Ensure() => XlsxCells.GetOrCreateCell(sheet.Data, col, row);
     WorksheetPart Part => (WorksheetPart)sheet.Anchor;
 

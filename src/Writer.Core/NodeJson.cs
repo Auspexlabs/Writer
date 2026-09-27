@@ -19,6 +19,11 @@ public static class NodeJson
     public static string Serialize(Node node, int depth, IReadOnlySet<string> skip) =>
         Write(w => WriteNode(w, node, depth, skip.Count == 0 ? null : n => !skip.Contains(n.Kind)));
 
+    /// <summary>As <see cref="Serialize(Node, int, IReadOnlySet{string})"/> on one line: for a program to read (the app's /json), where
+    /// the indentation of a workbook's hundred thousand cells would be half of what is sent.</summary>
+    public static string SerializeCompact(Node node, int depth, IReadOnlySet<string> skip) =>
+        Write(w => WriteNode(w, node, depth, skip.Count == 0 ? null : n => !skip.Contains(n.Kind)), Options with { Indented = false });
+
     /// <summary>Nodes with their properties, their children summarised: what query --props prints.</summary>
     public static string Many(IEnumerable<Node> nodes) => Write(w =>
     {

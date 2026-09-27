@@ -27,7 +27,7 @@ public sealed class PptxAdapter : IFormatAdapter
         PresentationDocument package;
         try
         {
-            package = PresentationDocument.Open(ms, true);
+            package = PresentationDocument.Open(ms, true, new OpenSettings { AutoSave = false }); // Save writes explicitly (Clone saves first): a read does not serialize every part again on Dispose
         }
         catch (Exception ex) when (ex is not WriterException)
         {

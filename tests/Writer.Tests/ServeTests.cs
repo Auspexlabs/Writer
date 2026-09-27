@@ -230,8 +230,11 @@ public class ServeTests : IDisposable
         Doc("runs.docx", P("Hello"), P("World"));
         var full = await (await _client.SendAsync(Request(HttpMethod.Get, "/json?file=runs.docx"))).Content.ReadAsStringAsync();
         var lean = await (await _client.SendAsync(Request(HttpMethod.Get, "/json?file=runs.docx&skip=run"))).Content.ReadAsStringAsync();
-        Assert.Contains("\"kind\": \"run\"", full);
-        Assert.DoesNotContain("\"kind\": \"run\"", lean);
+        static int Runs(JsonElement e) => (e.TryGetProperty("kind", out var k) && k.GetString() == "run" ? 1 : 0)
+            + (e.TryGetProperty("children", out var c) ? c.EnumerateArray().Sum(Runs) : 0);
+        Assert.True(Runs(JsonDocument.Parse(full).RootElement) > 0);
+        Assert.Equal(0, Runs(JsonDocument.Parse(lean).RootElement));
+        Assert.DoesNotContain('\n', lean); // one line: for the app to read, not a person
         var body = JsonDocument.Parse(lean).RootElement.GetProperty("children")[0];
         var first = body.GetProperty("children")[0];
         Assert.Equal("Hello", first.GetProperty("props").GetProperty("text").GetString());

@@ -228,7 +228,7 @@ public static partial class Engine
     public static string Json(string file, string skip) => Guard(() =>
     {
         var kinds = skip.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
-        return NodeJson.Serialize(Doc(Existing(file)).Root, int.MaxValue, kinds);
+        return NodeJson.SerializeCompact(Doc(Existing(file)).Root, int.MaxValue, kinds);
     });
 
     /// <summary>GET /html, /outline, /text ?file=: the other views.</summary>

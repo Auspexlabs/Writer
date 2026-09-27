@@ -35,7 +35,7 @@ public sealed class XlsxAdapter : IFormatAdapter
         SpreadsheetDocument package;
         try
         {
-            package = SpreadsheetDocument.Open(ms, true);
+            package = SpreadsheetDocument.Open(ms, true, new OpenSettings { AutoSave = false }); // Save writes explicitly (Clone saves first): a read does not serialize every part again on Dispose
         }
         catch (Exception ex) when (ex is not WriterException)
         {

@@ -26,7 +26,7 @@ public sealed class DocxAdapter : IFormatAdapter
         WordprocessingDocument package;
         try
         {
-            package = WordprocessingDocument.Open(ms, true);
+            package = WordprocessingDocument.Open(ms, true, new OpenSettings { AutoSave = false }); // Save writes explicitly (Clone saves first): a read does not serialize every part again on Dispose
         }
         catch (Exception ex) when (ex is not WriterException)
         {

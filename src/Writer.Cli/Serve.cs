@@ -263,7 +263,7 @@ public sealed class Serve : IDisposable
                     break;
                 case "/json":
                     var skip = (request.QueryString["skip"] ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
-                    await Json(response, 200, WithDoc(file, doc => NodeJson.Serialize(doc.Root, int.MaxValue, skip)));
+                    await Json(response, 200, WithDoc(file, doc => NodeJson.SerializeCompact(doc.Root, int.MaxValue, skip)));
                     break;
                 case "/outline":
                     await Text(response, 200, "text/plain; charset=utf-8", WithDoc(file, doc => Views.Outline(doc.Root)));
