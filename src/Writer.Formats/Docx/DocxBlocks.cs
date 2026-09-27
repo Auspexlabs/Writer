@@ -61,6 +61,24 @@ static class DocxBlocks
         _ => throw new InvalidOperationException($"Not a block: {element.LocalName}"),
     };
 
+    public static Node AddRaw(DocxDocument doc, Node parent, OpenXmlElement container, string raw, int? index)
+    {
+        var element = RawXml.Parse(container, raw, doc.Namespaces);
+        if (container is W.Paragraph paragraph)
+        {
+            if (element is not W.Run run || !DocxObject.ElementsIn(new W.Paragraph(run.CloneNode(true))).Any())
+                throw new WriterException(ErrorCode.Validation, "A restored drawing must be inside a Word run", "Pass <w:r> containing the original drawing XML.");
+            DocxObject.UniqueIds(doc, run);
+            InsertAt(parent, container, run, index);
+            return DocxObject.In(doc, paragraph).First(n => ((OpenXmlElement)n.Anchor).Ancestors<W.Run>().FirstOrDefault() == run);
+        }
+        if (element is not (W.Paragraph or W.Table))
+            throw new WriterException(ErrorCode.Validation, "A Word block must be a paragraph or table", "Pass a <w:p> or <w:tbl> element.");
+        DocxObject.UniqueIds(doc, element);
+        InsertAt(parent, container, element, index);
+        return Wrap(doc, element);
+    }
+
     /// <summary>Creates a block, inserts it and applies the remaining properties.</summary>
     public static Node Add(DocxDocument doc, Node parent, OpenXmlElement container, string kind, IReadOnlyDictionary<string, string> props, int? index)
     {

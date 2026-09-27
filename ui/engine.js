@@ -3,6 +3,7 @@
 // Save: the model is diffed against what was opened and the difference becomes writer commands.
 // The file on disk is the only source of truth; the engine keeps everything the editor does not model.
 import { slideHtmlUnits, listMarker } from './slide-format.js';
+export { findTextRanges, replaceTextRanges } from './text-find.js';
 import { txt, shape as mkShape, line as mkLine, SW, slideH, THEMES, phFamily, resolveColor, POLY, union, flatObjs } from './office-io.js';
 import { lookFrom, pictureView, picSrc, placeStyle, PLACE } from './picture.js';
 import { objectInner, objectLabel } from './office-draw.js';
@@ -1073,27 +1074,45 @@ export async function lookupSource(q) {
 }
 
 // Office objects keep their own paths. Their SVG/preview text is never part of an editable paragraph.
-const officeObjectOf = (n, file) => ({ path: n.path, props: { ...n.props }, src: n.props?.src ? binaryUrl(file, n.path) : '' });
+const officeObjectOf = (n, file) => ({ path: n.path, key: n.path, props: { ...n.props }, src: n.props?.src ? binaryUrl(file, n.path) : '' });
 export function officeObjectHtml(o, block = false) {
   const p = o.props || {}, w = p.width ? cmOf(p.width) / 2.54 * 96 : 240, h = p.height ? cmOf(p.height) / 2.54 * 96 : 120;
   const tag = block ? 'div' : 'span';
-  return `<${tag} data-office-object="1" data-path="${esc(o.path)}" contenteditable="false" role="img" aria-label="${esc(p.alt || p.name || objectLabel(p))}" style="display:${block ? 'block' : 'inline-block'};width:${w}px;height:${h}px;max-width:100%;vertical-align:middle;user-select:all">${objectInner(p, w, h, o.src)}</${tag}>`;
+  return `<${tag} data-office-object="1" data-object-key="${esc(o.key || o.path)}" data-office-props="${esc(JSON.stringify(p))}" data-path="${esc(o.path)}" contenteditable="false" role="img" aria-label="${esc(p.alt || p.name || objectLabel(p))}" style="display:${block ? 'block' : 'inline-block'};width:${w}px;height:${h}px;max-width:100%;vertical-align:middle;user-select:all">${objectInner(p, w, h, o.src)}</${tag}>`;
 }
 export function officeObjectsOf(nodes, file) {
   const out = [];
-  const walk = list => { for (const n of list || []) {
-    if (n.kind === 'object' && !/^\/body\/object\[/.test(n.path)) out.push({ ...officeObjectOf(n, file), parent: n.path.replace(/\/object\[[^\]]*\]$/, ''), at: +n.props?.at || 0 });
-    walk(n.children);
+  const walk = (list, cell = null, base = 0, cellBlocks = false) => { for (const n of list || []) {
+    if (n.kind === 'object' && !/^\/body\/object\[/.test(n.path)) out.push({ ...officeObjectOf(n, file), parent: n.path.replace(/\/object\[[^\]]*\]$/, ''), at: +n.props?.at || 0, ...(cell ? { visualParent: cell, visualAt: base + (+n.props?.at || 0) } : {}) });
+    if (n.kind === 'cell') walk(n.children, n.path, 0, true);
+    else walk(n.children, cell, base);
+    if (cellBlocks && /^(paragraph|heading|object|image|code)$/.test(n.kind)) base += String(n.props?.text || '').length + 1;
   } };
   walk(nodes); return out;
 }
-export async function planOfficeObjects(file, before, root, exec = run) {
+const officeHost = el => el.parentElement?.closest('td,th') || el.parentElement?.closest('p,h1,h2,h3,h4,h5,h6,li,blockquote');
+const officeProps = el => { try { return JSON.parse(el.getAttribute('data-office-props') || '{}'); } catch { return {}; } };
+/** Remove deleted/moved objects before their paragraph text changes. Original XML in the editor's
+ * history makes a deletion followed by save and undo reversible, even after ordinal paths changed. */
+export async function planOfficeObjects(file, before, root, exec = run, rewritten = new Set()) {
   let count = 0; const list = [], groups = new Map();
+  const elements = Array.from(root.querySelectorAll('[data-office-object]')), used = new Set();
+  for (const el of elements) { let key = el.getAttribute('data-object-key') || pathOf(el); if (used.has(key)) { key = 'copy-' + crypto.randomUUID(); el.setAttribute('data-object-key', key); } used.add(key); }
   for (const o of before) { if (!groups.has(o.parent)) groups.set(o.parent, []); groups.get(o.parent).push(o); }
   for (const [parent, objects] of groups) {
-    const kept = objects.map(o => ({ ...o, el: root.querySelector(`[data-office-object][data-path="${o.path}"]`) }));
+    const kept = objects.map(o => {
+      const el = elements.find(e => (e.getAttribute('data-object-key') || pathOf(e)) === (o.key || o.path)), host = el && officeHost(el), visual = o.visualParent || o.parent;
+      const unchanged = host && pathOf(host) === visual && offsetIn(host, el) === (o.visualAt ?? o.at) && !rewritten.has(visual);
+      return { ...o, el: unchanged ? el : null };
+    });
     // If the paragraph itself was removed the block diff takes its objects with it.
-    if (!root.querySelector(`[data-path="${parent}"]`)) continue;
+    if (!root.querySelector(`[data-path="${objects[0].visualParent || parent}"]`)) continue;
+    const host = root.querySelector(`[data-path="${objects[0].visualParent || parent}"]`);
+    if (objects.length > 1 && kept.some(o => !o.el) && !textOf(inlineHtml(host)).trim()) {
+      // Deleting one of two objects in an otherwise empty paragraph changes its projection
+      // to a standalone object. Remove the group in one transaction before ordinal paths change.
+      await exec(['remove', file, parent + '/object', '--all']); count++; continue;
+    }
     for (const o of kept.slice().reverse()) if (!o.el) { await exec(['remove', file, o.path]); count++; }
     let ordinal = 0;
     for (const o of kept) if (o.el) {
@@ -1106,9 +1125,51 @@ export async function planOfficeObjects(file, before, root, exec = run) {
 function remapOfficeObjects(objects, blocks, was) {
   const all = blocks.concat(blocks.flatMap(b => (b.rows || []).flatMap(r => r.cells || [])));
   for (const o of objects) {
-    const b = all.find(b => was.get(b) === o.parent || was.get(b) + '/paragraph[1]' === o.parent);
-    if (b) { o.parent = b.path + (b.kind === 'cell' ? '/paragraph[1]' : ''); o.path = o.parent + '/' + seg(o.path); o.el.setAttribute('data-path', o.path); }
+    const b = all.find(b => was.get(b) === (o.visualParent || o.parent));
+    if (b) { const tail = o.visualParent ? o.parent.slice(o.visualParent.length) : ''; o.parent = b.path + tail; if (o.visualParent) o.visualParent = b.path; o.path = o.parent + '/' + seg(o.path); o.el.setAttribute('data-path', o.path); }
   }
+}
+async function restoreOfficeObjects(file, root, kept, exec = run) {
+  let count = 0; const list = kept.slice(), known = new Set(kept.map(o => o.el));
+  for (const el of root.querySelectorAll('[data-office-object]')) {
+    const host = officeHost(el); if (!host || known.has(el)) continue;
+    const props = officeProps(el); if (!props.xml) throw new Error('The original Office object is missing. Reopen the source document before copying this object.');
+    let parent = pathOf(host), at = offsetIn(host, el), visualParent, visualAt;
+    if (/^(TD|TH)$/.test(host.tagName)) {
+      visualParent = parent; visualAt = at;
+      const cell = await exec(['get', file, parent, '--depth', '2']);
+      const paras = (cell.children || []).filter(n => /^(paragraph|heading|code)$/.test(n.kind));
+      let p = paras[paras.length - 1];
+      for (const q of paras) { p = q; const len = String(q.props?.text || '').length; if (at <= len) break; at -= len + 1; }
+      if (!p) { p = await exec(['add', file, parent, '--type', 'paragraph', '--prop', 'text=']); count++; }
+      parent = p.path; at = Math.max(0, at);
+    }
+    const peers = Array.from(host.querySelectorAll('[data-office-object]')).filter(e => officeHost(e) === host);
+    if (peers.length > 1 && peers.every(e => !known.has(e)) && !textOf(inlineHtml(host)).trim()) {
+      const xml = peers.map(e => officeProps(e).xml); if (xml.some(x => !x)) throw new Error('The original Office object XML is missing.');
+      await exec(['add', file, parent, '--raw', `<w:r>${xml.join('')}</w:r>`]); count++;
+      const tree = await exec(['get', file, parent, '--depth', '1']), added = (tree.children || []).filter(n => n.kind === 'object');
+      peers.forEach((e, i) => {
+        const o = added[i]; if (!o) throw new Error('Restored Office object is missing from the paragraph.');
+        const key = e.getAttribute('data-object-key') || 'object-' + crypto.randomUUID(); e.setAttribute('data-object-key', key); known.add(e);
+        list.push({ path: o.path, parent, at: 0, key, props: o.props, el: e, ...(visualParent ? { visualParent, visualAt: 0 } : {}) });
+      });
+      continue;
+    }
+    const r = await exec(['add', file, parent, '--raw', `<w:r>${props.xml}</w:r>`]); count++;
+    await exec(['set', file, r.path, '--prop', 'at=' + at]); count++;
+    el.setAttribute('data-path', r.path);
+    const key = el.getAttribute('data-object-key') || 'object-' + crypto.randomUUID(); el.setAttribute('data-object-key', key);
+    // Re-read ordinals once all insertions are placed: inserting before an existing object changes its path too.
+    list.push({ path: r.path, parent, at, key, props: { ...props, ...r.props }, el, ...(visualParent ? { visualParent, visualAt } : {}) });
+  }
+  const groups = new Map();
+  for (const o of list) { if (!groups.has(o.parent)) groups.set(o.parent, []); groups.get(o.parent).push(o); }
+  for (const [parent, objects] of groups) {
+    objects.sort((a, b) => a.at - b.at || (a.el.compareDocumentPosition(b.el) & 4 ? -1 : 1));
+    objects.forEach((o, i) => { o.path = `${parent}/object[${i + 1}]`; o.el.setAttribute('data-path', o.path); o.el.setAttribute('data-office-props', JSON.stringify(o.props)); });
+  }
+  return { count, list };
 }
 
 // ----- docx: equations and shapes in paragraphs -----
@@ -1149,7 +1210,7 @@ export function anchorObjects(html, eqs, shapes, officeObjects = []) {
   const make = h => { box.innerHTML = h; return box.firstChild; };
   for (const x of eqs) { const el = root.querySelector(`[data-path="${x.path}"]`); if (el) placeAt(el, x.at, make(eqHtml(x.latex, x.display))); }
   for (const x of shapes.slice().reverse()) { const el = root.querySelector(`[data-path="${x.path}"]`); if (el) el.insertBefore(make(shapeHtml(x)), el.firstChild); }
-  for (const x of officeObjects.slice().reverse()) { const el = root.querySelector(`[data-path="${x.parent}"]`); if (el) placeAt(el, x.at, make(officeObjectHtml(x))); }
+  for (const x of officeObjects.slice().reverse()) { const el = root.querySelector(`[data-path="${x.visualParent || x.parent}"]`); if (el) placeAt(el, x.visualAt ?? x.at, make(officeObjectHtml(x))); }
   return root.innerHTML;
 }
 /** The paragraphs of the editor's blocks (a table cell counts as its first paragraph) with what sits in them: equations with their
@@ -1386,7 +1447,7 @@ export function blocksFromHtml(root) {
       if (c.nodeType === 3) { if (c.nodeValue.trim()) out.push({ kind: 'paragraph', path: null, props: { html: esc(c.nodeValue.trim()) }, el: null }); continue; }
       if (c.nodeType !== 1) continue;
       const tag = c.tagName;
-      if (c.hasAttribute('data-office-object')) { out.push({ kind: 'object', path: pathOf(c), props: {}, el: c }); continue; }
+      if (c.hasAttribute('data-office-object')) { const props = officeProps(c); out.push({ kind: 'object', path: pathOf(c), key: c.getAttribute('data-object-key') || pathOf(c), props, raw: props.xml ? `<w:p><w:r>${props.xml}</w:r></w:p>` : null, el: c }); continue; }
       if (tag === 'UL' || tag === 'OL') { walk(c, listKind(c, listType), level + 1); continue; }
       if (tag === 'LI') {
         const inner = c.cloneNode(true); Array.from(inner.querySelectorAll('ul,ol')).forEach(x => x.remove());
@@ -1422,7 +1483,7 @@ export function blocksFromHtml(root) {
       if (tag === 'HR') { if (c.getAttribute('data-pb')) out.push({ kind: 'pagebreak', path: pathOf(c), props: {}, el: c }); continue; }
       if (tag === 'BR' && node === el) continue;
       if (tag === 'P' || tag === 'DIV' || tag === 'FIGURE' || tag === 'SECTION' || tag === 'ARTICLE') {
-        if (Array.from(c.children).some(x => BLOCK.test(x.tagName) && !/^(IMG|BR|FIGURE)$/.test(x.tagName))) { walk(c, listType, level); continue; }
+        if (Array.from(c.children).some(x => !x.hasAttribute('data-office-object') && BLOCK.test(x.tagName) && !/^(IMG|BR|FIGURE)$/.test(x.tagName))) { walk(c, listType, level); continue; }
         const pics = picsIn(c);
         if (pics.length === 1 && !c.textContent.trim() && !isFloat(pics[0].el)) { out.push(imgBlock(pics[0].el)); continue; } // a picture of its own: a block
         const st = c.getAttribute('data-style');
@@ -1737,11 +1798,22 @@ async function planContainer(file, parentPath, origChildren, newChildren, log, e
   for (const b of newChildren) {
     if (!b.path) continue;
     const o = byPath.get(b.path);
-    if (!o || seen.has(b.path) || o.kind !== b.kind) { b.path = null; continue; } // duplicated by the editor, or changed kind: treat as new
+    if (!o || seen.has(b.path) || o.kind !== b.kind || b.kind === 'object' && o.key && b.key !== o.key) { b.path = null; continue; } // duplicated by the editor, or changed kind: treat as new
     seen.add(b.path);
   }
   const removed = origChildren.filter(o => !seen.has(o.path));
   for (const o of removed.slice().reverse()) { await exec(['remove', file, o.path]); n++; log && log('remove', o.path); }
+  // Paths count each kind in the current order, not the order of the previous save.
+  // Move survivors first, before inserting new blocks whose indices are relative to that order.
+  if (parentPath === '/body') {
+    const current = origChildren.filter(o => seen.has(o.path)), desired = newChildren.filter(b => b.path).map(b => byPath.get(b.path));
+    for (let i = 0; i < desired.length; i++) {
+      const j = current.indexOf(desired[i]); if (j === i) continue;
+      const counts = {}; for (const o of current) place(parentPath, o, counts);
+      await exec(['move', file, current[j].cur, '--to', parentPath, '--index', String(i + 1)]); n++;
+      current.splice(i, 0, current.splice(j, 1)[0]);
+    }
+  }
   // in document order: a new block goes in after the one just placed (kept or new), so a list item added continues the
   // list of the item before it, as it would when typed into Word; the first new block goes to the front
   const counts = {};
@@ -1768,9 +1840,10 @@ async function planContainer(file, parentPath, origChildren, newChildren, log, e
       prev = o.cur;
       continue;
     }
-    const argv = ['add', file, parentPath, '--type', b.kind, ...propsArgs(blockProps(b, true)), ...(prev ? ['--after', prev] : ['--index', '1'])];
+    const argv = ['add', file, parentPath, ...(b.raw ? ['--raw', b.raw] : ['--type', b.kind, ...propsArgs(blockProps(b, true))]), ...(prev ? ['--after', prev] : ['--index', '1'])];
     const r = await exec(argv); n++; log && log('add', r.path, b.kind);
     b.path = r.path;
+    if (b.kind === 'object' && r.props) { b.props = { ...b.props, ...r.props }; b.raw = `<w:p><w:r>${b.props.xml}</w:r></w:p>`; b.el?.setAttribute('data-office-props', JSON.stringify(b.props)); }
     counts[b.kind] = (counts[b.kind] || 0) + 1;
     if (b.kind === 'image' && r.props && r.props.id != null) b.id = String(r.props.id);
     if (b.kind === 'table') for (const argv of newTableCommands(r.path, b.rows, file, b.props.widths)) { await exec(argv); n++; }
@@ -1900,6 +1973,14 @@ async function saveDocx(doc, root, log) {
   for (const s of doc.styleEdits || []) { await run(['set', doc.path, '/', '--prop', 'style=' + JSON.stringify(s)]); n++; log && log('set', '/', { style: s.id }); } // 修改样式 / 新建样式
   doc.styleEdits = [];
   const el = root || parseHtml(doc.html || '');
+  // A paragraph consisting solely of an imported object is projected as an object block by Word.
+  for (const p of Array.from(el.querySelectorAll('p'))) {
+    if (p.closest('td,th') || p.hasAttribute('data-w-sectionbreak')) continue;
+    const objects = p.querySelectorAll('[data-office-object]');
+    if (objects.length === 1 && !textOf(inlineHtml(p)).trim() && !p.querySelector('img:not([data-office-object] img),[data-eq],[data-shape],[data-fn]')) {
+      const object = objects[0]; object.style.display = 'block'; p.replaceWith(object);
+    }
+  }
   const unsaved = p => p.path || /^data:/.test(p.props.src); // a picture of another file (a conflict copy) cannot be added
   const blocks = blocksFromHtml(el).filter(b => b.kind !== 'image' || unsaved(b));
   for (const b of blocks) if (b.pics) b.pics = b.pics.filter(unsaved);
@@ -1907,7 +1988,16 @@ async function saveDocx(doc, root, log) {
   const tocs = blocks.filter(b => b.kind === 'toc'), tocAdded = tocs.some(b => !b.path || !opened.has(b.path));
   const was = new Map(), remember = list => list.forEach(b => { was.set(b, b.path); if (b.rows) remember(b.rows); if (b.cells) remember(b.cells); });
   remember(blocks);
-  const officeObjects = await planOfficeObjects(doc.path, orig.officeObjects || [], el, run);
+  const rewrittenObjects = new Set();
+  for (const b of blocks.filter(b => b.kind === 'table')) {
+    const old = (orig.blocks || []).find(o => o.path === b.path), rebuild = !old || !!b.ops?.length || tablesToRewrite([old], [b]).length;
+    for (const c of b.rows.flatMap(r => r.cells)) {
+      const prev = old?.rows.flatMap(r => r.cells).find(o => o.path === c.path);
+      if (rebuild || !prev || !sameRuns(prev.props.html, c.props.html)) rewrittenObjects.add(c.path);
+    }
+  }
+  let officeObjects = await planOfficeObjects(doc.path, orig.officeObjects || [], el, run, rewrittenObjects);
+  for (const b of blocks) if (b.kind === 'object') b.key = b.el.getAttribute('data-object-key') || b.key;
   n += officeObjects.count;
   const mv = pictureMoves(orig.blocks || [], blocks), byId = orig.ids !== false;
   n += await planPicturesBefore(doc.path, orig.blocks || [], blocks, run, log);
@@ -1915,6 +2005,8 @@ async function saveDocx(doc, root, log) {
   if (byId) for (const b of blocks) if (b.kind === 'image' && b.id && !/^\/\//.test(b.path || '')) { b.path = `//image[@id=${b.id}]`; if (b.el) b.el.setAttribute('data-path', b.path); }
   renumber('/body', blocks);
   remapOfficeObjects(officeObjects.list, blocks, was);
+  officeObjects = await restoreOfficeObjects(doc.path, el, officeObjects.list, run);
+  n += officeObjects.count;
   n += await planPicturesAfter(doc.path, orig.blocks || [], blocks, run, log, byId);
   // a table of contents lists the headings: build it again in the file, and show it, once headings or contents changed
   if (tocs.length && (tocAdded || tocs.some(b => b.refresh) || headingsOf(orig.blocks || []) !== headingsOf(blocks))) {

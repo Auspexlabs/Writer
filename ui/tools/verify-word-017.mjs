@@ -2,14 +2,17 @@
 // Set WRITER_NODE_MODULES when Playwright is supplied outside this repository.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, copyFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const shellSource = readFileSync(join(root, 'ui/index.dc.html'), 'utf8');
+const shellHistory = shellSource.slice(shellSource.indexOf('  setDoc(nd, record, opts) {'), shellSource.indexOf('  scheduleSave(id) {')) + shellSource.slice(shellSource.indexOf('  undo(redo) {'), shellSource.indexOf('  toggleThumbsAnim() {'));
 const { chromium } = await import(process.env.WRITER_NODE_MODULES ? pathToFileURL(join(process.env.WRITER_NODE_MODULES, 'playwright/index.mjs')).href : 'playwright');
 const dir = mkdtempSync(join(tmpdir(), 'writer-word-017-'));
+copyFileSync(join(root, 'tests/Writer.Tests/Fixtures/docx/wmf-preview.docx'), join(dir, 'wmf-preview.docx'));
 const engine = spawn('dotnet', [join(root, 'src/Writer.Cli/bin/Debug/net10.0/writer.dll'), 'serve', '--dir', dir, '--port', '0', '--no-token'], { stdio: ['ignore', 'ignore', 'pipe'] });
 let browser, server;
 try {
@@ -17,6 +20,10 @@ try {
   server = createServer(async (req, res) => {
     try {
       if (req.url === '/') { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><meta charset="utf-8"><div id="editor" contenteditable="true"></div>'); return; }
+      if (req.url === '/ui/word-test.dc.html') {
+        res.setHeader('Content-Type', 'text/html');
+        res.end(`<!doctype html><meta charset="utf-8"><style>html,body,#dc-root{height:100%;margin:0;overflow:hidden}</style><script>window.__WRITER_LANG='zh';</script><script src="/ui/memo.js"></script><script src="/ui/i18n.js"></script><script src="/ui/vendor/offline.js"></script><script src="/ui/support.js"></script><body><x-dc><dc-import name="WordEditor" doc="{{ doc }}" on-change="{{ onChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toast }}" style="position:absolute;inset:0"></dc-import></x-dc><script type="text/x-dc" data-dc-script>class Component extends DCLogic { state = { docs:[{id:'test',type:'docx',html:'<p>Test</p>',loaded:true}] }; hist={}; constructor(p){super(p);window.__wordParent=this;} get doc(){return this.state.docs[0];} scheduleSave(){} toastMsg(message){window.__lastToast=message;} ${shellHistory} renderVals(){return {doc:this.doc,onChange:(doc,opts)=>this.setDoc(doc,!opts?.silent),onUndo:()=>this.undo(false),onRedo:()=>this.undo(true),toast:message=>this.toastMsg(message)};} }</script></body>`); return;
+      }
       if (req.url.startsWith('/ui/')) {
         const path = resolve(root, '.' + new URL(req.url, 'http://local').pathname);
         if (!path.startsWith(join(root, 'ui') + '/')) { res.writeHead(403).end(); return; }
@@ -34,6 +41,7 @@ try {
   const results = await page.evaluate(async () => {
     const EN = await import('/ui/engine.js'), ed = document.querySelector('#editor');
     const check = (condition, message) => { if (!condition) throw new Error(message); };
+    const plain = () => { const clone = ed.cloneNode(true); clone.querySelectorAll('[data-office-object]').forEach(e => e.remove()); return clone.textContent; };
     const results = [];
     await EN.run(['create', 'comments.docx']);
     for (const html of ['first <b>bold</b> ending', 'second <i>italic</i> ending', 'third paragraph']) await EN.run(['add', 'comments.docx', '/body', '--type', 'paragraph', '--prop', 'html=' + html]);
@@ -72,10 +80,136 @@ try {
     check(ed.querySelectorAll('[data-office-object]').length === 0, 'deleted standalone object came back');
     check(ed.textContent === 'leftright edited', 'object deletion changed text');
     results.push('Office objects: display, no-op save, text edit, inline and block deletion');
+
+    await EN.run(['create', 'object-history.docx']);
+    await EN.run(['set', 'object-history.docx', '/body', '--raw', '<w:body><w:p><w:r><w:t>abc</w:t></w:r><w:r>' + ole + '</w:r><w:r><w:t>def</w:t></w:r></w:p><w:p><w:r><w:t>second</w:t></w:r></w:p></w:body>']);
+    doc = await EN.open({ id: 'history', path: 'object-history.docx', type: 'docx' }); ed.innerHTML = doc.html;
+    const history = ed.innerHTML;
+    ed.querySelector('[data-office-object]').remove(); await EN.save(doc, { root: ed });
+    ed.innerHTML = history; await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.querySelectorAll('[data-office-object]').length === 1 && plain() === 'abcdefsecond', 'undo after saved deletion lost the object or changed text');
+    let object = ed.querySelector('[data-office-object]');
+    ed.children[1].prepend(object); await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    object = ed.children[1].querySelector('[data-office-object]');
+    check(object && EN.offsetIn(ed.children[1], object) === 0, 'cross-paragraph object move was lost');
+    ed.children[1].prepend('prefix'); await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html; object = ed.children[1].querySelector('[data-office-object]');
+    check(EN.offsetIn(ed.children[1], object) === 6, 'typing before an object did not update its offset');
+    const clone = object.cloneNode(true); ed.children[1].append(clone); await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.querySelectorAll('[data-office-object]').length === 2, 'copying an inline object lost its original markup');
+    check(await EN.save(doc, { root: ed }) === 0, 'object copy produced a repeated save diff');
+    object = ed.querySelector('[data-office-object]'); ed.append(object); await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.lastElementChild.hasAttribute('data-office-object'), 'inline object did not become a standalone block');
+    ed.prepend(ed.lastElementChild); await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.firstElementChild.hasAttribute('data-office-object'), 'standalone object reorder was lost');
+    const blockHistory = ed.innerHTML; ed.firstElementChild.remove(); await EN.save(doc, { root: ed });
+    ed.innerHTML = blockHistory; await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.firstElementChild.hasAttribute('data-office-object'), 'standalone object undo after save failed');
+    ed.querySelector('p').append(ed.firstElementChild); await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.querySelectorAll('p [data-office-object]').length === 2, 'standalone object move into a paragraph failed');
+    const pair = document.createElement('p'); ed.querySelectorAll('[data-office-object]').forEach(o => pair.append(o)); ed.append(pair);
+    await EN.save(doc, { root: ed }); doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.lastElementChild.querySelectorAll('[data-office-object]').length === 2, 'paragraph containing only two objects failed to save');
+    results.push('Office object history: saved deletion undo, movement, copy, ordering and block/inline conversion');
+
+    await EN.run(['create', 'table-objects.docx']);
+    await EN.run(['set', 'table-objects.docx', '/body', '--raw', '<w:body><w:tbl><w:tblGrid><w:gridCol w:w="4000"/></w:tblGrid><w:tr><w:tc><w:p><w:r><w:t>first</w:t></w:r></w:p><w:p><w:r><w:t>left</w:t></w:r><w:r>' + ole + '</w:r><w:r><w:t>right</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p/></w:body>']);
+    doc = await EN.open({ id: 'tableobjects', path: 'table-objects.docx', type: 'docx' }); ed.innerHTML = doc.html;
+    let cell = ed.querySelector('td'), cellObject = cell.querySelector('[data-office-object]');
+    check(cellObject && EN.offsetIn(cell, cellObject) === 10, 'object in a later cell paragraph is missing or at the wrong position');
+    check(await EN.save(doc, { root: ed }) === 0, 'unchanged table object save changed the file');
+    cell.prepend('prefix'); await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html; cell = ed.querySelector('td'); cellObject = cell.querySelector('[data-office-object]');
+    check(cellObject && EN.offsetIn(cell, cellObject) === 16, 'editing a table cell lost or moved its object');
+    const tableHistory = ed.innerHTML; cellObject.remove(); await EN.save(doc, { root: ed });
+    ed.innerHTML = tableHistory; await EN.save(doc, { root: ed });
+    doc = await EN.open(doc); ed.innerHTML = doc.html;
+    check(ed.querySelectorAll('td [data-office-object]').length === 1, 'undo after deleting a saved table object failed');
+    check(await EN.save(doc, { root: ed }) === 0, 'restored table object produced a repeated save diff');
+    results.push('Objects inside table cells: later paragraphs, text edits, deletion and saved undo');
     return results;
   });
-  assert.equal(results.length, 2);
+  assert.equal(results.length, 4);
   for (const result of results) console.log('PASS', result);
+  await page.goto(`http://127.0.0.1:${server.address().port}/ui/word-test.dc.html`);
+  await page.locator('.wd-ed[contenteditable="true"]').waitFor();
+  const editorResults = await page.evaluate(async () => {
+    const EN = await import('/ui/engine.js');
+    const tick = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const check = (yes, msg) => { if (!yes) throw new Error(msg); };
+    const editor = () => { const el = document.querySelector('[data-edroot]'); let f = el[Object.keys(el).find(k => k.startsWith('__reactFiber'))]; for (; f; f = f.return) if (f.stateNode?.logic?.replaceAll) return f.stateNode.logic; throw new Error('editor not mounted'); };
+    const parent = window.__wordParent;
+    let formula = await EN.open({ id: 'formula', path: 'wmf-preview.docx', type: 'docx' });
+    parent.setState({ docs: [formula] }); await tick();
+    const MF = await import('/ui/metafile.js'); await MF.paintMetafiles(editor().edRef.current);
+    let svg = editor().edRef.current.querySelector('[data-wmf-ready="yes"] svg');
+    check(svg && svg.querySelector('line') && svg.textContent.includes('α+β'), 'MathType WMF preview did not render vectors and Symbol glyphs as SVG');
+    const rawBefore = await EN.run(['get', formula.path, '/body/object[1]', '--raw']);
+    editor().edRef.current.querySelector('p').append(' edited');
+    await EN.save(formula, { root: editor().edRef.current });
+    check((await EN.run(['get', formula.path, '/body/object[1]', '--raw'])) === rawBefore, 'drawing the WMF preview changed the embedded object XML');
+    await EN.run(['create', 'history-editor.docx']);
+    await EN.run(['add', 'history-editor.docx', '/body', '--type', 'paragraph', '--prop', 'html=<b>Hel</b><i>lo</i> HELLO shelloworld']);
+    await EN.run(['add', 'history-editor.docx', '/body', '--type', 'table', '--prop', 'rows=2', '--prop', 'cols=2']);
+    let doc = await EN.open({ id: 'editor', path: 'history-editor.docx', type: 'docx' });
+    parent.setState({ docs: [doc] }); await tick(); let c = editor(); c.EN = EN;
+    c.setState({ fq: 'hello', fr: 'World', findWhole: true }); await tick();
+    check(c.hits().length === 2, 'Word search does not cross formatting or respect whole words');
+    c.setState({ findCase: true }); await tick(); check(c.hits().length === 0, 'Word case-sensitive search'); c.setState({ findCase: false }); await tick();
+    const original = c.edRef.current.innerHTML; c.replaceAll(); await tick();
+    check(c.edRef.current.querySelector('b').textContent === 'World' && c.edRef.current.textContent.includes('World World shelloworld'), 'replacement lost formatting or replaced part of a whole word');
+    await EN.save(parent.doc, { root: c.edRef.current });
+    c.history(false); await tick(); c = editor();
+    check(c.edRef.current.querySelector('b').textContent === 'Hel' && c.edRef.current.querySelector('i').textContent === 'lo', 'replace all undo lost run formatting');
+    await EN.save(parent.doc, { root: c.edRef.current });
+    c.history(true); await tick(); c = editor(); check(c.edRef.current.textContent.includes('World World'), 'replace all redo');
+    const cell = c.edRef.current.querySelector('td'), range = document.createRange(); range.selectNodeContents(cell); range.collapse(true);
+    c.edRef.current.focus(); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); c.range = range;
+    c.tbl('rowBelow'); c.flush(); await tick(); c = editor();
+    check(c.edRef.current.querySelectorAll('tr').length === 3, 'insert table row failed');
+    await EN.save(parent.doc, { root: c.edRef.current });
+    c.history(false); await tick(); c = editor(); check(c.edRef.current.querySelectorAll('tr').length === 2, 'table row undo');
+    await EN.save(parent.doc, { root: c.edRef.current });
+    const reopened = await EN.open(parent.doc); check(new DOMParser().parseFromString(reopened.html, 'text/html').querySelectorAll('tr').length === 2, 'table undo after save did not reach the file');
+    c.history(true); await tick(); c = editor(); check(c.edRef.current.querySelectorAll('tr').length === 3, 'table row redo');
+    const p0 = c.edRef.current.querySelector('p'), selection = window.getSelection();
+    const selectParagraph = () => { const range = document.createRange(); range.selectNodeContents(p0); selection.removeAllRanges(); selection.addRange(range); c.range = range; c.edRef.current.focus(); };
+    selectParagraph(); p0.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', ctrlKey: true, bubbles: true, cancelable: true })); c.flush(); await tick();
+    check(p0.style.textAlign === 'justify', 'Ctrl+J did not justify the paragraph');
+    selectParagraph(); p0.dispatchEvent(new KeyboardEvent('keydown', { key: '5', ctrlKey: true, bubbles: true, cancelable: true })); c.flush(); await tick();
+    check(p0.getAttribute('data-w-linespacing') === '1.5', 'Ctrl+5 did not apply 1.5 line spacing');
+    const zoom = c.state.zoom; selectParagraph(); p0.dispatchEvent(new KeyboardEvent('keydown', { key: '=', ctrlKey: true, bubbles: true, cancelable: true })); c.flush(); await tick();
+    check(c.state.zoom === zoom && (p0.querySelector('sub') || p0.innerHTML.includes('vertical-align: sub')), 'Ctrl+= zoomed instead of applying subscript');
+    selectParagraph(); p0.dispatchEvent(new KeyboardEvent('keydown', { key: '2', ctrlKey: true, altKey: true, bubbles: true, cancelable: true })); c.flush(); await tick();
+    check(c.edRef.current.querySelector('h2'), 'Ctrl+Alt+2 did not apply Heading 2');
+    const paragraphs = Array.from({ length: 900 }, (_, i) => `<p>Paragraph ${i}. ${'A long document needs reliable page boundaries. '.repeat(35)}</p>`).join('');
+    parent.setState({ docs: [{ id: 'pagination', type: 'docx', html: paragraphs, loaded: false }] }); await tick();
+    c = editor(); c.refreshInfo();
+    check(c.state.info.pages > 200, 'long-document fixture did not cover enough pages');
+    const perf = [];
+    for (const index of [850, 400, 0, 700]) {
+      const p = c.edRef.current.children[index], firstRule = c.pgCss.sheet.cssRules[0];
+      if (index === 700) p.textContent = 'Short paragraph.'; else p.append(' This edit adds several new lines to an existing paragraph.'.repeat(12));
+      const start = performance.now(); c.refreshInfo(true); const elapsed = performance.now() - start;
+      const partial = c.state.info.at.map(a => a.slice()), css = c.pgRules.slice();
+      if (index > 10) check(c.pgCss.sheet.cssRules[0] === firstRule, 'incremental pagination replaced an unaffected page rule');
+      const fullStart = performance.now(); c.refreshInfo(); const fullElapsed = performance.now() - fullStart;
+      const full = c.state.info.at;
+      check(partial.length === full.length && partial.every((a, i) => a.every((v, j) => Math.abs(v - full[i][j]) <= 1)), `incremental pagination differs from a full layout at paragraph ${index}: ${JSON.stringify({ partial: partial.find((a, i) => a.some((v, j) => Math.abs(v - (full[i]?.[j] || 0)) > 1)), full: full[partial.findIndex((a, i) => a.some((v, j) => Math.abs(v - (full[i]?.[j] || 0)) > 1))] })}`);
+      perf.push({ paragraph: index, pages: full.length, incrementalMs: Math.round(elapsed), fullMs: Math.round(fullElapsed) });
+    }
+    window.__wordPaginationPerf = perf;
+    return ['MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing', 'WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving', 'WordEditor table commands: insert row, save, undo, save/reopen and redo', 'Word shortcuts: justify, line spacing, subscript without zoom, Heading 2'];
+  });
+  for (const result of editorResults) console.log('PASS', result);
+  console.log('PASS incremental page boundaries match full layout', JSON.stringify(await page.evaluate(() => window.__wordPaginationPerf)));
 } finally {
   await browser?.close(); server?.close(); engine.kill(); rmSync(dir, { recursive: true, force: true });
 }

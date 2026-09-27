@@ -166,12 +166,14 @@
     <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
   <sc-if value="{{ showFind }}" hint-placeholder-val="{{ false }}">
-    <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:58px;left:50%;margin-left:-330px;width:660px;z-index:38;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 8px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px">
+    <div data-pop="menu" data-glass-bar="1" style="position:absolute;top:58px;left:50%;transform:translateX(-50%);width:880px;max-width:calc(100% - 28px);flex-wrap:wrap;z-index:38;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 8px;border-radius:var(--glass-r, 14px);background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px">
       <input ref="{{ findRef }}" value="{{ fq }}" onChange="{{ onFq }}" onKeyDown="{{ onFindKey }}" placeholder="查找" style="height:28px;width:150px;padding:0 10px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;outline:none">
       <input value="{{ fr }}" onChange="{{ onFr }}" placeholder="替换为" style="height:28px;width:150px;padding:0 10px;border:1px solid var(--line, rgba(0,0,0,0.1));border-radius:var(--ctl-r, 8px);background:transparent;color:var(--ink, #1D1D1F);font-size:12.5px;outline:none">
       <button onMouseDown="{{ md }}" onClick="{{ findNext }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F);font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--line, rgba(0,0,0,0.1))">查找下一个</button>
       <button onMouseDown="{{ md }}" onClick="{{ replaceOne }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F);font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--line, rgba(0,0,0,0.1))">替换</button>
       <button onMouseDown="{{ md }}" onClick="{{ replaceAll }}" style="height:28px;padding:0 10px;border:none;border-radius:var(--ctl-r, 8px);background:var(--fill, rgba(0,0,0,0.07));color:var(--ink, #1D1D1F);font-size:12.5px;cursor:pointer;white-space:nowrap" style-hover="background:var(--line, rgba(0,0,0,0.1))">全部替换</button>
+      <label style="display:flex;gap:3px;align-items:center;white-space:nowrap"><input type="checkbox" checked="{{ findCase }}" onChange="{{ onFindCase }}">区分大小写</label>
+      <label style="display:flex;gap:3px;align-items:center;white-space:nowrap"><input type="checkbox" checked="{{ findWhole }}" onChange="{{ onFindWhole }}">全字匹配</label>
       <span style="color:var(--ink-3, rgba(29,29,31,0.36))">{{ fcountText }}</span>
       <div style="flex:1"></div>
       <button onClick="{{ closeFind }}" style="height:28px;padding:0 10px;border:none;border-radius:6px;background:transparent;font-size:12.5px;cursor:pointer;color:var(--ink-2, rgba(29,29,31,0.62))">关闭</button>
@@ -553,7 +555,7 @@ const hfOut = html => {
 };
 
 class Component extends DCLogic {
-  state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: Z100, zoomEdit: null, view: 'page', showRuler: false, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFFF00', activeCid: null, imgSel: false, hf: null, hfLive: null };
+  state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: Z100, zoomEdit: null, view: 'page', showRuler: false, showNav: false, showFind: false, fq: '', fr: '', findCase: false, findWhole: false, fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFFF00', activeCid: null, imgSel: false, hf: null, hfLive: null };
   edRef = React.createRef(); fnRef = React.createRef(); cvRef = React.createRef(); imgRef = React.createRef(); findRef = React.createRef(); hfRef = React.createRef(); panelFindRef = React.createRef();
   pgId = 'pg' + Math.random().toString(36).slice(2, 8); // scopes the page view's rules (pgCss) to this editor's text
   componentDidMount() {
@@ -564,6 +566,7 @@ class Component extends DCLogic {
     import('./glass.js');
     import('./engine.js').then(m => this.engineReady(m)); // the table and contents commands share their model with the save
     import('./picture.js').then(m => { this.P = m; this.layoutPics(); this.drawShapes(); }); // the 图片 tab, and where pictures sit
+    import('./metafile.js').then(m => { this.MF = m; this.drawOfficeObjects(); });
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./md.js').then(m => { this.MD = m; this.drawEqs(); }); // KaTeX, for the equations
     import('./cite-suggest.js').then(m => { this.CS = m; this.citeScan(); }); // 引文建议: which sentences want a citation
@@ -628,6 +631,7 @@ class Component extends DCLogic {
   onWheel = e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom(this.state.zoom * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
   applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100 * Z100); }
   componentDidUpdate(pp) {
+    this.drawOfficeObjects();
     this.attachWheel(); this.attachFollow(); this.hb && this.hb.layout(); this.shb && this.shb.layout();
     if (pp.formatOpen && !this.props.formatOpen && this.state.pop) this.setState({ pop: null });
     if (!!pp.panelOpen !== !!this.props.panelOpen && this.fit) this.fit(); // the side panel's track changed at once: fit now, in this commit, not a frame later
@@ -928,7 +932,8 @@ class Component extends DCLogic {
   sync(typed) { if (!typed) this.pgDirty = true; clearTimeout(this.syncT); this.syncT = setTimeout(() => this.flush(), 350); }
   flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }); this.refreshInfo(!this.pgDirty); this.citeScan(); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
-  ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.EN.numberLists(ed); this.numberCaptions(ed); this.drawEqs(); } } // and the notes' marks and the captions count 1, 2, 3… again
+  ink() { const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.EN.numberLists(ed); this.numberCaptions(ed); this.drawEqs(); this.drawOfficeObjects(); } } // and the notes' marks and the captions count 1, 2, 3… again
+  drawOfficeObjects() { const root = this.edRef.current?.closest?.('[data-edroot]'); if (root && this.MF) this.MF.paintMetafiles(root); }
   /** The pages, as [top, bottom] of the text as it flows without page gaps. A paragraph that runs past the end of a page goes on
    *  on the next one from the line that does not fit, as Word breaks it: at least two of its lines on either side (孤行控制, unless
    *  turned off), none when 段中不分页 keeps it whole, and a heading or a paragraph set to 与下段同页 goes on with it when its first
@@ -945,9 +950,9 @@ class Component extends DCLogic {
    *  mark whose note does not fit goes on to the next page with it, as Word does. `notes` lists each page's footnotes. ponytail: a
    *  note taller than what is left of a page is not continued on the next one. */
   pagesOf(ed, contentH, step, fn) {
-    const y = el => { let t = 0; for (let e = el; e && e !== ed; e = e.offsetParent) t += e.offsetTop; return t; };
+    const y = el => this.pgMetrics?.get(el)?.top ?? this.flowTop(el, ed), height = el => this.pgMetrics?.get(el)?.h ?? el.offsetHeight;
     const pieces = [], tops = []; let brk = false, inner = false;
-    const piece = (el, top, forced) => ({ top, bottom: y(el) + el.offsetHeight, el, css: 'margin-top', forced, text: TEXT_BLOCK.test(el.tagName || '') && !el.querySelector(NO_SPLIT),
+    const piece = (el, top, forced) => ({ top, bottom: y(el) + height(el), el, css: 'margin-top', forced, text: TEXT_BLOCK.test(el.tagName || '') && !el.querySelector(NO_SPLIT),
       keep: el.getAttribute('data-w-keeplines') === 'true', next: el.getAttribute('data-w-keepnext') ? el.getAttribute('data-w-keepnext') === 'true' : /^H[1-6]$/.test(el.tagName || '') && !el.getAttribute('data-style'), // Word's heading styles keep with the next
       widow: el.getAttribute('data-widow') !== 'off' && el.getAttribute('data-w-widowcontrol') !== 'false' });
     for (const c of Array.from(ed.children)) {
@@ -958,8 +963,8 @@ class Component extends DCLogic {
         top = end + (parseFloat(getComputedStyle(s).marginBottom) || 0); el = s; css = 'margin-bottom'; forced = true;
       }
       const items = spans.length || !/^(UL|OL)$/.test(c.tagName || '') ? [] : Array.from(c.children).filter(li => li.tagName === 'LI');
-      if (spans.length) pieces.push({ top, bottom: y(c) + c.offsetHeight, el, css, forced });
-      else if (items.length) items.forEach((li, i) => pieces.push(Object.assign(piece(i ? li : c, i ? y(li) : top, !i && forced), { text: false, bottom: i === items.length - 1 ? y(c) + c.offsetHeight : y(li) + li.offsetHeight }))); // the list itself moves its first item
+      if (spans.length) pieces.push({ top, bottom: y(c) + height(c), el, css, forced });
+      else if (items.length) items.forEach((li, i) => pieces.push(Object.assign(piece(i ? li : c, i ? y(li) : top, !i && forced), { text: false, bottom: i === items.length - 1 ? y(c) + height(c) : y(li) + height(li) }))); // the list itself moves its first item
       else pieces.push(piece(c, top, forced));
       brk = c.matches('hr[data-pb]') || /^(nextPage|evenPage|oddPage)$/.test(c.getAttribute('data-w-sectionbreak') || ''); // a section that starts on a new page
     }
@@ -1011,6 +1016,8 @@ class Component extends DCLogic {
   /** A paragraph's lines as [top, bottom, middle] in the text as pagesOf measures it: the boxes of its glyphs, grouped by line, each
    *  line reaching halfway to the next (the leading between them), the first from the paragraph's top and the last to its bottom. */
   linesOf(el, ed) {
+    const metric = this.pgMetrics?.get(el), cached = this.pgLines?.get(el);
+    if (metric && cached) return cached.map(row => row.map(y => y + metric.top));
     const r = document.createRange(); r.selectNodeContents(el);
     const eb = ed.getBoundingClientRect(), z = eb.width / (ed.offsetWidth || eb.width || 1) || 1, rows = [];
     for (const b of Array.from(r.getClientRects()).filter(b => b.width > 0.5 && b.height > 0.5).sort((a, b) => a.top - b.top)) {
@@ -1018,9 +1025,39 @@ class Component extends DCLogic {
       if (row && Math.min(row[1], t + h) - Math.max(row[0], t) > Math.min(h, row[1] - row[0]) / 2) { row[0] = Math.min(row[0], t); row[1] = Math.max(row[1], t + h); }
       else rows.push([t, t + h]);
     }
-    let top = 0; for (let e = el; e && e !== ed; e = e.offsetParent) top += e.offsetTop;
+    const shownTop = this.flowTop(el, ed), top = metric ? metric.top : shownTop;
+    if (metric) for (const row of rows) { row[0] += top - shownTop; row[1] += top - shownTop; }
     const mid = row => (row[0] + row[1]) / 2;
-    return rows.map((row, i) => [i ? (mid(rows[i - 1]) + mid(row)) / 2 : top, i < rows.length - 1 ? (mid(row) + mid(rows[i + 1])) / 2 : top + el.offsetHeight, mid(row)]);
+    const lines = rows.map((row, i) => [i ? (mid(rows[i - 1]) + mid(row)) / 2 : top, i < rows.length - 1 ? (mid(row) + mid(rows[i + 1])) / 2 : top + (metric ? metric.h : el.offsetHeight), mid(row)]);
+    this.pgLines?.set(el, lines.map(row => row.map(y => y - top)));
+    return lines;
+  }
+  flowTop(el, ed = this.edRef.current) {
+    // offsetTop rounds every position to an integer. Over hundreds of pages that rounding
+    // moves a cached line across a page threshold after a fractional line-height change.
+    if (el.getBoundingClientRect && ed.getBoundingClientRect) { const box = ed.getBoundingClientRect(), z = box.width / (ed.offsetWidth || box.width || 1) || 1; return (el.getBoundingClientRect().top - box.top) / z; }
+    let t = 0; for (let e = el; e && e !== ed; e = e.offsetParent) t += e.offsetTop; return t;
+  }
+  /** Keep unchanged page rules in the CSSOM. Replacing the whole stylesheet invalidates every page. */
+  pageRules(push) {
+    return push.map(([el, css, v]) => css === 'lines' ? this.linesCss(el, v) : `${this.cssPath(el)}{${css}:${Math.round(v)}px!important}`);
+  }
+  setPageRules(rules) {
+    if (!this.pgCss) return;
+    const sheet = this.pgCss.sheet, old = this.pgRules || [];
+    if (!sheet) { this.pgCss.textContent = rules.join('\n'); this.pgRules = rules; return; }
+    if (old.length === rules.length && sheet.cssRules.length === old.length) {
+      for (let i = 0; i < rules.length; i++) if (old[i] !== rules[i]) { sheet.deleteRule(i); sheet.insertRule(rules[i], i); }
+    } else {
+      let a = 0, b = 0;
+      if (sheet.cssRules.length === old.length) {
+        while (a < old.length && a < rules.length && old[a] === rules[a]) a++;
+        while (b < old.length - a && b < rules.length - a && old[old.length - 1 - b] === rules[rules.length - 1 - b]) b++;
+      }
+      for (let i = sheet.cssRules.length - b - 1; i >= a; i--) sheet.deleteRule(i);
+      for (let i = a; i < rules.length - b; i++) sheet.insertRule(rules[i], i);
+    }
+    this.pgRules = rules;
   }
   /** The page view's rule that moves a paragraph's lines down onto the next page: a float as wide as the paragraph, before its text,
    *  whose shape (shape-outside) is only the bands [top, bottom] of the paragraph where no line may be, so the line there goes on
@@ -1053,16 +1090,42 @@ class Component extends DCLogic {
   refreshInfo(typed) {
     const ed = this.edRef.current; if (!ed) return;
     const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, W = pg.orient === 'landscape' ? ph : pw, m = marginsPx(pg.margin);
-    const kids = Array.from(ed.children), key = [H, m.top, m.bottom, pg.cols, this.state.view].join(), was = this.pgSeen;
+    const kids = Array.from(ed.children), key = [W, H, m.left, m.right, m.top, m.bottom, pg.cols, this.state.view].join(), was = this.pgSeen;
     const fn = this.paged ? this.fnMeasure(W - m.left - m.right) : null; // the footnotes, drawn at the foot of their pages
     let at, push = null, inner = false, tops, cuts = null, notes = null;
-    if (typed && was && was.key === key && was.fn === (fn && fn.key) && was.kids.length === kids.length && kids.every((c, i) => c === was.kids[i] && c.offsetHeight === was.h[i])) ({ at, cuts, notes } = was); // the page view's gaps stay: taking them out to measure lays the whole file out twice more
+    const sameKids = typed && was && was.key === key && was.fn === (fn && fn.key) && was.kids.length === kids.length && kids.every((c, i) => c === was.kids[i]);
+    const shownH = sameKids ? kids.map(c => c.offsetHeight) : null;
+    if (sameKids && shownH.every((h, i) => h === was.h[i])) ({ at, cuts, notes } = was); // the page view's gaps stay: taking them out to measure lays the whole file out twice more
     else {
-      if (this.pgCss) this.pgCss.textContent = ''; // measured as the text flows without page gaps
+      const incremental = sameKids && was.measure && this.paged && !fn && this.pgCss?.sheet;
+      this.pgMetrics = null;
+      if (incremental) {
+        const dirty = new Set(kids.filter((c, i) => shownH[i] !== was.h[i]));
+        // Only changed paragraphs lose their line spacer while measured. Other pages keep their layout.
+        const stripped = new Set(was.push.filter(([el, css]) => css === 'lines' && dirty.has(el)).map(([el]) => el));
+        this.setPageRules(this.pageRules(was.push.filter(([el, css]) => css !== 'lines' || !stripped.has(el))));
+        this.pgLines = new Map(was.lines); for (const el of dirty) this.pgLines.delete(el);
+        this.pgMetrics = new Map(); let removed = 0;
+        kids.forEach((c, i) => {
+          const old = was.measure[i], top = old.top + this.flowTop(c) - old.shownTop + removed;
+          const h = dirty.has(c) ? c.offsetHeight : old.h;
+          this.pgMetrics.set(c, { top, h });
+          if (stripped.has(c)) removed += was.h[i] - old.h;
+        });
+      } else { this.setPageRules([]); this.pgLines = new Map(); }
       ({ at, push, inner, tops, notes } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP, fn));
+      // Measure each paragraph once while the initial flow is already laid out. A later edit can
+      // shift a page break into any of these paragraphs without measuring that page's text again.
+      if (!incremental && this.paged && !inner && !fn && this.pgCss?.sheet)
+        for (const c of kids) if (TEXT_BLOCK.test(c.tagName) && !c.querySelector(NO_SPLIT) && !this.pgLines.has(c)) this.linesOf(c, ed);
       if (this.state.view === 'side') { const W = pg.orient === 'landscape' ? ph : pw, colW = W - m.left - m.right, gap = m.left + m.right + GAP; at = Array.from({ length: Math.max(1, Math.round((ed.scrollWidth + gap) / (colW + gap))) }, () => [0, 0]); push = []; } // 并排: each column is a page
       this.pgDirty = false; this.pgSeen = null;
-      if (this.state.view !== 'side' && !inner) { const h = kids.map(c => c.offsetHeight); cuts = this.pageCuts(kids, tops, h, at); this.pgSeen = { key, kids, h, at, cuts, notes, fn: fn && fn.key }; } // a break inside a paragraph is pushed down inside it: its height is not the one measured here
+      if (this.state.view !== 'side' && !inner) {
+        const h = kids.map(c => this.pgMetrics?.get(c)?.h ?? c.offsetHeight); cuts = this.pageCuts(kids, tops, h, at);
+        const measure = this.paged && !fn && !kids.some(c => /^(UL|OL)$/.test(c.tagName)) ? kids.map((c, i) => ({ top: tops[i], h: h[i] })) : null;
+        this.pgSeen = { key, kids, h, at, cuts, notes, push, measure, lines: this.pgLines, fn: fn && fn.key };
+      }
+      this.pgMetrics = null;
     }
     // innerText needs the layout too: read from the one just made, before the gaps go back in (every read after that lays the whole
     // document out again)
@@ -1070,8 +1133,9 @@ class Component extends DCLogic {
     const cjk = (t.match(/[\u4e00-\u9fa5]/g) || []).length, words = (t.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9]+/g) || []).length;
     const heads = Array.from(ed.querySelectorAll('h1,h2,h3')).map((h, i) => ({ lvl: +h.tagName[1], text: h.innerText.trim() || $t('（空标题）'), i }));
     if (push && this.pgCss && this.paged) {
-      this.pgCss.textContent = push.map(([el, css, v]) => css === 'lines' ? this.linesCss(el, v) : `${this.cssPath(el)}{${css}:${Math.round(v)}px!important}`).join('\n');
+      this.setPageRules(this.pageRules(push));
       if (this.pgSeen) for (const [el, css] of push) { const i = css === 'lines' ? kids.indexOf(el) : -1; if (i >= 0) this.pgSeen.h[i] = el.offsetHeight; } // its lines moved on: as tall as the page view draws it
+      if (this.pgSeen?.measure) kids.forEach((c, i) => { this.pgSeen.measure[i].shownTop = this.flowTop(c); this.pgSeen.h[i] = c.offsetHeight; });
     }
     const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, cuts, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
     this.layoutPics(); this.drawShapes(); // floating pictures and shapes follow their paragraphs onto their pages
@@ -2022,22 +2086,32 @@ class Component extends DCLogic {
     this.change({ html: ed.innerHTML }); this.props.toast && this.props.toast(accept ? $t('已接受所有修订') : $t('已拒绝所有修订'));
   }
   textOffset(node, off) { const r = document.createRange(); r.setStart(this.edRef.current, 0); r.setEnd(node, off); return r.toString().length; }
-  hits() { const q = this.state.fq; if (!q) return []; const ed = this.edRef.current, w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT); const out = []; let n; while ((n = w.nextNode())) { let i = -1; const t = n.nodeValue; while ((i = t.indexOf(q, i + 1)) >= 0) out.push([n, i]); } return out; }
+  hits() { return this.EN ? this.EN.findTextRanges(this.edRef.current, this.state.fq, { caseSensitive: this.state.findCase, wholeWord: this.state.findWhole }) : []; }
   findNext() {
-    const q = this.state.fq, H = this.hits(); this.setState({ fcount: H.length }); if (!H.length) return;
-    const s = window.getSelection(); let cur = -1;
-    if (this.range) cur = this.textOffset(this.range.endContainer, this.range.endOffset);
-    let pick = H.find(h => this.textOffset(h[0], h[1]) >= cur && !(this.range && this.range.toString() === q && this.textOffset(h[0], h[1]) === cur - q.length)) || H[0];
-    if (this.range && this.range.toString() === q) { const i = H.findIndex(h => h[0] === this.range.startContainer && h[1] === this.range.startOffset); if (i >= 0) pick = H[(i + 1) % H.length]; }
-    const r = document.createRange(); r.setStart(pick[0], pick[1]); r.setEnd(pick[0], pick[1] + q.length);
+    const H = this.hits(); this.setState({ fcount: H.length }); if (!H.length) return;
+    const s = window.getSelection(), current = this.range;
+    const same = current ? H.findIndex(h => h.range.compareBoundaryPoints(0, current) === 0 && h.range.compareBoundaryPoints(2, current) === 0) : -1;
+    const end = current?.cloneRange(); if (end) end.collapse(false);
+    const hit = same >= 0 ? H[(same + 1) % H.length] : H.find(h => !end || h.range.compareBoundaryPoints(0, end) >= 0) || H[0];
+    const r = hit.range;
     this.edRef.current.focus({ preventScroll: true }); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange();
     const cv = this.cvRef.current, rc = r.getBoundingClientRect(), cr = cv.getBoundingClientRect(); if (rc.top < cr.top + 40 || rc.bottom > cr.bottom - 40) cv.scrollTop += rc.top - cr.top - cv.clientHeight / 3;
   }
-  replaceOne() { if (this.range && this.range.toString() === this.state.fq) { this.restore(); document.execCommand('insertText', false, this.state.fr); this.range = window.getSelection().getRangeAt(0).cloneRange(); this.sync(); } this.findNext(); }
+  replaceOne() {
+    const current = this.range, hit = current && this.hits().find(h => h.range.compareBoundaryPoints(0, current) === 0 && h.range.compareBoundaryPoints(2, current) === 0);
+    if (hit) {
+      if (this.syncT) { clearTimeout(this.syncT); this.flush(); }
+      this.EN.replaceTextRanges([hit], this.state.fr);
+      const r = document.createRange(); r.setStart(hit.runs[0].node, hit.runs[0].start + this.state.fr.length); r.collapse(true); this.range = r;
+      this.change({ html: this.edRef.current.innerHTML }); this.refreshInfo();
+    }
+    this.findNext();
+  }
   replaceAll() {
-    const q = this.state.fq; if (!q) return; const ed = this.edRef.current, w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT); let n, c = 0; const list = []; while ((n = w.nextNode())) list.push(n);
-    list.forEach(t => { if (t.nodeValue.includes(q)) { c += t.nodeValue.split(q).length - 1; t.nodeValue = t.nodeValue.split(q).join(this.state.fr); } });
-    this.change({ html: ed.innerHTML }); this.setState({ fcount: 0 }); this.props.toast && this.props.toast($t('已替换 {n} 处', { n: c }));
+    const hits = this.hits(); if (!hits.length) { this.setState({ fcount: 0 }); return; }
+    if (this.syncT) { clearTimeout(this.syncT); this.flush(); }
+    const c = this.EN.replaceTextRanges(hits, this.state.fr);
+    this.change({ html: this.edRef.current.innerHTML }); this.setState({ fcount: 0 }); this.refreshInfo(); this.props.toast && this.props.toast($t('已替换 {n} 处', { n: c }));
   }
   /** 目录: a real Word table of contents (a toc block the engine builds from the headings and Word updates on open), shown
    * read-only; it is drawn again from the headings on every save that changes them. Clicking it on an existing one refreshes it. */
@@ -2121,8 +2195,13 @@ class Component extends DCLogic {
   openPop(id, e) { const r = e.currentTarget.getBoundingClientRect(), up = r.bottom + 280 > window.innerHeight && r.top > window.innerHeight - r.bottom; this.setState({ pop: this.state.pop && this.state.pop.id === id ? null : { id, x: Math.round(r.left), y: Math.round(up ? r.top - 4 : r.bottom + 4), up, w: Math.round(r.width) }, gridHover: null }); }
   prompt(title, fields, ok) { this.setState({ dlg: { title: $t(title), fields: fields.map(f => Object.assign({ value: '' }, f, { label: $t(f.label), ph: f.ph ? $t(f.ph) : f.ph })), ok } }); }
   onKey = e => {
+    if (e.isComposing || e.nativeEvent?.isComposing || e.keyCode === 229) return;
     const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
-    if (ctrl && k === 'f') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
+    if (ctrl && e.altKey && /^[123]$/.test(k)) { e.preventDefault(); e.stopPropagation(); this.onSel(); const s = this.gallery().find(s => +s.heading === +k); if (s) this.applyStyle(s); }
+    else if (ctrl && !e.altKey && !e.shiftKey && /^[elrj]$/.test(k)) { e.preventDefault(); e.stopPropagation(); this.onSel(); this.exec({ e: 'justifyCenter', l: 'justifyLeft', r: 'justifyRight', j: 'justifyFull' }[k]); }
+    else if (ctrl && !e.altKey && !e.shiftKey && /^[125]$/.test(k)) { e.preventDefault(); e.stopPropagation(); this.onSel(); this.para('lineSpacing', { 1: '1', 2: '2', 5: '1.5' }[k]); }
+    else if (ctrl && !e.altKey && (k === '=' || k === '+')) { e.preventDefault(); e.stopPropagation(); this.onSel(); this.exec(e.shiftKey || k === '+' ? 'superscript' : 'subscript'); }
+    else if (ctrl && k === 'f') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
     else if (ctrl && k === 'h') { e.preventDefault(); this.focusFind = true; this.setState({ showFind: true }); }
     else if (ctrl && k === 's') this.flush(); // the typing in, before the shell's save (Ctrl+S there says where it went)
     else if (ctrl && k === 'k') { e.preventDefault(); this.linkDlg(); }
@@ -2303,6 +2382,8 @@ class Component extends DCLogic {
         R(btn('全部接受', 'check', () => this.resolveTrack(true), { title: '接受所有修订' }), btn('全部拒绝', 'cross', () => this.resolveTrack(false), { title: '拒绝所有修订' }))),
       G('查找与替换', R(input('查找', st.fq, e => this.setState({ fq: e.target.value, fcount: null }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } }, this.panelFindRef)),
         R(input('替换为', st.fr, e => this.setState({ fr: e.target.value }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.replaceOne(); } }, null, '替换为：回车替换找到的这一处')),
+        R(lab('区分大小写'), sp(), sw(!!st.findCase, v => this.setState({ findCase: v, fcount: null }))),
+        R(lab('全字匹配'), sp(), sw(!!st.findWhole, v => this.setState({ findWhole: v, fcount: null }))),
         R(btn('下一个', 'search', () => this.findNext(), { title: '查找下一个' }), btn('全部替换', 'refresh', () => this.replaceAll())),
         st.fcount != null && R(empty(st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'))))
     ];
@@ -2599,6 +2680,7 @@ class Component extends DCLogic {
       selectionBold: () => this.exec('bold'), selectionItalic: () => this.exec('italic'), selectionUnderline: () => this.exec('underline'), selectionBoldOn: f.b ? '1' : '0', selectionItalicOn: f.i ? '1' : '0', selectionUnderlineOn: f.u ? '1' : '0',
       selectionColor: rgbHex(f.color) || st.lastColor, onSelectionColor: e => { this.setState({ lastColor: e.target.value }); this.exec('foreColor', e.target.value); }, selectionHighlightColor: st.lastHl, hlTitle: $t('高亮（{c}）', { c: $t((HILITES.find(x => x[0] === st.lastHl) || [, '黄色'])[1]) }), selectionHighlight: () => this.exec('hiliteColor', st.lastHl), selectionLink: () => this.linkDlg(), selectionRewrite: () => this.props.onRewrite && this.props.onRewrite(String(getSelection())),
       showFind: st.showFind && !pure, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'),
+      findCase: !!st.findCase, findWhole: !!st.findWhole, onFindCase: e => this.setState({ findCase: e.target.checked, fcount: null }), onFindWhole: e => this.setState({ findWhole: e.target.checked, fcount: null }),
       onFq: e => this.setState({ fq: e.target.value, fcount: null }), onFr: e => this.setState({ fr: e.target.value }),
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replaceOne(), replaceAll: () => this.replaceAll(), closeFind: () => this.setState({ showFind: false }),
@@ -2650,6 +2732,7 @@ class Component extends DCLogic {
       onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(pctOf(this.state.zoom)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
       onZoomKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { const el = e.target; this.setState({ zoomEdit: null }, () => el.blur()); } },
       onRootKey: e => {
+        if (e.defaultPrevented) return;
         if (!(e.ctrlKey || e.metaKey)) return; const k = e.key;
         if (k === '=' || k === '+' || k === 'Add') { e.preventDefault(); this.setZoom(this.state.zoom + 0.1 * Z100); }
         else if (k === '-' || k === 'Subtract') { e.preventDefault(); this.setZoom(this.state.zoom - 0.1 * Z100); }

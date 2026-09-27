@@ -929,6 +929,7 @@ sealed class DocxCell(DocxDocument doc, W.TableCell cell) : Node, IDocxContainer
     W.TableCellProperties Properties() => cell.TableCellProperties ??= new W.TableCellProperties();
 
     public override Node Add(string kind, IReadOnlyDictionary<string, string> props, int? index) => DocxBlocks.Add(doc, this, cell, kind, props, index);
+    public override Node AddRaw(string raw, int? index) => DocxBlocks.AddRaw(doc, this, cell, raw, index);
 
     public override void Remove()
     {

@@ -133,12 +133,12 @@ sealed class DocxObject(DocxDocument doc, OpenXmlElement element, W.Paragraph? b
     ImagePart? Preview =>
         element is W.EmbeddedObject or W.Picture
         && Part(RelAttr(element.Descendants().FirstOrDefault(e => e.LocalName == "imagedata"), "id")) is ImagePart img
-        && img.ContentType is "image/png" or "image/jpeg" or "image/gif" or "image/bmp" or "image/svg+xml" ? img : null;
+        && img.ContentType is "image/png" or "image/jpeg" or "image/gif" or "image/bmp" or "image/svg+xml" or "image/x-wmf" or "image/wmf" ? img : null;
 
     public override IReadOnlyDictionary<string, string> GetProps()
     {
         var type = Type;
-        var props = new Dictionary<string, string> { ["type"] = type };
+        var props = new Dictionary<string, string> { ["type"] = type, ["xml"] = element.OuterXml };
         var (w, h) = Size;
         if (block is null && element.Ancestors<W.Paragraph>().FirstOrDefault() is { } para)
             props["at"] = DocxFootnotes.OffsetOf(para, element).ToString(Inv);
@@ -170,7 +170,11 @@ sealed class DocxObject(DocxDocument doc, OpenXmlElement element, W.Paragraph? b
                 if (Attr(element.Descendants().FirstOrDefault(e => e.LocalName == "OLEObject"), "ProgID") is { Length: > 0 } progId) props["progId"] = progId;
                 break;
         }
-        if (Preview is { } preview) props["src"] = preview.Uri.OriginalString;
+        if (Preview is { } preview)
+        {
+            props["src"] = preview.Uri.OriginalString;
+            if (preview.ContentType is "image/x-wmf" or "image/wmf") props["previewFormat"] = "wmf";
+        }
         if (type == "vml" && element.Descendants<W.TextBoxContent>().FirstOrDefault() is { } box)
             props["text"] = string.Join("\n", box.Elements<W.Paragraph>().Select(DocxRuns.ParagraphText));
         return props;
@@ -186,6 +190,34 @@ sealed class DocxObject(DocxDocument doc, OpenXmlElement element, W.Paragraph? b
     }
 
     public override string GetRaw() => (block ?? element).OuterXml;
+
+    /// <summary>History restores retain their IDs; copies sharing a document get fresh drawing/VML IDs.
+    /// Related parts remain in the package after removal, so restoring their relationship IDs is lossless.</summary>
+    internal static void UniqueIds(DocxDocument doc, OpenXmlElement copy)
+    {
+        var ids = doc.Main.Document!.Descendants<DW.DocProperties>().Select(e => e.Id?.Value ?? 0).ToHashSet();
+        uint next = ids.Count == 0 ? 1 : ids.Max() + 1;
+        foreach (var e in copy.Descendants<DW.DocProperties>())
+        {
+            var id = e.Id?.Value ?? 0;
+            if (id == 0 || !ids.Add(id)) { while (ids.Contains(next)) next++; e.Id = next; ids.Add(next++); }
+        }
+        const string vml = "urn:schemas-microsoft-com:vml";
+        var used = doc.Main.Document.Descendants().Where(e => e.NamespaceUri == vml).Select(e => Attr(e, "id")).OfType<string>().ToHashSet();
+        var renamed = new Dictionary<string, string>();
+        var number = 1025;
+        foreach (var e in copy.Descendants().Where(e => e.NamespaceUri == vml && e.LocalName != "shapetype"))
+        {
+            var id = Attr(e, "id");
+            if (id is null || used.Add(id)) continue;
+            string replacement; do { replacement = "_x0000_i" + number++; } while (!used.Add(replacement));
+            renamed[id] = replacement;
+            e.SetAttribute(new OpenXmlAttribute("", "id", "", replacement));
+        }
+        foreach (var e in copy.Descendants())
+            foreach (var a in e.GetAttributes().Where(a => a.LocalName is "ShapeID" or "spid").ToArray())
+                if (a.Value is { } value && renamed.TryGetValue(value, out var replacement)) e.SetAttribute(new OpenXmlAttribute(a.Prefix, a.LocalName, a.NamespaceUri, replacement));
+    }
 
     public override void SetProp(string name, string value)
     {
@@ -223,8 +255,8 @@ sealed class DocxObject(DocxDocument doc, OpenXmlElement element, W.Paragraph? b
         if (container.Ancestors().Contains(block ?? element) || ReferenceEquals(container, block))
             throw new WriterException(ErrorCode.Validation, "Cannot move an element into itself", "Pick another target.");
         var run = TakeRun();
-        if (container is W.Paragraph) DocxBlocks.InsertAt(newParent, container, run, index);
-        else DocxBlocks.InsertAt(newParent, container, new W.Paragraph(run), index);
+        block = container is W.Paragraph ? null : new W.Paragraph(run);
+        DocxBlocks.InsertAt(newParent, container, (OpenXmlElement?)block ?? run, index);
     }
 
     /// <summary>The object's run, out of its place: its own run when that holds nothing else, else a new one with its formatting.</summary>

@@ -84,6 +84,7 @@ sealed class DocxBody(DocxDocument doc, W.Body body) : Node, IDocxContainer
     public override IReadOnlyDictionary<string, string> GetProps() => new Dictionary<string, string>();
     public override string GetRaw() => body.OuterXml;
     public override Node Add(string kind, IReadOnlyDictionary<string, string> props, int? index) => DocxBlocks.Add(doc, this, body, kind, props, index);
+    public override Node AddRaw(string raw, int? index) => DocxBlocks.AddRaw(doc, this, body, raw, index);
     public override void SetRaw(string raw) => DocxBlocks.ReplaceRaw(doc, body, raw);
 }
 
@@ -315,6 +316,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
     }
 
     public override void MoveTo(Node newParent, int? index) => DocxBlocks.Move(newParent, p, index);
+    public override Node AddRaw(string raw, int? index) => DocxBlocks.AddRaw(doc, this, p, raw, index);
     public override void SetRaw(string raw) => DocxBlocks.ReplaceRaw(doc, p, raw);
 }
 

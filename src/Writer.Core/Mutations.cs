@@ -38,6 +38,7 @@ public static class Mutations
         // Imported graphic frames can move/copy while staying non-creatable in the
         // schema: making an empty chart would lose its required related parts.
         if (node.Format == "pptx" && node.Kind == "object" && parent.Format == "pptx" && parent.Kind == "slide") return;
+        if (node.Format == "docx" && node.Kind == "object" && parent.Format == "docx" && parent.Kind is "body" or "cell" or "paragraph" or "heading") return;
         Registry.CheckParent(node.Format, node.Kind, parent.Kind);
     }
 

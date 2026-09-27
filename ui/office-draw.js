@@ -254,6 +254,7 @@ export function objectInner(o, w, h, src) {
   const chart = parse(o.chart), sa = parse(o.smartart);
   if (chart) return chartSvg(chart, w, h);
   if (sa) return smartArtSvg(sa, w, h);
+  if (src && o.previewFormat === 'wmf') return `<span data-wmf-src="${esc(src)}" data-wmf-key="${esc(o.src || '')}" data-wmf-w="${w}" data-wmf-h="${h}" style="display:block;width:100%;height:100%">${objectInner({ ...o, previewFormat: '' }, w, h, null)}</span>`;
   if (src) return `<img src="${esc(src)}" alt="${esc(o.alt || objectLabel(o))}" draggable="false" style="display:block;width:100%;height:100%;object-fit:fill">`;
   if (o.text) return `<span style="display:block;width:100%;height:100%;box-sizing:border-box;border:1px solid #7F7F7F;padding:4px 7px;font-size:10.5pt;white-space:pre-wrap;overflow:hidden">${esc(o.text)}</span>`;
   const small = h < 40;
