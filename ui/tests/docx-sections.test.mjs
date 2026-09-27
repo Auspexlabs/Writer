@@ -15,6 +15,20 @@ globalThis.window = globalThis; // pdf-kit.js keeps its store on window at impor
 const parse = install();
 const EN = await import('../engine.js');
 
+test('a note typed with its look (at the foot of the page) is saved as html, its italics kept; one unchanged is not written', async () => {
+  const orig = EN.notesOf([{ kind: 'paragraph', path: '/body/paragraph[1]', props: {}, children: [
+    { kind: 'footnote', path: '/body/paragraph[1]/footnote[1]', props: { id: '1', kind: 'footnote', text: 'See Glass', html: 'See <i>Glass</i>', at: '3' } },
+    { kind: 'footnote', path: '/body/paragraph[1]/footnote[2]', props: { id: '2', kind: 'footnote', text: 'a < b', at: '5' } }] }]);
+  assert.equal(orig[1].html, 'a &lt; b', 'an engine without html: the text as html');
+  const calls = [], exec = async argv => { calls.push(argv.slice(2).join(' ')); return argv[0] === 'add' ? { path: argv[2] + '/footnote[1]', props: { id: '3' } } : {}; };
+  const r = await EN.planNotes('a.docx', orig, [
+    { nid: '1', kind: 'footnote', text: 'See Glass now', html: 'See <i>Glass</i> now', parent: '/body/paragraph[1]', at: 3 },
+    { nid: '2', kind: 'footnote', text: 'a < b', html: 'a &lt; b', parent: '/body/paragraph[1]', at: 5 },
+    { nid: 'n9', kind: 'footnote', text: 'New', html: '<b>New</b>', parent: '/body/paragraph[1]', at: 1 }], null, exec);
+  assert.deepEqual(calls, ['//footnote[@id=1] --prop html=See <i>Glass</i> now', '/body/paragraph[1] --type footnote --prop kind=footnote --prop html=<b>New</b> --prop at=1']);
+  assert.deepEqual(r.list.map(x => x.html), ['See <i>Glass</i> now', 'a &lt; b', '<b>New</b>'], 'remembered as saved');
+});
+
 test('notesOf reads footnotes and endnotes with the paragraph they hang on; planNotes adds, moves, edits and removes them by id', async () => {
   const list = EN.notesOf([{ kind: 'paragraph', path: '/body/paragraph[1]', props: {}, children: [
     { kind: 'footnote', path: '/body/paragraph[1]/footnote[1]', props: { id: '1', kind: 'footnote', text: 'a', at: '3' } },

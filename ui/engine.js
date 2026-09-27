@@ -830,12 +830,15 @@ async function openDocx(doc) {
  *  its mark there. */
 export function notesOf(nodes) {
   const out = [];
-  const walk = list => { for (const n of list || []) { if (n.kind === 'footnote') { const q = n.props || {}; out.push(Object.assign({ nid: String(q.id), id: String(q.id), kind: q.kind || 'footnote', text: q.text || '', path: n.path.replace(/\/footnote\[[^\]]*\]$/, ''), at: +q.at || 0 }, q.cite ? { cite: q.cite, pages: q.pages || '', citeHtml: q.citeHtml || esc(q.citeText || '') } : {})); } walk(n.children); } };
+  const walk = list => { for (const n of list || []) { if (n.kind === 'footnote') { const q = n.props || {}; out.push(Object.assign({ nid: String(q.id), id: String(q.id), kind: q.kind || 'footnote', text: q.text || '', html: q.html != null ? q.html : noteHtml(q.text), path: n.path.replace(/\/footnote\[[^\]]*\]$/, ''), at: +q.at || 0 }, q.cite ? { cite: q.cite, pages: q.pages || '', citeHtml: q.citeHtml || esc(q.citeText || '') } : {})); } walk(n.children); } };
   walk(nodes);
   return out;
 }
-/** A note as the editor keeps it: its text and, when it cites (Chicago), the sources and pages and the citation as drawn. */
-const noteOf = x => Object.assign({ id: x.nid, kind: x.kind, text: x.text }, x.cite ? { cite: x.cite, pages: x.pages || '', citeHtml: x.citeHtml || '' } : {});
+/** A note's text as html: its lines joined by <br>. */
+export const noteHtml = text => esc(text || '').replace(/\n/g, '<br>');
+/** A note as the editor keeps it: its text (plain, and as html with its italics…) and, when it cites (Chicago), the sources and pages
+ *  and the citation as drawn. */
+const noteOf = x => Object.assign({ id: x.nid, kind: x.kind, text: x.text }, x.html != null ? { html: x.html } : {}, x.cite ? { cite: x.cite, pages: x.pages || '', citeHtml: x.citeHtml || '' } : {});
 /** A note's mark in the text: a superscript number the caret steps over; numbered by order of its kind. */
 const NOTE_MARK = 'sup[data-fn]';
 /** What sits in a paragraph beside its text: deleted text, notes' marks, equations and shapes. Character offsets leave them out. */
@@ -890,16 +893,18 @@ function notesIn(doc, el, blocks) {
   return (doc.notes || []).map(x => {
     const mark = el.querySelector(`${NOTE_MARK.slice(0, 3)}[data-fn="${x.id}"]`);
     const b = mark && (blocks.find(y => (y.kind === 'paragraph' || y.kind === 'heading') && y.el && y.el.contains(mark)) || cells.find(y => y.el && y.el.contains(mark)));
-    const cite = x.cite ? { cite: x.cite, pages: x.pages || '' } : {};
+    const cite = Object.assign(x.html != null ? { html: x.html } : {}, x.cite ? { cite: x.cite, pages: x.pages || '' } : {});
     if (!b) return Object.assign({ nid: String(x.id), kind: x.kind, text: x.text || '', parent: null, at: 0 }, cite);
     return Object.assign({ nid: String(x.id), kind: x.kind, text: x.text || '', parent: b.kind === 'cell' ? b.path + '/paragraph[1]' : b.path, at: offsetIn(b.el, mark) }, cite);
   });
 }
 /** Commands that take the file's notes (`orig`) to the editor's (`current`): a new mark adds a note where it sits, a moved one is
- *  added again there, changed text is set, a mark gone takes its note away. Returns the count and the list to remember. */
+ *  added again there, changed text is set (as html when the editor has the note's html: its italics kept), a mark gone takes its
+ *  note away. Returns the count and the list to remember. */
 export async function planNotes(file, orig, current, log, exec = run) {
   let n = 0; const list = [], byId = new Map((orig || []).map(o => [o.nid, o]));
-  const add = async x => { const r = await exec(['add', file, x.parent, '--type', 'footnote', '--prop', 'kind=' + x.kind, '--prop', 'text=' + x.text, ...(x.cite ? ['--prop', 'cite=' + x.cite, ...(x.pages ? ['--prop', 'pages=' + x.pages] : [])] : []), '--prop', 'at=' + x.at]); n++; log && log('add', r.path, 'footnote'); const p = r.props || {}; return { nid: x.nid, id: String(p.id), kind: x.kind, text: x.text, ...(x.cite ? { cite: x.cite, pages: x.pages || '', citeHtml: p.citeHtml || '' } : {}), path: x.parent, at: x.at }; };
+  const body = x => x.html != null ? ['--prop', 'html=' + x.html] : ['--prop', 'text=' + x.text];
+  const add = async x => { const r = await exec(['add', file, x.parent, '--type', 'footnote', '--prop', 'kind=' + x.kind, ...body(x), ...(x.cite ? ['--prop', 'cite=' + x.cite, ...(x.pages ? ['--prop', 'pages=' + x.pages] : [])] : []), '--prop', 'at=' + x.at]); n++; log && log('add', r.path, 'footnote'); const p = r.props || {}; return { nid: x.nid, id: String(p.id), kind: x.kind, text: x.text, ...(x.html != null ? { html: x.html } : {}), ...(x.cite ? { cite: x.cite, pages: x.pages || '', citeHtml: p.citeHtml || '' } : {}), path: x.parent, at: x.at }; };
   for (const x of current) {
     const o = byId.get(x.nid);
     if (!x.parent) continue; // its mark is gone from the text: removed below
@@ -907,10 +912,10 @@ export async function planNotes(file, orig, current, log, exec = run) {
       if (!o) list.push(await add(x));
       else if (o.path !== x.parent || o.at !== x.at) { await exec(['remove', file, `//footnote[@id=${o.id}]`]); n++; list.push(await add(x)); }
       else {
-        if ((o.text || '') !== x.text) { await exec(['set', file, `//footnote[@id=${o.id}]`, '--prop', 'text=' + x.text]); n++; log && log('set', o.path, 'footnote'); }
+        if (x.html != null ? (o.html != null ? o.html : noteHtml(o.text)) !== x.html : (o.text || '') !== x.text) { await exec(['set', file, `//footnote[@id=${o.id}]`, ...body(x)]); n++; log && log('set', o.path, 'footnote'); }
         // a note's citation: its sources and pages (none takes it out)
         if ((o.cite || '') !== (x.cite || '') || (o.pages || '') !== (x.pages || '')) { await exec(['set', file, `//footnote[@id=${o.id}]`, '--prop', 'cite=' + (x.cite || 'none'), ...(x.cite ? ['--prop', 'pages=' + (x.pages || 'none')] : [])]); n++; }
-        list.push(Object.assign({}, o, { text: x.text, cite: x.cite, pages: x.pages }));
+        list.push(Object.assign({}, o, { text: x.text, cite: x.cite, pages: x.pages }, x.html != null ? { html: x.html } : {}));
       }
     } catch (e) { log && log('skip', x.parent, e.message); }
   }

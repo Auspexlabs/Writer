@@ -365,7 +365,7 @@ class Component extends DCLogic {
     else if (t === 'input') o.isInput = true;
     else if (t === 'link') Object.assign(o, { isLink: true, dis: !!it.dis });
     else if (t === 'empty') o.isEmpty = true;
-    else if (t === 'cmt') Object.assign(o, { isCmt: true, onA: it.on ? '1' : '0', doneA: it.done ? '1' : '0', editing: !!it.on, reading: !it.on, replies: it.replies || [],
+    else if (t === 'cmt') Object.assign(o, { isCmt: true, onA: it.on ? '1' : '0', doneA: it.done ? '1' : '0', editing: !!it.on && !it.noEdit, reading: !it.on || !!it.noEdit, replies: it.replies || [],
       // a note uses the card too: its own placeholder, no replies, and its citation (Chicago) above its text
       ph: it.ph || $t('输入批注…'), ai: it.ai || 'a comment in the margin of a document', canReply: !!it.on && it.reply !== false, hasCite: !!it.cite, citeH: { __html: it.cite || '' } });
     return o;

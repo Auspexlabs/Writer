@@ -72,6 +72,17 @@
 .wd-ed[data-side="1"] hr[data-pb],.wd-ed[data-side="1"] [data-w-sectionbreak="nextPage"],.wd-ed[data-side="1"] [data-w-sectionbreak="oddPage"],.wd-ed[data-side="1"] [data-w-sectionbreak="evenPage"]{break-after:column;-webkit-column-break-after:always}
 .wd-ed[data-side="1"] [data-pb="before"]{break-before:column;-webkit-column-break-before:always}
 .wd-ed sup[data-fn]{color:var(--k2, #2F5D8A);cursor:pointer;padding:0 1px;font-size:.72em;user-select:none}
+/* 脚注 at the foot of the page (placeNotes): over the bottom margin, under Word's separator, 10 pt, typed into in place */
+.wd-fnotes{position:absolute;left:0;top:0;width:100%;height:0;z-index:2;font-family:'Noto Serif SC',serif;transition:opacity .2s}
+.wd-fn-area,.wd-fn-bin{position:absolute;width:var(--fn-w, 0px);transform:translateY(-100%)}
+.wd-fn-bin{top:0;left:0;visibility:hidden;pointer-events:none;transform:none}
+.wd-fn-sep{height:12px;position:relative}
+.wd-fn-sep::before{content:'';position:absolute;left:0;top:5px;width:2in;max-width:100%;border-top:1px solid currentColor;opacity:.5}
+.wd-fn{font-size:10pt;line-height:var(--wd-lh, 1.5);text-align:left;outline:none;word-break:break-word;cursor:text;border-radius:2px}
+.wd-fn:focus{box-shadow:0 0 0 3px rgba(47,93,138,.08);background:rgba(47,93,138,.04)}
+.wd-fn-n{font-size:.72em;vertical-align:super;line-height:0;margin-right:.3em;cursor:pointer;user-select:none}
+.wd-fn-c{margin-right:.3em;user-select:none;cursor:default}
+.wd-fn[data-empty]:focus::after{content:attr(data-ph);color:var(--k47, #C7C7CC);pointer-events:none}
 .wd-ed span[data-cite]{cursor:pointer;border-radius:3px;user-select:none;transition:background .12s}
 .wd-ed span[data-cite]:hover,.wd-ed span[data-cite][data-on]{background:var(--k48, rgba(47,93,138,0.1))}
 .wd-ed nav[data-bib]{display:block;cursor:default;user-select:none;text-indent:0}
@@ -207,6 +218,7 @@
             </div>
           </sc-for>
           <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-cstyle="{{ citeStyleAttr }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
+          <div ref="{{ fnRef }}" data-fnpg="{{ pgId }}" class="wd-fnotes" style="opacity:{{ edOp }};pointer-events:{{ edPe }}"></div>
           <sc-for list="{{ hfZones }}" as="z" hint-placeholder-count="0">
             <div title="{{ z.title }}" onDoubleClick="{{ z.onDbl }}" style="position:absolute;left:0;right:0;top:{{ z.top }};bottom:{{ z.bottom }};height:{{ z.h }};z-index:2;box-sizing:border-box;border-top:{{ z.lineT }};border-bottom:{{ z.lineB }}">
               <sc-if value="{{ z.editing }}" hint-placeholder-val="{{ false }}">
@@ -529,7 +541,7 @@ const hfOut = html => {
 
 class Component extends DCLogic {
   state = { tab: 'home', navMode: 'pages', fmt: {}, zoom: Z100, zoomEdit: null, view: 'page', showRuler: false, showNav: false, showFind: false, fq: '', fr: '', fcount: null, pop: null, dlg: null, gridHover: null, info: { chars: 0, pages: 1, at: [[0, 0]], paras: 0 }, heads: [], painter: null, lastColor: '#B5563A', lastHl: '#FFFF00', activeCid: null, imgSel: false, hf: null, hfLive: null };
-  edRef = React.createRef(); cvRef = React.createRef(); imgRef = React.createRef(); findRef = React.createRef(); hfRef = React.createRef(); panelFindRef = React.createRef();
+  edRef = React.createRef(); fnRef = React.createRef(); cvRef = React.createRef(); imgRef = React.createRef(); findRef = React.createRef(); hfRef = React.createRef(); panelFindRef = React.createRef();
   pgId = 'pg' + Math.random().toString(36).slice(2, 8); // scopes the page view's rules (pgCss) to this editor's text
   componentDidMount() {
     this.pgCss = document.head.appendChild(document.createElement('style'));
@@ -609,6 +621,7 @@ class Component extends DCLogic {
       this.load();
     }
     else if (o.page !== d.page || this.shownView !== this.state.view) { this.shownView = this.state.view; this.refreshInfo(); } // the text reflows into other pages
+    else if (o.notes !== d.notes && this.paged) this.refreshInfo(); // a note typed, cited or gone: its entry at the foot of the page, and the room it takes
     if (this.focusFind && this.findRef.current) { this.findRef.current.focus(); this.findRef.current.select(); this.focusFind = false; }
   }
   get doc() { return this.props.doc; }
@@ -625,7 +638,7 @@ class Component extends DCLogic {
   }
   // ----- the style gallery (样式): the document's styles, drawn as they look, applied as pStyle / rStyle rather than direct formatting -----
   /** A stylesheet that draws the document's own styles on the page: [data-style] blocks and spans, and h1–h3 for its heading styles. */
-  styleSheet() { if (!this.EN) return; this.stCss = this.stCss || document.head.appendChild(document.createElement('style')); const css = this.EN.styleCss(this.doc.styles, `[data-pg="${this.pgId}"]`, this.doc.base); if (this.stCss.textContent !== css) this.stCss.textContent = css; }
+  styleSheet() { if (!this.EN) return; this.stCss = this.stCss || document.head.appendChild(document.createElement('style')); const css = this.EN.styleCss(this.doc.styles, `[data-pg="${this.pgId}"]`, this.doc.base) + '\n' + this.EN.styleCss(this.doc.styles, `[data-fnpg="${this.pgId}"]`, this.doc.base); if (this.stCss.textContent !== css) this.stCss.textContent = css; } // the notes at the foot of the page too (FootnoteText)
   /** The gallery: the document's quick styles first (by the names Word gives them), then the built-in ones it lacks, then its other styles. */
   gallery() {
     const docs = this.doc.styles || [], byName = new Map(docs.map(s => [String(s.name || '').toLowerCase(), s])), seen = new Set(), out = [];
@@ -876,8 +889,11 @@ class Component extends DCLogic {
    *  line may be (linesCss). The status bar counts the pages, the thumbnails draw them, and the page view draws a sheet with its header and
    *  footer for each. A table or picture taller than a whole page starts where it is, as Word starts a long table right under what
    *  comes before it: moving it on would only leave the rest of this page empty. ponytail: tables never split, so one longer than a
-   *  page overlaps the page gap; splitting rows needs real layout. */
-  pagesOf(ed, contentH, step) {
+   *  page overlaps the page gap; splitting rows needs real layout. `fn` (fnMeasure): the footnotes, each as tall as it is drawn at
+   *  the foot of the page its mark is on: a page's text stops above its notes and the separator over them, and the line holding a
+   *  mark whose note does not fit goes on to the next page with it, as Word does. `notes` lists each page's footnotes. ponytail: a
+   *  note taller than what is left of a page is not continued on the next one. */
+  pagesOf(ed, contentH, step, fn) {
     const y = el => { let t = 0; for (let e = el; e && e !== ed; e = e.offsetParent) t += e.offsetTop; return t; };
     const pieces = [], tops = []; let brk = false, inner = false;
     const piece = (el, top, forced) => ({ top, bottom: y(el) + el.offsetHeight, el, css: 'margin-top', forced, text: TEXT_BLOCK.test(el.tagName || '') && !el.querySelector(NO_SPLIT),
@@ -896,41 +912,50 @@ class Component extends DCLogic {
       else pieces.push(piece(c, top, forced));
       brk = c.matches('hr[data-pb]') || /^(nextPage|evenPage|oddPage)$/.test(c.getAttribute('data-w-sectionbreak') || ''); // a section that starts on a new page
     }
-    const at = [], push = []; let k = 0, shift = 0, top = null, bottom = 0;
-    const turn = () => { at.push([top, bottom]); k++; };
-    const over = b => b + shift > k * step + contentH + 1; // runs past the text of this page
+    const at = [], push = [], notes = [[]]; let k = 0, shift = 0, top = null, bottom = 0, room = 0; // room: what this page's notes take
+    const eb = fn && ed.getBoundingClientRect(), z = fn ? eb.width / (ed.offsetWidth || eb.width || 1) || 1 : 1;
+    const marks = fn ? Array.from(ed.querySelectorAll('sup[data-fn]')).filter(s => fn.h.has(s.getAttribute('data-fn'))).map(s => { const r = s.getBoundingClientRect(); return { id: s.getAttribute('data-fn'), y: (r.top + r.height / 2 - eb.top) / z, page: -1 }; }) : [];
+    const inside = (a, b) => marks.filter(x => x.page < 0 && x.y >= a && x.y < b);
+    const need = (a, b) => { const h = inside(a, b).reduce((t, x) => t + fn.h.get(x.id), 0); return h && h + (room ? 0 : fn.sep); }; // the separator comes with a page's first note
+    const take = (a, b) => { for (const x of inside(a, b)) { room += fn.h.get(x.id) + (room ? 0 : fn.sep); x.page = k; notes[k].push(x.id); } };
+    const untake = (a, b) => { for (const x of marks) if (x.page === k && x.y >= a && x.y < b) { x.page = -1; notes[k].splice(notes[k].indexOf(x.id), 1); room -= fn.h.get(x.id); } if (!notes[k].length) room = 0; };
+    const turn = () => { at.push([top, bottom]); k++; room = 0; notes.push([]); };
+    const over = (b, more = 0) => b + shift > k * step + contentH - room - more + 1; // runs past the text of this page (above its notes)
     const moveOn = p => { const gap = p.top - bottom; turn(); const d = Math.max(0, k * step - (p.top + shift)); push.push([p.el, p.css, gap + d]); shift += d; top = p.top; };
     /** Where a paragraph's lines from `j` (the first on this page) break: the first line that goes on to the next page; 0 when none
      *  stays (the paragraph starts the next page), -1 when all fit. `atTop`: line j is at the top of its page, so one must stay. */
     const breakAt = (p, ls, j, atTop) => {
-      let n = ls.findIndex((l, i) => i >= j && over(l[1])); if (n < 0) return -1;
+      const past = (l, i) => i >= j && over(l[1], marks.length ? need(ls[j][0], l[1]) : 0); // with the notes of its lines on this page
+      let n = ls.findIndex(past); if (n < 0) return -1;
       if (j === 0 && !atTop && p.keep && ls[ls.length - 1][1] - ls[0][0] <= contentH) return 0;
       if (p.widow) { if (ls.length - n < 2) n = Math.max(j + (atTop ? 1 : 0), ls.length - 2); if (j === 0 && !atTop && n < 2) n = 0; }
-      return n > j || (n === 0 && !atTop) ? n : ls.findIndex((l, i) => i > j && over(l[1]));
+      return n > j || (n === 0 && !atTop) ? n : ls.findIndex((l, i) => i > j && past(l, i));
     };
     for (let i = 0; i < pieces.length; i++) {
-      const p = pieces[i], before = bottom; if (top === null) top = p.top;
+      const p = pieces[i], before = bottom, more = () => marks.length ? need(p.top, p.bottom) : 0; if (top === null) top = p.top;
       else if (p.forced) moveOn(p);
-      else if (over(p.bottom)) {
+      else if (over(p.bottom, more())) {
         const ls = p.text ? this.linesOf(p.el, ed) : null, n = ls && ls.length > 1 ? breakAt(p, ls, 0, p.top === top) : ls ? 0 : -1;
         const whole = ls ? n === 0 : p.bottom - p.top <= contentH, q = pieces[i - 1];
-        if (whole && q && q.next && !q.forced && q.top > top && push.every(x => x[0] !== q.el)) { bottom = q.before; moveOn(q); bottom = q.bottom; } // a heading (与下段同页) goes on with it
+        if (whole && q && q.next && !q.forced && q.top > top && push.every(x => x[0] !== q.el)) { untake(q.top, q.bottom); bottom = q.before; moveOn(q); take(q.top, q.bottom); bottom = q.bottom; } // a heading (与下段同页) goes on with it, and its notes
         else if (whole) moveOn(p);
         else if (n > 0) p.ls = ls;
       }
-      if (p.text && over(p.bottom)) { // its lines that run past the page go on on the next one, from its top
+      let from = p.top; // where the part of it on this page starts: its notes are this page's
+      if (p.text && over(p.bottom, more())) { // its lines that run past the page go on on the next one, from its top
         const ls = p.ls || this.linesOf(p.el, ed), at0 = y(p.el), cut = []; let moved = 0;
         for (let j = 0, n; ls.length > 1 && (n = breakAt(p, ls, j, j > 0 || p.top === top)) > j; j = n) {
-          bottom = ls[n - 1][1]; turn(); top = ls[n][0];
+          take(from, ls[n][0]); bottom = ls[n - 1][1]; turn(); top = from = ls[n][0];
           const d = k * step - (ls[n][0] + shift); cut.push([Math.floor(ls[n][2] - at0 + moved), ls[n][0] - at0 + moved + d]); shift += d; moved += d;
         }
         if (cut.length) push.push([p.el, 'lines', cut]);
       }
+      take(from, p.bottom + 1);
       p.before = before; bottom = p.bottom;
       while (bottom + shift > k * step + contentH + 1 && (k + 1) * step < bottom + shift) { const b = bottom; bottom = k * step + contentH - shift; turn(); top = k * step - shift; bottom = b; }
     }
     at.push([top === null ? 0 : top, bottom]);
-    return { at, push, inner, tops };
+    return { at, push, inner, tops, notes };
   }
   /** A paragraph's lines as [top, bottom, middle] in the text as pagesOf measures it: the boxes of its glyphs, grouped by line, each
    *  line reaching halfway to the next (the leading between them), the first from the paragraph's top and the last to its bottom. */
@@ -976,16 +1001,17 @@ class Component extends DCLogic {
    *  count (TYPED); then, when every block is the one it was and as tall, the pages are where they were and stay as they are. */
   refreshInfo(typed) {
     const ed = this.edRef.current; if (!ed) return;
-    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, m = marginsPx(pg.margin);
+    const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, W = pg.orient === 'landscape' ? ph : pw, m = marginsPx(pg.margin);
     const kids = Array.from(ed.children), key = [H, m.top, m.bottom, pg.cols, this.state.view].join(), was = this.pgSeen;
-    let at, push = null, inner = false, tops, cuts = null;
-    if (typed && was && was.key === key && was.kids.length === kids.length && kids.every((c, i) => c === was.kids[i] && c.offsetHeight === was.h[i])) ({ at, cuts } = was); // the page view's gaps stay: taking them out to measure lays the whole file out twice more
+    const fn = this.paged ? this.fnMeasure(W - m.left - m.right) : null; // the footnotes, drawn at the foot of their pages
+    let at, push = null, inner = false, tops, cuts = null, notes = null;
+    if (typed && was && was.key === key && was.fn === (fn && fn.key) && was.kids.length === kids.length && kids.every((c, i) => c === was.kids[i] && c.offsetHeight === was.h[i])) ({ at, cuts, notes } = was); // the page view's gaps stay: taking them out to measure lays the whole file out twice more
     else {
       if (this.pgCss) this.pgCss.textContent = ''; // measured as the text flows without page gaps
-      ({ at, push, inner, tops } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP));
+      ({ at, push, inner, tops, notes } = this.pagesOf(ed, H - m.top - m.bottom, H + GAP, fn));
       if (this.state.view === 'side') { const W = pg.orient === 'landscape' ? ph : pw, colW = W - m.left - m.right, gap = m.left + m.right + GAP; at = Array.from({ length: Math.max(1, Math.round((ed.scrollWidth + gap) / (colW + gap))) }, () => [0, 0]); push = []; } // 并排: each column is a page
       this.pgDirty = false; this.pgSeen = null;
-      if (this.state.view !== 'side' && !inner) { const h = kids.map(c => c.offsetHeight); cuts = this.pageCuts(kids, tops, h, at); this.pgSeen = { key, kids, h, at, cuts }; } // a break inside a paragraph is pushed down inside it: its height is not the one measured here
+      if (this.state.view !== 'side' && !inner) { const h = kids.map(c => c.offsetHeight); cuts = this.pageCuts(kids, tops, h, at); this.pgSeen = { key, kids, h, at, cuts, notes, fn: fn && fn.key }; } // a break inside a paragraph is pushed down inside it: its height is not the one measured here
     }
     // innerText needs the layout too: read from the one just made, before the gaps go back in (every read after that lays the whole
     // document out again)
@@ -998,7 +1024,117 @@ class Component extends DCLogic {
     }
     const next = { info: { chars: t.replace(/\s/g, '').length, count: cjk + words, pages: at.length, at, cuts, paras: ed.querySelectorAll('p,h1,h2,h3,li').length }, heads };
     this.layoutPics(); this.drawShapes(); // floating pictures and shapes follow their paragraphs onto their pages
+    this.placeNotes(fn && notes, H, m);
     if (JSON.stringify(next) !== JSON.stringify({ info: this.state.info, heads: this.state.heads })) this.setState(next); // an unchanged count re-renders nothing
+  }
+  // ----- 脚注 at the foot of the page, as Word shows them in the page view: typed into there, italics and all -----
+  /** The footnotes' entries (made once, kept while their marks are in the text) at the text's width `w`, filled from the document's
+   *  notes: { h: id → height, sep: the separator's, key } for pagesOf; null when the text has none. */
+  fnMeasure(w) {
+    const box = this.fnRef.current, ed = this.edRef.current; if (!box || !ed) return null;
+    const byId = new Map((this.doc.notes || []).map(x => [x.id, x])), els = this.fnEls || (this.fnEls = new Map()), bin = this.fnBin(box), shown = [];
+    box.style.setProperty('--fn-w', w + 'px');
+    for (const mark of ed.querySelectorAll('sup[data-fn]')) {
+      const id = mark.getAttribute('data-fn'), x = byId.get(id); if (!x || x.kind === 'endnote' || shown.some(y => y[0] === id)) continue;
+      let el = els.get(id); if (!el) { el = this.fnEntry(id); els.set(id, el); bin.appendChild(el); }
+      this.fnFill(el, x, mark.textContent); shown.push([id, el]);
+    }
+    for (const [id, el] of els) if (!shown.some(y => y[0] === id)) { el.remove(); els.delete(id); }
+    if (!shown.length) return null;
+    const h = new Map(shown.map(([id, el]) => [id, el.offsetHeight])), sep = bin.firstChild.offsetHeight; // read after all are filled: one layout
+    return { h, sep, key: shown.map(([id]) => id + ':' + h.get(id)).join() + '|' + sep + '|' + w };
+  }
+  /** Where entries wait off the page (measured there, at the text's width): with a separator to measure. */
+  fnBin(box) { let b = box.querySelector(':scope > .wd-fn-bin'); if (!b) { b = document.createElement('div'); b.className = 'wd-fn-bin'; b.innerHTML = '<div class="wd-fn-sep"></div>'; box.prepend(b); } return b; }
+  /** A footnote's entry: its number (a click goes back to the mark in the text), its citation as the engine draws it (Chicago), then
+   *  its own text, typed into in place. */
+  fnEntry(id) {
+    const el = document.createElement('div');
+    el.className = 'wd-fn'; el.setAttribute('data-fn', id); el.setAttribute('data-style', 'FootnoteText'); el.setAttribute('contenteditable', 'true'); el.setAttribute('spellcheck', 'false');
+    el.setAttribute('data-complete', 'a footnote in a Word document');
+    el.addEventListener('input', () => this.onFnInput(el));
+    el.addEventListener('keydown', e => this.onFnKey(e, el));
+    el.addEventListener('paste', e => { e.preventDefault(); const t = (e.clipboardData && e.clipboardData.getData('text/plain')) || ''; t.split(/\r?\n/).forEach((l, i) => { if (i) document.execCommand('insertLineBreak'); if (l) document.execCommand('insertText', false, l); }); });
+    el.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('.wd-fn-n')) { e.preventDefault(); this.toMark(id); } });
+    el.addEventListener('focus', () => { if (this.state.activeNote !== id) this.setState({ activeNote: id, focusNote: null }); });
+    el.addEventListener('blur', () => { if (this.fnT) this.fnCommit(el); });
+    return el;
+  }
+  /** The entry as the note is now: its number, its citation, and its text unless it is being typed into. */
+  fnFill(el, x, num) {
+    const fixed = cls => { const f = document.createElement(cls === 'wd-fn-n' ? 'sup' : 'span'); f.className = cls; f.setAttribute('contenteditable', 'false'); return f; };
+    let n = el.querySelector(':scope > .wd-fn-n'); if (!n) { n = fixed('wd-fn-n'); el.prepend(n); }
+    if (n.textContent !== num) n.textContent = num;
+    let c = el.querySelector(':scope > .wd-fn-c');
+    if (x.cite) { if (!c) { c = fixed('wd-fn-c'); c.title = $t('引文，按来源自动生成'); n.after(c); } if (c.innerHTML !== (x.citeHtml || '')) c.innerHTML = x.citeHtml || ''; }
+    else if (c) c.remove();
+    const html = x.html != null ? x.html : this.EN ? this.EN.noteHtml(x.text) : '';
+    if (document.activeElement !== el && this.fnHtml(el) !== html) { Array.from(el.childNodes).filter(k => k !== n && k !== c).forEach(k => k.remove()); el.insertAdjacentHTML('beforeend', html); }
+    el.setAttribute('data-ph', $t(x.cite ? '注释的其他文字（可不填）' : '输入注释文字…'));
+    el.toggleAttribute('data-empty', !this.fnText(el).trim());
+  }
+  /** The note's own text in an entry: without its number and citation, lines as <br>. */
+  fnHtml(el) { const c = el.cloneNode(true); c.querySelectorAll('.wd-fn-n,.wd-fn-c').forEach(x => x.remove()); return c.innerHTML.replace(/&nbsp;/g, ' ').replace(/\u200B/g, '').replace(/^\s+/, '').replace(/(<br>)+$/, ''); } // the browser's &nbsp; for a typed space is a space
+  fnText(el) { const c = el.cloneNode(true); c.querySelectorAll('.wd-fn-n,.wd-fn-c').forEach(x => x.remove()); c.querySelectorAll('br').forEach(b => b.replaceWith('\n')); return c.textContent.replace(/^\s+/, '').replace(/\n+$/, ''); }
+  onFnInput(el) {
+    const x = (this.doc.notes || []).find(y => y.id === el.getAttribute('data-fn'));
+    if (x && (!el.querySelector(':scope > .wd-fn-n') || !!x.cite !== !!el.querySelector(':scope > .wd-fn-c'))) this.fnFill(el, x, (this.edRef.current.querySelector(`sup[data-fn="${x.id}"]`) || {}).textContent || ''); // its number or citation deleted with the text: back
+    el.toggleAttribute('data-empty', !this.fnText(el).trim());
+    clearTimeout(this.fnT); this.fnT = setTimeout(() => this.fnCommit(el), 300);
+  }
+  /** The typing in an entry, into the document's notes (the save writes it); the pages then make room for what it takes now. */
+  fnCommit(el) {
+    clearTimeout(this.fnT); this.fnT = null; if (!el.isConnected) return;
+    const id = el.getAttribute('data-fn'), html = this.fnHtml(el), text = this.fnText(el), d = this.doc, x = (d.notes || []).find(y => y.id === id);
+    if (!x || (x.html === html && x.text === text)) return;
+    this.change({ notes: d.notes.map(y => y.id === id ? Object.assign({}, y, { html, text }) : y) }, true); // componentDidUpdate lays the pages out again
+  }
+  onFnKey(e, el) {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.execCommand('insertLineBreak'); return; } // a new paragraph of the note
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.toMark(el.getAttribute('data-fn')); return; } // back to the text, after the mark
+    if (e.key === 'Backspace' && this.fnAtStart(el)) e.preventDefault(); // the number and the citation are the note's, not its text
+  }
+  /** The caret is where the note's own text starts. */
+  fnAtStart(el) {
+    const s = window.getSelection(); if (!s.rangeCount || !s.isCollapsed) return false;
+    const r = document.createRange(); r.setStart(el, 0); r.setEnd(s.anchorNode, s.anchorOffset);
+    const f = r.cloneContents(); f.querySelectorAll('.wd-fn-n,.wd-fn-c').forEach(x => x.remove());
+    return !f.textContent.replace(/\u200B/g, '').length && !f.querySelector('br,img');
+  }
+  /** Back to a note's mark in the text: the caret after it, the page scrolled to it. */
+  toMark(id) {
+    const m = this.edRef.current && this.edRef.current.querySelector(`sup[data-fn="${id}"]`); if (!m) return;
+    const r = document.createRange(); r.setStartAfter(m); r.collapse(true); const s = window.getSelection();
+    this.edRef.current.focus(); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); this.focusEl(m);
+  }
+  /** To a note's entry at the foot of its page: the caret at the end of its text. */
+  toNote(id) {
+    const el = this.fnEls && this.fnEls.get(id); if (!el || !el.parentNode || el.parentNode.classList.contains('wd-fn-bin')) return false;
+    el.focus(); const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    this.focusEl(el); return true;
+  }
+  /** Each page's footnotes at its foot, over the bottom margin, under a separator (pages: pagesOf's notes; null takes them off). An entry
+   *  being typed into keeps its caret when its page changes. */
+  placeNotes(pages, H, m) {
+    const box = this.fnRef.current; if (!box) return;
+    const els = this.fnEls || new Map(), bin = this.fnBin(box), areas = Array.from(box.querySelectorAll(':scope > .wd-fn-area')), placed = new Set();
+    const put = (el, parent, before) => {
+      const s = window.getSelection(), mine = document.activeElement === el && s.rangeCount ? [s.anchorNode, s.anchorOffset, s.focusNode, s.focusOffset] : null;
+      parent.insertBefore(el, before);
+      if (mine) { el.focus(); try { s.setBaseAndExtent(...mine); } catch (e) { } }
+    };
+    let a = 0;
+    (pages || []).forEach((ids, i) => {
+      const list = ids.map(id => els.get(id)).filter(Boolean); if (!list.length) return;
+      let area = areas[a++]; if (!area) { area = document.createElement('div'); area.className = 'wd-fn-area'; area.innerHTML = '<div class="wd-fn-sep"></div>'; box.appendChild(area); }
+      area.style.top = i * (H + GAP) + H - m.bottom + 'px'; area.style.left = m.left + 'px';
+      let prev = area.firstChild;
+      for (const el of list) { placed.add(el); if (prev.nextSibling !== el) put(el, area, prev.nextSibling); prev = el; }
+      while (prev.nextSibling) put(prev.nextSibling, bin, null); // on another page now: placed there below, or waits
+    });
+    for (; a < areas.length; a++) { Array.from(areas[a].querySelectorAll('.wd-fn')).forEach(el => { if (!placed.has(el)) put(el, bin, null); }); if (!areas[a].querySelector('.wd-fn')) areas[a].remove(); }
+    for (const el of els.values()) if (!placed.has(el) && el.parentNode !== bin) put(el, bin, null);
+    if (this.fnFocus && this.toNote(this.fnFocus)) this.fnFocus = null;
   }
   /** Where typing and the ribbon go: the header or footer being edited, else the text. */
   /** The canvas's padding above the page: under the title bar, or in 纯净模式 clear of the lights. */
@@ -1415,7 +1551,8 @@ class Component extends DCLogic {
     sup.setAttribute('data-fn', id); sup.setAttribute('data-kind', kind); sup.setAttribute('contenteditable', 'false'); sup.textContent = '1';
     r.insertNode(sup); r.setStartAfter(sup); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange();
     this.ink();
-    this.change({ html: this.edRef.current.innerHTML, notes: (this.doc.notes || []).concat([Object.assign({ id, kind, text: '' }, cite ? { cite: cite.cite, pages: '', citeHtml: cite.citeHtml || '' } : {})]) }); this.setState({ activeNote: id, focusNote: cite ? null : id });
+    const foot = this.paged && kind === 'footnote'; if (foot && !cite) this.fnFocus = id; // typed at the foot of its page, once placeNotes has it there
+    this.change({ html: this.edRef.current.innerHTML, notes: (this.doc.notes || []).concat([Object.assign({ id, kind, text: '', html: '' }, cite ? { cite: cite.cite, pages: '', citeHtml: cite.citeHtml || '' } : {})]) }); this.setState({ activeNote: id, focusNote: cite || foot ? null : id });
   }
   delNote(id) { const ed = this.edRef.current; ed.querySelectorAll(`sup[data-fn="${id}"]`).forEach(x => x.remove()); this.ink(); this.change({ html: ed.innerHTML, notes: (this.doc.notes || []).filter(x => x.id !== id) }); }
   /** Alignment; 分散对齐 (distribute) is the browser's justify with the last line spread too, which the save reads back as distribute. */
@@ -1879,7 +2016,7 @@ class Component extends DCLogic {
       G('脚注和尾注', R(btn('插入脚注', 'note', () => this.insertNote('footnote'), { title: '在光标处插入脚注，注释显示在页面底端' }), btn('插入尾注', 'note', () => this.insertNote('endnote'), { title: '在光标处插入尾注，注释显示在文档末尾' })),
         R(lab('编号'), sp(), sel('nfmt', (NOTE_FORMATS.find(x => x[0] === nfmt) || NOTE_FORMATS[0])[1], NOTE_FORMATS.map(([key, l]) => I(l, () => this.setNoteFormat(key), { on: nfmt === key })), { w: 132, title: '脚注和尾注的编号样式' })),
         notes.map(n => ({ items: [{ t: 'cmt', av: n.mark, avBg: 'var(--fp-accent)', head: n.label, text: n.text, on: st.activeNote === n.id, replies: [], resolveLabel: '', onResolve: e => e.stopPropagation(), onDelete: n.onDelete, onText: n.onText, onClick: n.onFocus, quote: '',
-          ph: n.ph, reply: false, ai: 'a footnote in a Word document', cite: n.hasCite ? n.cite.__html : '' }] }))),
+          ph: n.ph, reply: false, ai: 'a footnote in a Word document', cite: n.hasCite ? n.cite.__html : '', noEdit: n.foot }] }))),
       G('引文与书目', R(lab('样式@@cite'), sp(), sel('cstyle', $t(((EN && EN.CITE_STYLES) || []).find(x => x[0] === (d.citeStyle || 'mla'))?.[1] || 'MLA 第 9 版'), ((EN && EN.CITE_STYLES) || []).map(([key, l]) => I(l, () => this.setCiteStyle(key), { on: (d.citeStyle || 'mla') === key })), { w: 190, title: '引文和书目的格式；换样式后所有引文和书目自动改写' })),
         R(menuBtn('cite-go', '插入引文', 'cite', this.citeItems(I, HD), { title: '在光标处插入所选来源的引文；Chicago 脚注样式插入脚注' }), btn('管理源', 'sources', () => this.openSources(), { title: '粘贴 DOI、ISBN、网址或整条参考文献，自动查到来源' })),
         R(btn('插入书目', 'bib', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }), btn('更新@@cite', 'refresh', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' }))),
@@ -2146,10 +2283,12 @@ class Component extends DCLogic {
     const noteList = marks ? marks.map(m => (d.notes || []).find(x => x.id === m.getAttribute('data-fn'))).filter(Boolean) : d.notes || [];
     const notes = noteList.map(x => { const m = marks && marks.find(y => y.getAttribute('data-fn') === x.id), n = m ? m.textContent : ''; return { id: x.id, mark: n, label: $t(x.kind === 'endnote' ? '尾注 {n}' : '脚注 {n}', { n }), text: x.text || '', focus: st.focusNote === x.id, border: st.activeNote === x.id ? '#E3B25A' : 'var(--k41, rgba(255,255,255,0.85))',
       hasCite: !!x.cite, cite: { __html: x.citeHtml || '' }, ph: $t(x.cite ? '注释的其他文字（可不填）' : '输入注释文字…'),
-      onText: e => this.change({ notes: (d.notes || []).map(y => y.id === x.id ? Object.assign({}, y, { text: e.target.value }) : y) }, true),
+      onText: e => this.change({ notes: (d.notes || []).map(y => y.id === x.id ? Object.assign({}, y, { text: e.target.value, html: this.EN ? this.EN.noteHtml(e.target.value) : undefined }) : y) }, true), // typed here: plain text
       onDelete: e => { e.stopPropagation(); this.delNote(x.id); },
-      onFocus: () => { this.setState({ activeNote: x.id, focusNote: null }); this.focusEl(m); } }; });
-    const side = !this.props.pure && !this.props.formatOpen && !this.props.panelOpen && !this.props.aiOn && ((!st.hideCm && (d.comments || []).length > 0) || notes.length > 0);
+      kind: x.kind, foot: this.paged && x.kind !== 'endnote', // at the foot of its page: typed there, not here
+      onFocus: () => { this.setState({ activeNote: x.id, focusNote: null }); if (!(this.paged && x.kind !== 'endnote' && this.toNote(x.id))) this.focusEl(m); } }; });
+    const sideNotes = notes.filter(n => !n.foot); // the notes the page does not show: beside it
+    const side = !this.props.pure && !this.props.formatOpen && !this.props.panelOpen && !this.props.aiOn && ((!st.hideCm && (d.comments || []).length > 0) || sideNotes.length > 0);
     const dlg = st.dlg;
     const info = st.info;
     const pure = !!this.props.pure, showTh = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the panel only when its 缩略图 asks, over the page
@@ -2207,7 +2346,7 @@ class Component extends DCLogic {
       findNext: () => this.findNext(), replaceOne: () => this.replaceOne(), replaceAll: () => this.replaceAll(), closeFind: () => this.setState({ showFind: false }),
       bodyCols: [showTh && !pure ? '240px' : '0px', 'minmax(0,1fr)', panelOpen ? '312px' : side ? '272px' : '0px'].join(' '), // three tracks always: the side one changes at once (FLIP moves the page)
       showNav: showTh, navPages: st.navMode !== 'outline', navOutline: st.navMode === 'outline', navPagesA: st.navMode !== 'outline' ? '1' : '0', navOutlineA: st.navMode === 'outline' ? '1' : '0', thumbPagesClick: () => this.setState({ navMode: 'pages' }), thumbOutlineClick: () => this.setState({ navMode: 'outline' }), thumbPagesBg: st.navMode !== 'outline' ? 'var(--format-control)' : 'transparent', thumbOutlineBg: st.navMode === 'outline' ? 'var(--format-control)' : 'transparent', thumbPagesSh: st.navMode !== 'outline' ? 'var(--format-control-sh)' : 'none', thumbOutlineSh: st.navMode === 'outline' ? 'var(--format-control-sh)' : 'none', heads: st.navMode === 'outline' ? st.heads.map(h => ({ text: h.text, indent: (8 + (h.lvl - 1) * 14) + 'px', fw: h.lvl === 1 ? 600 : 400, onClick: () => this.focusEl(this.edRef.current.querySelectorAll('h1,h2,h3')[h.i]) })) : [], noHeads: st.navMode === 'outline' && !st.heads.length,
-      cvRef: this.cvRef, edRef: this.edRef, imgRef: this.imgRef,
+      cvRef: this.cvRef, edRef: this.edRef, fnRef: this.fnRef, imgRef: this.imgRef,
       onCanvasDown: e => { if (e.target === this.cvRef.current) { e.preventDefault(); this.restore(); } },
       zoomV: st.zoom, pageW: web ? '100%' : sv ? n * PW + (n - 1) * GAP + 'px' : PW + 'px', sheetH: web ? 'auto' : sv ? PH + 'px' : n * PH + (n - 1) * GAP + 'px',
       sideAttr: sv ? '1' : '0', edFlex: sv ? 'none' : '1', edW: sv ? PW - m.left - m.right + 'px' : 'auto', edH: sv ? PH - m.top - m.bottom + 'px' : 'auto', edCols: sv ? 'auto' : pg.cols, edColW: sv ? PW - m.left - m.right + 'px' : 'auto', edGap: sv ? m.left + m.right + GAP + 'px' : '32px', edFill: sv ? 'auto' : 'balance', pad: web ? '16px 56px 48px' : `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`, padH: m.left + 'px', padR: m.right + 'px', pageBg: pg.color || 'var(--kpage, #FFFFFF)', pageInk, cols: pg.cols,
@@ -2219,7 +2358,8 @@ class Component extends DCLogic {
       hfOn: !!hf, hfBtns, hfBarTop: !hf ? 'auto' : hf.kind === 'header' ? zoneTop + m.top + 26 + 'px' : paged ? zoneTop + PH - m.bottom - 64 + 'px' : 'auto', hfBarBottom: hf && hf.kind === 'footer' && !paged ? m.bottom + 26 + 'px' : 'auto', // clear of the 页眉 / 页脚 label
       onHfInput: () => this.hfInput(), onHfKey: e => { if (e.key === 'Escape') { e.preventDefault(); this.exitHF(); } },
       onSheetDown: e => { e.stopPropagation(); if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) e.preventDefault(); }, // the caret stays in the header
-      onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); }, // double-click the text: back to it
+      onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); // double-click the text: back to it
+        const mk = !hf && e.target.closest && e.target.closest('.wd-ed sup[data-fn]'); if (mk && this.paged) this.toNote(mk.getAttribute('data-fn')); }, // a note's mark: to the note, as Word
       onInput: e => { if (this.selImg) this.selectImg(null); if (this.state.ctxBar) this.setState({ ctxBar: null }); this.sync(TYPED.test((e && (e.nativeEvent || e).inputType) || '')); },
       onEdClick: e => {
         const t = e.target;
@@ -2242,7 +2382,7 @@ class Component extends DCLogic {
       onEdMove: e => { const ed = this.edRef.current, c = this.colEdge(e) ? 'col-resize' : ''; if (ed && ed.style.cursor !== c) ed.style.cursor = c; },
       onImgFile: e => { const file = e.target.files[0]; e.target.value = ''; if (!file) return; const rd = new FileReader(); rd.onload = () => this.insertHTML(`<p><img src="${rd.result}" style="max-width:100%;display:block;margin:8px auto"></p>`); rd.readAsDataURL(file); }, // a paragraph of its own: dragged into the text or onto the page from there
       markupAttr: st.markup || 'all', cmAttr: st.hideCm ? '0' : '1',
-      hasComments: !pure && !st.hideCm && (d.comments || []).length > 0, comments, commentCount: (d.comments || []).length, hasSide: side, hasNotes: notes.length > 0, notes, noteCount: notes.length,
+      hasComments: !pure && !st.hideCm && (d.comments || []).length > 0, comments, commentCount: (d.comments || []).length, hasSide: side, hasNotes: sideNotes.length > 0, notes: sideNotes, noteCount: sideNotes.length,
       pagesText: web ? $t('连续') : $t('共 {n} 页', { n: info.pages }), pagePositionText: web ? $t('连续') : $t('第 {n} / {total} 页', { n: this.caretPage() + 1, total: info.pages }), wordsText: $t('{n} 字', { n: (info.count || 0).toLocaleString() }), trackOn: !!d.track,
       statusX: `calc(50% + ${((showTh && !pure ? 240 : 0) - (panelOpen ? 312 : side ? 272 : 0)) / 2}px)`,
       zoomPct: pctOf(st.zoom), onZoom: e => this.setZoom(+e.target.value / 100 * Z100),
