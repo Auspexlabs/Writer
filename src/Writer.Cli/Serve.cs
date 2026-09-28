@@ -232,6 +232,9 @@ public sealed class Serve : IDisposable
                     }
                     await Json(response, 200, RunCommand(await new StreamReader(request.InputStream, Encoding.UTF8).ReadToEndAsync(), Workspace));
                     break;
+                case "/pptx/copy" when request.HttpMethod == "POST":
+                    await Json(response, 200, await CopyPptx(request, file));
+                    break;
                 case "/files":
                     await Json(response, 200, ListFiles(request.QueryString["drafts"] == "1"));
                     break;
@@ -601,6 +604,21 @@ public sealed class Serve : IDisposable
         if (Drafts is null || !Under(file, Drafts)) throw new WriterException(ErrorCode.Validation, "Only drafts can be deleted", "Delete files in Finder or Explorer.");
         File.Delete(file);
         return NodeJson.Write(w => { w.WriteStartObject(); w.WriteString("deleted", Report(file)); w.WriteEndObject(); });
+    }
+
+    async Task<string> CopyPptx(HttpListenerRequest request, string? file)
+    {
+        file = Allowed(file, "POST /pptx/copy?file=<target>&path=<object>&to=<slide>");
+        var path = request.QueryString["path"] ?? throw new WriterException(ErrorCode.Usage, "Object path is required", "Copy an object from the clipboard.");
+        var to = request.QueryString["to"] ?? throw new WriterException(ErrorCode.Usage, "Target slide is required", "Choose a slide.");
+        using var bytes = new MemoryStream(); await request.InputStream.CopyToAsync(bytes); bytes.Position = 0;
+        using var source = new Writer.Formats.Pptx.PptxAdapter().Open(bytes);
+        using var doc = Files.Open(file); Files.EnsureWritable(doc);
+        if (doc.Format != "pptx") throw new WriterException(ErrorCode.Validation, "Destination must be PowerPoint", "Choose a .pptx file.");
+        var node = PathResolver.Single(source.Root, path); var target = PathResolver.Single(doc.Root, to);
+        if (node.Kind == "slide") throw new WriterException(ErrorCode.Validation, "Copy drawings into a slide", "Select a drawing.");
+        var copy = Mutations.Copy(node, target, null); Files.SaveAtomic(doc, file);
+        return NodeJson.Serialize(copy, 1);
     }
 
     static async Task Binary(HttpListenerResponse response, string? file, string? nodePath)

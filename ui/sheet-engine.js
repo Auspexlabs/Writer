@@ -419,7 +419,14 @@ Object.assign(FN, {
   AVERAGEIFS: (a, ev) => avg(ifsValues(a, ev)),
   COUNT: (a, ev) => flat(a, ev).filter(({ v, ref }) => ref ? typeof v === 'number' : typeof v === 'number' || typeof v === 'boolean' || (typeof v === 'string' && v !== '' && !isNaN(Number(v)))).length,
   COUNTA: (a, ev) => flat(a, ev).filter(({ v }) => v !== '' && v != null).length,
-  COUNTBLANK: (a, ev) => flat(a, ev).filter(({ v }) => v === '' || v == null).length,
+  COUNTBLANK: (a, ev, calc, si) => {
+    if (!a[0] || !['ref','rng','name','structured'].includes(a[0].t)) return flat(a,ev).filter(({v})=>v===''||v==null).length;
+    const b=calc.bounds(a[0],si,true); let count=(b.r2-b.r1+1)*(b.c2-b.c1+1);
+    calc.ensureSpills(b.si);
+    for(const key of Object.keys(calc.doc.sheets[b.si].cells)){const p=parseA(key);if(!p||p.r<b.r1||p.r>b.r2||p.c<b.c1||p.c>b.c2)continue;const v=calc.value(b.si,p.r,p.c);if(isErr(v))fail(v.err);if(v!==''&&v!=null)count--;}
+    for(const [key,spill] of calc.spills){const [s,r,c]=key.split(':').map(Number);if(s===b.si&&r>=b.r1&&r<=b.r2&&c>=b.c1&&c<=b.c2&&!calc.doc.sheets[s].cells[A(r,c)]&&spill.value!==''&&spill.value!=null)count--;}
+    return count;
+  },
   COUNTIF: (a, ev) => { const r = rngv(a, 0, ev), f = crit(ev(a[1])); let t = 0; r.forEach(row => row.forEach(v => { if (f(v)) t++; })); return t; },
   COUNTIFS: (a, ev) => ifsHits(a, ev, 0).length,
   MAX: (a, ev) => { const n = nums(a, ev); return n.length ? Math.max(...n) : 0; },
@@ -629,8 +636,8 @@ Object.assign(FN, {
   INDIRECT: (a, ev, calc, si) => { const s = str(ev(a[0])).trim(); const n = calc.nameNode(s) || (REFSTR.test(s) ? refNode(s) : fail(E.REF)); return calc.ev(n, si); },
   ROW: (a, ev, calc, si) => { if (!has(a, 0)) return calc.cur.r + 1; const b = calc.bounds(a[0], si); return b.r1 === b.r2 && b.c1 === b.c2 ? b.r1 + 1 : { range: grid(b.r2 - b.r1 + 1, 1, i => b.r1 + i + 1) }; },
   COLUMN: (a, ev, calc, si) => { if (!has(a, 0)) return calc.cur.c + 1; const b = calc.bounds(a[0], si); return b.r1 === b.r2 && b.c1 === b.c2 ? b.c1 + 1 : { range: grid(1, b.c2 - b.c1 + 1, (i, j) => b.c1 + j + 1) }; },
-  ROWS: (a, ev) => rngv(a, 0, ev).length,
-  COLUMNS: (a, ev) => rngv(a, 0, ev)[0].length,
+  ROWS: (a, ev, calc, si) => { if(['ref','rng','name','structured'].includes(a[0]?.t)){const b=calc.bounds(a[0],si,true);return b.r2-b.r1+1;}return rngv(a,0,ev).length; },
+  COLUMNS: (a, ev, calc, si) => { if(['ref','rng','name','structured'].includes(a[0]?.t)){const b=calc.bounds(a[0],si,true);return b.c2-b.c1+1;}return rngv(a,0,ev)[0].length; },
   ADDRESS: S((r, c, ab, a1, sh) => {
     r = Math.trunc(num(r)); c = Math.trunc(num(c)); ab = Math.trunc(oNum(ab, 1)); if (r < 1 || c < 1 || ab < 1 || ab > 4) fail(E.VALUE);
     const pre = sh === undefined ? '' : (/^[A-Za-z_一-龥][\w一-龥]*$/.test(str(sh)) ? str(sh) : "'" + str(sh) + "'") + '!';
@@ -1006,16 +1013,16 @@ export class Calc {
     }
     return {t:'rng',sh:this.doc.sheets[owner].name,r1,r2,c1,c2};
   }
-  bounds(n, si) {
-    if (n.t === 'structured') return this.bounds(this.tableRef(n, si), si);
-    if (n.t === 'name') { const named = this.nameNode(n.v) || this.tableRef({name:n.v}, si); return this.bounds(named, si); }
+  bounds(n, si, full = false) {
+    if (n.t === 'structured') return this.bounds(this.tableRef(n, si), si, full);
+    if (n.t === 'name') { const named = this.nameNode(n.v) || this.tableRef({name:n.v}, si); return this.bounds(named, si, full); }
     if (n.t !== 'ref' && n.t !== 'rng') fail(E.VALUE);
     const s2 = this.sheetIdx(n.sh, si), open = n.t === 'rng' && (n.r2 == null || n.c2 == null);
     const u = open ? (this.used || (this.used = new Map())).get(s2) ?? this.used.set(s2, usedRange(this.doc.sheets[s2])).get(s2) : null; // only whole rows/columns need the used range; one scan per sheet per Calc
     const r1 = n.t === 'ref' ? n.r : n.r1, c1 = n.t === 'ref' ? n.c : n.c1;
-    const r2 = n.t === 'ref' ? n.r : n.r2 == null ? Math.max(NR - 1, u?.r2 ?? 0) : n.r2;
-    const c2 = n.t === 'ref' ? n.c : n.c2 == null ? Math.max(NC - 1, u?.c2 ?? 0) : n.c2;
-    if (r1 < 0 || c1 < 0 || r2 < r1 || c2 < c1 || (r2 - r1 + 1) * (c2 - c1 + 1) > MAXCELLS) fail(E.REF);
+    const r2 = n.t === 'ref' ? n.r : n.r2 == null ? (full ? 1048575 : Math.max(NR - 1, u?.r2 ?? 0)) : n.r2;
+    const c2 = n.t === 'ref' ? n.c : n.c2 == null ? (full ? 16383 : Math.max(NC - 1, u?.c2 ?? 0)) : n.c2;
+    if (r1 < 0 || c1 < 0 || r2 < r1 || c2 < c1 || (!full && (r2 - r1 + 1) * (c2 - c1 + 1) > MAXCELLS)) fail(E.REF);
     return { si: s2, r1, c1, r2, c2 };
   }
   touch(key) { if (this.affected.has(key) && this.stack.size) this.affected.add([...this.stack].at(-1)); }

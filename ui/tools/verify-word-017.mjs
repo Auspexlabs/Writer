@@ -165,12 +165,14 @@ try {
     const tick = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const check = (yes, msg) => { if (!yes) throw new Error(msg); };
     const editor = () => { const el = document.querySelector('[data-edroot]'); let f = el[Object.keys(el).find(k => k.startsWith('__reactFiber'))]; for (; f; f = f.return) if (f.stateNode?.logic?.replaceAll) return f.stateNode.logic; throw new Error('editor not mounted'); };
-    const parent = window.__wordParent;
+    const parent = window.__wordParent; parent.EN = EN;
     await EN.run(['create', 'design.docx']);
     await EN.run(['add', 'design.docx', '/body', '--type', 'heading', '--prop', 'text=Design']);
     parent.setState({ docs: [await EN.open({ id: 'design', path: 'design.docx', type: 'docx' })] }); await tick();
     const design = editor(); design.EN = EN;
     await design.nativeChange('theme', 'mist'); await tick();
+    parent.undo(false);await tick();await EN.save(parent.doc);check((await EN.open(parent.doc)).theme !== 'Writer mist','native theme undo did not persist');
+    parent.undo(true);await tick();await EN.save(parent.doc);check((await EN.open(parent.doc)).theme === 'Writer mist','native theme redo did not persist');
     await design.nativeChange('styleSet', 'formal'); await tick();
     await design.nativeChange('pageBorder', { style: 'double', color: '112233', width: 1.5, space: 24 }); await tick();
     check(parent.doc.theme === 'Writer mist' && design.edRef.current.parentElement.querySelector('.wd-page-border').style.border.includes('double'), 'theme or page border not shown');

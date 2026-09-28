@@ -195,6 +195,9 @@ public static class Registry
             Formats = Pptx, Parents = ["document"],
             Props =
             [
+                new("masterObjects", PropType.Json, "Text/shape objects on this slide's master and layout.") { ReadOnly = true },
+                new("masterEdit", PropType.Json, "Edit a shared master/layout shape: {source,id?,props?,remove?}; absent id adds a shape.") { WriteOnly = true },
+                new("comments", PropType.Json, "Slide comments: [{id?,author,text}].") { Example = "[]" },
                 new("title", PropType.String, "Text of the title placeholder. Writing it creates one when missing.") { Example = "Q4 Results" },
                 new("layout", PropType.String, "Layout: title, content, section, two, comparison, titleOnly, blank, caption (content with caption), picture (picture with caption), quote, or any layout name in the file; a standard one the file lacks is added. Changing it moves the slide's placeholders as PowerPoint does: each takes the place of the new layout's placeholder of the same kind (title, text, picture), keeping its text; an empty one left over goes; the new layout's other placeholders are added empty. Reading gives the layout's name.") { Example = "Two Content" },
                 new("align", PropType.String, "Write-only. Lines shapes up: left, center, right, top, middle or bottom, a colon, then the slide's shapes, pictures or tables by path, comma-separated. One lines up with the slide, several with the box around them.") { WriteOnly = true, Example = "left:/slide[2]/shape[3],/slide[2]/shape[4]" },
@@ -208,6 +211,7 @@ public static class Registry
                 new("notes", PropType.String, "Speaker notes. Writing creates the notes slide when missing; empty clears the text.") { Example = "Mention the Q3 numbers" },
                 new("hidden", PropType.Bool, "Skipped in the slide show.") { Example = "true" },
                 new("section", PropType.String, "Name of the section (节) this slide starts. Writing a name starts one here, or renames it; empty removes it, its slides joining the section before. A section runs to the next one's first slide; the first section made after slide 1 gets a Default Section in front.") { Example = "Results" },
+                new("transitionDirection", PropType.String, "Direction: l, r, u, d; split uses in or out.") { Formats = Pptx },
                 new("transition", PropType.Enum, "Transition into the slide; morph moves the shapes the slide shares with the previous one into place (PowerPoint 2019+, a fade elsewhere); other = an effect the engine does not model (read-only value).") { Values = ["none", "fade", "push", "wipe", "split", "cover", "cut", "dissolve", "zoom", "random", "morph", "other"], Example = "fade" },
                 new("duration", PropType.Int, "Transition length in milliseconds.") { Min = 0, Example = "700" },
                 new("animations", PropType.Json, "The slide's animations in the order they play, as a JSON array; writing replaces them all. Each: shape (its id), effect (entrance appear, fade, fly, float, zoom, wipe; emphasis grow, spin, transparency; exit disappear, fadeOut, flyOut, zoomOut, wipeOut), start (click, with or after the previous), duration and delay in ms. An effect the engine does not model reads as effect other with its class and xml; pass it back unchanged to keep it. Removing a shape removes its effects.") { Example = "[{\"shape\":\"4\",\"effect\":\"fade\",\"start\":\"click\",\"duration\":500,\"delay\":0}]" },
@@ -593,6 +597,8 @@ public static class Registry
             Formats = Pictures, Parents = ["body", "slide", "sheet", "cell", "paragraph", "heading"],
             Props =
             [
+                new("media", PropType.String, "Embed video/audio in this PowerPoint picture from a base64 data URI.") { Formats = ["pptx"], WriteOnly = true },
+                new("mediaType", PropType.String, "Embedded audio or video.") { Formats = ["pptx"], ReadOnly = true },
                 new("src", PropType.String, "Image file to embed when writing (replaces the picture: the width stays, the height follows the new picture, the crop goes); the stored part name when reading.") { Example = "chart.png" },
                 new("width", PropType.Length, "Display width.") { Example = "8cm", Formats = Docx },
                 new("height", PropType.Length, "Display height.") { Example = "6cm", Formats = Docx },

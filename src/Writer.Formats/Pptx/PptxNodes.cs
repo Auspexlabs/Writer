@@ -76,7 +76,7 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
 
     public override IReadOnlyDictionary<string, string> GetProps()
     {
-        var props = new Dictionary<string, string>();
+        var props = new Dictionary<string, string> { ["comments"] = PptxComments.Read(doc, slide), ["masterObjects"] = PptxMasterEdit.Read(doc, slide) };
         if (TitleShape() is { } title) props["title"] = PptxText.BodyText(title.TextBody);
         if (slide.SlideLayoutPart is { } layout) props["layout"] = PptxDocument.LayoutName(layout);
         if (slide.Slide?.CommonSlideData?.Background?.BackgroundProperties is { } bg)
@@ -91,6 +91,7 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
         {
             if (transition.AdvanceAfterTime?.Value is { } advance) props["advanceAfter"] = advance.ToString(CultureInfo.InvariantCulture);
             if (transition.AdvanceOnClick?.Value is { } click) props["advanceOnClick"] = click ? "true" : "false";
+            if (TransitionType(transition)?.GetAttributes().FirstOrDefault(a => a.LocalName == "dir").Value is { Length: > 0 } dir) props["transitionDirection"] = dir;
             if (TransitionName(transition) is { } name) props["transition"] = name;
             if (int.TryParse(transition.Duration?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var ms)) props["duration"] = ms.ToString(CultureInfo.InvariantCulture);
         }
@@ -231,6 +232,8 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
                 }
                 data.Background = new P.Background(new P.BackgroundProperties(new A.SolidFill(new A.RgbColorModelHex { Val = value }), new A.EffectList()));
                 break;
+            case "masterEdit": PptxMasterEdit.Write(doc, slide, value); break;
+            case "comments": PptxComments.Write(doc, slide, value); break;
             case "notes":
                 if (value.Length == 0 && slide.NotesSlidePart is null) break;
                 var notes = PptxDocument.NotesBody(doc.EnsureNotes(slide))
@@ -240,6 +243,11 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
             case "hidden":
                 slide.Slide!.Show = value == "true" ? false : null;
                 break;
+            case "transitionDirection":
+                var current = Transition(); var kind = current is null ? null : TransitionType(current);
+                if (kind?.LocalName is not ("push" or "wipe" or "cover" or "split")) throw new WriterException(ErrorCode.Validation, "This transition has no direction option", "Choose push, wipe, cover or split first.");
+                if (kind.LocalName == "split" ? value is not ("in" or "out") : value is not ("l" or "r" or "u" or "d")) throw new WriterException(ErrorCode.Validation, "Invalid transition direction", "Use l, r, u, d; split uses in or out.");
+                kind.SetAttribute(new OpenXmlAttribute("", "dir", "", value)); EditTransition(null, null); break;
             case "transition":
                 if (value == "other")
                     throw new WriterException(ErrorCode.Validation, "'other' only describes a transition the engine does not model", $"Choose one of: none, {string.Join(", ", Transitions.Keys)}.");
@@ -747,6 +755,7 @@ sealed class PptxRun(PptxDocument doc, SlidePart slide, A.Run run) : Node
 sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : PictureNode
 {
     public override object Anchor => picture;
+    public override (string ContentType, byte[] Data)? GetBinary() => PptxMedia.Bytes(part, picture) ?? base.GetBinary();
     protected override OpenXmlCompositeElement Pic => picture;
     protected override OpenXmlPart Owner => part;
     internal PptxDecor.Transform T { get; init; } = PptxDecor.Transform.Identity;
@@ -776,6 +785,7 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
 
     protected override void OwnProps(Dictionary<string, string> props)
     {
+        if (PptxMedia.Reference(part, picture)?.DataPart is { } media) props["mediaType"] = media.ContentType.StartsWith("video/", StringComparison.Ordinal) ? "video" : "audio";
         var xfrm = picture.ShapeProperties?.Transform2D;
         PptxShape.AddBox(props, xfrm?.Offset?.X?.Value, xfrm?.Offset?.Y?.Value, xfrm?.Extents?.Cx?.Value, xfrm?.Extents?.Cy?.Value);
         T.Apply(props);
@@ -841,6 +851,9 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
             case "x" or "y" or "w" or "h":
                 var xfrm = Transform();
                 PptxOutline.SetBox(xfrm.Offset!, xfrm.Extents!, name, value, T);
+                break;
+            case "media":
+                if (part is SlidePart slidePart) PptxMedia.Attach(doc, slidePart, picture, value);
                 break;
             case "alt":
                 if (picture.NonVisualPictureProperties?.NonVisualDrawingProperties is { } nv) nv.Description = value.Length > 0 ? value : null;

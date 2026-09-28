@@ -1053,7 +1053,7 @@ class Component extends DCLogic {
     const ex = i => (axis === 'x' ? this.sh.colW && this.sh.colW[this.E.colName(i)] : this.sh.rowH && this.sh.rowH[i + 1]) || (axis === 'x' ? 64 : 20);
     const ed = i => axis === 'x' ? this.colW(i) : this.rowH(i);
     let a = 0, b = 0;
-    for (let i = 0; i < 20000; i++) { const p = toSheet ? ed(i) : ex(i), q = toSheet ? ex(i) : ed(i); if (v < a + p) return Math.round(b + (v - a) * q / p); a += p; b += q; }
+    for (let i = 0; i < (axis === 'x' ? 16384 : 1048576); i++) { const p = toSheet ? ed(i) : ex(i), q = toSheet ? ex(i) : ed(i); if (v < a + p) return Math.round(b + (v - a) * q / p); a += p; b += q; }
     return Math.round(b);
   }
   chartOptions(ch) {
@@ -1469,7 +1469,14 @@ class Component extends DCLogic {
     const cl = this.clip && this.clip.si === this.si ? mark(this.clip.r1, this.clip.c1, this.clip.r2, this.clip.c2) : null;
     // stats
     let cnt = 0, ncnt = 0, sum = 0;
-    if ((R.r2 - R.r1 + 1) * (R.c2 - R.c1 + 1) <= 4000) for (let r = R.r1; r <= R.r2; r++) for (let c = R.c1; c <= R.c2; c++) { if (hidden.has(r) || !sh.cells[E.A(r, c)]) continue; const v = calc.value(this.si, r, c); if (v !== '') cnt++; if (typeof v === 'number') { ncnt++; sum += v; } }
+    const statsKey=[R.r1,R.c1,R.r2,R.c2].join(':'), priorStats=this.selectionStats;
+    if(priorStats && priorStats.cells===sh.cells && priorStats.range===statsKey && priorStats.hiddenRows===sh.hiddenRows && priorStats.frows===sh.frows && priorStats.outline===sh.outline) ({cnt,ncnt,sum}=priorStats);
+    else {
+      const add=(r,c)=>{if(hidden.has(r))return;const v=calc.value(this.si,r,c);if(v!==''&&v!=null)cnt++;if(typeof v==='number'){ncnt++;sum+=v;}};
+      if((R.r2-R.r1+1)*(R.c2-R.c1+1)<=4000){for(let r=R.r1;r<=R.r2;r++)for(let c=R.c1;c<=R.c2;c++)if(sh.cells[E.A(r,c)])add(r,c);}
+      else for(const key of Object.keys(sh.cells)){const p=E.parseA(key);if(p&&p.r>=R.r1&&p.r<=R.r2&&p.c>=R.c1&&p.c<=R.c2)add(p.r,p.c);}
+      this.selectionStats={cells:sh.cells,range:statsKey,hiddenRows:sh.hiddenRows,frows:sh.frows,outline:sh.outline,cnt,ncnt,sum};
+    }
     const statText = (st.painter ? $t('格式刷：选择目标区域 · ') : '') + (multi && ncnt ? $t('平均值 {avg}　计数 {cnt}　求和 {sum}', { avg: E.fmt(sum / ncnt, { dec: ncnt && !Number.isInteger(sum / ncnt) ? 2 : null }), cnt, sum: E.fmt(sum, {}) }) : multi ? $t('计数 {cnt}', { cnt }) : ed ? $t('编辑') : $t('就绪'));
     // charts (their menus are registered here, before the popover reads them)
     const charts = (sh.charts || []).map(ch => {

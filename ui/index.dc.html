@@ -941,7 +941,7 @@ class Component extends DCLogic {
   undo(redo) {
     const d = this.doc, h = d && this.hist[d.id]; if (!h) return;
     const src = redo ? h.future : h.past, dst = redo ? h.past : h.future; if (!src.length) return this.toastMsg($t(redo ? '没有可重做的操作' : '没有可撤销的操作'));
-    const nd = src.pop(); dst.push(d); const out = d.type === 'docx' ? Object.assign({}, nd, { rev: (d.rev || 0) + 1, _orig: d._orig }) : this.EN.adopt(clone(nd), d);
+    const nd = src.pop(); dst.push(d); const out = this.EN.historyModel(nd, d); if (d.type === 'docx') out.rev = (d.rev || 0) + 1;
     Object.assign(out, { path: d.path, title: d.title }); // undo brings back content, not the file's old place (存储 and renames move it)
     this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? out : x) }));
     this.scheduleSave(d.id);

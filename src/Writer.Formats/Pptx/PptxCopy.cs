@@ -73,10 +73,10 @@ static class PptxCopy
     {
         if (from.TryGetPartById(id, out var part))
         {
-            var carried = Shared(part) ? IdOf(to, part) ?? to.CreateRelationshipToPart(part) : IdOf(to, Part(part, to, null, from, to))!;
+            var carried = Shared(part) ? Link(to, part) : IdOf(to, Part(part, to, null, from, to))!;
             if (from.TryGetPartById(KeptPrefix + id, out var kept) && !to.TryGetPartById(KeptPrefix + carried, out _))
             {
-                if (IdOf(to, kept) is null) to.CreateRelationshipToPart(kept, KeptPrefix + carried);
+                if (IdOf(to, kept) is null) Link(to, kept, KeptPrefix + carried);
                 else Bytes(kept, to.AddImagePart(kept.ContentType, KeptPrefix + carried)); // a part takes one relationship per target
             }
             return carried;
@@ -86,6 +86,16 @@ static class PptxCopy
         if (from.DataPartReferenceRelationships.FirstOrDefault(r => r.Id == id) is { } media) return Reference(to, media, null)?.Id ?? id;
         return id;
     }
+
+    static string Link(OpenXmlPartContainer owner, OpenXmlPart part, string? id = null)
+    {
+        if (IdOf(owner, part) is { } existing) return existing;
+        var package = owner is OpenXmlPart p ? p.OpenXmlPackage : owner as OpenXmlPackage;
+        if (ReferenceEquals(package, part.OpenXmlPackage)) return id is null ? owner.CreateRelationshipToPart(part) : owner.CreateRelationshipToPart(part, id);
+        var copy = id is null ? owner.AddPart(part) : owner.AddPart(part, id);
+        return owner.GetIdOfPart(copy);
+    }
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<OpenXmlPartContainer, Dictionary<DataPart, MediaDataPart>> MediaCopies = new();
 
     static string? IdOf(OpenXmlPartContainer owner, OpenXmlPart part)
     {
@@ -102,7 +112,7 @@ static class PptxCopy
             var part = pair.OpenXmlPart;
             if (ReferenceEquals(part, slide)) copy.CreateRelationshipToPart(slideCopy, pair.RelationshipId);
             else if (part is SlideCommentsPart or PowerPointCommentPart) continue;
-            else if (Shared(part)) copy.CreateRelationshipToPart(part, pair.RelationshipId);
+            else if (Shared(part)) Link(copy, part, pair.RelationshipId);
             else Part(part, copy, pair.RelationshipId, slide, slideCopy);
         }
         foreach (var link in source.HyperlinkRelationships) copy.AddHyperlinkRelationship(link.Uri, link.IsExternal, link.Id);
@@ -155,6 +165,16 @@ static class PptxCopy
     static DataPartReferenceRelationship? Reference(OpenXmlPartContainer owner, DataPartReferenceRelationship media, string? id)
     {
         if (owner is not SlidePart slide || media.DataPart is not MediaDataPart data) return null;
+        if (!ReferenceEquals(data.OpenXmlPackage, slide.OpenXmlPackage))
+        {
+            var copies = MediaCopies.GetOrCreateValue(slide);
+            if (!copies.TryGetValue(data, out var copied))
+            {
+                copied = slide.OpenXmlPackage.CreateMediaDataPart(data.ContentType, Path.GetExtension(data.Uri.OriginalString));
+                using var stream = data.GetStream(FileMode.Open, FileAccess.Read); copied.FeedData(stream); copies[data] = copied;
+            }
+            data = copied;
+        }
         return media switch
         {
             VideoReferenceRelationship => id is null ? slide.AddVideoReferenceRelationship(data) : slide.AddVideoReferenceRelationship(data, id),

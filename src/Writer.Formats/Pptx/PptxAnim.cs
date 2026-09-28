@@ -33,6 +33,7 @@ static class PptxAnim
     /// <summary>The modeled effects by name. Fly and wipe come from the bottom, as PowerPoint's defaults do.</summary>
     static readonly Dictionary<string, Preset> Presets = new()
     {
+        ["motion"] = new("path", 0, 0, 2000, (s, d) => ""),
         ["appear"] = new("entr", 1, 0, 1, (s, d) => Vis(s, "visible", 0)),
         ["fade"] = new("entr", 10, 0, 500, (s, d) => Vis(s, "visible", 0) + Effect(s, d, "in", "fade")),
         ["fly"] = new("entr", 2, 4, 500, (s, d) => Vis(s, "visible", 0) + Anim(s, d, "ppt_x", Str("#ppt_x"), Str("#ppt_x")) + Anim(s, d, "ppt_y", Str("1+#ppt_h/2"), Str("#ppt_y"))),
@@ -54,7 +55,7 @@ static class PptxAnim
     static readonly Dictionary<string, string> Classes = new() { ["entr"] = "entrance", ["emph"] = "emphasis", ["exit"] = "exit", ["path"] = "path" };
     static readonly Dictionary<string, string> Starts = new() { ["clickEffect"] = "click", ["withEffect"] = "with", ["afterEffect"] = "after" };
 
-    sealed record Fx(string? Shape, string Effect, string Start, int Duration, int Delay, P.ParallelTimeNode? Other);
+    sealed record Fx(string? Shape, string Effect, string Start, int Duration, int Delay, P.ParallelTimeNode? Other, string? Path = null);
 
     static P.SequenceTimeNode? MainSeq(P.Timing? timing) =>
         timing?.Descendants<P.SequenceTimeNode>().FirstOrDefault(s => s.CommonTimeNode?.NodeType?.InnerText == "mainSeq");
@@ -83,7 +84,9 @@ static class PptxAnim
                 var whole = shape is not null && targets.All(t => !t.HasChildren);
                 var cls = c.PresetClass?.InnerText;
                 var name = whole ? Presets.FirstOrDefault(p => p.Value.Class == cls && p.Value.Id == (c.PresetId?.Value ?? -1) && p.Value.Subtype == (c.PresetSubtype?.Value ?? 0)).Key : null;
+                if (name == "motion" && c.Descendants<P.AnimateMotion>().Count() != 1) name = null;
                 w.WriteStartObject();
+                if (name == "motion") w.WriteString("path", c.Descendants<P.AnimateMotion>().First().Path?.Value ?? "M 0 0 L 0.25 0 E");
                 if (shape is not null) w.WriteString("shape", shape);
                 w.WriteString("effect", name ?? "other");
                 if (name is null) w.WriteString("class", cls is not null && Classes.TryGetValue(cls, out var cl) ? cl : "other");
@@ -124,7 +127,9 @@ static class PptxAnim
                 if (!Presets.TryGetValue(effect, out var preset)) throw Invalid($"No effect called '{effect}'");
                 var shape = Get("shape");
                 if (shape is null || !ids.Contains(shape)) throw Invalid($"No shape with id '{shape}' on this slide");
-                list.Add(new(shape, effect, start, Get("duration") is { } d ? Math.Max(1, Ms(d)) : preset.Duration, delay, null));
+                var path = effect == "motion" ? Get("path") ?? "M 0 0 L 0.25 0 E" : null;
+                if (path is not null && (path.Length > 20000 || !System.Text.RegularExpressions.Regex.IsMatch(path, @"^M\s+[-+\d.eE,\s]+(?:[LCZlc z][-+\d.eE,\s]*)+E?$"))) throw Invalid("A motion path uses M, L and C commands with relative slide coordinates.");
+                list.Add(new(shape, effect, start, Get("duration") is { } d ? Math.Max(1, Ms(d)) : preset.Duration, delay, null, path));
             }
             return list;
         }
@@ -198,10 +203,11 @@ static class PptxAnim
             else
             {
                 var p = Presets[f.Effect];
+                var body = f.Effect == "motion" ? $"<p:animMotion origin=\"layout\" path=\"{System.Security.SecurityElement.Escape(f.Path)}\" pathEditMode=\"relative\"><p:cBhvr>{Ctn(f.Duration, true)}{Tgt(f.Shape!)}</p:cBhvr></p:animMotion>" : p.Body(f.Shape!, f.Duration);
                 var grp = 0u;
                 while (!used.Add((f.Shape, grp))) grp++;
                 par = new P.ParallelTimeNode($"<p:par {Ns}><p:cTn id=\"0\" presetID=\"{p.Id}\" presetClass=\"{p.Class}\" presetSubtype=\"{p.Subtype}\" fill=\"hold\" grpId=\"{grp}\" nodeType=\"{f.Start}Effect\">" +
-                    $"<p:stCondLst><p:cond delay=\"{f.Delay}\"/></p:stCondLst><p:childTnLst>{p.Body(f.Shape!, f.Duration)}</p:childTnLst></p:cTn></p:par>");
+                    $"<p:stCondLst><p:cond delay=\"{f.Delay}\"/></p:stCondLst><p:childTnLst>{body}</p:childTnLst></p:cTn></p:par>");
                 end = Math.Max(end, at + f.Delay + f.Duration);
             }
             step!.Append(par);

@@ -51,8 +51,10 @@ test('the show: digits and Enter jump, B blanks until the next key, Ctrl+P draws
   c.renderVals().onShowDown({ button: 0, clientX: 100, clientY: 100, preventDefault() { } }); c.renderVals().onShowMove({ clientX: 200, clientY: 100 }); c.renderVals().onShowUp();
   assert.deepEqual(plain(c.state.ink[2]), [[[200, 200], [400, 200]]]);
   assert.match(c.renderVals().inkSvg.__html, /points="200,200 400,200"/);
+  c.persistInk = () => { c.state.ink = {}; }; // rasterization is exercised by verify-slide-017 in Chrome
   key('Escape'); assert.equal(c.state.show.tool, null, 'Esc puts the pen away first');
   c.setState({ loop: true }); c.showNext(); assert.equal(c.state.show.i, 0, 'after the last slide, the first again');
+  c.persistInk = () => { c.state.ink = {}; }; // rasterization is exercised by verify-slide-017 in Chrome
   key('Escape'); assert.equal(c.state.show, null);
 });
 
@@ -129,13 +131,13 @@ test('the format panel: the Word 定稿 panel with the deck\'s own tabs; a selec
   const titles = v => Array.from(v.panelGroups, g => g.title);
   let v = c.renderVals();
   assert.deepEqual([v.showBar, v.bubbleOpen, v.formatOpen, v.panelPad], [false, false, true, '312px']);
-  assert.deepEqual(Array.from(v.panelTabs, x => x.label), ['开始', '插入', '设计', '切换', '动画', '放映']);
+  assert.deepEqual(Array.from(v.panelTabs, x => x.label), ['开始', '插入', '设计', '切换', '动画', '审阅', '视图', '放映']);
   assert.deepEqual(titles(v), ['幻灯片', '文字'], 'nothing selected: the slide, and where the text tools are');
   c.setState({ sel: 't1', sels: ['t1'] }); v = c.renderVals();
   assert.deepEqual(plain(v.panelTabs.slice(-1).map(x => [x.label, x.ctx])), [['形状', true]]);
   assert.deepEqual(titles(v), ['幻灯片', '字体', '段落', '文本框']);
   c.state.tab = 'format'; v = c.renderVals(); assert.deepEqual(titles(v), ['填充与轮廓', '大小', '排列', '大小与位置']);
-  for (const [tab, want] of [['insert', ['常用', '页面']], ['design', ['主题', '背景', '幻灯片大小']], ['trans', ['切换效果', '计时']], ['anim', ['添加动画', '计时', '动画窗格']], ['show', ['开始放映', '视图']]]) {
+  for (const [tab, want] of [['insert', ['常用', '页面']], ['design', ['主题', '背景', '幻灯片大小', '母版与版式']], ['trans', ['效果选项', '切换效果', '计时']], ['anim', ['添加动画', '效果选项', '计时', '动画窗格']], ['show', ['开始放映', '视图']]]) {
     c.state.tab = tab; v = c.renderVals(); assert.deepEqual(titles(v), want, tab);
   }
   c.state.tab = 'design'; v = c.renderVals();

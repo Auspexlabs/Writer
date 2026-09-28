@@ -686,3 +686,12 @@ targets" are used only when building for Windows, Linux, Android or wasm.
 | zmij | 1.0.23 | MIT | macOS build |
 
 </details>
+
+## Office support added in 0.1.7
+
+- Jint 4.16.3 — Copyright Sebastien Ros, BSD-2-Clause. https://github.com/sebastienros/jint
+- Acornima 1.7.0 — Copyright Adam Simon, BSD-3-Clause. https://github.com/adams85/acornima
+- WMFJS from rtf.js 3.0.9 — MIT; copyright and license text in `ui/vendor/wmf/LICENSE`. https://github.com/tbluemel/rtf.js
+- Adobe Symbol mapping — redistribution notice included in `ui/vendor/wmf/symbol.txt`.
+
+Jint's optional CLR interoperability initialization and operator paths are disabled for NativeAOT through `Jint.Substitutions.xml`. Spreadsheet expressions are parsed as formulas, not executed as JavaScript source.

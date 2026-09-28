@@ -132,6 +132,7 @@ export function tableSplit(o, r, c) { o.merges = (o.merges || []).filter(m => !(
 /** 动画: the presets by class as the engine names them, [key, label, default ms]; fly and wipe come from the bottom, as in PowerPoint. */
 export const FX = [
   ['entr', '进入', [['appear', '出现', 1], ['fade', '淡入', 500], ['fly', '飞入', 500], ['float', '浮入', 1000], ['zoom', '缩放', 500], ['wipe', '擦除', 500]]],
+  ['path', '动作路径', [['motion', '直线 / 曲线', 2000]]],
   ['emph', '强调', [['grow', '放大/缩小', 2000], ['spin', '陀螺旋', 2000], ['transparency', '透明', 2000]]],
   ['exit', '退出@@fx', [['disappear', '消失', 1], ['fadeOut', '淡出', 500], ['flyOut', '飞出', 500], ['zoomOut', '收缩', 500], ['wipeOut', '擦除', 500]]]
 ];
@@ -164,7 +165,23 @@ export function fxHidden(anims, played, live) {
 }
 /** What an effect does to its object on screen: keyframes for Element.animate, run with fill both (an exit stays out, 放大 stays big).
  *  translate / scale / rotate leave the object's own rotation alone. H: the slide's height, which fly measures from. */
+export const MOTION_PATHS = [['向右', 'M 0 0 L .25 0 E'], ['向左', 'M 0 0 L -.25 0 E'], ['向上', 'M 0 0 L 0 -.25 E'], ['向下', 'M 0 0 L 0 .25 E'], ['弧线', 'M 0 0 C .08 -.2 .17 -.2 .25 0 E'], ['圆形', 'M 0 0 C .138 0 .138 .25 0 .25 C -.138 .25 -.138 0 0 0 E']];
+export function motionFrames(path, H) {
+  const tokens = String(path || MOTION_PATHS[0][1]).match(/[MLCZEm lcz]|[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/g)?.filter(t => t.trim()) || [];
+  const frames = []; let i = 0, x = 0, y = 0, start = [0, 0];
+  const point = () => [Number(tokens[i++]), Number(tokens[i++])];
+  const push = (px, py) => { if (Number.isFinite(px) && Number.isFinite(py)) { x = px; y = py; frames.push({ translate: `${x * SW}px ${y * H}px` }); } };
+  while (i < tokens.length) {
+    const cmd = tokens[i++], rel = cmd === cmd.toLowerCase(), kind = cmd.toUpperCase(), ox = x, oy = y;
+    const read = () => { const p = point(); return rel ? [p[0] + ox, p[1] + oy] : p; };
+    if (kind === 'M' || kind === 'L') { const p = read(); push(...p); if (kind === 'M') start = p; }
+    else if (kind === 'C') { const a = read(), b = read(), c = read(); for (let n = 1; n <= 24; n++) { const t = n/24, u = 1-t; push(u*u*u*ox + 3*u*u*t*a[0] + 3*u*t*t*b[0] + t*t*t*c[0], u*u*u*oy + 3*u*u*t*a[1] + 3*u*t*t*b[1] + t*t*t*c[1]); } }
+    else if (kind === 'Z') push(...start); else if (kind === 'E') break;
+  }
+  return frames.length > 1 ? frames : [{ translate: '0 0' }, { translate: '0 0' }];
+}
 export function fxFrames(a, o, H) {
+  if (a.fx === 'motion') return motionFrames(a.path, H);
   const below = `0 ${Math.round(H - o.y)}px`, c = fxClass(a);
   return {
     appear: [{ opacity: 1 }, { opacity: 1 }], fade: [{ opacity: 0 }, { opacity: 1 }], fly: [{ translate: below }, { translate: '0 0' }],
@@ -176,13 +193,19 @@ export function fxFrames(a, o, H) {
   }[a.fx] || (c === 'exit' ? [{ opacity: 1 }, { opacity: 0 }] : c === 'emph' ? [{ scale: '1' }, { scale: '1.1' }, { scale: '1' }] : [{ opacity: 0 }, { opacity: 1 }]);
 }
 /** 切换: the transitions the engine writes, with labels; morph (平滑) moves what the slide shares with the one before. */
-export const TRANS = [['none', '无'], ['fade', '淡入淡出'], ['push', '推入'], ['wipe', '擦除'], ['split', '分割'], ['cover', '覆盖'], ['zoom', '缩放'], ['morph', '平滑']];
+export const TRANS = [['none', '无'], ['fade', '淡入淡出'], ['push', '推入'], ['wipe', '擦除'], ['split', '分割'], ['cover', '覆盖'], ['zoom', '缩放'], ['cut', '切换'], ['dissolve', '溶解'], ['morph', '平滑']];
 /** The incoming slide's keyframes per transition (push and cover come from the right, as the engine's dir="l" does). */
 export const TRANS_FRAMES = {
   fade: [{ opacity: 0 }, { opacity: 1 }], push: [{ translate: '100% 0' }, { translate: '0 0' }], cover: [{ translate: '100% 0' }, { translate: '0 0' }],
   wipe: [{ clipPath: 'inset(0 0 0 100%)' }, { clipPath: 'inset(0 0 0 0)' }], split: [{ clipPath: 'inset(50% 0 50% 0)' }, { clipPath: 'inset(0 0 0 0)' }],
   zoom: [{ opacity: 0, scale: '0.92' }, { opacity: 1, scale: '1' }]
 };
+export function transitionFrames(kind, direction) {
+  if (['push', 'cover'].includes(kind) && direction) return [{ translate: ({ l: '100% 0', r: '-100% 0', u: '0 100%', d: '0 -100%' })[direction] || '100% 0' }, { translate: '0 0' }];
+  if (kind === 'wipe' && direction) return [{ clipPath: ({ l: 'inset(0 100% 0 0)', r: 'inset(0 0 0 100%)', u: 'inset(0 0 100% 0)', d: 'inset(100% 0 0 0)' })[direction] }, { clipPath: 'inset(0 0 0 0)' }];
+  if (kind === 'cut') return [{ opacity: 1 }, { opacity: 1 }];
+  return TRANS_FRAMES[kind] || TRANS_FRAMES.fade;
+}
 /** 平滑 (morph, lite): which object of the slide before each object of this one continues — the same picture, the same text, the same
  *  table, else the same kind of shape in the same fill, first come first served — so the show can move it from where it was. */
 export function morphPairs(prev, next) {
@@ -330,7 +353,7 @@ export function objView(o, th, ptPx) {
     tx: textStyle(o, fs, th),
     color, fs: fs + 'px', font: `'${font}','Noto Sans SC',sans-serif`, fw: o.bold ? 700 : 400, fst: o.italic ? 'italic' : 'normal', td: o.underline ? 'underline' : 'none',
     align: o.align || 'left', va: o.va === 'middle' ? 'center' : o.va === 'bottom' ? 'flex-end' : 'flex-start', lh: o.lh || 1.35,
-    pad: o.t === 'text' ? '8px 12px' : '16px 24px', isImg: o.t === 'image', src: picSrc(o.src || ''), picFrame: pic ? pic.frame : '', picImage: pic ? pic.image : '', isTable: o.t === 'table', hasText: o.t === 'text' || o.t === 'shape',
+    pad: o.t === 'text' ? '8px 12px' : '16px 24px', isImg: o.t === 'image' && !o.mediaType, isVideo: o.mediaType === 'video', isAudio: o.mediaType === 'audio', src: picSrc(o.src || ''), picFrame: pic ? pic.frame : '', picImage: pic ? pic.image : '', isTable: o.t === 'table', hasText: o.t === 'text' || o.t === 'shape',
     tcells: o.t === 'table' ? tableCells(o, th) : [], gtc: o.t === 'table' ? colWidths(o).map(w => w + 'px').join(' ') : '', gtr: o.t === 'table' ? rowHeights(o).map(h=>h+'px').join(' ') : '',
     inner: { __html: o.autofit === 'shrink' && o.fit && o.fit < 1 ? (o.html || '').replace(/(font-size\s*:\s*)([\d.]+)px/gi, (_, key, n) => key + Number((n * o.fit).toFixed(5)) + 'px') : o.html || '' },
     hint: o.ph && HINTS[o.ph] && !textOf(o.html) ? T(HINTS[o.ph]) : '' // an empty placeholder's prompt, drawn by CSS and never part of the text
@@ -358,6 +381,7 @@ export const LVL_CSS = '.sv-t li[data-marker]::marker{content:attr(data-marker)}
 export function slideObjectHtml(o, v) {
     let h = `<div style="position:absolute;left:${v.left};top:${v.top};width:${v.width};height:${v.height};transform:${v.tf};opacity:${v.op};filter:${v.flt}">`;
     h += `<div style="position:absolute;inset:0;background:${v.bg};border-radius:${v.radius};border:${v.border};box-sizing:border-box">${v.svg.__html}</div>`;
+    if (v.isVideo || v.isAudio) { const tag = v.isVideo ? 'video' : 'audio'; h += `<${tag} src="${esc(v.src)}" controls preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;background:#151515" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()"></${tag}>`; }
     if (v.isImg) h += `<div style="position:absolute;inset:0;${v.picFrame}"><img src="${esc(v.src)}" style="${v.picImage}"></div>`;
     if (v.hasText) h += `<div style="position:absolute;inset:0;padding:${v.pad};display:flex;flex-direction:column;justify-content:${v.va};color:${v.color};font-size:${v.fs};font-family:${v.font};font-weight:${v.fw};font-style:${v.fst};text-decoration:${v.td};text-align:${v.align};line-height:${v.lh};${v.tx}"><div class="sv-t t">${v.inner.__html}</div></div>`;
     if (v.isTable) h += `<div style="position:absolute;inset:0;display:grid;grid-template-columns:${v.gtc};grid-template-rows:${v.gtr};font-size:${v.fs};font-family:${v.font}">` + v.tcells.map(c => `<div style="grid-column:${c.gc};grid-row:${c.gr};display:flex;align-items:${c.va};justify-content:${c.jc};padding:0 16px;background:${c.bg};color:${c.color};font-weight:${c.fw};border:${c.border};border-bottom:${c.bb};overflow:hidden;box-sizing:border-box">${c.html.__html}</div>`).join('') + '</div>';

@@ -55,5 +55,5 @@ public static class Mutations
     /// <summary>list before level and value before type; a picture is reset, replaced or cut out before it is adjusted, and compressed
     /// last; a deck's palette before its fonts; text fitted once it and its box are set; everything else in the order given.</summary>
     static IEnumerable<KeyValuePair<string, string>> Ordered(Dictionary<string, string> props) =>
-        props.OrderBy(p => p.Key switch { "reset" => -3, "src" => -2, "background" or "palette" => -1, "level" or "type" or "restart" => 1, "sectionBreak" or "caption" => -1, "bookmark" or "dropCap" => 1, "compress" or "fit" => 2, _ => 0 });
+        props.OrderBy(p => p.Key switch { "reset" => -3, "src" => -2, "background" or "palette" => -1, "level" or "type" or "restart" or "transitionDirection" => 1, "sectionBreak" or "caption" => -1, "bookmark" or "dropCap" => 1, "compress" or "fit" => 2, _ => 0 });
 }

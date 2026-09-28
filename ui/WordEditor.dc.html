@@ -2035,9 +2035,7 @@ class Component extends DCLogic {
   async nativeChange(key, value) {
     if (this.doc.protected && key !== 'protected') return this.props.toast?.($t('请先停止文档保护'));
     try {
-      this.flush(); await this.EN.save(this.doc, { root: this.edRef.current });
-      await this.EN.run(['set', this.doc.path, '/', '--prop', key + '=' + (typeof value === 'string' ? value : JSON.stringify(value))]);
-      const doc = await this.EN.open(this.doc); this.nativeUpdating = true; try { this.change({ ...doc, rev: (this.doc.rev || 0) + 1 }); } finally { this.nativeUpdating = false; }
+      this.flush(); const doc = await this.EN.nativeEdit(this.doc, ['set', this.doc.path, '/', '--prop', key + '=' + (typeof value === 'string' ? value : JSON.stringify(value))], {root:this.edRef.current}); this.nativeUpdating = true; try { this.change({ ...doc, rev: (this.doc.rev || 0) + 1 }); } finally { this.nativeUpdating = false; }
     } catch (e) { this.props.toast?.(e.message); }
   }
   insertChart(edit = false) {

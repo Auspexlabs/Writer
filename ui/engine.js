@@ -2398,7 +2398,7 @@ function pptxObject(file, sp, geo, n) {
   const id = (decor ? 'd' : 'e') + path;
   const look = { rot: Number(p.rotation) || 0, shadow: p.shadow === 'true' };
   if (kind === 'object') return { id, path, kind, t: 'object', data: p, html: '', ...box, ...look };
-  if (kind === 'image') { const lk = lookFrom(p); delete lk.rotation; return txt(Object.assign({ id, path, kind, t: 'image', src: binaryUrl(file, path), background: p.background === 'true' || p.background === true, source: p.source, html: '', look: lk, rot: look.rot }, box)); }
+  if (kind === 'image') { const lk = lookFrom(p); delete lk.rotation; return txt(Object.assign({ id, path, kind, t: 'image', mediaType: p.mediaType || '', src: binaryUrl(file, path), background: p.background === 'true' || p.background === true, source: p.source, html: '', look: lk, rot: look.rot }, box)); }
   if (n.kind === 'table') {
     const merges = [], cells = {};
     (n.children || []).forEach((r, ri) => (r.children || []).forEach((c, ci) => { const cp = c.props || {}; if (+cp.colspan > 1 || +cp.rowspan > 1) merges.push({ r: ri, c: ci, rs: +cp.rowspan || 1, cs: +cp.colspan || 1 }); const own = {}; if (cp.html && cp.html !== esc(cp.text || '').replace(/\n/g,'<br>')) own.html = slideHtmlUnits(cp.html, ptPx); if (cp.valign && cp.valign !== 'middle') own.valign = cp.valign; if (cp.fill) own.fill = hex(cp.fill); if (cp.line) own.line = cp.line === 'none' ? 'none' : hex(cp.line); if (cp.align && cp.align !== 'left') own.align = cp.align; if (Object.keys(own).length) cells[ri + ':' + ci] = own; }));
@@ -2435,7 +2435,7 @@ async function openPptx(doc) {
     const decor = children.filter(n => n.kind === 'decor').map(n => pptxObject(doc.path, sp, geo, n));
     const objs = children.filter(n => n.kind !== 'decor').map(n => pptxObject(doc.path, sp, geo, n));
     linkLines(objs);
-    return { id: 's' + s.props.id, path: sp, layout: s.props.layout, decor, objs, anims: animsFrom(s.props.animations, objs), sec: s.props.section || '', notes: s.props.notes || '', trans: s.props.transition || 'none', duration: s.props.duration == null ? null : Number(s.props.duration), advanceAfter: +s.props.advanceAfter || 0, advanceOnClick: s.props.advanceOnClick !== false && s.props.advanceOnClick !== 'false', bgGradient: s.props.backgroundGradient || null, bgImage: s.props.backgroundImage ? binaryUrl(doc.path, sp) : null, inheritedBgGradient: s.computed?.inheritedBackgroundGradient || null, hidden: s.props.hidden === true || s.props.hidden === 'true', bg: s.props.background ? p2bg(s.props.background) : null, inheritedBg: p2bg((s.computed || {}).inheritedBackground || (s.computed || {}).background) };
+    return { id: 's' + s.props.id, path: sp, layout: s.props.layout, decor, objs, masterObjects: jsonOr(s.props.masterObjects, []), anims: animsFrom(s.props.animations, objs), sec: s.props.section || '', notes: s.props.notes || '', comments: jsonOr(s.props.comments, []), trans: s.props.transition || 'none', transitionDirection: s.props.transitionDirection || '', duration: s.props.duration == null ? null : Number(s.props.duration), advanceAfter: +s.props.advanceAfter || 0, advanceOnClick: s.props.advanceOnClick !== false && s.props.advanceOnClick !== 'false', bgGradient: s.props.backgroundGradient || null, bgImage: s.props.backgroundImage ? binaryUrl(doc.path, sp) : null, inheritedBgGradient: s.computed?.inheritedBackgroundGradient || null, hidden: s.props.hidden === true || s.props.hidden === 'true', bg: s.props.background ? p2bg(s.props.background) : null, inheritedBg: p2bg((s.computed || {}).inheritedBackground || (s.computed || {}).background) };
   });
   // the palette the deck wears (its theme, written by 设计 or the assistant) is the editor's theme; a deck without one keeps the editor's
   const palette = THEMES[t.props.palette] ? t.props.palette : null;
@@ -2444,7 +2444,7 @@ async function openPptx(doc) {
   return { theme: palette || doc.theme || 'paper', ratio, slides, layouts, _orig: orig };
 }
 const p2bg = c => c ? '#' + c : '#FFFFFF';
-const pptxSnapshot = slides => JSON.parse(JSON.stringify(slides.map(s => ({ id: s.id, path: s.path, bg: s.bg, bgGradient: s.bgGradient || null, bgImage: s.bgImage || null, advanceAfter: s.advanceAfter || 0, advanceOnClick: s.advanceOnClick !== false, layout: s.layout, sec: s.sec || '', notes: s.notes || '', trans: s.trans || 'none', duration: s.duration ?? null, hidden: !!s.hidden, objs: s.objs.map(objKey), anims: animJson(s) }))));
+const pptxSnapshot = slides => JSON.parse(JSON.stringify(slides.map(s => ({ id: s.id, path: s.path, bg: s.bg, bgGradient: s.bgGradient || null, bgImage: s.bgImage || null, advanceAfter: s.advanceAfter || 0, advanceOnClick: s.advanceOnClick !== false, layout: s.layout, sec: s.sec || '', notes: s.notes || '', comments: s.comments || [], trans: s.trans || 'none', transitionDirection: s.transitionDirection || '', duration: s.duration ?? null, hidden: !!s.hidden, objs: s.objs.map(objKey), anims: animJson(s) }))));
 const cnvId = o => { const m = o && o.path && /\[@id=(\d+)\]$/.exec(o.path); return m ? m[1] : null; };
 /** A slide's animations (the engine's animations prop) as the editor keeps them: each effect names its object by editor id, or by
  *  drawing id (sp) when it animates something the editor does not show (a shape of the layout); an effect the engine does not model
@@ -2453,7 +2453,7 @@ function animsFrom(json, objs) {
   let list; try { list = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { list = null; } // the tree gives JSON props as values, a get as text
   if (!Array.isArray(list)) return [];
   const byCnv = new Map(flatObjs(objs).map(o => [cnvId(o), o.id]));
-  return list.map(e => Object.assign({ fx: e.effect, start: e.start || 'click', dur: +e.duration || 500, delay: +e.delay || 0 },
+  return list.map(e => Object.assign({ fx: e.effect, start: e.start || 'click', dur: +e.duration || 500, delay: +e.delay || 0, ...(e.path ? { path: e.path } : {}) },
     byCnv.has(String(e.shape)) ? { id: byCnv.get(String(e.shape)) } : { sp: e.shape == null ? null : String(e.shape) }, e.effect === 'other' ? { cls: e.class, xml: e.xml } : {}));
 }
 /** And back: the prop as the slide is now, each object by its drawing id; the effects of objects that are gone are left out. */
@@ -2463,6 +2463,7 @@ function animJson(s) {
     const shape = a.id ? cnvId(all.find(o => o.id === a.id)) : a.sp;
     if (shape == null && (a.id || a.fx !== 'other')) continue;
     const e = { effect: a.fx, start: a.start || 'click', duration: a.dur, delay: a.delay || 0 };
+    if (a.fx === 'motion') e.path = a.path || 'M 0 0 L 0.25 0 E';
     if (shape != null) e.shape = shape;
     if (a.fx === 'other') Object.assign(e, { class: a.cls, xml: a.xml });
     out.push(e);
@@ -2473,6 +2474,8 @@ export function slideProps(o, s) {
   const p = {};
   if ((o.advanceAfter || 0) !== (s.advanceAfter || 0)) p.advanceAfter = String(s.advanceAfter || 0);
   if ((o.advanceOnClick !== false) !== (s.advanceOnClick !== false)) p.advanceOnClick = String(s.advanceOnClick !== false);
+  if (!same(o.comments || [], s.comments || [])) p.comments = JSON.stringify(s.comments || []);
+  if ((o.trans !== s.trans || (o.transitionDirection || '') !== (s.transitionDirection || '')) && s.transitionDirection && ['push', 'cover', 'wipe', 'split'].includes(s.trans)) p.transitionDirection = s.transitionDirection;
   if ((o.notes || '') !== (s.notes || '')) p.notes = s.notes || '';
   if ((o.sec || '') !== (s.sec || '')) p.section = s.sec || '';
   if (!!o.hidden !== !!s.hidden) p.hidden = s.hidden ? 'true' : 'false';
@@ -2484,7 +2487,7 @@ function objKey(o) {
   return Object.assign({ id: o.id, path: o.path, kind: o.kind, t: o.t, x: o.x, y: o.y, w: o.w, h: o.h, html: o.html, fill: o.fill, color: o.color, font: o.font, fs: o.fs, shape: o.shape, rows: o.rows, src: o.src && o.src.startsWith('data:') ? 'data' : o.src, rot: o.rot || 0, field: o.field || null, bold: !!o.bold, italic: !!o.italic, underline: !!o.underline, align: o.align || 'left', va: o.va || 'top',
     fillOpacity: o.fillOpacity ?? 1, stroke: o.stroke, sw: o.sw, dash: o.dash, shadow: !!o.shadow, lockAspect: !!o.lockAspect,
     lh: o.lh, sb: o.sb || 0, sa: o.sa || 0, cs: o.cs || 0, cols: o.cols || 1, vert: o.vert || 'horz', autofit: o.autofit || 'none', fit: o.fit || 1, tOutline: o.tOutline || '', tShadow: !!o.tShadow, tGrad: o.tGrad || '' },
-    o.t === 'image' ? { look: o.look || {} } : {}, o.t === 'line' ? { head: o.head, tail: o.tail, flipH: !!o.flipH, flipV: !!o.flipV, bent: !!o.bent, start: o.start || null, end: o.end || null } : {},
+    o.t === 'image' ? { look: o.look || {}, mediaType: o.mediaType || '', media: o.media || '' } : {}, o.t === 'line' ? { head: o.head, tail: o.tail, flipH: !!o.flipH, flipV: !!o.flipV, bent: !!o.bent, start: o.start || null, end: o.end || null } : {},
     o.t === 'table' ? { colW: o.colW || null, rowH: o.rowH || null, merges: o.merges || [], cells: o.cells || {}, tstyle: o.tstyle || 'MediumStyle2Accent1', header: o.header !== false, banded: o.banded !== false, firstCol: !!o.firstCol } : {},
     o.t === 'group' ? { kids: (o.kids || []).map(objKey) } : {});
 }
@@ -2547,7 +2550,7 @@ function objProps(o, g, orig, slide) {
     if ((was('tstyle') || 'MediumStyle2Accent1') !== (o.tstyle || 'MediumStyle2Accent1')) p.style = o.tstyle;
     for (const [k, f] of [['header', 'header'], ['banded', 'banded'], ['firstCol', 'firstCol']]) { const now = k === 'firstCol' ? !!o[k] : o[k] !== false, before = orig ? (k === 'firstCol' ? !!orig[k] : orig[k] !== false) : (k !== 'firstCol'); if (now !== before) p[f] = now ? 'true' : 'false'; }
   }
-  if (o.t === 'image' && !orig) p.src = o.src;
+  if (o.t === 'image' && !orig) { p.src = o.mediaType && o.media ? 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a33sAAAAASUVORK5CYII=' : o.src; if (o.media) p.media = o.media; }
   if (o.t === 'image') Object.assign(p, lookDiff(orig && orig.look, o.look));
   if (Math.round((orig && orig.rot) || 0) !== Math.round(o.rot || 0)) p.rotation = String(Math.round(o.rot || 0));
   return p;
@@ -2565,6 +2568,19 @@ async function setListProps(file, shapePath, html, force) {
 }
 /** A picture's bytes as a data: URL, read in turn with the file's saves from its place in the file (or from the picture it copies);
  *  null when it has none there. */
+// Keep the original package in memory so cut/copy survives deletion or later saves of its source.
+const pptxClips = new Map();
+export function capturePptx(doc) {
+  const token = crypto.randomUUID();
+  const bytes = inLane(doc.path, async () => { await saveNow(doc, {}); return (await http(fileUrl(doc.path))).arrayBuffer(); });
+  bytes.catch(() => {}); pptxClips.set(token, bytes); return token;
+}
+async function importPptxObject(file, source, target) {
+  if (!source.token) return run(['copy', file, source.path, '--from-file', source.file, '--to', target]);
+  const captured = pptxClips.get(source.token);
+  if (!captured) throw new Error(_t('剪贴板已过期，请重新复制'));
+  return (await http('/pptx/copy?file=' + enc(file) + '&path=' + enc(source.path) + '&to=' + enc(target), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: await captured })).json();
+}
 export function pictureData(file, o) {
   const at = !String(o.src || '').startsWith('data:') && (o.path || o.from);
   return at ? inLane(file, () => dataUrl(binaryUrl(file, at))).catch(() => null) : Promise.resolve(null);
@@ -2653,7 +2669,7 @@ async function savePptx(doc, log) {
     for (const x of s.objs) {
       if (!x.path && x.importSource) {
         const source = x.importSource;
-        const r = await run(['copy', doc.path, source.path, '--from-file', source.file, '--to', s.path]); n++;
+        const r = await importPptxObject(doc.path, source, s.path); n++;
         const path = idPath(s.path, r), tree = await run(['get', doc.path, path, '--depth', '32']);
         const imported = pptxObject(doc.path, s.path, g, tree);
         bindImportedCopy(doc, x, imported); x.kind = r.kind; delete x.importSource;
@@ -2698,7 +2714,7 @@ async function savePptx(doc, log) {
     if (order.indexOf(s.path) !== i) { await run(['move', doc.path, s.path, '--to', '/', '--index', String(i + 1)]); n++; order.splice(order.indexOf(s.path), 1); order.splice(i, 0, s.path); }
     if ((o.bg || null) !== (s.bg || null) || (o.bgGradient || null) !== (s.bgGradient || null) || (o.bgImage || null) !== (s.bgImage || null)) { const prop = s.bgImage ? 'backgroundImage=' + await dataUrlOf(s.bgImage) : s.bgGradient ? 'backgroundGradient=' + s.bgGradient.replace(/#/g, '') : 'background=' + (s.bg ? unhex(s.bg) : 'none'); await run(['set', doc.path, s.path, '--prop', prop]); n++; }
     const sp = slideProps(o, s);
-    if (Object.keys(sp).length) { await run(['set', doc.path, s.path, ...propsArgs(sp)]); n++; log && log('set', s.path, sp); }
+    if (Object.keys(sp).length) { await run(['set', doc.path, s.path, ...propsArgs(sp)]); n++; log && log('set', s.path, sp); if (sp.comments) { const fresh = await run(['get', doc.path, s.path]); s.comments = jsonOr(fresh.props?.comments, s.comments); } }
     if (s.layout && o.layout && s.layout !== o.layout) {
       // 版式: the engine keeps a placeholder with text and drops an empty one, so it must see the editor's text first
       for (const x of s.objs) { const oo = x.path && x.ph && o.objs.find(y => y.path === x.path); if (oo && !sameRuns(oo.html, x.html)) { await run(['set', doc.path, x.path, '--prop', 'html=' + slideHtmlUnits(x.html, g.ptPx, false)]); n++; oo.html = x.html; } }
@@ -2847,6 +2863,25 @@ function adoptMm(cur, saved) {
   if (cur.map) MM.walk(cur.map, x => { x.id = real(x.id); MM.retarget(x, m); });
 }
 
+// Native operations can change shared parts absent from the editable model (themes/masters).
+// Keep package checkpoints only for those operations; normal typing keeps lightweight model history.
+const nativeHistory = new Map();
+export function nativeEdit(doc, argv, opts = {}) {
+  return inLane(doc.path, async () => {
+    await saveNow(doc, opts);
+    let history=nativeHistory.get(doc.id);if(!history){history={states:new Map(),baseline:null,current:null};nativeHistory.set(doc.id,history);}
+    const checkpoint=async model=>{const token=crypto.randomUUID();history.states.set(token,await (await http(fileUrl(model.path))).arrayBuffer());return token;};
+    const before=await checkpoint(doc);doc._nativeVersion=before;history.baseline ||= before;history.current=before;
+    await run(argv);
+    const next=await open(doc);next._nativeVersion=await checkpoint(next);history.current=next._nativeVersion;return next;
+  });
+}
+function nativeVersion(doc) { return doc._nativeVersion || nativeHistory.get(doc.id)?.baseline; }
+export function historyModel(previous, current) {
+  const out=previous.type==='xlsx'?cloneWorkbook(previous):structuredClone(previous);
+  if(nativeVersion(previous)!==nativeVersion(current)){out._mtime=current._mtime;return out;}
+  return current.type==='docx'?Object.assign(out,{_orig:current._orig}):adopt(out,current);
+}
 // ---------- save ----------
 // A file's saves and picture commands take turns: each engine command writes the whole file, so two at once would lose one.
 const lanes = new Map();
@@ -2862,6 +2897,13 @@ export async function save(doc, opts) {
   return inLane(doc.path, () => saveNow(doc, opts || {}));
 }
 async function saveNow(doc, opts) {
+  let restoredPackage = false;
+  const history=nativeHistory.get(doc.id), version=nativeVersion(doc);
+  if(history && version && version!==history.current){
+    const bytes=history.states.get(version);if(!bytes)throw new Error(_t('无法恢复此次操作'));
+    const response=await http('/file?file='+enc(doc.path)+(doc._mtime!=null?'&ifMtime='+doc._mtime:''),{method:'PUT',body:bytes});
+    const restored=await open(doc);doc._orig=restored._orig;doc._mtime=(await response.json()).mtime;history.current=version;restoredPackage=true;
+  }
   const log = opts.log, root = opts.root;
   if (doc.type === 'md') {
     if ((doc.text || '') === (doc._orig || '')) return 0;
@@ -2881,7 +2923,7 @@ async function saveNow(doc, opts) {
   // in the shell, which catches a conflict before scheduling a save rather than mid-flight): just remember the mtime our
   // own write left, so the next poll does not mistake it for an external change
   if (n) { const st = await stat(doc.path).catch(() => null); if (st) doc._mtime = st.mtime; }
-  return n;
+  return n + (restoredPackage ? 1 : 0);
 }
 
 /** Carries the paths and the saved snapshot from a doc that was just saved onto the doc the editor holds now

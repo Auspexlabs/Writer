@@ -1,3 +1,4 @@
+import { chartSvg } from './office-draw.js';
 import { autoRowHeights } from './sheet-layout.js';
 // Paginated spreadsheet print/export, using the same visible values and dimensions as the editor.
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -24,6 +25,30 @@ function cellStyle(s, grid) {
   }
   return css.join(';');
 }
+function chartModel(ch, doc, si, calc, E) {
+  const values = ref => {
+    let text=String(ref||'').replace(/^=/,''); if(text.startsWith('{'))return text.slice(1,-1).split(/[,;]/).map(x=>x.trim().replace(/^"|"$/g,''));
+    let owner=si;const bang=text.lastIndexOf('!');if(bang>=0){owner=doc.sheets.findIndex(s=>s.name===text.slice(0,bang).replace(/^'|'$/g,'').replace(/''/g,"'"));text=text.slice(bang+1);}
+    const [a,b=a]=text.split(':').map(E.parseA);if(owner<0||!a||!b)return [];const out=[];
+    for(let r=a.r;r<=b.r;r++)for(let c=a.c;c<=b.c;c++)out.push(calc.value(owner,r,c));return out;
+  };
+  return {kind:ch.type==='column'?'bar':ch.type,dir:ch.type==='bar'?'bar':'col',title:ch.title,cats:values(ch.cat),grouping:ch.percentStacked?'percentStacked':ch.stacked?'stacked':'clustered',labels:ch.dataLabels,xTitle:ch.xTitle,yTitle:ch.yTitle,legend:({right:'r',left:'l',top:'t',bottom:'b'})[ch.legend],series:(ch.ser||[]).map(s=>({name:values(s.name)[0]??s.name??'',kind:s.kind==='column'?'bar':s.kind,values:values(s.values).map(x=>+x||0),x:s.x?values(s.x).map(Number):null}))};
+}
+// Map native Excel anchor pixels through resized/hidden cells into the printed grid.
+function anchor(value, base, custom, printedSize, hidden) {
+  let index=0, source=0, target=0;
+  const entries=Object.entries(custom).map(([i,n])=>[+i,+n]).sort((a,b)=>a[0]-b[0]);
+  const special=new Set([...entries.map(([i])=>i),...hidden]);
+  const sizes=new Map(entries);
+  for(const i of [...special].sort((a,b)=>a-b)){
+    const gap=i-index;if(value<source+gap*base){const n=(value-source)/base;return target+n*printedSize(index);}
+    source+=gap*base;target+=gap*printedSize(index);index=i;
+    const w=sizes.get(i)||base, out=hidden.has(i)?0:printedSize(i);
+    if(value<source+w)return target+(value-source)/w*out;
+    source+=w;target+=out;index++;
+  }
+  return target+(value-source)/base*printedSize(index);
+}
 export function sheetPrint(doc, E) {
   const calc = new E.Calc(doc), pages = [];
   for (const [si, sh] of doc.sheets.entries()) {
@@ -35,6 +60,10 @@ export function sheetPrint(doc, E) {
     for(const g of sh.outline||[])if(g.collapsed)for(let i=g.start;i<=g.end;i++)(g.axis==='r'?hiddenR:hiddenC).add(i);
     const autoH = autoRowHeights(sh, E.parseA, E.colName, (r, c) => calc.value(si, r, c), doc.fs || 11, doc);
     const cw = c => sh.colW?.[E.colName(c)] || 100, rh = r => sh.rowH?.[r + 1] || autoH[r + 1] || 26;
+    const nativeCols=Object.fromEntries(Object.entries(sh.colW||{}).map(([c,v])=>[E.parseA(c+'1').c,v]));
+    const nativeRows=Object.fromEntries([...new Set([...Object.keys(sh.rowH||{}),...Object.keys(autoH)])].map(r=>[+r-1,sh.rowH?.[r]||20]));
+    const mapX=v=>anchor(v,64,nativeCols,cw,hiddenC),mapY=v=>anchor(v,20,nativeRows,rh,hiddenR);
+    const nativeStart=(i,base,sizes)=>i*base+Object.entries(sizes).reduce((sum,[j,v])=>sum+(+j<i?v-base:0),0);
     const repeatR = new Set(), repeatC = new Set();
     for (const t of list(p.titles)) {
       let m = /^(\d+):(\d+)$/.exec(t); if (m) for (let r = +m[1] - 1; r < +m[2] && r < 1048576; r++) repeatR.add(r);
@@ -65,8 +94,13 @@ export function sheetPrint(doc, E) {
           table += '</tr>';
         }
         table += '</tbody></table>';
-        const images = (sh.images || []).filter(im => im.x >= cc[0] * 100 && im.x < (cc.at(-1) + 1) * 100 && im.y >= rr[0] * 26 && im.y < (rr.at(-1) + 1) * 26).map(im => `<img src="${esc(im.src)}" style="position:absolute;left:${im.x - cols.filter(c => c < cc[0]).reduce((n, c) => n + cw(c), 0)}px;top:${im.y - rows.filter(r => r < rr[0]).reduce((n, r) => n + rh(r), 0)}px;width:${im.w}px;height:${im.h}px">`).join('');
-        pages.push({ sh, p, w, h, margin, scale, content: table + images });
+        const originX=mapX(nativeStart(cc[0],64,nativeCols)),originY=mapY(nativeStart(rr[0],20,nativeRows));
+        const pageW=cc.reduce((n,c)=>n+cw(c),0),pageH=rr.reduce((n,r)=>n+rh(r),0);
+        const drawings=[...(sh.images||[]).map(im=>({...im,markup:`<img src="${esc(im.src)}" style="width:100%;height:100%">`})),...(sh.charts||[]).map(ch=>({...ch,markup:chartSvg(chartModel(ch,doc,si,calc,E),ch.w||480,ch.h||280)}))].map(im=>{
+          const x=mapX(im.x||0)-originX,y=mapY(im.y||0)-originY,w=im.w||480,h=im.h||280;
+          return x+w<=0||y+h<=0||x>=pageW||y>=pageH?'':`<div data-sheet-drawing style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px">${im.markup}</div>`;
+        }).join('');
+        pages.push({ sh, p, w, h, margin, scale, content: `<div style="position:relative;width:${pageW}px;height:${pageH}px;overflow:hidden">${table}${drawings}</div>` });
       }
     }
   }
