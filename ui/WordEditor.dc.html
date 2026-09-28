@@ -17,6 +17,7 @@
 .wd-ed h2:where(:not([data-style])){font-size:20px;font-weight:600;margin:16px 0 6px;line-height:1.45}
 .wd-ed h3:where(:not([data-style])){font-size:16px;font-weight:600;margin:14px 0 4px}
 :where(.wd-ed) :where(h1,h2,h3)[data-style]{font-size:inherit;font-weight:inherit;margin:0 0 8px} /* drawn by its own style (a paragraph with an outline level, Title): not as a heading */
+.wd-ed [data-heading-label]::before{content:attr(data-heading-label);white-space:pre}
 .wd-ed p{margin:0 0 8px}
 .wd-ed blockquote{margin:8px 0;padding:4px 14px;border-left:3px solid var(--k10, #D1D1D6);color:var(--k11, #6E6E73)}
 .wd-ed pre{font-family:'IBM Plex Mono',monospace;background:var(--k48, #F5F5F7);padding:10px 12px;font-size:13px;white-space:pre-wrap;border-radius:4px}
@@ -26,6 +27,13 @@
 .wd-ed ol[data-w-list=chinese]>li::marker{content:counter(list-item,simp-chinese-informal) '、'}
 .wd-ed ol[data-w-list=chinese] ol>li::marker{content:'（' counter(list-item,simp-chinese-informal) '）'}
 .wd-ed ol[data-w-list=chinese] ol ol>li::marker{content:counter(list-item) '. '}
+.wd-ed ol[data-w-list=upperLetter]>li::marker{content:counter(list-item,upper-alpha) '. '}
+.wd-ed ol[data-w-list=upperRoman]>li::marker{content:counter(list-item,upper-roman) '. '}
+.wd-ed ol[data-w-list=lowerRoman]>li::marker{content:counter(list-item,lower-roman) '. '}
+.wd-ed ol[data-w-list=paren]>li::marker{content:'(' counter(list-item) ') '}
+.wd-ed ol[data-w-list=circle]>li::marker{content:counter(list-item,circled-decimal) ' '}
+@counter-style circled-decimal{system:fixed;symbols:'①' '②' '③' '④' '⑤' '⑥' '⑦' '⑧' '⑨' '⑩' '⑪' '⑫' '⑬' '⑭' '⑮' '⑯' '⑰' '⑱' '⑲' '⑳';suffix:' '}
+.wd-ed ol[data-w-list=square]>li::marker{content:'▪ '}.wd-ed ol[data-w-list=check]>li::marker{content:'✓ '}.wd-ed ol[data-w-list=arrow]>li::marker{content:'➢ '}.wd-ed ol[data-w-list=diamond]>li::marker{content:'◆ '}
 .wd-ed img{max-width:100%;cursor:pointer}
 .wd-ed figure[data-pic] img{max-width:none}
 .wd-ed{isolation:isolate} /* a picture behind the text (z-index -1) stays above the page sheet */
@@ -230,7 +238,7 @@
               </sc-if>
             </div>
           </sc-for>
-          <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-cstyle="{{ citeStyleAttr }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="false" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
+          <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-cstyle="{{ citeStyleAttr }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="true" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
           <div ref="{{ fnRef }}" data-fnpg="{{ pgId }}" class="wd-fnotes" style="opacity:{{ edOp }};pointer-events:{{ edPe }}"></div>
           <sc-for list="{{ hfZones }}" as="z" hint-placeholder-count="0">
             <div title="{{ z.title }}" onDoubleClick="{{ z.onDbl }}" style="position:absolute;left:0;right:0;top:{{ z.top }};bottom:{{ z.bottom }};height:{{ z.h }};z-index:2;box-sizing:border-box;border-top:{{ z.lineT }};border-bottom:{{ z.lineB }}">
@@ -299,6 +307,8 @@
   <sc-if value="{{ hasWordSelection }}" hint-placeholder-val="{{ false }}">
     <div class="wd-qbar" data-word-selection="1" data-below="{{ selBelow }}" onMouseDown="{{ md }}" style="left:{{ bx }};top:{{ by }};--tail:{{ tailX }}">
       <span class="wd-qtail"></span>
+      <button class="wd-qsel" onClick="{{ selectionMore }}" title="表格、图片、链接与批注操作；Shift + 右键查看系统拼写建议">更多</button>
+      <i class="wd-qsep"></i>
       <button class="wd-qsel" title="样式" onClick="{{ selStyleMenu }}"><span>{{ selStyleLabel }}</span><span class="wd-qchev"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5 4 2l2.5 2.5"></path><path d="M1.5 7.5 4 10l2.5-2.5"></path></svg></span></button>
       <i class="wd-qsep"></i>
       <div class="wd-qsize"><button aria-label="减小字号" title="减小字号" onClick="{{ selectionSmaller }}"><span class="wd-qa"><b style="font-size:11px">A</b><span>−</span></span></button><i></i><button title="字号" onClick="{{ selSizeMenu }}">{{ selectionSize }}<span class="wd-qchev"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg></span></button><i></i><button aria-label="增大字号" title="增大字号" onClick="{{ selectionLarger }}"><span class="wd-qa"><b style="font-size:15px">A</b><span>+</span></span></button></div>
@@ -567,6 +577,8 @@ class Component extends DCLogic {
     import('./engine.js').then(m => this.engineReady(m)); // the table and contents commands share their model with the save
     import('./picture.js').then(m => { this.P = m; this.layoutPics(); this.drawShapes(); }); // the 图片 tab, and where pictures sit
     import('./metafile.js').then(m => { this.MF = m; this.drawOfficeObjects(); });
+    import('./word-pages.js').then(m => { this.WP = m; this.forceUpdate(); });
+    import('./word-print.js').then(m => { this.WPrint = m; });
     import('./word-fonts.js').then(m => { if (this.gone) return; this.WF = m; this.fontCss = document.head.appendChild(document.createElement('style')); this.drawScriptFonts(); });
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./md.js').then(m => { this.MD = m; this.drawEqs(); }); // KaTeX, for the equations
@@ -574,6 +586,8 @@ class Component extends DCLogic {
     this.load();
     document.addEventListener('selectionchange', this.onSel); document.addEventListener('mousedown', this.ctxAway, true); document.addEventListener('keydown', this.ctxKey, true);
     const ed = this.edRef.current;
+    ed.__writerDocId = () => this.doc.id;
+    ed.__writerPrint = async () => { this.flush(); this.commitHF(); if (!this.paged) await new Promise(done => this.setState({ view: 'page' }, done)); this.refreshInfo(); return (this.WPrint || await import('./word-print.js')).wordPrint(this); };
     ed.__complete = () => this.citeSug ? null : undefined; // AI 自动补全 waits while a citation is offered at the caret (Tab is the citation's)
     ed.addEventListener('keydown', this.onCiteKey);
     ed.addEventListener('paste', this.onPaste);
@@ -609,11 +623,44 @@ class Component extends DCLogic {
    *  has already put the caret or selected the word there; the bar's commands act on that range (onSel keeps it). */
   onCtx = e => {
     const ed = this.root; if (!ed || !ed.contains(e.target)) return;
+    if (e.shiftKey) return; // Native spelling suggestions remain available with Shift + right click.
     e.preventDefault(); this.onSel();
+    this.contextTarget = e.target;
     const rootEl = ed.closest('[data-edroot]'), top = rootEl ? rootEl.getBoundingClientRect().top : 0, W = window.innerWidth;
     const half = Math.min(255, (W - 16) / 2), x = Math.max(half + 8, Math.min(W - half - 8, e.clientX)), below = e.clientY - 56 < top + 8;
     this.setState({ ctxBar: { x: Math.round(x), y: Math.round(below ? e.clientY + 12 : e.clientY - 12), below, dx: Math.max(-half + 16, Math.min(half - 16, Math.round(e.clientX - x))) } });
   };
+  async clipboardCommand(cmd) {
+    this.restore();
+    try {
+      if (cmd === 'paste') {
+        const items = navigator.clipboard.read ? await navigator.clipboard.read() : [];
+        for (const item of items) {
+          if (item.types.includes('text/html')) { this.insertHTML(this.EN.pasteHtml(await (await item.getType('text/html')).text())); return; }
+          if (item.types.includes('text/plain')) { this.exec('insertText', await (await item.getType('text/plain')).text()); return; }
+        }
+        if (!items.length) this.exec('insertText', await navigator.clipboard.readText());
+      } else if (!document.execCommand(cmd)) {
+        await navigator.clipboard.writeText(window.getSelection().toString()); if (cmd === 'cut') this.exec('delete');
+      } else if (cmd === 'cut') this.after();
+    } catch { this.props.toast && this.props.toast($t(cmd === 'paste' ? '请使用 Ctrl/Cmd+V 粘贴' : '请使用 Ctrl/Cmd+C 或 Ctrl/Cmd+X')); }
+    this.setState({ ctxBar: null });
+  }
+  revisionElements() { return Array.from(this.edRef.current.querySelectorAll('ins[data-t],del[data-t]')); }
+  stepRevision(dir) {
+    const list = this.revisionElements(); if (!list.length) return;
+    const current = list.indexOf(this.activeRevision), next = list[(current + dir + list.length) % list.length];
+    this.activeRevision = next; const r = document.createRange(); r.selectNodeContents(next); this.edRef.current.focus(); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); this.range = r; this.focusEl(next);
+    this.props.toast && this.props.toast((next.getAttribute('data-author') || this.doc.author || 'Writer') + ' · ' + (next.tagName === 'INS' ? $t('插入') : $t('删除')));
+  }
+  async resolveOne(accept) {
+    const el = this.caretEl(), rev = el?.closest('ins[data-t],del[data-t]') || (this.activeRevision?.isConnected && this.activeRevision) || this.revisionElements()[0]; if (!rev) return;
+    const index = this.revisionElements().indexOf(rev), data = { id: rev.getAttribute('data-rid') || undefined, index, accept };
+    this.flush();
+    if (this.props.onRevise) return this.props.onRevise(data);
+    try { await this.EN.save(this.doc, { root: this.edRef.current }); await this.EN.run(['set', this.doc.path, '/', '--prop', 'textRevision=' + JSON.stringify(data)]); const doc = await this.EN.open(this.doc); this.change({ ...doc, rev: (this.doc.rev || 0) + 1 }); }
+    catch (e) { this.props.toast && this.props.toast(e.message); }
+  }
   /** The bar goes on a press anywhere else (not in it, its menus or a dialog), on typing and on Esc; ⌘ shortcuts keep it. */
   ctxAway = e => { if (this.state.ctxBar && e.button !== 2 && !(e.target.closest && e.target.closest('[data-word-selection],.wd-menu,[data-menu],[data-dlg]'))) this.setState({ ctxBar: null }); };
   ctxKey = e => { if (this.state.ctxBar && !e.metaKey && !e.ctrlKey && !/^(Shift|Alt|Meta|Control)$/.test(e.key)) this.setState({ ctxBar: null }); };
@@ -638,6 +685,7 @@ class Component extends DCLogic {
     if (!!pp.panelOpen !== !!this.props.panelOpen && this.fit) this.fit(); // the side panel's track changed at once: fit now, in this commit, not a frame later
     if (this.state.hf && !this.hfRef.current) this.setState({ hf: null, hfLive: null }); // its page went (web view, columns): back to the text
     const d = this.props.doc, o = pp.doc || {};
+    if (o.headingNumbering !== d.headingNumbering) { this.numberHeadings(this.edRef.current); this.refreshInfo(); }
     if (o.styles !== d.styles) this.styleSheet();
     if (o.id !== d.id || (o.rev || 0) !== (d.rev || 0)) {
       if (o.id !== d.id && this.syncT) { clearTimeout(this.syncT); this.syncT = null; this.props.onChange && this.props.onChange(Object.assign({}, o, { html: this.edRef.current.innerHTML }), { silent: true }); }
@@ -934,7 +982,16 @@ class Component extends DCLogic {
   flush() { this.syncT = null; const ed = this.edRef.current; if (!ed) return; this.ink(); if (ed.innerHTML !== this.doc.html) this.change({ html: ed.innerHTML }); this.refreshInfo(!this.pgDirty); this.citeScan(); }
   /** Automatic text on a fill of its own (a shaded cell, a highlight) takes the colour Word gives it there: marks every fill after an edit. */
   drawScriptFonts() { if (!this.WF || !this.fontCss || !this.edRef.current) return; const css = this.WF.scriptFontCss(this.edRef.current.parentElement); if (this.fontCss.textContent !== css) this.fontCss.textContent = css; }
-  ink() { this.drawScriptFonts(); const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.EN.numberLists(ed); this.numberCaptions(ed); this.drawEqs(); this.drawOfficeObjects(); } } // and the notes' marks and the captions count 1, 2, 3… again
+  numberHeadings(ed) {
+    const nums = [0,0,0,0,0,0], kind = this.doc.headingNumbering;
+    for (const h of ed.querySelectorAll('h1,h2,h3,h4,h5,h6')) {
+      if (!kind || kind === 'none') { h.removeAttribute('data-heading-label'); continue; }
+      const level = +h.tagName[1] - 1; nums[level]++; for (let i = level + 1; i < 6; i++) nums[i] = 0;
+      for (let i = 0; i < level; i++) if (!nums[i]) nums[i] = 1;
+      h.setAttribute('data-heading-label', (kind === 'chapter' && !level ? '第' + nums[0] + '章' : nums.slice(0, level + 1).join('.')) + ' ');
+    }
+  }
+  ink() { this.drawScriptFonts(); const ed = this.edRef.current; if (ed && this.EN) { this.EN.inkFills(ed); this.EN.numberNotes(ed, this.doc.noteFormat); this.EN.numberLists(ed); this.numberHeadings(ed); this.numberCaptions(ed); this.drawEqs(); this.drawOfficeObjects(); } } // and the notes' marks and the captions count 1, 2, 3… again
   drawOfficeObjects() { const root = this.edRef.current?.closest?.('[data-edroot]'); if (root && this.MF) this.MF.paintMetafiles(root); }
   /** The pages, as [top, bottom] of the text as it flows without page gaps. A paragraph that runs past the end of a page goes on
    *  on the next one from the line that does not fit, as Word breaks it: at least two of its lines on either side (孤行控制, unless
@@ -954,7 +1011,7 @@ class Component extends DCLogic {
   pagesOf(ed, contentH, step, fn) {
     const y = el => this.pgMetrics?.get(el)?.top ?? this.flowTop(el, ed), height = el => this.pgMetrics?.get(el)?.h ?? el.offsetHeight;
     const pieces = [], tops = []; let brk = false, inner = false;
-    const piece = (el, top, forced) => ({ top, bottom: y(el) + height(el), el, css: 'margin-top', forced, text: TEXT_BLOCK.test(el.tagName || '') && !el.querySelector(NO_SPLIT),
+    const piece = (el, top, forced) => ({ top, bottom: y(el) + height(el), el, css: 'margin-top', forced, parity: forced === 'evenPage' ? 0 : forced === 'oddPage' ? 1 : null, text: TEXT_BLOCK.test(el.tagName || '') && !el.querySelector(NO_SPLIT),
       keep: el.getAttribute('data-w-keeplines') === 'true', next: el.getAttribute('data-w-keepnext') ? el.getAttribute('data-w-keepnext') === 'true' : /^H[1-6]$/.test(el.tagName || '') && !el.getAttribute('data-style'), // Word's heading styles keep with the next
       widow: el.getAttribute('data-widow') !== 'off' && el.getAttribute('data-w-widowcontrol') !== 'false' });
     for (const c of Array.from(ed.children)) {
@@ -968,7 +1025,7 @@ class Component extends DCLogic {
       if (spans.length) pieces.push({ top, bottom: y(c) + height(c), el, css, forced });
       else if (items.length) items.forEach((li, i) => pieces.push(Object.assign(piece(i ? li : c, i ? y(li) : top, !i && forced), { text: false, bottom: i === items.length - 1 ? y(c) + height(c) : y(li) + height(li) }))); // the list itself moves its first item
       else pieces.push(piece(c, top, forced));
-      brk = c.matches('hr[data-pb]') || /^(nextPage|evenPage|oddPage)$/.test(c.getAttribute('data-w-sectionbreak') || ''); // a section that starts on a new page
+      brk = c.matches('hr[data-pb]') ? 'nextPage' : /^(nextPage|evenPage|oddPage)$/.test(c.getAttribute('data-w-sectionbreak') || '') ? c.getAttribute('data-w-sectionbreak') : false; // a section that starts on a new page
     }
     const at = [], push = [], notes = [[]]; let k = 0, shift = 0, top = null, bottom = 0, room = 0; // room: what this page's notes take
     const eb = fn && ed.getBoundingClientRect(), z = fn ? eb.width / (ed.offsetWidth || eb.width || 1) || 1 : 1;
@@ -979,7 +1036,7 @@ class Component extends DCLogic {
     const untake = (a, b) => { for (const x of marks) if (x.page === k && x.y >= a && x.y < b) { x.page = -1; notes[k].splice(notes[k].indexOf(x.id), 1); room -= fn.h.get(x.id); } if (!notes[k].length) room = 0; };
     const turn = () => { at.push([top, bottom]); k++; room = 0; notes.push([]); };
     const over = (b, more = 0) => b + shift > k * step + contentH - room - more + 1; // runs past the text of this page (above its notes)
-    const moveOn = p => { const gap = p.top - bottom; turn(); const d = Math.max(0, k * step - (p.top + shift)); push.push([p.el, p.css, gap + d]); shift += d; top = p.top; };
+    const moveOn = p => { const gap = p.top - bottom; turn(); if (p.parity != null && (k + 1) % 2 !== p.parity) { at.push([p.top, p.top]); k++; notes.push([]); } const d = Math.max(0, k * step - (p.top + shift)); push.push([p.el, p.css, gap + d]); shift += d; top = p.top; };
     /** Where a paragraph's lines from `j` (the first on this page) break: the first line that goes on to the next page; 0 when none
      *  stays (the paragraph starts the next page), -1 when all fit. `atTop`: line j is at the top of its page, so one must stay. */
     const breakAt = (p, ls, j, atTop) => {
@@ -1090,6 +1147,7 @@ class Component extends DCLogic {
   /** The status bar's counts, the outline's headings and the pages. `typed`: only text was typed or deleted since the last full
    *  count (TYPED); then, when every block is the one it was and as tall, the pages are where they were and stay as they are. */
   refreshInfo(typed) {
+    this.sectionCache = null;
     const ed = this.edRef.current; if (!ed) return;
     const pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, W = pg.orient === 'landscape' ? ph : pw, m = marginsPx(pg.margin);
     const kids = Array.from(ed.children), key = [W, H, m.left, m.right, m.top, m.bottom, pg.cols, this.state.view].join(), was = this.pgSeen;
@@ -1537,14 +1595,14 @@ class Component extends DCLogic {
   }
   /** 重新开始编号 / 继续编号: the caret's item starts a list of its own from 1 (the items after it follow it), or its list
    *  rejoins the one before it; the ol split or joined here is what the save tells the engine (restart=true / false). */
-  restartList(on) {
+  restartList(on, start = 1) {
     this.restore(); const el = this.caretEl(), li = el && el.closest && el.closest('li'), ol = li && li.parentElement;
     if (!ol || ol.tagName !== 'OL') return;
-    if (on && li.previousElementSibling) { const tail = ol.cloneNode(false); Array.from(ol.childNodes).slice(Array.from(ol.childNodes).indexOf(li)).forEach(n => tail.appendChild(n)); ol.after(tail); tail.setAttribute('data-w-restart', '1'); tail.removeAttribute('data-w-listid'); tail.removeAttribute('start'); }
-    else if (on) { ol.setAttribute('data-w-restart', '1'); ol.removeAttribute('data-w-listid'); }
+    if (on && li.previousElementSibling) { const tail = ol.cloneNode(false); Array.from(ol.childNodes).slice(Array.from(ol.childNodes).indexOf(li)).forEach(n => tail.appendChild(n)); ol.after(tail); tail.setAttribute('data-w-restart', '1'); tail.removeAttribute('data-w-listid'); tail.setAttribute('data-w-start', String(start)); tail.setAttribute('start', String(start)); }
+    else if (on) { ol.setAttribute('data-w-start', String(start)); ol.setAttribute('start', String(start)); ol.setAttribute('data-w-restart', '1'); ol.removeAttribute('data-w-listid'); }
     else {
       // Word's 继续编号 goes on from the nearest list numbered the same way, whatever is between them
-      ol.removeAttribute('data-w-restart'); const kind = o => o.getAttribute('data-w-list') || '';
+      ol.removeAttribute('data-w-restart'); ol.removeAttribute('data-w-start'); const kind = o => o.getAttribute('data-w-list') || '';
       const prev = ol.previousElementSibling;
       if (prev && prev.tagName === 'OL' && kind(prev) === kind(ol)) { while (ol.firstChild) prev.appendChild(ol.firstChild); ol.remove(); }
       else {
@@ -1719,13 +1777,15 @@ class Component extends DCLogic {
    *  starts on the next, an even or an odd page, or right after it); '' takes the caret section's break out, joining it to the next. */
   sectionBreak(kind) {
     this.restore(); const s = window.getSelection(); if (!s.rangeCount) return;
-    if (!kind) { const sec = this.sectionOf(); if (sec) for (const k of ['sectionbreak', 'page', 'orientation', 'margin', 'columns']) sec.removeAttribute('data-w-' + k); return this.after(); }
+    if (!kind) { const sec = this.sectionOf(); if (sec) for (const k of ['sectionbreak', 'page', 'orientation', 'margin', 'columns', 'header', 'footer', 'firstheader', 'firstfooter', 'evenheader', 'evenfooter', 'titlepg', 'pagenumberformat', 'pagenumberstart']) sec.removeAttribute('data-w-' + k); return this.after(); }
     const r = s.getRangeAt(0); r.collapse(false);
     const b = this.blocks()[0]; if (!b) return;
     const tail = document.createRange(); tail.setStart(r.startContainer, r.startOffset); tail.setEnd(b, b.childNodes.length);
     let first = b;
     if (tail.toString().trim() || tail.cloneContents().querySelector('img')) { document.execCommand('insertParagraph'); first = this.blocks()[0].previousElementSibling || b; }
     else { const p = document.createElement('p'); p.innerHTML = '<br>'; b.after(p); const c = document.createRange(); c.setStart(p, 0); c.collapse(true); s.removeAllRanges(); s.addRange(c); this.range = c.cloneRange(); }
+    const source = this.pageMeta(this.caretPage()).section;
+    for (const k of ['header','footer','firstHeader','firstFooter','evenHeader','evenFooter','pageNumberFormat','titlePg']) if (source[k] != null) first.setAttribute('data-w-' + k.toLowerCase(), String(source[k]));
     first.setAttribute('data-w-sectionbreak', kind);
     this.after();
   }
@@ -2056,12 +2116,12 @@ class Component extends DCLogic {
     if (!r.collapsed) { this.markDel(r, true); r = s.getRangeAt(0); }
     let n = r.startContainer; const el = n.nodeType === 3 ? n.parentNode : n;
     const ins0 = el.closest && el.closest('ins[data-t]'); if (ins0) return null;
-    const ins = document.createElement('ins'); ins.setAttribute('data-t', '1'); const tn = document.createTextNode('\u200B'); ins.appendChild(tn);
+    const ins = document.createElement('ins'); ins.setAttribute('data-author', this.doc.author || 'Writer'); ins.setAttribute('data-date', new Date().toISOString()); ins.setAttribute('data-t', '1'); const tn = document.createTextNode('\u200B'); ins.appendChild(tn);
     r.insertNode(ins); const nr = document.createRange(); nr.setStart(tn, 1); nr.collapse(true); s.removeAllRanges(); s.addRange(nr);
     return tn;
   }
   markDel(r, back) {
-    const del = document.createElement('del'); del.setAttribute('data-t', '1'); del.appendChild(r.extractContents()); r.insertNode(del);
+    const del = document.createElement('del'); del.setAttribute('data-author', this.doc.author || 'Writer'); del.setAttribute('data-date', new Date().toISOString()); del.setAttribute('data-t', '1'); del.appendChild(r.extractContents()); r.insertNode(del);
     const s = window.getSelection(), nr = document.createRange(); if (back) nr.setStartBefore(del); else nr.setStartAfter(del); nr.collapse(true); s.removeAllRanges(); s.addRange(nr);
   }
   onCS = () => { if (this.doc.track) this.ensureIns(); };
@@ -2086,6 +2146,11 @@ class Component extends DCLogic {
       if (!rr.collapsed) this.markDel(rr, back); this.sync();
     }
   };
+  async resolveFormat(id, accept) {
+    this.flush();
+    try { await this.EN.save(this.doc, { root: this.edRef.current }); await this.EN.run(['set', this.doc.path, '/', '--prop', 'formatRevision=' + JSON.stringify({ id, accept })]); const doc = await this.EN.open(this.doc); this.change({ ...doc, rev: (this.doc.rev || 0) + 1 }); }
+    catch (e) { this.props.toast && this.props.toast(e.message); }
+  }
   resolveTrack(accept) {
     if (this.props.onRevise) { this.flush(); return this.props.onRevise(accept); } // the file holds the revisions: the shell saves, resolves through the engine and reloads
     const ed = this.edRef.current;
@@ -2153,28 +2218,47 @@ class Component extends DCLogic {
   }
   // ----- headers and footers (页眉 / 页脚), as in Word: double-click one on any page to edit it for every page -----
   /** The doc key a page's header or footer comes from: the first page has its own once titlePg (首页不同) is on. */
-  hfKey(kind, i, titlePg = this.doc.titlePg) { return titlePg && i === 0 ? (kind === 'header' ? 'firstHeader' : 'firstFooter') : kind; }
+  sectionPages() {
+    const old = this.sectionCache; if (old && old.doc === this.doc && old.info === this.state.info && old.wp === this.WP) return old.pages;
+    const ed = this.edRef.current, pg = this.page, [pw, ph] = PAGES[pg.size] || PAGES.A4, H = pg.orient === 'landscape' ? pw : ph, step = H + GAP;
+    const breaks = Array.from(ed?.querySelectorAll('[data-w-sectionbreak]') || []), keys = ['header','footer','firstHeader','firstFooter','evenHeader','evenFooter','pageNumberFormat','pageNumberStart'];
+    const sections = breaks.map(el => Object.assign({ el, end: Math.max(0, Math.floor((this.flowTop(el) + el.offsetHeight - 1) / step), /^(evenPage|oddPage)$/.test(el.getAttribute('data-w-sectionbreak') || '') && el.nextElementSibling ? Math.floor(this.flowTop(el.nextElementSibling) / step) - 1 : 0), linkedHeaders: this.EN?.sourcesOf(el.getAttribute('data-w-linkedheaders')) || [], titlePg: el.getAttribute('data-w-titlepg') === 'true' }, Object.fromEntries(keys.map(k => [k, el.getAttribute('data-w-' + k.toLowerCase()) || '']))));
+    sections.push(Object.assign({ end: Infinity }, this.doc));
+    for (let i = 1; i < sections.length; i++) for (const key of sections[i].linkedHeaders || []) sections[i][key] = sections[i - 1][key] || '';
+    const pages = this.WP ? this.WP.pageSections(this.state.info.pages, sections).map((p, i) => ({ ...p, physical: i + 1 })) : [];
+    this.sectionCache = { doc: this.doc, info: this.state.info, wp: this.WP, pages }; return pages;
+  }
+  pageMeta(i) { return this.sectionPages()[i] || { section: this.doc, first: i === 0, number: i + 1, label: String(i + 1), physical: i + 1 }; }
+  hfKey(kind, i, titlePg) { const p = this.pageMeta(i); if (titlePg != null) p.section = { ...p.section, titlePg }; return this.WP ? this.WP.headerKey(kind, p, this.doc.evenAndOdd) : p.section.titlePg && p.first ? (kind === 'header' ? 'firstHeader' : 'firstFooter') : kind; }
+  setSectionFields(patch, page = this.caretPage()) {
+    this.sectionCache = null;
+    const section = this.pageMeta(page).section;
+    if (section.el) { section.el.setAttribute('data-w-linkedheaders', JSON.stringify((section.linkedHeaders || []).filter(k => !(k in patch)))); for (const [k, v] of Object.entries(patch)) section.el.setAttribute('data-w-' + k.toLowerCase(), String(v)); this.after(); }
+    else this.change({ ...patch, linkedHeaders: (this.doc.linkedHeaders || []).filter(k => !(k in patch)) });
+  }
+  pageNumberDialog() { const p = this.pageMeta(this.caretPage()).section; this.prompt('本节页码', [{ key: 'start', label: '起始页码（留空续前节）', value: p.pageNumberStart || '', first: true }], v => { if (v.start === '' || /^\d+$/.test(v.start) && +v.start <= 32767) this.setSectionFields({ pageNumberStart: v.start }); }); }
+
   /** Opens page i's header or footer for editing; `sent` is an edit just handed to the shell, which this.doc may not show yet. */
   enterHF(kind, i, titlePg, sent) {
     const patch = this.hfPatch(); if (patch) this.change(patch, true);
     if (!this.state.hf) this.bodyRange = this.range;
-    const now = Object.assign({}, sent, patch), key = this.hfKey(kind, i, titlePg), html = now[key] != null ? now[key] : this.doc[key];
-    this.setState({ hf: { kind, page: i, key }, hfLive: null }, () => {
+    const now = Object.assign({}, sent, patch), key = this.hfKey(kind, i, titlePg), html = now[key] != null ? now[key] : this.pageMeta(i).section[key];
+    this.setState({ hf: { kind, page: i, key, sectionEl: this.pageMeta(i).section.el }, hfLive: null }, () => {
       const box = this.hfRef.current; if (!box) return;
-      box.innerHTML = hfEdit(html, i + 1, this.state.info.pages); this.hfBase = hfOut(box.innerHTML);
+      box.innerHTML = hfEdit(html, this.pageMeta(i).label, this.state.info.pages); this.hfBase = hfOut(box.innerHTML);
       this.hfFocusEnd(box); this.onSel();
     });
   }
   /** Focuses a header/footer edit box with the caret at its end (after opening it, or after 样式 replaces its content). */
   hfFocusEnd(box) { const r = document.createRange(), s = window.getSelection(); r.selectNodeContents(box.lastElementChild || box); r.collapse(false); box.focus({ preventScroll: true }); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); }
   /** The edit as a doc patch, or null when the box says what it said when opened. */
-  hfPatch() { clearTimeout(this.hfT); const hf = this.state.hf, box = this.hfRef.current; if (!hf || !box) return null; const html = hfOut(box.innerHTML); if (html === this.hfBase) return null; this.hfBase = html; return { [hf.key]: html }; }
+  hfPatch() { clearTimeout(this.hfT); const hf = this.state.hf, box = this.hfRef.current; if (!hf || !box) return null; const html = hfOut(box.innerHTML); if (html === this.hfBase) return null; this.hfBase = html; if (hf.sectionEl?.isConnected) { hf.sectionEl.setAttribute('data-w-linkedheaders', JSON.stringify((this.EN?.sourcesOf(hf.sectionEl.getAttribute('data-w-linkedheaders')) || []).filter(k => k !== hf.key))); hf.sectionEl.setAttribute('data-w-' + hf.key.toLowerCase(), html); return { html: this.edRef.current.innerHTML }; } return { [hf.key]: html, linkedHeaders: (this.doc.linkedHeaders || []).filter(k => k !== hf.key) }; }
   commitHF() { const p = this.hfPatch(); if (p) this.change(p, true); }
   exitHF() { if (!this.state.hf) return; this.commitHF(); this.range = this.bodyRange || null; this.setState({ hf: null, hfLive: null }); }
   hfInput() { const box = this.hfRef.current; if (!box) return; this.setState({ hfLive: hfOut(box.innerHTML) }); clearTimeout(this.hfT); this.hfT = setTimeout(() => this.commitHF(), 350); }
   hfField(f) {
     const hf = this.state.hf; if (!hf) return; this.restore(); const s = window.getSelection(); if (!s.rangeCount) return;
-    const t = document.createElement('template'); t.innerHTML = chipOf(f, hf.page + 1, this.state.info.pages) + '\u200B'; // the caret goes on in a text node of its own
+    const t = document.createElement('template'); t.innerHTML = chipOf(f, this.pageMeta(hf.page).label, this.state.info.pages) + '\u200B'; // the caret goes on in a text node of its own
     const after = t.content.lastChild, r = s.getRangeAt(0);
     r.deleteContents(); r.insertNode(t.content); r.setStart(after, 1); r.collapse(true); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange(); this.after();
   }
@@ -2185,15 +2269,15 @@ class Component extends DCLogic {
     if (!ps.length) { const p = document.createElement('p'); while (box.firstChild) p.appendChild(box.firstChild); box.appendChild(p); ps = [p]; }
     ps.forEach(p => { p.style.textAlign = a; }); this.after();
   }
-  toggleTitlePg() { const hf = this.state.hf, on = !this.doc.titlePg, p = this.hfPatch(); this.change(Object.assign({}, p, { titlePg: on })); if (hf) this.enterHF(hf.kind, hf.page, on, p); }
+  toggleTitlePg() { const hf = this.state.hf, page = hf?.page ?? this.caretPage(), on = !this.pageMeta(page).section.titlePg; this.commitHF(); this.setSectionFields({ titlePg: on }, page); if (hf) this.enterHF(hf.kind, hf.page, on); }
   /** 样式 in the header/footer floating bar: swaps a preset in for whatever the box holds, keeping its alignment (center once it had none). */
   applyHfPreset(tpl) {
     const hf = this.state.hf, box = this.hfRef.current; if (!hf || !box) return;
     const p = box.querySelector('p,div'), align = (p && p.style.textAlign) || 'center';
-    box.innerHTML = hfEdit(hfPreset(tpl, align), hf.page + 1, this.state.info.pages);
+    box.innerHTML = hfEdit(hfPreset(tpl, align), this.pageMeta(hf.page).label, this.state.info.pages);
     this.hfFocusEnd(box); this.after();
   }
-  insertPageNum(tpl) { const p = Object.assign(this.hfPatch() || {}, { footer: hfPreset(tpl, 'center') }); this.setState({ hf: null, hfLive: null }); this.change(p); this.props.toast && this.props.toast($t('已在页脚插入页码')); }
+  insertPageNum(tpl) { this.commitHF(); const page = this.state.hf?.page ?? this.caretPage(); this.setSectionFields({ [this.hfKey('footer', page)]: hfPreset(tpl, 'center') }, page); this.setState({ hf: null, hfLive: null }); this.props.toast && this.props.toast($t('已在页脚插入页码')); }
   /** The page the caret is on (0 when it is not in the text). */
   caretPage() {
     const ed = this.edRef.current, r = this.range; if (!ed || !r || !ed.contains(r.startContainer) || !this.paged) return 0;
@@ -2326,7 +2410,7 @@ class Component extends DCLogic {
     ];
   }
   panelLayout(k, c) {
-    const { G, R, grid, sel, seg, num, chk, lab, sp, swatch } = k, { pg, d, I, HD } = c;
+    const { G, R, grid, btn, sel, seg, num, chk, lab, sp, swatch } = k, { pg, d, I, HD } = c;
     const sec = this.sectionOf(), sp0 = sec ? this.secPage(sec) : pg, setSec = patch => sec ? this.setSecPage(sec, patch) : this.change({ page: Object.assign({}, pg, patch) });
     const own = sec ? { title: '应用于本节' } : {}, land = sp0.orient === 'landscape';
     const paper = (size, orient) => { const [w, h] = PAPER_CM[size] || PAPER_CM.A4, [a, b] = orient === 'landscape' ? [h, w] : [w, h]; return $t('{size} · {w} × {h} 厘米', { size, w: a, h: b }); };
@@ -2343,6 +2427,7 @@ class Component extends DCLogic {
         grid(2, side('top', '上'), side('bottom', '下'), side('left', '左'), side('right', '右'))),
       G('分栏与分隔', R(seg([1, 2, 3].map(n => ({ label: ['一栏', '两栏', '三栏'][n - 1], on: +sp0.cols === n, onClick: () => setSec({ cols: n }) })))),
         R(lab('分隔符'), sp(), sel('brk', brkLabel, null, { w: 132, title: '分页符与分节符：每节可以有自己的纸张、方向、页边距和分栏' }))),
+      G('本节页码', R(sel('page-number-format', $t(({decimal:'1, 2, 3',lowerRoman:'i, ii, iii',upperRoman:'I, II, III',chineseCounting:'一、二、三'})[this.pageMeta(this.caretPage()).section.pageNumberFormat || 'decimal'] || '1, 2, 3'), [['decimal','1, 2, 3'],['lowerRoman','i, ii, iii'],['upperRoman','I, II, III'],['chineseCounting','一、二、三']].map(([v,l]) => I(l, () => this.setSectionFields({ pageNumberFormat: v })))), btn('设置起始页码…', 'pageNumber', () => this.pageNumberDialog())), R(chk('奇偶页不同', !!d.evenAndOdd, v => this.change({ evenAndOdd: v })))),
       G('页面', R(swatch('页面颜色', pg.color || '#FFFFFF', c2 => this.change({ page: Object.assign({}, pg, { color: c2 }) }), { value: pg.color || '#FFFFFF' }), // theme: keep (the paper colour it applies)
           sel('wm', $t('水印：{w}', { w: pg.wm ? pg.wm : $t('无') }), null, { w: 112, title: '水印' })),
         R(chk('行号', !!d.lineNumbers, v => this.change({ lineNumbers: v }), { title: '在页边显示行号（Word 中显示）' }), sp(),
@@ -2387,8 +2472,12 @@ class Component extends DCLogic {
         !comments.length && R(empty($t('文档里还没有批注。选中文字后点「新建」添加。'))),
         R(btn('新建', 'comment', () => this.addComment(), { title: '新建批注' }), btn('上一条', 'up', () => moveComment(-1), { dis: !comments.length }), btn('下一条', 'down', () => moveComment(1), { dis: !comments.length })),
         R(link('删除所有批注', () => (d.comments || []).forEach(cm => this.delComment(cm.id)), { dis: !(d.comments || []).length }))),
-      G('修订', R(lab('记录修改'), sp(), sw(!!d.track, v => this.change({ track: v }), '开启后，插入与删除会被标记')),
+      G('修订', R(btn('作者…', 'edit', () => this.prompt('修订作者', [{ key: 'name', label: '作者名', value: d.author || 'Writer', first: true }], v => this.change({ author: v.name.trim() || 'Writer' })))),
+        R(btn('上一处修订', 'up', () => this.stepRevision(-1)), btn('下一处修订', 'down', () => this.stepRevision(1))),
+        R(btn('接受此处', 'check', () => this.resolveOne(true)), btn('拒绝此处', 'cross', () => this.resolveOne(false))),
+        R(lab('记录修改'), sp(), sw(!!d.track, v => this.change({ track: v }), '开启后，插入与删除会被标记')),
         R(lab('显示'), sp(), sel('markup', $t({ all: '所有标记', none: '无标记', original: '原始版本' }[st.markup || 'all']), null, { w: 132, title: '所有标记：修订和批注都显示；无标记：显示修改后的样子；原始版本：显示修改前的样子' })),
+        ...(d.formatRevisions || []).map(r => R(lab((r.author || 'Writer') + ': ' + r.text.slice(0, 36)), btn('接受格式', 'check', () => this.resolveFormat(r.id, true)), btn('拒绝格式', 'cross', () => this.resolveFormat(r.id, false)))),
         R(btn('全部接受', 'check', () => this.resolveTrack(true), { title: '接受所有修订' }), btn('全部拒绝', 'cross', () => this.resolveTrack(false), { title: '拒绝所有修订' }))),
       G('查找与替换', R(input('查找', st.fq, e => this.setState({ fq: e.target.value, fcount: null }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } }, this.panelFindRef)),
         R(input('替换为', st.fr, e => this.setState({ fr: e.target.value }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.replaceOne(); } }, null, '替换为：回车替换找到的这一处')),
@@ -2505,6 +2594,9 @@ class Component extends DCLogic {
       AL('left', '左对齐'), AL('center', '居中'), AL('right', '右对齐'), AL('justify', '两端对齐'), AL('distribute', '分散对齐'), SEP,
       B('• 列表', () => this.exec('insertUnorderedList'), { on: f.ul }), B('1. 列表', () => this.exec('insertOrderedList'), { on: f.ol }),
       M('ol', '编号', [HD($t('编号库')), I('1. a. i.', () => this.setListKind('number'), { on: f.lk === 'number' }), I('1. 1.1 1.1.1', () => this.setListKind('outline'), { on: f.lk === 'outline' }), I('一、（一）1.', () => this.setListKind('chinese'), { on: f.lk === 'chinese' }), // i18n-ok — the galleries' own markers
+        ...[['upperLetter','A. B. C.'],['upperRoman','I. II. III.'],['lowerRoman','i. ii. iii.'],['paren','(1) (2) (3)'],['circle','① ② ③'],['square','▪'],['check','✓'],['arrow','➢'],['diamond','◆']].map(([v,l]) => I(l, () => this.setListKind(v), { on: f.lk === v })),
+        HD('标题编号'), I('标题 1 / 1.1 / 1.1.1', () => { this.change({ headingNumbering: 'decimal' }); }), I('第1章 / 1.1 / 1.1.1', () => { this.change({ headingNumbering: 'chapter' }); }), I('取消标题编号', () => this.change({ headingNumbering: '' })),
+        I('设置编号值…', () => this.prompt('设置编号值', [{ key: 'n', label: '起始编号', value: '1', first: true }], v => { if (+v.n >= 1 && +v.n <= 32767) this.restartList(true, Math.floor(+v.n)); })),
         HD(''), I('重新开始编号', () => this.restartList(true)), I('继续编号', () => this.restartList(false))], '编号样式：1. a. i.、1. 1.1 1.1.1、一、（一）1.；Tab / Shift+Tab 升降级'),
       B('⇤', () => this.indentBy(-1), { title: '减少缩进 Shift+Tab' }), B('⇥', () => this.indentBy(1), { title: '增加缩进 Tab' }),
       M('lh', '行距', [['1.0', '1'], ['1.15', '1.15'], ['1.5', '1.5'], ['2.0', '2'], ['2.5', '2.5'], ['3.0', '3']].map(([l, v]) => I(l, () => this.para('lineSpacing', v), { on: (f.pat || {}).linespacing === v }))
@@ -2651,7 +2743,7 @@ class Component extends DCLogic {
     const sheets = web ? [] : Array.from({ length: n }, (_, i) => ({ top: paged ? i * (PH + GAP) + 'px' : '0px', h: paged || sv ? PH + 'px' : '100%', left: sv ? i * (PW + GAP) + 'px' : '0px', w: sv ? PW + 'px' : '100%' }));
     const hfZones = web || sv || !(pg.hf || hf) ? [] : sheets.flatMap((s, i) => ['header', 'footer'].map(kind => {
       const head = kind === 'header', key = this.hfKey(kind, i), editing = !!hf && hf.kind === kind && hf.page === i, line = editing ? '1px dashed var(--k47, #C7C7CC)' : 'none';
-      return { editing, showing: !editing, html: { __html: hfFill(hf && hf.key === key && st.hfLive != null ? st.hfLive : d[key], i + 1, n) },
+      return { editing, showing: !editing, html: { __html: hfFill(hf && hf.key === key && hf.sectionEl === this.pageMeta(i).section.el && st.hfLive != null ? st.hfLive : this.pageMeta(i).section[key], this.pageMeta(i).label, n) },
         top: head ? s.top : paged ? i * (PH + GAP) + PH - m.bottom + 'px' : 'auto', bottom: head || paged ? 'auto' : '0px', h: (head ? m.top : m.bottom) + 'px',
         bt: head ? hfTop : 'auto', bb: head ? 'auto' : hfBot, lineB: head ? line : 'none', lineT: head ? 'none' : line, lt: head ? 'auto' : '-19px', lb: head ? '-19px' : 'auto',
         label: key.startsWith('first') ? (head ? $t('首页页眉') : $t('首页页脚')) : (head ? $t('页眉') : $t('页脚')), title: head ? $t('双击编辑页眉') : $t('双击编辑页脚'),
@@ -2661,7 +2753,7 @@ class Component extends DCLogic {
     const hfBtns = hf ? [HB('页码', () => this.hfField('page'), false, '插入页码'), HB('总页数', () => this.hfField('pages'), false, '插入总页数'), { sep: true },
       HB('左', () => this.exec('justifyLeft'), f.align === 'left', '左对齐'), HB('中', () => this.exec('justifyCenter'), f.align === 'center', '居中'), HB('右', () => this.exec('justifyRight'), f.align === 'right', '右对齐'), { sep: true },
       HB('样式@@hf', e => this.openPop('hfStyle', e), st.pop && st.pop.id === 'hfStyle', '快速选择页码格式，或直接输入自己想要的形式'), { sep: true },
-      HB('首页不同', () => this.toggleTitlePg(), !!d.titlePg, '首页使用单独的页眉页脚'), HB('关闭', () => this.exitHF(), false, '退出页眉页脚 Esc')] : [];
+      HB('首页不同', () => this.toggleTitlePg(), !!this.pageMeta(hf.page).section.titlePg, '首页使用单独的页眉页脚'), HB('奇偶页不同', () => { this.commitHF(); this.change({ evenAndOdd: !d.evenAndOdd }); this.setState({ hf: null }); }, !!d.evenAndOdd), HB('关闭', () => this.exitHF(), false, '退出页眉页脚 Esc')] : [];
     const zoneTop = hf ? (paged ? hf.page * (PH + GAP) : 0) : 0;
     // the ruler: the page's margins shaded, a tick every half centimetre of the text area, the caret paragraph's tab stops on it
     const CMPX = 96 / 2.54, TAB_GLYPH = { left: 'L', center: '⊥', right: '⅃', decimal: '⊥.' }; // i18n-ok — the marks Word draws for tab stops
@@ -2670,6 +2762,7 @@ class Component extends DCLogic {
     const tbx = !pure && !st.hf && f.inTable ? st.tblBox || null : null; // the table the caret is in: its letters, numbers and frame
     const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ st, f, pg, d, tab, tabsDef, I, HD, info, comments, notes, moveComment, formatOpen });
     // popover: after the panel, whose controls register their menus as it builds them
+    this.menus.context = [I('剪切', () => this.clipboardCommand('cut')), I('复制', () => this.clipboardCommand('copy')), I('粘贴', () => this.clipboardCommand('paste')), I('新建批注', () => this.addComment()), I('编辑链接', () => this.linkDlg()), I('取消链接', () => { this.restore(); this.exec('unlink'); }), ...(f.inTable ? [I('上方插入行', () => this.tbl('rowAbove')), I('下方插入行', () => this.tbl('rowBelow')), I('删除行', () => this.tbl('delRow')), I('删除表格', () => this.tbl('delTable'))] : []), ...(this.contextTarget?.closest?.('img') ? [I('删除图片', () => { const image = this.contextTarget.closest('img'); this.selectImg(null); frameOf(image).remove(); this.after(); })] : []), I('删除选中内容', () => this.exec('delete'))];
     if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
     let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
     if (st.pop) {
@@ -2687,6 +2780,7 @@ class Component extends DCLogic {
       hasWordSelection: !!st.ctxBar, bx: st.ctxBar ? st.ctxBar.x + 'px' : 0, by: st.ctxBar ? st.ctxBar.y + 'px' : 0, selBelow: st.ctxBar && st.ctxBar.below ? '1' : '0', tailX: st.ctxBar ? `calc(50% + ${st.ctxBar.dx || 0}px)` : '50%', onCtx: this.onCtx,
       selStyleLabel: this.styleLabel(f.ps || 'Normal'), selStyleMenu: e => this.openPop('sty', e), selSizeMenu: e => this.openPop('fsize', e), canRewrite: !!this.props.onRewrite,
       selectionSize: f.size || 11, selectionSmaller: () => this.bump(-1), selectionLarger: () => this.bump(1),
+      selectionCut: () => this.clipboardCommand('cut'), selectionCopy: () => this.clipboardCommand('copy'), selectionPaste: () => this.clipboardCommand('paste'), selectionMore: e => this.openPop('context', e),
       selectionBold: () => this.exec('bold'), selectionItalic: () => this.exec('italic'), selectionUnderline: () => this.exec('underline'), selectionBoldOn: f.b ? '1' : '0', selectionItalicOn: f.i ? '1' : '0', selectionUnderlineOn: f.u ? '1' : '0',
       selectionColor: rgbHex(f.color) || st.lastColor, onSelectionColor: e => { this.setState({ lastColor: e.target.value }); this.exec('foreColor', e.target.value); }, selectionHighlightColor: st.lastHl, hlTitle: $t('高亮（{c}）', { c: $t((HILITES.find(x => x[0] === st.lastHl) || [, '黄色'])[1]) }), selectionHighlight: () => this.exec('hiliteColor', st.lastHl), selectionLink: () => this.linkDlg(), selectionRewrite: () => this.props.onRewrite && this.props.onRewrite(String(getSelection())),
       showFind: st.showFind && !pure, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 处', { n: st.fcount }) : $t('未找到'),

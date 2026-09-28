@@ -70,6 +70,7 @@ public sealed class DocxDocument(WordprocessingDocument package) : Document
 
     public override void Save(Stream stream)
     {
+        if (Cite.Citations.Numeric(DocxSources.Style(this) ?? Cite.CiteStyle.Mla)) DocxCitations.Refresh(this);
         using var clone = Package.Clone(stream);
     }
 

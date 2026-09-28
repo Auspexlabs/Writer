@@ -96,6 +96,7 @@ public static partial class InlineHtml
             {
                 var tag = run.Change == "inserted" ? "ins" : "del";
                 open.Append('<').Append(tag);
+                if (run.RevisionId is not null) open.Append(" data-rid=\"").Append(Esc(run.RevisionId)).Append('"');
                 if (run.Author is not null) open.Append(" data-author=\"").Append(Esc(run.Author)).Append('"');
                 if (run.Date is not null) open.Append(" data-date=\"").Append(Esc(run.Date)).Append('"');
                 open.Append('>');
@@ -173,7 +174,7 @@ public static partial class InlineHtml
             "i" or "em" => style with { Italic = true },
             "u" => style with { Underline = true },
             "s" or "strike" => style with { Strike = true },
-            "ins" or "del" => style with { Change = tag == "ins" ? "inserted" : "deleted", Author = NonEmpty(attrs, "data-author"), Date = NonEmpty(attrs, "data-date") },
+            "ins" or "del" => style with { Change = tag == "ins" ? "inserted" : "deleted", Author = NonEmpty(attrs, "data-author"), RevisionId = NonEmpty(attrs, "data-rid"), Date = NonEmpty(attrs, "data-date") },
             "code" or "tt" or "kbd" or "samp" => style with { Code = true },
             "a" when attrs.TryGetValue("href", out var href) && href.Length > 0 => style with { Link = href },
             "mark" => style with { Highlight = "FFFF00" },

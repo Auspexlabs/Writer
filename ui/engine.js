@@ -690,7 +690,7 @@ export const pbIn = html => String(html).split(PB_WORD).join(PB_LINE);
 export const pbOut = html => String(html).replace(/<span data-pb="1"[^>]*><\/span>/g, PB_WORD);
 /** A heading or paragraph's own props (kept for the save), and how it shows, its own or its style's: a page break above it, a fill;
  *  widow control its style turns off rides on data-widow, for the panel's 孤行控制; the size of its mark (¶), which its lines take. */
-const paraOf = (b, p, n) => { const c = n.computed || {}; for (const k of PARA_OWN) if (p[k]) b.props[k] = p[k]; b.pbb = (p.pageBreakBefore || c.pageBreakBefore) === 'true'; b.shade = p.fill || c.fill; b.widowOff = !p.widowControl && c.widowControl === 'false'; if (parseFloat(p.markSize) > 0 && sizedAll(p.html)) b.mark = parseFloat(p.markSize); }; // markSize reads 12pt
+const paraOf = (b, p, n) => { if (p.linkedHeaders) b.linkedHeaders = p.linkedHeaders; const c = n.computed || {}; for (const k of PARA_OWN) if (p[k]) b.props[k] = p[k]; b.pbb = (p.pageBreakBefore || c.pageBreakBefore) === 'true'; b.shade = p.fill || c.fill; b.widowOff = !p.widowControl && c.widowControl === 'false'; if (parseFloat(p.markSize) > 0 && sizedAll(p.html)) b.mark = parseFloat(p.markSize); }; // markSize reads 12pt
 /** Whether every letter of a paragraph's html is in a run with a size of its own: then the paragraph's own size (the font-size of
  *  its element, which sets the height of each of its lines in CSS) can be its mark's, as Word sizes the lines by the text and the
  *  mark alone: a heading in 12pt text and mark is no taller for its style's 18pt. */
@@ -714,7 +714,7 @@ export function blocksOf(nodes, file) {
     const pics = (n.children || []).filter(c => c.kind === 'image'); // a paragraph's own pictures: floating in it, or in its line of text
     if (pics.length && (n.kind === 'heading' || n.kind === 'paragraph')) b.pics = pics.map(c => picOf(c, file, byId));
     if (n.kind === 'heading') { b.props.html = p.html || esc(p.text); b.props.level = p.level || '1'; if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
-    else if (n.kind === 'paragraph') { b.props.html = p.html || esc(p.text); if (p.list && p.list !== 'none') { b.props.list = p.list; b.props.level = p.level || '0'; if (p.restart === 'true') b.props.restart = 'true'; if (p.listId) b.props.listId = String(p.listId); } if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
+    else if (n.kind === 'paragraph') { b.props.html = p.html || esc(p.text); if (p.list && p.list !== 'none') { b.props.list = p.list; b.props.level = p.level || '0'; if (p.restart === 'true') b.props.restart = 'true'; if (p.listId) b.props.listId = String(p.listId); if (p.listStart) b.props.listStart = String(p.listStart); } if (p.align) b.props.align = p.align; if (p.style) b.props.style = p.style; paraOf(b, p, n); }
     else if (n.kind === 'code') b.props.text = p.text || '';
     else if (n.kind === 'table') {
       // the tree gives json props (widths) parsed; the editor keeps them as the JSON text the engine takes back
@@ -747,19 +747,19 @@ export function numberLists(root) {
   const seen = new Map();
   for (const ol of root.querySelectorAll('ol')) {
     if (ol.parentElement && ol.parentElement.closest('ol,ul')) continue;
-    const id = ol.getAttribute('data-w-listid'), n = id ? seen.get(id) || 0 : 0;
+    const id = ol.getAttribute('data-w-listid'), n = id && seen.has(id) ? seen.get(id) : Math.max(0, +(ol.getAttribute('data-w-start') || 1) - 1);
     if (n) { if (ol.getAttribute('start') !== String(n + 1)) ol.setAttribute('start', String(n + 1)); } else if (ol.hasAttribute('start')) ol.removeAttribute('start');
     if (id) seen.set(id, n + Array.from(ol.children).filter(x => x.tagName === 'LI').length);
   }
 }
 /** The list kinds beyond the html tags' own: the ol carries them as data-w-list (number is a plain ol, bullet a plain ul). */
-export const LIST_KINDS = ['number', 'outline', 'chinese'];
+export const LIST_KINDS = ['number', 'outline', 'chinese', 'upperLetter', 'upperRoman', 'lowerRoman', 'paren', 'circle', 'square', 'check', 'arrow', 'diamond'];
 export function blocksToHtml(blocks) {
   let out = ''; const stack = [], counted = new Map(); // open lists: {type, kind}; the items each list (listId) has had so far
   const closeLists = n => { while (stack.length > n) { out += '</' + stack.pop().type + '>'; } };
   const pa = (b, tag, extra) => {
     const css = [alignCss(b.props.align), b.shade ? 'background:#' + esc(b.shade) : '', b.mark ? 'font-size:' + b.mark + 'pt' : '', paraCss(b.props)].filter(Boolean).join(';');
-    return `<${tag} data-path="${esc(b.path)}"${extra || ''}${attrs(b.props, PARA_OWN)}${b.pbb ? ' data-pb="before"' : ''}${b.widowOff ? ' data-widow="off"' : ''}${css ? ` style="${css}"` : ''}>${(b.pics || []).map(x => picHtml(x, true)).join('')}${pbIn(b.props.html || '<br>')}</${tag}>`;
+    return `<${tag} data-path="${esc(b.path)}"${extra || ''}${attrs(b.props, PARA_OWN)}${b.linkedHeaders ? ` data-w-linkedheaders="${esc(b.linkedHeaders)}"` : ''}${b.pbb ? ' data-pb="before"' : ''}${b.widowOff ? ' data-widow="off"' : ''}${css ? ` style="${css}"` : ''}>${(b.pics || []).map(x => picHtml(x, true)).join('')}${pbIn(b.props.html || '<br>')}</${tag}>`;
   };
   const attrs = (p, keys) => keys.map(k => p?.[k] != null ? ` data-w-${k.toLowerCase()}="${esc(p[k])}"` : '').join('');
   for (const b of blocks) {
@@ -770,12 +770,12 @@ export function blocksToHtml(blocks) {
       if (stack.length === level + 1 && (stack[level].kind !== kind || b.props.restart)) { out += '</' + stack.pop().type + '>'; }
       while (stack.length < level + 1) {
         const own = stack.length === level, t = own ? type : 'ul';
-        const lid = own && t === 'ol' && level === 0 && b.props.listId ? String(b.props.listId) : '', from = lid ? counted.get(lid) || 0 : 0;
-        out += own ? `<${t}${kind !== 'bullet' && kind !== 'number' ? ` data-w-list="${kind}"` : ''}${b.props.restart ? ' data-w-restart="1"' : ''}${lid ? ` data-w-listid="${esc(lid)}"` : ''}${from ? ` start="${from + 1}"` : ''}>` : '<ul>';
+        const lid = own && t === 'ol' && level === 0 && b.props.listId ? String(b.props.listId) : '', from = lid && counted.has(lid) ? counted.get(lid) : Math.max(0, +(b.props.listStart || 1) - 1);
+        out += own ? `<${t}${kind !== 'bullet' && kind !== 'number' ? ` data-w-list="${kind}"` : ''}${b.props.restart ? ' data-w-restart="1"' : ''}${lid ? ` data-w-listid="${esc(lid)}"` : ''}${b.props.listStart ? ` data-w-start="${b.props.listStart}"` : ''}${from ? ` start="${from + 1}"` : ''}>` : '<ul>';
         stack.push({ type: t, kind: own ? kind : 'bullet' });
       }
       out += pa(b, 'li');
-      if (level === 0 && b.props.listId) counted.set(String(b.props.listId), (counted.get(String(b.props.listId)) || 0) + 1);
+      if (level === 0 && b.props.listId) counted.set(String(b.props.listId), (counted.get(String(b.props.listId)) ?? Math.max(0, +(b.props.listStart || 1) - 1)) + 1);
       continue;
     }
     closeLists(0);
@@ -823,7 +823,7 @@ export function plainOf(html) {
   return String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').trim();
 }
 /** Header and footer html as the engine reads and writes it (document props); the editor keeps it as it came until edited. */
-const HF = ['header', 'footer', 'firstHeader', 'firstFooter'];
+const HF = ['header', 'footer', 'firstHeader', 'firstFooter', 'evenHeader', 'evenFooter'];
 /** The `set <file> /` props that take the file from `orig` (raw engine values) to the model: only what differs, so a header
  * or footer the user did not edit (a logo, a table in it) is never written. */
 export function pageDiff(orig, doc) {
@@ -837,12 +837,13 @@ export function pageDiff(orig, doc) {
   if ((n.wm || '') !== (o.wm || '')) p.watermark = n.wm || '';
   for (const k of HF) if ((doc[k] || '') !== (orig[k] || '')) p[k] = doc[k] || '';
   if (!!doc.titlePg !== !!orig.titlePg) p.titlePg = doc.titlePg ? 'true' : 'false';
-  for (const k of ['lineNumbers', 'hyphenation']) if (!!doc[k] !== !!orig[k]) p[k] = doc[k] ? 'true' : 'false';
+  for (const k of ['lineNumbers', 'hyphenation', 'evenAndOdd']) if (!!doc[k] !== !!orig[k]) p[k] = doc[k] ? 'true' : 'false';
+  for (const k of ['pageNumberFormat', 'pageNumberStart', 'headingNumbering', 'author']) if ((doc[k] || '') !== (orig[k] || '')) p[k] = doc[k] || (k === 'author' ? '' : 'none');
   if ((doc.noteFormat || '') !== (orig.noteFormat || '')) p.noteFormat = doc.noteFormat || 'none';
   return p;
 }
 
-const hfOf = p => Object.assign(Object.fromEntries(HF.map(k => [k, p[k] || ''])), { titlePg: p.titlePg === 'true' });
+const hfOf = p => Object.assign(Object.fromEntries(HF.map(k => [k, p[k] || ''])), { linkedHeaders: sourcesOf(p.linkedHeaders), author: p.author || '', headingNumbering: p.headingNumbering === 'none' ? '' : p.headingNumbering || '', titlePg: p.titlePg === 'true', evenAndOdd: p.evenAndOdd === 'true', pageNumberFormat: p.pageNumberFormat === 'none' ? '' : p.pageNumberFormat || '', pageNumberStart: p.pageNumberStart === 'none' ? '' : p.pageNumberStart || '' });
 async function openDocx(doc) {
   const t = await tree(doc.path);
   const p = t.props || {};
@@ -856,7 +857,7 @@ async function openDocx(doc) {
   const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true', noteFormat: p.noteFormat || '' };
   return { html, rev: (doc.rev || 0) + 1, track, comments: comments.map(c => ({ id: c.cid, author: c.author, initials: c.initials, mine: c.mine, time: c.time, text: c.text, quote: c.quote, path: c.path, resolved: c.resolved, parent: c.parent })),
     notes: notes.map(noteOf), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
-    sources: sourcesOf(p.sources), citeStyle: p.citationStyle || '',
+    formatRevisions: sourcesOf(p.formatRevisions), sources: sourcesOf(p.sources), citeStyle: p.citationStyle || '',
     _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns, pageColor: p.pageColor, watermark: p.watermark }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes, cites, officeObjects } };
 }
 
@@ -963,8 +964,8 @@ export async function planNotes(file, orig, current, log, exec = run) {
 /** The document's sources as the engine gives them (its JSON: tag, type, authors, title, container, year…), [] when it has none. */
 export function sourcesOf(json) { try { const v = typeof json === 'string' ? JSON.parse(json) : json; return Array.isArray(v) ? v : []; } catch (e) { return []; } }
 /** The citation styles a document is written in, as the engine names them, and the title each gives its works-cited list. */
-export const CITE_STYLES = [['mla', 'MLA 第 9 版'], ['apa', 'APA 第 7 版'], ['chicago', 'Chicago 第 18 版（脚注）'], ['chicago-date', 'Chicago 第 18 版（作者-日期）']];
-export const listTitle = style => ({ apa: 'References', chicago: 'Bibliography', 'chicago-date': 'References' })[style] || 'Works Cited'; // i18n-ok — the styles' own English titles
+export const CITE_STYLES = [['mla', 'MLA 第 9 版'], ['apa', 'APA 第 7 版'], ['chicago', 'Chicago 第 18 版（脚注）'], ['chicago-date', 'Chicago 第 18 版（作者-日期）'], ['gb7714', 'GB/T 7714—2015（顺序编码）'], ['ieee', 'IEEE']];
+export const listTitle = style => ({ gb7714: '参考文献', ieee: 'References', apa: 'References', chicago: 'Bibliography', 'chicago-date': 'References' })[style] || 'Works Cited'; // i18n-ok — the styles' own English titles
 /** Every citation in the tree: its id, the paragraph it sits in and its offset there, what it cites, and how it shows. */
 export function citesOf(nodes) {
   const out = [];
@@ -1452,6 +1453,7 @@ export function blocksFromHtml(root) {
       if (tag === 'LI') {
         const inner = c.cloneNode(true); Array.from(inner.querySelectorAll('ul,ol')).forEach(x => x.remove());
         const restart = !c.previousElementSibling && node.getAttribute && node.hasAttribute('data-w-restart') ? { restart: 'true' } : {};
+        if (!c.previousElementSibling && node.getAttribute?.('data-w-start')) restart.listStart = node.getAttribute('data-w-start');
         const lid = node.getAttribute && node.getAttribute('data-w-listid');
         if (lid && !c.previousElementSibling) { restart.listId = lid; if (lists.has(lid)) restart.joins = 'true'; } // its list's id rides on its first item: a list that numbers on from one before it joins it
         if (lid) lists.add(lid);
@@ -1503,7 +1505,7 @@ const pathOf = el => el.getAttribute && el.getAttribute('data-path') || null;
 const listKind = (el, parent) => el.tagName === 'UL' ? 'bullet' : el.getAttribute('data-w-list') || (parent && parent !== 'bullet' ? parent : 'number');
 /** A heading or paragraph's own props that its element keeps as data-w-* (the file's; not what its style gives), and the value
  *  that turns each off. */
-const SECTION_PROPS = ['page', 'orientation', 'margin', 'columns']; // of the section a paragraph ends: only with its sectionBreak
+const SECTION_PROPS = ['page', 'orientation', 'margin', 'columns', 'pageNumberFormat', 'pageNumberStart', 'titlePg', ...HF]; // of the section a paragraph ends: only with its sectionBreak
 const PARA_OWN = ['pageBreakBefore', 'fill', 'lineSpacing', 'spaceBefore', 'spaceAfter', 'indentLeft', 'indentRight', 'indentFirst', 'border', 'keepNext', 'keepLines', 'widowControl', 'tabs', 'bookmark', 'caption', 'dropCap', 'sectionBreak', ...SECTION_PROPS];
 const PARA_OFF = Object.fromEntries(PARA_OWN.map(k => [k, k === 'pageBreakBefore' || k === 'keepNext' || k === 'keepLines' ? 'false' : 'none']));
 const paraAttrs = el => docxAttrs(el, PARA_OWN);
@@ -1739,7 +1741,7 @@ export function newTableCommands(tablePath, rows, file, widths) {
 function blockProps(b, forNew) {
   const p = {};
   if (b.kind === 'heading') { p.html = b.props.html; p.level = b.props.level; if (b.align || !forNew) p.align = b.align || 'left'; }
-  else if (b.kind === 'paragraph') { p.html = b.props.html; p.list = b.props.list || (forNew ? null : 'none'); if (b.props.list) { p.level = b.props.level || '0'; if (b.props.restart) p.restart = 'true'; else if (forNew && b.props.joins && b.props.list !== 'bullet') p.restart = 'false'; } if (b.props.style) p.style = b.props.style; if (b.align || !forNew) p.align = b.align || 'left'; }
+  else if (b.kind === 'paragraph') { p.html = b.props.html; p.list = b.props.list || (forNew ? null : 'none'); if (b.props.list) { p.level = b.props.level || '0'; if (b.props.listStart) p.listStart = b.props.listStart; if (b.props.restart && !b.props.listStart) p.restart = 'true'; else if (forNew && b.props.joins && b.props.list !== 'bullet') p.restart = 'false'; } if (b.props.style) p.style = b.props.style; if (b.align || !forNew) p.align = b.align || 'left'; }
   if (b.kind === 'heading' || b.kind === 'paragraph') { for (const k of PARA_OWN) if (b.props[k] && (b.props.sectionBreak || !SECTION_PROPS.includes(k))) p[k] = b.props[k]; }
   else if (b.kind === 'code') p.text = b.props.text;
   else if (b.kind === 'image') { p.src = b.props.src; if (b.width) p.width = Math.round(b.width) + 'px'; }
@@ -1766,9 +1768,10 @@ function changedProps(orig, b) {
   if (b.kind === 'paragraph') {
     const ol = orig.props.list || 'none', nl = b.props.list || 'none';
     if (ol !== nl) p.list = nl;
+    if (nl !== 'none' && (b.props.listStart || '1') !== (orig.props.listStart || '1')) p.listStart = b.props.listStart || '1';
     if (nl !== 'none' && String(orig.props.level || '0') !== String(b.props.level || '0')) p.level = b.props.level || '0';
-    if (nl !== 'none' && nl !== 'bullet' && (orig.props.restart || '') !== (b.props.restart || '')) p.restart = b.props.restart || 'false';
-    else if (nl !== 'none' && nl !== 'bullet' && !b.props.restart && b.props.listId && orig.props.listId && String(b.props.listId) !== String(orig.props.listId)) p.restart = 'false'; // 继续编号: joined to a list before it
+    if (!p.listStart && nl !== 'none' && nl !== 'bullet' && (orig.props.restart || '') !== (b.props.restart || '')) p.restart = b.props.restart || 'false';
+    else if (!p.listStart && nl !== 'none' && nl !== 'bullet' && !b.props.restart && b.props.listId && orig.props.listId && String(b.props.listId) !== String(orig.props.listId)) p.restart = 'false'; // 继续编号: joined to a list before it
     if ((orig.props.style || '') !== (b.props.style || '') && b.props.style) p.style = b.props.style;
   }
   if (b.kind === 'bibliography' && (orig.props.title || '') !== (b.props.title || '')) p.title = b.props.title || '';
@@ -1971,7 +1974,10 @@ async function saveDocx(doc, root, log) {
   let n = 0;
   const pp = pageDiff(orig, doc);
   if (!!doc.track !== !!orig.track) pp.track = doc.track ? 'true' : 'false';
-  if (Object.keys(pp).length) { await run(['set', doc.path, '/', ...propsArgs(pp)]); n++; log && log('set', '/', pp); }
+  const sectionFields = Object.fromEntries(Object.entries(pp).filter(([k]) => HF.includes(k) || ['titlePg', 'pageNumberFormat', 'pageNumberStart'].includes(k)));
+  const rootFields = Object.fromEntries(Object.entries(pp).filter(([k]) => !(k in sectionFields)));
+  if (Object.keys(sectionFields).length) rootFields.lastSection = JSON.stringify(sectionFields);
+  if (Object.keys(pp).length) { await run(['set', doc.path, '/', ...propsArgs(rootFields)]); n++; log && log('set', '/', pp); }
   for (const s of doc.styleEdits || []) { await run(['set', doc.path, '/', '--prop', 'style=' + JSON.stringify(s)]); n++; log && log('set', '/', { style: s.id }); } // 修改样式 / 新建样式
   doc.styleEdits = [];
   const el = root || parseHtml(doc.html || '');
@@ -2029,12 +2035,13 @@ async function saveDocx(doc, root, log) {
   const cites = await planCites(doc.path, orig.cites || [], citesIn(el, blocks), log);
   n += cites.count;
   const pageProps = Object.fromEntries(['page', 'orientation', 'margin', 'columns', 'pageColor', 'watermark'].filter(k => k in pp).map(k => [k, pp[k]]));
-  const now = Object.assign({}, orig, { titlePg: String(!!orig.titlePg) }, pp); // headers and footers as the file has them now
+  const now = Object.assign({}, orig, { titlePg: String(!!orig.titlePg), evenAndOdd: String(!!orig.evenAndOdd) }, pp); // headers and footers as the file has them now
   doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list, cites: cites.list, officeObjects: officeObjects.list.map(({ el, ...o }) => o) });
   // a citation, a note that cites or a works-cited list saved: the engine drew them all again (a source's first note in full, APA's
   // 2015a and 2015b…): show what it drew
   const bibs = blocks.filter(b => b.kind === 'bibliography');
-  if (cites.count || bibs.some(b => !opened.has(b.path)) || notes.list.some(x => x.cite) && notes.count) await refreshCites(doc, el, run);
+  if ((n && ['gb7714', 'ieee'].includes(doc.citeStyle)) || cites.count || bibs.some(b => !opened.has(b.path)) || notes.list.some(x => x.cite) && notes.count) await refreshCites(doc, el, run);
+  if (n && (doc.track || (doc.formatRevisions || []).length)) { const current = await tree(doc.path); doc.formatRevisions = sourcesOf(current.props?.formatRevisions); }
   doc.html = el.innerHTML;
   return n;
 }

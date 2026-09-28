@@ -23,8 +23,10 @@ sealed class DocxRoot(DocxDocument doc) : Node
         if (DocxRevisions.Tracking(doc)) props["track"] = "true";
         if (doc.Main.DocumentSettingsPart?.Settings?.GetFirstChild<W.AutoHyphenation>() is { } hyphenation && DocxRun.On(hyphenation)) props["hyphenation"] = "true";
         if (DocxRevisions.DefaultAuthor(doc) is { } author) props["author"] = author;
+        props["formatRevisions"] = DocxRevisions.FormatList(doc);
         props["revisions"] = DocxRevisions.Count(doc).ToString(CultureInfo.InvariantCulture);
         props["comments"] = DocxComments.Count(doc).ToString(CultureInfo.InvariantCulture);
+        if (doc.Styles.HeadingNumbering() is { } headingNumbering) props["headingNumbering"] = headingNumbering;
         props["styles"] = DocxStyleGallery.Read(doc);
         var sources = DocxSources.Read(doc);
         if (sources.Count > 0) props["sources"] = DocxSources.Json(sources);
@@ -44,6 +46,10 @@ sealed class DocxRoot(DocxDocument doc) : Node
     {
         switch (name)
         {
+            case "textRevision": DocxRevisions.ResolveText(doc, value); break;
+            case "formatRevision": DocxRevisions.ResolveFormat(doc, value); break;
+            case "headingNumbering": doc.Styles.SetHeadingNumbering(value); break;
+            case "lastSection": DocxSection.SetLast(doc, value); break;
             case "watermark": DocxSection.SetWatermark(doc, value); break;
             case "pageColor": DocxSection.SetPageColor(doc, value); break;
             case "title": doc.Package.PackageProperties.Title = value.Length > 0 ? value : null; break;
@@ -56,6 +62,10 @@ sealed class DocxRoot(DocxDocument doc) : Node
             case "footer": DocxSection.SetHeaderFooter(doc, header: false, first: false, value); break;
             case "firstHeader": DocxSection.SetHeaderFooter(doc, header: true, first: true, value); break;
             case "firstFooter": DocxSection.SetHeaderFooter(doc, header: false, first: true, value); break;
+            case "evenHeader": DocxSection.SetHeaderFooter(doc, true, false, value, true); break;
+            case "evenFooter": DocxSection.SetHeaderFooter(doc, false, false, value, true); break;
+            case "evenAndOdd": DocxSection.SetEvenAndOdd(doc, value == "true"); break;
+            case "pageNumberFormat" or "pageNumberStart": DocxSection.SetNumber(doc, name, value); break;
             case "titlePg": DocxSection.SetTitlePage(doc, value == "true"); break;
             case "lineNumbers": DocxSection.SetLineNumbers(doc, value == "true"); break;
             case "noteFormat": DocxSection.SetNoteFormat(doc, value); break;
@@ -116,6 +126,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             if (list is not null)
             {
                 props["list"] = list;
+                if (doc.Styles.ExplicitStart(p) is { } start) props["listStart"] = start.ToString(CultureInfo.InvariantCulture);
                 props["level"] = listLevel.ToString(CultureInfo.InvariantCulture);
                 // numbering that starts again here: the item before it counts in another list of the same kind
                 if (list != "bullet" && p.PreviousSibling<W.Paragraph>() is { } previous && doc.Styles.ListInfo(previous).List == list && !doc.Styles.SameList(previous, p))
@@ -133,7 +144,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
         if (DocxMarks.Bookmark(p) is { } bookmark) props["bookmark"] = bookmark;
         if (Kind != "code" && DocxMarks.Caption(p) is { } caption) props["caption"] = caption;
         if (DocxMarks.DropCap(p) is { } dropCap) props["dropCap"] = dropCap;
-        if (DocxSection.SectionBreakOf(p) is { } sectionBreak) { props["sectionBreak"] = sectionBreak; DocxSection.ReadPage(p.ParagraphProperties!.SectionProperties!, props); }
+        if (DocxSection.SectionBreakOf(p) is { } sectionBreak) { props["sectionBreak"] = sectionBreak; DocxSection.ReadPage(p.ParagraphProperties!.SectionProperties!, props); DocxSection.ReadHeaders(doc, p.ParagraphProperties.SectionProperties!, props); props["titlePg"] = DocxRun.On(p.ParagraphProperties.SectionProperties!.GetFirstChild<W.TitlePage>()) ? "true" : "false"; }
         if (p.ParagraphId?.Value is { } id) props["id"] = id;
         return props;
     }
@@ -184,6 +195,8 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
 
     public override void SetProp(string name, string value)
     {
+        var trackFormat = DocxRevisions.Tracking(doc) && name is "style" or "align" or "lineSpacing" or "spaceBefore" or "spaceAfter" or "indentLeft" or "indentRight" or "indentFirst" or "border" or "fill" or "keepNext" or "keepLines" or "widowControl" or "tabs";
+        var previousFormat = trackFormat ? p.ParagraphProperties?.CloneNode(true) as W.ParagraphProperties : null;
         switch (name)
         {
             case "text": DocxReplace.Paragraph(doc, p, [new RunSpec(value)], DocxReplace.Source.Text); break;
@@ -207,6 +220,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             case "list":
                 SetList(value);
                 break;
+            case "listStart": SetRestart(true, int.Parse(value, CultureInfo.InvariantCulture)); break;
             case "restart":
                 SetRestart(value == "true");
                 break;
@@ -229,12 +243,20 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             case "bookmark": DocxMarks.SetBookmark(doc, p, value); break;
             case "caption": DocxMarks.SetCaption(doc, p, value); break;
             case "dropCap": DocxMarks.SetDropCap(p, value); break;
+            case "header" or "footer" or "firstHeader" or "firstFooter" or "evenHeader" or "evenFooter" or "titlePg" or "pageNumberFormat" or "pageNumberStart":
+                var local = p.ParagraphProperties?.SectionProperties
+                    ?? throw new WriterException(ErrorCode.Validation, "Set a section break before its page fields", "Set sectionBreak first.");
+                if (name.StartsWith("pageNumber", StringComparison.Ordinal)) DocxSection.SetNumber(local, name, value);
+                else if (name == "titlePg") { local.RemoveAllChildren<W.TitlePage>(); if (value == "true") local.AddChild(new W.TitlePage()); }
+                else DocxSection.SetHeaderFooter(doc, local, name.EndsWith("Header", StringComparison.Ordinal) || name == "header", name.StartsWith("first", StringComparison.Ordinal), value == "none" ? "" : value, name.StartsWith("even", StringComparison.Ordinal), isolate: true);
+                break;
             case "page" or "orientation" or "margin" or "columns":
                 var section = p.ParagraphProperties?.SectionProperties
                     ?? throw new WriterException(ErrorCode.Validation, $"{name} applies to a paragraph that ends a section", "Set sectionBreak=nextPage or continuous first; the document's own page setup is on /.");
                 if (name == "page") DocxSection.SetPage(section, value); else if (name == "orientation") DocxSection.SetOrientation(section, value); else if (name == "margin") DocxSection.SetMargin(section, value); else DocxSection.SetColumns(section, value);
                 break;
         }
+        if (trackFormat) DocxRevisions.MarkParagraphFormat(doc, p, previousFormat);
     }
 
     W.ParagraphProperties Properties() => p.ParagraphProperties ??= new W.ParagraphProperties();
@@ -263,11 +285,11 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
 
     /// <summary>重新开始编号 / 继续编号: this item and the ones after it in its list count in a new list from 1, or join the list of
     /// the item before them.</summary>
-    void SetRestart(bool on)
+    void SetRestart(bool on, int start = 1)
     {
         var old = doc.Styles.NumIdOf(p) ?? throw new WriterException(ErrorCode.Validation, "restart applies to list paragraphs", "Set list=number first.");
         int numId;
-        if (on) numId = doc.Styles.RestartedNumId(p);
+        if (on) numId = doc.Styles.RestartedNumId(p, start);
         else if (PreviousOfKind() is { } previous) numId = doc.Styles.NumIdOf(previous)!.Value;
         else return;
         for (var q = p; q is not null && doc.Styles.NumIdOf(q) == old; q = q.NextSibling<W.Paragraph>())
@@ -371,6 +393,7 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
         if (DocxRuns.Revision(run) is W.RunTrackChangeType change)
         {
             props["change"] = change is W.DeletedRun ? "deleted" : "inserted";
+            if (change.Id?.Value is { } revisionId) props["revisionId"] = revisionId;
             if (change.Author?.Value is { Length: > 0 } author) props["author"] = author;
             if (change.Date?.InnerText is { Length: > 0 } date) props["date"] = date;
         }
@@ -416,6 +439,7 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
             SetLink(value);
             return;
         }
+        var previousFormat = DocxRevisions.Tracking(doc) ? run.RunProperties?.CloneNode(true) as W.RunProperties : null;
         var rp = run.RunProperties ??= new W.RunProperties();
         var on = value == "true";
         switch (name)
@@ -445,6 +469,7 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
             case "style": rp.RunStyle = value is "none" or "" ? null : new W.RunStyle { Val = doc.Styles.ResolveStyle(value, "character") }; break;
         }
         if (!rp.HasChildren) rp.Remove();
+        if (DocxRevisions.Tracking(doc)) DocxRevisions.MarkRunFormat(doc, run, previousFormat);
     }
 
     void SetLink(string target)

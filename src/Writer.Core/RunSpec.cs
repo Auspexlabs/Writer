@@ -11,7 +11,7 @@ public sealed record RunSpec(string Text, bool Bold = false, bool Italic = false
     bool Underline = false, string? Color = null, string? Size = null, string? Font = null, string? Highlight = null,
     string? Change = null, string? Author = null, string? Date = null, string? Style = null,
     string? VertAlign = null, string? Spacing = null, bool Outline = false, bool Shadow = false,
-    string? Caps = null, string? UnderlineStyle = null, string? FontEa = null)
+    string? Caps = null, string? UnderlineStyle = null, string? FontEa = null, string? RevisionId = null)
 {
     /// <summary>The spec a run node's properties describe.</summary>
     public static RunSpec FromProps(IReadOnlyDictionary<string, string> p) => new(p.GetValueOrDefault("text") ?? "",
@@ -27,6 +27,7 @@ public sealed record RunSpec(string Text, bool Bold = false, bool Italic = false
         FontEa: p.GetValueOrDefault("fontEa"),
         Highlight: p.GetValueOrDefault("highlight") is { } h && h != "none" ? h : null,
         Change: p.GetValueOrDefault("change"),
+        RevisionId: p.GetValueOrDefault("revisionId"),
         Author: p.GetValueOrDefault("author"),
         Date: p.GetValueOrDefault("date"),
         Style: p.GetValueOrDefault("style"),

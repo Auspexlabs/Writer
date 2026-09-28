@@ -29,6 +29,21 @@ public class CitationsTests
     };
 
     [Fact]
+    public void Numeric_styles_keep_citation_order_and_format_their_own_author_and_document_markers()
+    {
+        var gb = new Citations(CiteStyle.Gb7714, [Kuhn, Pegg]);
+        Assert.StartsWith("[1] KUHN T S. The structure of scientific revolutions[M]. Chicago: University of Chicago Press, 1962.", Show(gb.Entry(Kuhn)));
+        Assert.Equal("[2]288", Show(gb.InText([new(Pegg, "288")])));
+        Assert.Equal(new[] { Kuhn.Tag, Pegg.Tag }, gb.Sort([Pegg, Kuhn]).Select(s => s.Tag));
+        var ieee = new Citations(CiteStyle.Ieee, [Kuhn, Pegg]);
+        Assert.StartsWith("[2] I. L. Pegg,", Show(ieee.Entry(Pegg)));
+        Assert.Contains("vol. 305, no. 1, pp. 287–292, 2015, doi: 10.1007/s10967-014-3900-9.", Show(ieee.Entry(Pegg)));
+        Assert.Equal("[2, p. 288]", Show(ieee.InText([new(Pegg, "288")])));
+        var cn = new Source { Tag = "cn", Type = "book", Authors = [new("王", "明")], Title = "测试图书", Place = "北京", Publisher = "测试出版社", Year = "2020" };
+        Assert.Equal("[3] 王明. 测试图书[M]. 北京: 测试出版社, 2020.", Show(gb.Entry(cn)));
+    }
+
+    [Fact]
     public void Mla_lists_works_cited_in_title_case_with_the_containers_elements_the_doi_last_and_cites_author_and_page()
     {
         var mla = new Citations(CiteStyle.Mla, [Pegg, Soderquist, Kuhn, Page]);

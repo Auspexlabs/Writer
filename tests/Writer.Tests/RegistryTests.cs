@@ -48,7 +48,7 @@ public class RegistryTests
 
     [Theory]
     [InlineData("paragraph", "level", "9")]
-    [InlineData("paragraph", "list", "circle")]
+    [InlineData("paragraph", "list", "unknown-marker")]
     [InlineData("run", "bold", "maybe")]
     [InlineData("table", "data", "[oops")]
     [InlineData("image", "width", "wide")]

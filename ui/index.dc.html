@@ -930,10 +930,10 @@ class Component extends DCLogic {
     const st = this.sv[id] = this.sv[id] || {};
     st.busy = true; this.setState({ saving: true });
     try {
-      await this.EN.run(['set', d.path, '/', '--prop', accept ? 'accept=all' : 'reject=all']);
+      await this.EN.run(['set', d.path, '/', '--prop', typeof accept === 'object' ? 'textRevision=' + JSON.stringify(accept) : accept ? 'accept=all' : 'reject=all']);
       const cur = this.state.docs.find(x => x.id === id);
       if (cur) { const nd = await this.EN.open(cur); nd.rev = (cur.rev || 0) + 1; this.setDoc(nd, true, { quiet: true }); }
-      this.toastMsg($t(accept ? '已接受所有修订' : '已拒绝所有修订'));
+      this.toastMsg($t(typeof accept === 'object' ? (accept.accept ? '已接受此处修订' : '已拒绝此处修订') : accept ? '已接受所有修订' : '已拒绝所有修订'));
     } catch (e) { this.toastMsg($t('修订处理失败：{msg}', { msg: $t(e.message) }) + hintPart(e.hint)); }
     st.at = Date.now(); st.busy = false; this.setState({ saving: false });
     if (st.again) { st.again = false; this.flushSave(id); }

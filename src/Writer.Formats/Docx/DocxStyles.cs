@@ -82,10 +82,17 @@ sealed class DocxStyles(WordprocessingDocument package)
         var level = numPr!.NumberingLevelReference?.Val?.Value ?? 0;
         var abstractNum = AbstractNumOf(numId.Value);
         var levels = abstractNum?.Elements<W.Level>().ToList() ?? [];
+        var own = abstractNum?.AbstractNumDefinitionName?.Val?.Value;
+        if (own is not null && own.StartsWith("writer-", StringComparison.Ordinal) && ListKinds.Contains(own[7..])) return (own[7..], level);
         var format = levels.FirstOrDefault(l => l.LevelIndex?.Value == level)?.NumberingFormat?.Val?.InnerText;
         if (format == "bullet") return ("bullet", level);
         var first = levels.FirstOrDefault(l => l.LevelIndex?.Value == 0)?.NumberingFormat?.Val?.InnerText ?? "";
         if (first.StartsWith("chinese", StringComparison.Ordinal) || first.StartsWith("ideograph", StringComparison.Ordinal) || first.StartsWith("japaneseCounting", StringComparison.Ordinal)) return ("chinese", level);
+        if (first == "upperLetter") return ("upperLetter", level);
+        if (first == "upperRoman") return ("upperRoman", level);
+        if (first == "lowerRoman") return ("lowerRoman", level);
+        if (first == "decimalEnclosedCircleChinese") return ("circle", level);
+        if (levels.FirstOrDefault(l => l.LevelIndex?.Value == 0)?.LevelText?.Val?.Value == "(%1)") return ("paren", level);
         var second = levels.FirstOrDefault(l => l.LevelIndex?.Value == 1)?.LevelText?.Val?.Value ?? "";
         return (second.Contains("%1.%2", StringComparison.Ordinal) ? "outline" : "number", level);
     }
@@ -107,13 +114,13 @@ sealed class DocxStyles(WordprocessingDocument package)
     public bool SameList(W.Paragraph a, W.Paragraph b) => NumIdOf(a) is { } x && NumIdOf(b) == x;
 
     /// <summary>A fresh instance of the paragraph's own list that starts again at 1: what Word's 重新开始编号 makes.</summary>
-    public int RestartedNumId(W.Paragraph p)
+    public int RestartedNumId(W.Paragraph p, int start = 1)
     {
         var numbering = NumberingRoot();
         var abstractId = AbstractNumOf(NumIdOf(p) ?? 0)?.AbstractNumberId?.Value
             ?? throw new WriterException(ErrorCode.Validation, "restart applies to list paragraphs", "Set list=number first.");
         var numId = (numbering.Elements<W.NumberingInstance>().Select(n => n.NumberID?.Value).Max() ?? 0) + 1;
-        numbering.Append(new W.NumberingInstance(new W.AbstractNumId { Val = abstractId }, new W.LevelOverride(new W.StartOverrideNumberingValue { Val = 1 }) { LevelIndex = 0 }) { NumberID = numId });
+        numbering.Append(new W.NumberingInstance(new W.AbstractNumId { Val = abstractId }, new W.LevelOverride(new W.StartOverrideNumberingValue { Val = start }) { LevelIndex = NumberingOf(p)?.NumberingLevelReference?.Val?.Value ?? 0 }) { NumberID = numId });
         return numId;
     }
 
@@ -184,6 +191,38 @@ sealed class DocxStyles(WordprocessingDocument package)
 
     /// <summary>A numId for a bullet or numbered list. Bullets share one instance; numbered lists continue
     /// <paramref name="continueNumId"/> when given and otherwise start fresh at 1.</summary>
+    public string? HeadingNumbering()
+    {
+        var style = Main.StyleDefinitionsPart?.Styles?.Elements<W.Style>().FirstOrDefault(s => s.Type?.Value == W.StyleValues.Paragraph && (s.StyleId?.Value == "Heading1" || s.StyleName?.Val?.Value?.Equals("heading 1", StringComparison.OrdinalIgnoreCase) == true));
+        var numId = style?.StyleParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
+        var name = numId is { } id ? AbstractNumOf(id)?.AbstractNumDefinitionName?.Val?.Value : null;
+        return name is "writer-heading" ? "decimal" : name is "writer-chapter" ? "chapter" : null;
+    }
+    public void SetHeadingNumbering(string kind)
+    {
+        int? id = kind == "none" ? null : ListNumId(kind == "chapter" ? "chapter" : "heading", null);
+        var definition = id is { } n ? AbstractNumOf(n) : null;
+        for (var level = 0; level < 6; level++)
+        {
+            var styleId = HeadingStyleId(level + 1); var style = Find(styleId)!;
+            var pp = style.StyleParagraphProperties ??= new W.StyleParagraphProperties();
+            pp.NumberingProperties = id is { } num ? new W.NumberingProperties(new W.NumberingLevelReference { Val = level }, new W.NumberingId { Val = num }) : null;
+            if (definition?.Elements<W.Level>().FirstOrDefault(l => l.LevelIndex?.Value == level) is { } spec) spec.ParagraphStyleIdInLevel = new W.ParagraphStyleIdInLevel { Val = styleId };
+        }
+    }
+
+    public static readonly string[] ListKinds = ["number", "outline", "chinese", "upperLetter", "upperRoman", "lowerRoman", "paren", "circle", "bullet", "square", "check", "arrow", "diamond"];
+    public int? ExplicitStart(W.Paragraph p)
+    {
+        var id = NumIdOf(p); if (id is null) return null;
+        var level = NumberingOf(p)?.NumberingLevelReference?.Val?.Value ?? 0;
+        var instance = Main.NumberingDefinitionsPart?.Numbering?.Elements<W.NumberingInstance>().FirstOrDefault(n => n.NumberID?.Value == id);
+        var start = instance?.Elements<W.LevelOverride>().FirstOrDefault(l => l.LevelIndex?.Value == level)?.StartOverrideNumberingValue?.Val?.Value
+            ?? AbstractNumOf(id.Value)?.Elements<W.Level>().FirstOrDefault(l => l.LevelIndex?.Value == level)?.StartNumberingValue?.Val?.Value ?? 1;
+        if (start == 1) return null;
+        return p.ElementsBefore().OfType<W.Paragraph>().Any(q => NumIdOf(q) == id) ? null : start;
+    }
+
     public int ListNumId(string kind, int? continueNumId)
     {
         var numbering = NumberingRoot();
@@ -218,7 +257,15 @@ sealed class DocxStyles(WordprocessingDocument package)
             var left = 720 * (level + 1);
             var (format, text) = kind switch
             {
+                "upperLetter" or "upperRoman" or "lowerRoman" => (kind, $"%{level + 1}."),
+                "paren" => ("decimal", $"(%{level + 1})"),
+                "circle" => ("decimalEnclosedCircleChinese", $"%{level + 1}"),
+                "square" => ("bullet", "▪"),
+                "check" => ("bullet", "✓"),
+                "arrow" => ("bullet", "➢"),
+                "diamond" => ("bullet", "◆"),
                 "bullet" => ("bullet", (level % 3) switch { 0 => "•", 1 => "◦", _ => "▪" }),
+                "heading" or "chapter" => ("decimal", kind == "chapter" && level == 0 ? "第%1章" : string.Join('.', Enumerable.Range(1, level + 1).Select(n => $"%{n}"))),
                 "outline" => ("decimal", string.Join('.', Enumerable.Range(1, level + 1).Select(n => $"%{n}")) + (level == 0 ? "." : "")),
                 "chinese" => (level % 3) switch { 0 => ("chineseCountingThousand", $"%{level + 1}、"), 1 => ("chineseCountingThousand", $"（%{level + 1}）"), _ => ("decimal", $"%{level + 1}.") },
                 _ => ((level % 3) switch { 0 => "decimal", 1 => "lowerLetter", _ => "lowerRoman" }, $"%{level + 1}."),

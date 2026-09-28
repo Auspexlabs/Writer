@@ -12,6 +12,63 @@ namespace Writer.Tests;
 public class DocxSectionTests
 {
     [Fact]
+    public void Heading_numbering_binds_styles_to_native_multilevel_definition()
+    {
+        using var doc = new DocxAdapter().Create();
+        Mutations.Set(doc.Root, Props(("headingNumbering", "chapter")));
+        Mutations.Add(doc.Root.Children.Single(), "heading", Props(("text", "Chapter"), ("level", "1")), null);
+        Mutations.Add(doc.Root.Children.Single(), "heading", Props(("text", "Section"), ("level", "2")), null);
+        using var reopened = Reopen(doc);
+        Assert.Equal("chapter", reopened.Root.GetProps()["headingNumbering"]);
+        var styles = ((DocxDocument)reopened).Main.StyleDefinitionsPart!.Styles!;
+        var one = styles.Elements<W.Style>().Single(s => s.StyleId!.Value == "Heading1");
+        var two = styles.Elements<W.Style>().Single(s => s.StyleId!.Value == "Heading2");
+        Assert.Equal(one.StyleParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value, two.StyleParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value);
+        Assert.Equal(1, two.StyleParagraphProperties.NumberingProperties.NumberingLevelReference!.Val!.Value);
+        Mutations.Set(reopened.Root, Props(("headingNumbering", "none")));
+        Assert.Null(one.StyleParagraphProperties.NumberingProperties);
+    }
+
+    [Theory]
+    [InlineData("upperLetter")]
+    [InlineData("upperRoman")]
+    [InlineData("lowerRoman")]
+    [InlineData("paren")]
+    [InlineData("circle")]
+    [InlineData("square")]
+    [InlineData("check")]
+    public void Numbering_gallery_and_start_value_are_native_and_roundtrip(string kind)
+    {
+        using var doc = new DocxAdapter().Create();
+        var p = Mutations.Add(doc.Root.Children.Single(), "paragraph", Props(("text", "List"), ("list", kind), ("listStart", "4")), null);
+        Assert.Equal("4", p.GetProps()["listStart"]);
+        using var reopened = Reopen(doc);
+        var props = reopened.Root.Children.Single().Children.First().GetProps();
+        Assert.Equal(kind, props["list"]); Assert.Equal("4", props["listStart"]);
+        var errors = new OpenXmlValidator(DocumentFormat.OpenXml.FileFormatVersions.Office2013).Validate(((DocxDocument)reopened).Package).Select(e => e.Path?.XPath + ": " + e.Description).ToArray(); Assert.True(errors.Length == 0, string.Join("\n", errors));
+    }
+
+    [Fact]
+    public void Section_numbering_and_separate_headers_survive_reopen_without_changing_other_sections()
+    {
+        using var doc = new DocxAdapter().Create();
+        var body = doc.Root.Children.Single();
+        var first = Mutations.Add(body, "paragraph", Props(("text", "Preface"), ("sectionBreak", "nextPage")), null);
+        Mutations.Set(doc.Root, Props(("header", "Shared"), ("evenAndOdd", "true"), ("evenHeader", "Even")));
+        Mutations.Set(first, Props(("pageNumberFormat", "lowerRoman"), ("pageNumberStart", "1"), ("header", "Preface header"), ("evenFooter", "前言 {page}")));
+        Mutations.Set(doc.Root, Props(("lastSection", "{\"header\":\"Body header\",\"pageNumberStart\":\"1\",\"pageNumberFormat\":\"decimal\"}")));
+        using var reopened = Reopen(doc);
+        var p = reopened.Root.Children.Single().Children.First().GetProps();
+        Assert.Equal("Preface header", p["header"]);
+        Assert.Equal("lowerRoman", p["pageNumberFormat"]);
+        Assert.Equal("1", p["pageNumberStart"]);
+        Assert.Equal("前言 {page}", p["evenFooter"]);
+        Assert.Equal("Body header", reopened.Root.GetProps()["header"]);
+        Assert.Equal("true", reopened.Root.GetProps()["evenAndOdd"]);
+        AssertValidSection(reopened);
+    }
+
+    [Fact]
     public void Watermark_and_background_roundtrip_and_survive_header_edits()
     {
         using var doc = new DocxAdapter().Create();

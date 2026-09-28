@@ -6,7 +6,7 @@ namespace Writer.Formats.Cite;
 
 /// <summary>The citation styles: MLA 9th edition, APA 7th, and Chicago 18th in its two systems, notes and bibliography (Chicago)
 /// and author-date (ChicagoDate).</summary>
-public enum CiteStyle { Mla, Apa, Chicago, ChicagoDate }
+public enum CiteStyle { Mla, Apa, Chicago, ChicagoDate, Gb7714, Ieee }
 
 /// <summary>A person as a source names them, or an organisation (Org) with its whole name in Last.</summary>
 public sealed record Person(string Last, string First = "", bool Org = false);
@@ -50,6 +50,8 @@ public sealed record Cited(Source Source, string Locator = "");
 public sealed class Citations
 {
     readonly CiteStyle _style;
+    readonly Dictionary<string, int> _numbers = new(StringComparer.OrdinalIgnoreCase);
+    public static bool Numeric(CiteStyle style) => style is CiteStyle.Gb7714 or CiteStyle.Ieee;
     readonly Dictionary<string, string> _yearSuffix = new(StringComparer.Ordinal); // tag → a, b… (author-date styles)
     readonly HashSet<string> _manyWorks = new(StringComparer.Ordinal); // tags of sources whose authors have another work in the list
     readonly HashSet<string> _sharedSurname = new(StringComparer.OrdinalIgnoreCase); // surnames of two different first authors
@@ -58,6 +60,7 @@ public sealed class Citations
     {
         _style = style;
         var list = sources.ToList();
+        foreach (var source in list) if (!_numbers.ContainsKey(source.Tag)) _numbers[source.Tag] = _numbers.Count + 1;
         foreach (var group in list.GroupBy(AuthorKey).Where(g => g.Key.Length > 0 && g.Count() > 1))
         {
             foreach (var s in group) _manyWorks.Add(s.Tag);
@@ -79,7 +82,8 @@ public sealed class Citations
     {
         CiteStyle.Mla => "Works Cited",
         CiteStyle.Apa => "References",
-        CiteStyle.ChicagoDate => "References",
+        CiteStyle.ChicagoDate or CiteStyle.Ieee => "References",
+        CiteStyle.Gb7714 => "参考文献",
         _ => "Bibliography",
     };
 
@@ -87,7 +91,8 @@ public sealed class Citations
     public static bool InNotes(CiteStyle style) => style == CiteStyle.Chicago;
 
     /// <summary>The list in the style's order: by author (else title), then year or title.</summary>
-    public IEnumerable<Source> Sort(IEnumerable<Source> sources) => sources.OrderBy(s => SortKey(s), StringComparer.Ordinal);
+    public IEnumerable<Source> Sort(IEnumerable<Source> sources) => Numeric(_style) ? sources.OrderBy(s => Number(s)) : sources.OrderBy(s => SortKey(s), StringComparer.Ordinal);
+    int Number(Source source) { if (!_numbers.TryGetValue(source.Tag, out var n)) _numbers[source.Tag] = n = _numbers.Count + 1; return n; }
 
     string SortKey(Source s)
     {
@@ -101,11 +106,75 @@ public sealed class Citations
     /// <summary>A source's entry in the works-cited list (Works Cited, References, Bibliography).</summary>
     public List<Span> Entry(Source s) => _style switch
     {
+        CiteStyle.Gb7714 => GbEntry(s),
+        CiteStyle.Ieee => IeeeEntry(s),
         CiteStyle.Mla => MlaEntry(s),
         CiteStyle.Apa => ApaEntry(s),
         CiteStyle.ChicagoDate => ChicagoEntry(s, dated: true),
         _ => ChicagoEntry(s, dated: false),
     };
+
+    List<Span> GbEntry(Source s)
+    {
+        var o = new Out(); o.Add($"[{Number(s)}] ");
+        static bool Chinese(string value) => value.Any(c => c is >= '\u3400' and <= '\u9fff');
+        string Name(Person p) => p.Org ? p.Last : Chinese(p.Last + p.First) ? p.Last + p.First : (p.Last + (p.First.Length > 0 ? " " + Initials(p.First).Replace(".", "") : "")).ToUpperInvariant();
+        var authors = s.Authors.Count > 0 ? s.Authors : s.Editors;
+        if (authors.Count > 0) o.Add(string.Join(", ", authors.Take(3).Select(Name)) + (authors.Count > 3 ? (Chinese(authors[0].Last) ? ", 等" : ", et al") : "")).End('.').Add(" ");
+        var code = s.Type switch { "article" or "magazine" => "J", "book" or "chapter" => "M", "conference" => "C", "newspaper" => "N", "thesis" => "D", "report" => "R", "webpage" => "EB/OL", _ => "Z" };
+        if (s.Type != "webpage" && s.Url.Length > 0) code += "/OL";
+        o.Add(s.Title).Add("[" + code + "]");
+        if (s.Type is "chapter" or "conference" && s.Container.Length > 0)
+        {
+            o.Add("//"); if (s.Editors.Count > 0) o.Add(string.Join(", ", s.Editors.Take(3).Select(Name))).End('.').Add(" ");
+            o.Add(s.Container);
+        }
+        o.End('.').Add(" ");
+        if (s.Type is "article" or "magazine" or "newspaper")
+        {
+            if (s.Container.Length > 0) o.Add(s.Container + ", ");
+            o.Add(s.Year);
+            if (s.Type == "newspaper" && s.Month.Length > 0) o.Add("-" + s.Month.PadLeft(2, '0') + (s.Day.Length > 0 ? "-" + s.Day.PadLeft(2, '0') : ""));
+            if (s.Volume.Length > 0) o.Add(", " + s.Volume);
+            if (s.Issue.Length > 0) o.Add("(" + s.Issue + ")");
+        }
+        else
+        {
+            if (s.Edition.Length > 0 && s.Edition != "1") o.Add(s.Edition + (Chinese(s.Title) ? "版. " : " ed. "));
+            if (s.Place.Length > 0) o.Add(s.Place + ": ");
+            if (s.Publisher.Length > 0) o.Add(s.Publisher + (s.Year.Length > 0 ? ", " : ""));
+            o.Add(s.Year);
+        }
+        if (s.Pages.Length > 0) o.Add(": " + s.Pages);
+        if (s.Url.Length > 0 && s.Accessed.Length > 0) o.Add("[" + s.Accessed + "]");
+        o.End('.');
+        if (s.Url.Length > 0) o.Add(" " + s.Url).End('.');
+        if (s.Doi.Length > 0) o.Add(" DOI: " + Regex.Replace(s.Doi, @"^(https?://(dx\.)?doi\.org/|doi:\s*)", "", RegexOptions.IgnoreCase)).End('.');
+        return o.Spans;
+    }
+
+    List<Span> IeeeEntry(Source s)
+    {
+        var o = new Out(); o.Add($"[{Number(s)}] ");
+        string Name(Person p) => p.Org || p.First.Length == 0 ? p.Last : Initials(p.First) + " " + p.Last;
+        var authors = s.Authors.Count > 0 ? s.Authors : s.Editors;
+        if (authors.Count > 0) o.Add(authors.Count > 6 ? Name(authors[0]) + " et al." : JoinAnd(authors.Select(Name).ToList())).Add(", ");
+        if (s.Type is "book" or "report" or "thesis") o.Italic(s.Title);
+        else o.Quoted(s.Title, ',');
+        if (s.Type == "book" && s.Edition.Length > 0) o.Add(", " + Ordinal(s.Edition) + " ed.");
+        if (s.Container.Length > 0) { o.Add(s.Type is "chapter" or "conference" ? " in " : " ").Italic(s.Container); }
+        if (s.Place.Length > 0) o.Add(", " + s.Place + (s.Publisher.Length > 0 ? ": " : ""));
+        if (s.Publisher.Length > 0) o.Add((s.Place.Length > 0 ? "" : ", ") + s.Publisher);
+        if (s.Volume.Length > 0) o.Add(", vol. " + s.Volume);
+        if (s.Issue.Length > 0) o.Add(", no. " + s.Issue);
+        if (s.Pages.Length > 0) o.Add(", " + (IsRange(s.Pages) ? "pp. " : "p. ") + Range(s.Pages));
+        if (s.Year.Length > 0) o.Add(", " + s.Year);
+        if (s.Doi.Length > 0) o.Add(", doi: " + Regex.Replace(s.Doi, @"^(https?://(dx\.)?doi\.org/|doi:\s*)", "", RegexOptions.IgnoreCase));
+        o.End('.');
+        if (s.Url.Length > 0) { if (s.Accessed.Length > 0) o.Add(" Accessed: " + s.Accessed).End('.'); o.Add(" [Online]. Available: " + s.Url); }
+        return o.Spans;
+    }
+    static string JoinAnd(List<string> names) => names.Count < 2 ? string.Join("", names) : string.Join(", ", names.Take(names.Count - 1)) + (names.Count > 2 ? ", and " : " and ") + names[^1];
 
     List<Span> MlaEntry(Source s)
     {
@@ -267,6 +336,12 @@ public sealed class Citations
     /// the sentence names the author (Pegg shows … (287)); noYear the year.</summary>
     public List<Span> InText(IReadOnlyList<Cited> cites, bool noAuthor = false, bool noYear = false)
     {
+        if (Numeric(_style))
+        {
+            var refs = cites.Select(c => (N: Number(c.Source), c.Locator)).Distinct().OrderBy(c => c.N).ToList();
+            if (_style == CiteStyle.Gb7714) return [new("[" + string.Join(",", refs.Select(c => c.N)) + "]" + (refs.Count == 1 ? refs[0].Locator : ""))];
+            return [new(string.Join(", ", refs.Select(c => "[" + c.N + (c.Locator.Length > 0 ? ", " + (IsRange(c.Locator) ? "pp. " : "p. ") + c.Locator : "") + "]")))];
+        }
         var o = new Out();
         o.Add("(");
         var ordered = _style == CiteStyle.Apa && cites.Count > 1 ? cites.OrderBy(c => SortKey(c.Source), StringComparer.Ordinal).ToList() : cites.ToList();

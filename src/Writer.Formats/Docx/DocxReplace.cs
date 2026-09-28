@@ -28,7 +28,7 @@ static class DocxReplace
             {
                 Source.Text => null,
                 Source.Markdown => new RunSpec("", s.Bold, s.Italic, s.Strike, s.Code, s.Link),
-                _ => s with { Text = "", Change = null, Author = null, Date = null },
+                _ => s with { Text = "", Change = null, Author = null, Date = null, RevisionId = null },
             };
             // Who and when are not compared: the editor's own <ins> / <del> carry neither, and must not rewrite stored revisions.
             return revisions && key is not null ? key with { Change = s.Change } : key;
@@ -37,6 +37,9 @@ static class DocxReplace
         var pieces = Pieces(doc, p, revisions);
         var oldText = string.Concat(pieces.Select(x => x.Spec.Text));
         var newText = string.Concat(specs.Select(s => s.Text));
+        var formatOnly = tracked && source != Source.Text && oldText == newText && pieces.All(x => x.Spec.Change is null);
+        var priorFormats = formatOnly ? pieces.Select(x => (x.Start, x.End, Properties: x.Run.RunProperties?.CloneNode(true) as W.RunProperties)).ToList() : null;
+        if (formatOnly) tracked = false;
         var hunks = Hunks(oldText, Keys(pieces.Select(x => x.Spec), Key), newText, Keys(specs, Key));
         var author = DocxRevisions.Author(doc);
         var now = DocxRevisions.Now();
@@ -48,6 +51,15 @@ static class DocxReplace
             Apply(doc, p, a, b, Take(specs, c, d), source, Key, tracked, revisions, author, now);
         }
         if (hunks.Count > 0) Tidy(p, before);
+        if (priorFormats is not null && hunks.Count > 0)
+        {
+            foreach (var boundary in priorFormats.Select(x => x.End).Distinct().OrderDescending()) Cut(Pieces(doc, p, false), boundary);
+            foreach (var piece in Pieces(doc, p, false))
+            {
+                var old = priorFormats.FirstOrDefault(x => piece.Start >= x.Start && piece.Start < x.End);
+                DocxRevisions.MarkRunFormat(doc, piece.Run, old.Properties);
+            }
+        }
     }
 
     /// <summary>Puts back together what the edit cut apart, so a paragraph does not end up in more pieces with every save: a run, link or

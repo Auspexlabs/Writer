@@ -29,8 +29,8 @@ static partial class DocxSection
         if (section is null) return;
         ReadPage(section, props);
         ReadDecorations(doc, props);
-        foreach (var (name, header, first) in Slots)
-            if (Part(doc, section, header, first) is { } part && Html(doc, part) is { Length: > 0 } html) props[name] = html;
+        ReadHeaders(doc, section, props);
+        if (DocxRun.On(doc.Main.DocumentSettingsPart?.Settings?.GetFirstChild<W.EvenAndOddHeaders>())) props["evenAndOdd"] = "true";
         if (DocxRun.On(section.GetFirstChild<W.TitlePage>())) props["titlePg"] = "true";
         if (section.GetFirstChild<W.LineNumberType>() is not null) props["lineNumbers"] = "true";
         if ((section.GetFirstChild<W.FootnoteProperties>() ?? (OpenXmlElement?)section.GetFirstChild<W.EndnoteProperties>())?.GetFirstChild<W.NumberingFormat>()?.Val?.InnerText is { Length: > 0 } notes)
@@ -54,6 +54,11 @@ static partial class DocxSection
             long right = m.Right?.Value ?? left;
             var preset = Margins.FirstOrDefault(x => Near(x.Top, top) && Near(x.Side, right) && Near(x.Top, bottom) && Near(x.Side, left));
             props["margin"] = preset.Name ?? $"{Cm(top)} {Cm(right)} {Cm(bottom)} {Cm(left)}";
+        }
+        if (section.GetFirstChild<W.PageNumberType>() is { } number)
+        {
+            if (number.Format?.InnerText is { } format) props["pageNumberFormat"] = format;
+            if (number.Start?.Value is { } start) props["pageNumberStart"] = start.ToString(CultureInfo.InvariantCulture);
         }
         props["columns"] = (section.GetFirstChild<W.Columns>()?.ColumnCount?.Value ?? 1).ToString(CultureInfo.InvariantCulture);
     }
@@ -128,6 +133,64 @@ static partial class DocxSection
 
     /// <summary>The document props for the section's header and footer references.</summary>
     static readonly (string Name, bool Header, bool First)[] Slots = [("header", true, false), ("footer", false, false), ("firstHeader", true, true), ("firstFooter", false, true)];
+
+    static OpenXmlPart? InheritedPart(DocxDocument doc, W.SectionProperties section, bool header, bool first, bool even = false)
+    {
+        OpenXmlPart? found = null;
+        foreach (var candidate in Sections(doc))
+        {
+            found = Part(doc, candidate, header, first, even) ?? found;
+            if (ReferenceEquals(candidate, section)) break;
+        }
+        return found;
+    }
+
+    public static void ReadHeaders(DocxDocument doc, W.SectionProperties section, Dictionary<string, string> props)
+    {
+        var linked = Slots.Where(s => Reference(section, s.Header, s.First) is null).Select(s => s.Name).Concat(new[] { true, false }.Where(h => Reference(section, h, false, true) is null).Select(h => h ? "evenHeader" : "evenFooter"));
+        props["linkedHeaders"] = "[" + string.Join(",", linked.Select(n => "\"" + n + "\"")) + "]";
+        foreach (var (name, header, first) in Slots)
+            if (InheritedPart(doc, section, header, first) is { } part) props[name] = Html(doc, part);
+        foreach (var header in new[] { true, false })
+            if (InheritedPart(doc, section, header, false, true) is { } part) props[header ? "evenHeader" : "evenFooter"] = Html(doc, part);
+    }
+
+    public static void SetEvenAndOdd(DocxDocument doc, bool on)
+    {
+        var settings = (doc.Main.DocumentSettingsPart ?? doc.Main.AddNewPart<DocumentSettingsPart>()).Settings ??= new W.Settings();
+        settings.RemoveAllChildren<W.EvenAndOddHeaders>();
+        if (on) settings.AddChild(new W.EvenAndOddHeaders());
+    }
+
+    public static void SetLast(DocxDocument doc, string json)
+    {
+        var section = Section(doc);
+        using var fields = System.Text.Json.JsonDocument.Parse(json);
+        foreach (var field in fields.RootElement.EnumerateObject())
+        {
+            var name = field.Name; var value = field.Value.GetString() ?? "";
+            if (name is "pageNumberFormat" or "pageNumberStart") SetNumber(section, name, value);
+            else if (name == "titlePg") { section.RemoveAllChildren<W.TitlePage>(); if (value == "true") section.AddChild(new W.TitlePage()); }
+            else if (name is "header" or "footer" or "firstHeader" or "firstFooter" or "evenHeader" or "evenFooter")
+                SetHeaderFooter(doc, section, name.EndsWith("Header", StringComparison.Ordinal) || name == "header", name.StartsWith("first", StringComparison.Ordinal), value, name.StartsWith("even", StringComparison.Ordinal), isolate: true);
+        }
+    }
+
+    public static void SetNumber(DocxDocument doc, string name, string value) => SetNumber(Section(doc), name, value);
+    public static void SetNumber(W.SectionProperties section, string name, string value)
+    {
+        var number = section.GetFirstChild<W.PageNumberType>() ?? Add(section, new W.PageNumberType());
+        if (name == "pageNumberFormat")
+        {
+            if (value is "none" or "") number.Format = null;
+            else if (NoteFormats.Contains(value)) number.Format = new W.NumberFormatValues(value);
+            else throw new WriterException(ErrorCode.Validation, $"Unknown page number format '{value}'", "Use decimal, lowerRoman, upperRoman, chineseCounting, lowerLetter or upperLetter.");
+        }
+        else if (value is "none" or "") number.Start = null;
+        else if (int.TryParse(value, out var start) && start >= 0 && start <= 32767) number.Start = start;
+        else throw new WriterException(ErrorCode.Validation, "Page number must be between 0 and 32767", "Use none to continue numbering from the previous section.");
+        if (!number.HasAttributes) number.Remove();
+    }
 
     /// <summary>titlePg: the first page shows the first-page header and footer (empty when there are none).</summary>
     public static void SetTitlePage(DocxDocument doc, bool on)
@@ -247,12 +310,12 @@ static partial class DocxSection
         return (uint)Math.Round(emu / (double)Twip);
     }
 
-    static W.HeaderFooterReferenceType? Reference(W.SectionProperties section, bool header, bool first) =>
+    static W.HeaderFooterReferenceType? Reference(W.SectionProperties section, bool header, bool first, bool even = false) =>
         section.Elements<W.HeaderFooterReferenceType>().FirstOrDefault(r => (r is W.HeaderReference) == header
-            && (r.Type?.Value ?? W.HeaderFooterValues.Default) == (first ? W.HeaderFooterValues.First : W.HeaderFooterValues.Default));
+            && (r.Type?.Value ?? W.HeaderFooterValues.Default) == (even ? W.HeaderFooterValues.Even : first ? W.HeaderFooterValues.First : W.HeaderFooterValues.Default));
 
-    static OpenXmlPart? Part(DocxDocument doc, W.SectionProperties section, bool header, bool first) =>
-        Reference(section, header, first)?.Id?.Value is { } id && doc.Main.TryGetPartById(id, out var part) ? part : null;
+    static OpenXmlPart? Part(DocxDocument doc, W.SectionProperties section, bool header, bool first, bool even = false) =>
+        Reference(section, header, first, even)?.Id?.Value is { } id && doc.Main.TryGetPartById(id, out var part) ? part : null;
 
     const char Keep = '\uE000', KeepEnd = '\uE001'; // a placeholder's number in the text while html becomes runs
 
@@ -362,18 +425,33 @@ static partial class DocxSection
         return doc.Main.Document!.Body!.Descendants<W.SectionProperties>().ToList();
     }
 
-    public static void SetHeaderFooter(DocxDocument doc, bool header, bool first, string html)
+    public static void SetHeaderFooter(DocxDocument doc, bool header, bool first, string html, bool even = false)
     {
-        foreach (var section in Sections(doc)) SetHeaderFooter(doc, section, header, first, html);
+        foreach (var section in Sections(doc)) SetHeaderFooter(doc, section, header, first, html, even);
     }
 
-    static void SetHeaderFooter(DocxDocument doc, W.SectionProperties section, bool header, bool first, string html)
+    public static void SetHeaderFooter(DocxDocument doc, W.SectionProperties section, bool header, bool first, string html, bool even = false, bool isolate = false)
     {
         var main = doc.Main;
-        var part = Part(doc, section, header, first);
-        if (html.Trim().Length == 0 && !(part is HeaderPart watermarkPart && watermarkPart.Header?.Elements<W.Paragraph>().Any(WatermarkParagraph) == true))
+        var part = Part(doc, section, header, first, even);
+        if (isolate)
         {
-            if (Reference(section, header, first) is not { } reference) return;
+            var inherited = InheritedPart(doc, section, header, first, even);
+            if (inherited is not null && (part is null || main.Document!.Descendants<W.HeaderFooterReferenceType>().Count(r => r.Id?.Value == main.GetIdOfPart(inherited)) > 1))
+            {
+                part = header ? main.AddNewPart<HeaderPart>() : main.AddNewPart<FooterPart>();
+                using (var stream = inherited.GetStream()) part.FeedData(stream);
+                foreach (var rel in inherited.Parts) part.AddPart(rel.OpenXmlPart, rel.RelationshipId);
+                foreach (var rel in inherited.ExternalRelationships) part.AddExternalRelationship(rel.RelationshipType, rel.Uri, rel.Id);
+                foreach (var rel in inherited.HyperlinkRelationships) part.AddHyperlinkRelationship(rel.Uri, rel.IsExternal, rel.Id);
+                Reference(section, header, first, even)?.Remove();
+                var slot = even ? W.HeaderFooterValues.Even : first ? W.HeaderFooterValues.First : W.HeaderFooterValues.Default;
+                AddReference(section, header ? new W.HeaderReference { Type = slot, Id = main.GetIdOfPart(part) } : new W.FooterReference { Type = slot, Id = main.GetIdOfPart(part) });
+            }
+        }
+        if (!isolate && html.Trim().Length == 0 && !(part is HeaderPart watermarkPart && watermarkPart.Header?.Elements<W.Paragraph>().Any(WatermarkParagraph) == true))
+        {
+            if (Reference(section, header, first, even) is not { } reference) return;
             var id = reference.Id?.Value;
             reference.Remove();
             if (part is not null && !main.Document!.Descendants<W.HeaderFooterReferenceType>().Any(r => r.Id?.Value == id)) main.DeletePart(part);
@@ -382,7 +460,7 @@ static partial class DocxSection
         if (part is null)
         {
             part = header ? main.AddNewPart<HeaderPart>() : main.AddNewPart<FooterPart>();
-            var type = first ? W.HeaderFooterValues.First : W.HeaderFooterValues.Default;
+            var type = even ? W.HeaderFooterValues.Even : first ? W.HeaderFooterValues.First : W.HeaderFooterValues.Default;
             AddReference(section, header ? new W.HeaderReference { Type = type, Id = main.GetIdOfPart(part) } : new W.FooterReference { Type = type, Id = main.GetIdOfPart(part) });
         }
         OpenXmlCompositeElement container = part is HeaderPart hp ? hp.Header ??= new W.Header() : ((FooterPart)part).Footer ??= new W.Footer();

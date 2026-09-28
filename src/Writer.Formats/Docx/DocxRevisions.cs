@@ -70,7 +70,73 @@ static class DocxRevisions
 
     /// <summary>Pending insertions and deletions of text and paragraph marks in the body.</summary>
     public static int Count(DocxDocument doc) =>
-        doc.Main.Document!.Body!.Descendants().Count(e => e is W.InsertedRun or W.DeletedRun || IsMark(e));
+        doc.Main.Document!.Body!.Descendants().Count(e => e is W.InsertedRun or W.DeletedRun or W.RunPropertiesChange or W.ParagraphPropertiesChange || IsMark(e));
+
+    public static void MarkRunFormat(DocxDocument doc, W.Run run, W.RunProperties? before)
+    {
+        var after = run.RunProperties ??= new W.RunProperties();
+        var original = before?.RunPropertiesChange?.PreviousRunProperties;
+        var previous = original is null ? new W.PreviousRunProperties() : (W.PreviousRunProperties)original.CloneNode(true);
+        if (original is null && before is not null) foreach (var child in before.ChildElements.Where(c => c is not W.RunPropertiesChange)) previous.Append(child.CloneNode(true));
+        var clean = (W.RunProperties)after.CloneNode(true); clean.RunPropertiesChange = null;
+        if (before is not null) { var prior = (W.RunProperties)before.CloneNode(true); prior.RunPropertiesChange = null; if (clean.InnerXml == prior.InnerXml) { after.RunPropertiesChange = before.RunPropertiesChange?.CloneNode(true) as W.RunPropertiesChange; return; } }
+        if (clean.InnerXml == previous.InnerXml) { after.RunPropertiesChange = null; return; }
+        after.RunPropertiesChange = new W.RunPropertiesChange(previous) { Author = Author(doc), Date = new DateTimeValue { InnerText = Now() }, Id = doc.NextId() };
+    }
+    public static void MarkParagraphFormat(DocxDocument doc, W.Paragraph p, W.ParagraphProperties? before)
+    {
+        var after = p.ParagraphProperties ??= new W.ParagraphProperties();
+        var original = before?.ParagraphPropertiesChange?.GetFirstChild<W.PreviousParagraphProperties>();
+        var previous = original is null ? new W.PreviousParagraphProperties() : (W.PreviousParagraphProperties)original.CloneNode(true);
+        if (original is null && before is not null) foreach (var child in before.ChildElements.Where(c => c is not W.ParagraphPropertiesChange and not W.SectionProperties and not W.ParagraphMarkRunProperties)) previous.Append(child.CloneNode(true));
+        var clean = (W.ParagraphProperties)after.CloneNode(true); clean.ParagraphPropertiesChange = null; clean.SectionProperties = null; clean.ParagraphMarkRunProperties = null;
+        if (before is not null) { var prior = (W.ParagraphProperties)before.CloneNode(true); prior.ParagraphPropertiesChange = null; prior.SectionProperties = null; prior.ParagraphMarkRunProperties = null; if (clean.InnerXml == prior.InnerXml) { after.ParagraphPropertiesChange = before.ParagraphPropertiesChange?.CloneNode(true) as W.ParagraphPropertiesChange; return; } }
+        if (clean.InnerXml == previous.InnerXml) { after.ParagraphPropertiesChange = null; return; }
+        after.ParagraphPropertiesChange = new W.ParagraphPropertiesChange(previous) { Author = Author(doc), Date = new DateTimeValue { InnerText = Now() }, Id = doc.NextId() };
+    }
+    static IEnumerable<OpenXmlElement> Formats(DocxDocument doc) => doc.Main.Document!.Body!.Descendants().Where(e => e is W.RunPropertiesChange or W.ParagraphPropertiesChange);
+    public static string FormatList(DocxDocument doc)
+    {
+        var list = new System.Text.Json.Nodes.JsonArray();
+        foreach (var e in Formats(doc)) list.Add((System.Text.Json.Nodes.JsonNode)new System.Text.Json.Nodes.JsonObject { ["id"] = e.GetAttribute("id", DocxTemplate.Ns).Value, ["author"] = e.GetAttribute("author", DocxTemplate.Ns).Value, ["text"] = e.Parent?.Parent?.InnerText ?? "", ["kind"] = e is W.RunPropertiesChange ? "run" : "paragraph" });
+        return list.ToJsonString();
+    }
+    public static void ResolveText(DocxDocument doc, string json)
+    {
+        using var request = System.Text.Json.JsonDocument.Parse(json);
+        var root = request.RootElement; var accept = root.GetProperty("accept").GetBoolean();
+        var body = doc.Main.Document!.Body!;
+        W.RunTrackChangeType? found = null;
+        if (root.TryGetProperty("id", out var id) && id.ValueKind == System.Text.Json.JsonValueKind.String)
+            found = body.Descendants<W.RunTrackChangeType>().FirstOrDefault(e => e is W.InsertedRun or W.DeletedRun && e.Id?.Value == id.GetString());
+        if (found is null && root.TryGetProperty("index", out var index))
+            found = body.Descendants<W.Paragraph>().SelectMany(p => DocxRuns.Walk(p, deleted: true)).Select(x => DocxRuns.Revision(x.Run)).Where(x => x is W.InsertedRun or W.DeletedRun).ElementAtOrDefault(index.GetInt32()) as W.RunTrackChangeType;
+        if (found is null) return;
+        if ((found is W.InsertedRun) == accept)
+        {
+            foreach (var t in found.Descendants<W.DeletedText>().ToList()) t.Parent!.ReplaceChild(new W.Text(t.Text) { Space = SpaceProcessingModeValues.Preserve }, t);
+            Unwrap(found);
+        }
+        else found.Remove();
+    }
+
+    public static void ResolveFormat(DocxDocument doc, string json)
+    {
+        using var request = System.Text.Json.JsonDocument.Parse(json);
+        var id = request.RootElement.GetProperty("id").GetString(); var accept = request.RootElement.GetProperty("accept").GetBoolean();
+        var found = Formats(doc).FirstOrDefault(e => e.GetAttribute("id", DocxTemplate.Ns).Value == id);
+        if (found is not null) ResolveFormatElement(found, accept);
+    }
+    static void ResolveFormatElement(OpenXmlElement change, bool accept)
+    {
+        if (change.Parent is not { } parent) return;
+        var before = change.FirstChild;
+        if (accept || before is null) { change.Remove(); return; }
+        var children = before.ChildElements.Select(c => c.CloneNode(true)).ToList();
+        var keep = change is W.ParagraphPropertiesChange ? parent.ChildElements.Where(c => c is W.SectionProperties or W.ParagraphMarkRunProperties).Select(c => c.CloneNode(true)).ToList() : [];
+        parent.RemoveAllChildren(); foreach (var c in children) parent.AppendChild(c); foreach (var c in keep) ((OpenXmlCompositeElement)parent).AddChild(c);
+        if (!parent.HasChildren && !parent.HasAttributes) parent.Remove();
+    }
 
     /// <summary>Accepts or rejects every revision in the paragraphs of a container (a paragraph itself, the body, a cell).</summary>
     public static void Resolve(OpenXmlElement container, bool accept)
@@ -81,6 +147,7 @@ static class DocxRevisions
 
     static void ResolveParagraph(W.Paragraph p, bool accept)
     {
+        foreach (var change in p.Descendants().Where(e => e is W.RunPropertiesChange or W.ParagraphPropertiesChange).ToList()) ResolveFormatElement(change, accept);
         foreach (var ins in p.Descendants<W.InsertedRun>().ToList())
         {
             if (ins.Parent is null) continue;

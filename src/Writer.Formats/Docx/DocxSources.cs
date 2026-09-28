@@ -20,7 +20,7 @@ static class DocxSources
     static readonly string[] MonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
     /// <summary>The style names a document gives: mla, apa, chicago (notes and bibliography), chicago-date (author-date).</summary>
-    public static readonly string[] StyleNames = ["mla", "apa", "chicago", "chicago-date"];
+    public static readonly string[] StyleNames = ["mla", "apa", "chicago", "chicago-date", "gb7714", "ieee"];
 
     public static CiteStyle? StyleOf(string name) => name switch
     {
@@ -28,6 +28,8 @@ static class DocxSources
         "apa" => CiteStyle.Apa,
         "chicago" => CiteStyle.Chicago,
         "chicago-date" => CiteStyle.ChicagoDate,
+        "gb7714" => CiteStyle.Gb7714,
+        "ieee" => CiteStyle.Ieee,
         _ => null,
     };
 
@@ -42,6 +44,8 @@ static class DocxSources
         if (own is not null && StyleOf(own) is { } style) return style;
         var word = (string?)Root(doc)?.Attribute("StyleName") ?? (string?)Root(doc)?.Attribute("SelectedStyle") ?? "";
         return word.Contains("MLA", StringComparison.OrdinalIgnoreCase) ? CiteStyle.Mla
+            : word.Contains("IEEE", StringComparison.OrdinalIgnoreCase) ? CiteStyle.Ieee
+            : word.Contains("GB", StringComparison.OrdinalIgnoreCase) ? CiteStyle.Gb7714
             : word.Contains("APA", StringComparison.OrdinalIgnoreCase) ? CiteStyle.Apa
             : word.Contains("Chicago", StringComparison.OrdinalIgnoreCase) || word.Contains("Turabian", StringComparison.OrdinalIgnoreCase) ? CiteStyle.ChicagoDate
             : null;
@@ -58,6 +62,8 @@ static class DocxSources
         // Word's own style files: the ones every Word has, nearest to MLA 9, APA 7 and Chicago 18
         var (file, word, version) = style switch
         {
+            CiteStyle.Gb7714 => ("\\GB7714.XSL", "GB7714", "2015"),
+            CiteStyle.Ieee => ("\\IEEE.XSL", "IEEE", "2006"),
             CiteStyle.Mla => ("\\MLASeventhEditionOfficeOnline.xsl", "MLA", "7"),
             CiteStyle.Apa => ("\\APASixthEditionOfficeOnline.xsl", "APA", "6"),
             _ => ("\\CHICAGO.XSL", "Chicago", "16"),

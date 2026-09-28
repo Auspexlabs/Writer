@@ -37,6 +37,29 @@ public class DocxCitationTests
         return (doc, p);
     }
 
+    [Theory]
+    [InlineData("ieee")]
+    [InlineData("gb7714")]
+    public void Numeric_citations_renumber_after_paragraph_reorder_and_keep_bibliography_in_sync(string style)
+    {
+        var (doc, first) = Essay(style); using var owned = doc;
+        Mutations.Set(doc.Root, Props(("source", KuhnJson)));
+        var second = Mutations.Add(Body(doc), "paragraph", Props(("text", "Second ")), null);
+        Mutations.Add(first, "citation", Props(("sources", "Peg15")), null);
+        Mutations.Add(second, "citation", Props(("sources", "Kuh62")), null);
+        Mutations.Add(Body(doc), "bibliography", Props(), null);
+        var native = ((DocxDocument)doc).Main.Document!.Body!;
+        var a = native.Elements<W.Paragraph>().First(); var b = native.Elements<W.Paragraph>().Skip(1).First(); b.Remove(); native.InsertBefore(b, a);
+        using var reopened = Reopen(doc);
+        var paragraphs = ((DocxDocument)reopened).Main.Document!.Body!.Elements<W.Paragraph>().ToArray();
+        Assert.Contains("[1]", paragraphs[0].InnerText);
+        Assert.Contains("[2]", paragraphs[1].InnerText);
+        Assert.Equal(style, reopened.Root.GetProps()["citationStyle"]);
+        var bibliography = ((DocxDocument)reopened).Main.Document!.Body!.Descendants<W.SdtBlock>().First().InnerText;
+        Assert.True(bibliography.IndexOf("Kuhn", StringComparison.OrdinalIgnoreCase) < bibliography.IndexOf("Pegg", StringComparison.OrdinalIgnoreCase));
+        AssertValid(reopened);
+    }
+
     [Fact]
     public void Sources_live_in_Words_bibliography_part_with_tags_as_Word_makes_them()
     {

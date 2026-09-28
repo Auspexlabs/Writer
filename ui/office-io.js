@@ -494,10 +494,13 @@ export function marginsCm(margin) {
 }
 /** The Noto aliases of assets/fonts/fonts.css (local() fonts only, nothing to fetch), for the pages the app writes out: prints and HTML exports. */
 export const fontFaces = () => [...document.styleSheets].filter(s => /\/fonts\.css$/.test(s.href)).flatMap(s => [...s.cssRules].map(r => r.cssText)).filter(t => t.includes('local(')).join('');
-export function printDoc(doc, ctx) {
+export async function printDoc(doc, ctx) {
   let css = '', body = '';
   const fonts = `<style>${fontFaces()}</style>`;
-  if (doc.type === 'docx') {
+  const word = doc.type === 'docx' && Array.from(document.querySelectorAll('.wd-ed[contenteditable="true"]')).find(ed => ed.__writerDocId?.() === doc.id);
+  if (word?.__writerPrint) {
+    ({ css, body } = await word.__writerPrint());
+  } else if (doc.type === 'docx') {
     const pg = doc.page || {}; const sz = PAGES[pg.size] || PAGES.A4; const [w, h] = pg.orient === 'landscape' ? [sz[1], sz[0]] : sz;
     css = `@page{size:${w} ${h};margin:${marginsCm(pg.margin).map(x => +x.toFixed(2) + 'cm').join(' ')}}body{margin:0;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;color:#1D1D1F}.hd,.ft{font-size:9pt;color:#8E8E93}.ed{column-count:${pg.cols || 1};column-gap:32px}` + DOC_CSS;
     body = (doc.header ? `<div class="hd">${doc.header}</div>` : '') + `<div class="ed">${doc.html}</div>` + (doc.footer ? `<div class="ft">${doc.footer}</div>` : ''); // header html as the engine gives it
@@ -513,6 +516,8 @@ export function printDoc(doc, ctx) {
   f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
   document.body.appendChild(f);
   f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  await f.contentDocument.fonts?.ready;
+  await Promise.all(Array.from(f.contentDocument.images).map(im => im.complete ? Promise.resolve() : new Promise(resolve => { const timer = setTimeout(resolve, 5000); im.onload = im.onerror = () => { clearTimeout(timer); resolve(); }; })));
   setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { } setTimeout(() => f.remove(), 2000); }, 700);
 }
 

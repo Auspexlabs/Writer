@@ -123,7 +123,7 @@ sealed class DocxBibliography(DocxDocument doc, W.SdtBlock sdt) : Node
     public static void Fill(DocxDocument doc, W.SdtBlock sdt, string? title)
     {
         var style = DocxSources.Style(doc) ?? CiteStyle.Mla;
-        var sources = DocxSources.Read(doc);
+        var sources = DocxCitations.OrderedSources(doc);
         var format = new Citations(style, sources);
         title ??= Citations.ListTitle(style);
         var content = sdt.SdtContentBlock ??= new W.SdtContentBlock();
@@ -347,11 +347,27 @@ static class DocxCitations
 
     /// <summary>Draws every citation, note citation and works-cited list again from the sources in the document's style: citations in
     /// the order they are read (a Chicago note cites in full the first time, short after), each list sorted as the style sorts.</summary>
+    public static List<Source> OrderedSources(DocxDocument doc)
+    {
+        var sources = DocxSources.Read(doc);
+        if (!Citations.Numeric(DocxSources.Style(doc) ?? CiteStyle.Mla)) return sources;
+        var order = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        void Scan(OpenXmlElement container)
+        {
+            foreach (var e in container.Descendants())
+                if (e is W.SdtRun sdt && IsCitation(sdt)) { foreach (var c in CiteField.Of(sdt).Sources) if (!order.ContainsKey(c.Tag)) order[c.Tag] = order.Count; }
+                else if (e is W.FootnoteReference f && f.Id?.Value is { } fid && DocxFootnotes.Note(doc, false, fid.ToString(CultureInfo.InvariantCulture)) is { } fn) Scan(fn);
+                else if (e is W.EndnoteReference n && n.Id?.Value is { } nid && DocxFootnotes.Note(doc, true, nid.ToString(CultureInfo.InvariantCulture)) is { } en) Scan(en);
+        }
+        if (doc.Main.Document?.Body is { } body) Scan(body);
+        return sources.OrderBy(s => order.GetValueOrDefault(s.Tag, int.MaxValue)).ToList();
+    }
+
     public static void Refresh(DocxDocument doc)
     {
         var body = doc.Main.Document?.Body;
         if (body is null) return;
-        var sources = DocxSources.Read(doc);
+        var sources = DocxCitations.OrderedSources(doc);
         var style = DocxSources.Style(doc) ?? CiteStyle.Mla;
         var format = new Citations(style, sources);
         var inText = style == CiteStyle.Chicago ? new Citations(CiteStyle.ChicagoDate, sources) : format; // Chicago's notes style: a citation in the text is author-date

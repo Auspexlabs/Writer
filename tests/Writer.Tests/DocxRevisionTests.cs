@@ -16,6 +16,29 @@ namespace Writer.Tests;
 /// <summary>Tracked changes (w:ins / w:del, the track setting, accept and reject) and comments in Word documents.</summary>
 public class DocxRevisionTests
 {
+    [Fact]
+    public void Tracked_character_and_paragraph_format_changes_can_be_rejected_separately()
+    {
+        using var doc = new DocxAdapter().Create();
+        var p = Mutations.Add(doc.Root.Children.Single(), "paragraph", Props(("html", "plain <i>italic</i>")), null);
+        Mutations.Set(doc.Root, Props(("track", "true"), ("author", "Reviewer")));
+        Mutations.Set(p, Props(("html", "<b>plain italic</b>"), ("align", "center")));
+        var native = ((DocxDocument)doc).Main.Document!.Body!;
+        Assert.Empty(native.Descendants<W.InsertedRun>()); Assert.Empty(native.Descendants<W.DeletedRun>());
+        Assert.NotEmpty(native.Descendants<W.RunPropertiesChange>());
+        Assert.Single(native.Descendants<W.ParagraphPropertiesChange>());
+        var id = native.Descendants<W.ParagraphPropertiesChange>().Single().Id!.Value;
+        Mutations.Set(doc.Root, Props(("formatRevision", "{\"id\":\"" + id + "\",\"accept\":false}")));
+        Assert.False(p.GetProps().ContainsKey("align"));
+        Assert.NotEmpty(native.Descendants<W.RunPropertiesChange>());
+        Mutations.Set(doc.Root, Props(("reject", "all")));
+        Assert.Empty(native.Descendants<W.RunPropertiesChange>());
+        Assert.Equal("plain <i>italic</i>", Html(p));
+        using var reopened = Reopen(doc); AssertValid(reopened);
+    }
+
+    static string Html(Node node) => System.Text.RegularExpressions.Regex.Replace(node.GetProps()["html"], " data-rid=\"[^\"]*\"", "");
+
     static Dictionary<string, string> Props(params (string Name, string Value)[] pairs) => pairs.ToDictionary(p => p.Name, p => p.Value);
 
     static byte[] Save(Document doc)
@@ -50,16 +73,16 @@ public class DocxRevisionTests
         var inserted = Para(doc, "marked as an INSERTION");
         var run = inserted.Children.Single(c => c.Kind == "run").GetProps();
         Assert.Equal(("inserted", "Alice", "2026-05-25T18:00:00+08:00"), (run["change"], run["author"], run["date"]));
-        Assert.Equal("<ins data-author=\"Alice\" data-date=\"2026-05-25T18:00:00+08:00\">This run will be marked as an INSERTION.</ins>", inserted.GetProps()["html"]);
+        Assert.Equal("<ins data-author=\"Alice\" data-date=\"2026-05-25T18:00:00+08:00\">This run will be marked as an INSERTION.</ins>", Html(inserted));
 
         var mixed = Para(doc, "7a. The ");
         Assert.Equal("7a. The cat jumped and another fox ran fast. (regex tracks only the 1st 'fox'→'cat')", mixed.Text);
-        Assert.StartsWith("7a. The <del data-author=\"Iris\" data-date=\"2026-05-25T18:50:00+08:00\">fox</del><ins data-author=\"Iris\"", mixed.GetProps()["html"]);
+        Assert.StartsWith("7a. The <del data-author=\"Iris\" data-date=\"2026-05-25T18:50:00+08:00\">fox</del><ins data-author=\"Iris\"", Html(mixed));
         var deleted = mixed.Children[1].GetProps();
         Assert.Equal(("fox", "deleted"), (deleted["text"], deleted["change"]));
 
         var props = doc.Root.GetProps();
-        Assert.Equal("14", props["revisions"]);
+        Assert.Equal("24", props["revisions"]);
         Assert.False(props.ContainsKey("track"));
         Assert.DoesNotContain("marked as a DELETION", Views.Text(doc.Root));
         Assert.DoesNotContain("change=", Views.Outline(doc.Root));
@@ -86,7 +109,7 @@ public class DocxRevisionTests
 
         using var reopened = Reopen(doc);
         var again = PathResolver.Single(reopened.Root, "/body/paragraph[1]");
-        Assert.Equal("Keep <del data-author=\"Writer\" data-date=\"" + again.Children[1].GetProps()["date"] + "\">old</del><ins data-author=\"Ann\" data-date=\"2026-01-02T03:04:05Z\">new</ins> <ins data-author=\"Writer\" data-date=\"" + again.Children[4].GetProps()["date"] + "\"><b>bold</b></ins> text", again.GetProps()["html"]);
+        Assert.Equal("Keep <del data-author=\"Writer\" data-date=\"" + again.Children[1].GetProps()["date"] + "\">old</del><ins data-author=\"Ann\" data-date=\"2026-01-02T03:04:05Z\">new</ins> <ins data-author=\"Writer\" data-date=\"" + again.Children[4].GetProps()["date"] + "\"><b>bold</b></ins> text", Html(again));
         Assert.Equal("true", again.Children[4].GetProps()["bold"]);
         Assert.EndsWith("Z", again.Children[1].GetProps()["date"]);
 
@@ -235,14 +258,14 @@ public class DocxRevisionTests
 
         // Writing back what was read changes nothing at all.
         var before = p.GetRaw();
-        p = Mutations.Set(p, Props(("html", p.GetProps()["html"])));
+        p = Mutations.Set(p, Props(("html", Html(p))));
         p = Mutations.Set(p, Props(("text", p.Text!)));
         Assert.Equal(before, p.GetRaw());
 
         // A word before them, a word after them (html, as the editor saves), and words beside them (plain text).
-        p = Mutations.Set(p, Props(("html", p.GetProps()["html"].Replace("Alpha", "Beta"))));
+        p = Mutations.Set(p, Props(("html", Html(p).Replace("Alpha", "Beta"))));
         Assert.Equal("Beta one [F:7] two [three] [MATH] four [PIC] five {DATE|today} omega" + tail, Signature(p));
-        p = Mutations.Set(p, Props(("html", p.GetProps()["html"].Replace("omega", "<b>gamma</b>"))));
+        p = Mutations.Set(p, Props(("html", Html(p).Replace("omega", "<b>gamma</b>"))));
         Assert.Equal("Beta one [F:7] two [three] [MATH] four [PIC] five {DATE|today} gamma" + tail, Signature(p));
         Assert.Equal("true", p.Children.Single(c => c.Text == "gamma").GetProps()["bold"]);
         p = Mutations.Set(p, Props(("text", p.Text!.Replace("three", "drei").Replace("four", "vier"))));
@@ -305,7 +328,7 @@ public class DocxRevisionTests
         using var doc = new DocxAdapter().Create();
         var p = Mutations.Add(doc.Root.Children.Single(), "paragraph",
             Props(("html", "Go <a href=\"https://example.com\">to the site</a> <ins data-author=\"Ann\" data-date=\"2026-01-01T00:00:00Z\">now or later</ins>")), null);
-        var html = p.GetProps()["html"].Replace("the site", "our site").Replace("now or", "now and");
+        var html = Html(p).Replace("the site", "our site").Replace("now or", "now and");
         p = Mutations.Set(p, Props(("html", html)));
         Assert.Equal("Go to our site now and later", p.Text);
         const string url = "https://example.com";
@@ -336,7 +359,7 @@ public class DocxRevisionTests
         Assert.Empty(body.Descendants<W.DeletedRun>());
         Assert.DoesNotContain(body.Descendants<W.ParagraphMarkRunProperties>().SelectMany(m => m.ChildElements), e => e is W.Inserted or W.Deleted);
         var raw = body.OuterXml;
-        Assert.Contains("w:rPrChange", raw);
+        Assert.DoesNotContain("w:rPrChange", raw);
         Assert.Contains("w:moveFrom", raw);
         Assert.Contains("w:cellIns", raw);
         AssertValid(accepted);
@@ -353,10 +376,10 @@ public class DocxRevisionTests
         using var one = OpenDocx(Fixture());
         var p = Mutations.Set(Para(one, "7a. The "), Props(("reject", "all")));
         Assert.Equal("7a. The fox jumped and another fox ran fast. (regex tracks only the 1st 'fox'→'cat')", p.Text);
-        Assert.Equal("12", one.Root.GetProps()["revisions"]);
+        Assert.Equal("22", one.Root.GetProps()["revisions"]);
         Assert.Contains("<w:del ", Para(one, "8a.").GetRaw());
         using var reopened = Reopen(one);
-        Assert.Equal("12", reopened.Root.GetProps()["revisions"]);
+        Assert.Equal("22", reopened.Root.GetProps()["revisions"]);
     }
 
     [Fact]
