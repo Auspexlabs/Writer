@@ -2,7 +2,7 @@
 
 `dist/` 是整个站点：一个 `index.html`，加上 `assets/` 里的样式、脚本、标志、文件图标和截图。没有框架，没有构建步骤。
 
-站点放在中国大陆的服务器上，所以页面不发任何外部请求：不用 Google Fonts、CDN 或统计脚本，字体用系统自带的（苹方、微软雅黑等）。改页面时保持这一点：
+站点放在中国大陆的服务器上，所以页面不发任何第三方请求：不用 Google Fonts、CDN 或第三方统计脚本，字体用系统自带的（苹方、微软雅黑等）。下载计数只请求本站的接口。改页面时保持这一点：
 
 ```bash
 grep -rE "https?://" website/dist   # 只应看到 SVG 里的 xmlns 命名空间
@@ -25,6 +25,20 @@ python3 -m http.server 8765 --directory website/dist
 - 应用自己的更新器先读 `updates/mac/latest.json` 和 `updates/windows/latest.json`，读不到（连接错误或非 2xx）才退回 GitHub。所以 `updates/` 下缺文件时必须是普通 404，不能配成返回 200 页面或 204，否则更新检查会失效。
 
 仓库里不放 `download/` 目录。本地想看版本行，就临时建一个 `dist/download/latest.json`，看完删掉。
+
+## 下载统计
+
+打开 `https://thewriter.cn/stats/` 即可查看，无需登录，官网页脚也有入口。静态页面显示累计、今日、Mac、Windows 和最近 30 天的每日次数。服务每 30 秒生成一次静态 JSON，页面每 30 秒读取；日期以北京时间计算。
+
+统计口径：官网实际 Mac/Windows 下载按钮的一次点击记一次，重复点击分别计数。支持普通点击、键盘激活和鼠标中键；顶部跳转下载区域、页面浏览、安装包直链、应用更新和下载分片请求不计数。右键菜单另存为、禁用 JavaScript、网络阻断统计请求时无法记录。数字不是独立人数、安装数或成功下载数，启用前的历史无法补记。
+
+`assets/download-count.js` 用 `sendBeacon` 发送平台；无法排队时仅回退一次 `fetch keepalive`，不阻止下载、不重试。服务端仅保存日期、平台和聚合计数，没有访客 ID、Cookie、IP、浏览器信息或单次点击记录。轻量接口不识别独立访客，也不保证抵御伪造点击。
+
+`stats/server.py` 只监听 `127.0.0.1:8787`，由 Caddy 代理。`/api/download-clicks` 接受本站 Origin 的小型 POST。统计服务将汇总原子写入 `/srv/writer/public-stats/data.json`，Caddy 在 `/stats/data.json` 直接提供静态文件，并让浏览器重新验证缓存；旧地址 `/api/download-stats` 也读取同一文件。只有专用 `writer-stats-public` 组可以写入该目录，Caddy 读取公开的汇总文件；数据库仍在 systemd 私有目录中，没有公开。即使计数服务暂时停止，已有静态快照仍可查看，页面显示其更新时间。
+
+`deploy.sh` 会调用 `deploy-stats.sh` 安装并启动 `writer-download-stats.service`。数据库保存在服务器 `/var/lib/writer-download-stats/stats.sqlite3`，与站点文件分开，重新部署和重启保留计数。静态快照在服务启动时立即重新生成，且不会被站点的 rsync 删除。备份运行中的数据库时使用 Python sqlite3 的 `Connection.backup()`，不要单独复制 WAL 模式下的主文件。早期密码文件已不再使用。
+
+验证：`python3 -B -m unittest discover -s website/stats -p 'test_*.py'` 和 `node --test website/stats/*.test.mjs`。本机接口测试可运行 `python3 -B website/stats/server.py --db /tmp/writer-stats-test.sqlite3 --port 8787`。测试点击应使用临时数据库，不往正式统计写入样例。
 
 ## 截图
 

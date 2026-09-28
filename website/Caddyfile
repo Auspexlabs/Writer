@@ -3,6 +3,15 @@
 thewriter.cn, www.thewriter.cn {
 	root * /srv/writer/site
 	encode zstd gzip
+	# Public static dashboard and aggregate JSON; only click recording needs the service.
+	@stats_data path /stats/data.json /api/download-stats
+	handle @stats_data {
+		root * /srv/writer/public-stats
+		rewrite * /data.json
+		header Cache-Control "no-cache"
+		file_server
+	}
+	reverse_proxy /api/download-clicks 127.0.0.1:8787
 	# /download/mac and /download/windows → the current installers, written by deploy.sh --dmg and --exe
 	import /srv/writer/redirects.caddy
 	header /download/latest.json Cache-Control no-cache

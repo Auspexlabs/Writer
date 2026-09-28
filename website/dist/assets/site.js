@@ -53,6 +53,7 @@ document.querySelectorAll('[data-rail]').forEach((button) => {
 });
 
 document.querySelectorAll('[data-copy]').forEach((button) => {
+  const label = button.textContent;
   button.addEventListener('click', async () => {
     const code = document.getElementById(button.dataset.copy);
     try {
@@ -61,6 +62,6 @@ document.querySelectorAll('[data-copy]').forEach((button) => {
     } catch {
       button.textContent = '复制失败';
     }
-    setTimeout(() => { button.textContent = '复制'; }, 1800);
+    setTimeout(() => { button.textContent = label; }, 1800);
   });
 });

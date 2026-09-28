@@ -39,6 +39,7 @@ $ssh_ "$host" 'set -e
   [ -f /srv/writer/redirects.caddy ] || echo "# written by website/deploy.sh --dmg and --exe" > /srv/writer/redirects.caddy'
 
 # download/ and updates/ exist only on the server, so --delete leaves them alone.
+bash ./deploy-stats.sh
 rsync_ --delete --exclude /download --exclude /updates dist/ "$host:/srv/writer/site/"
 rsync_ Caddyfile "$host:/srv/writer/Caddyfile.new"
 

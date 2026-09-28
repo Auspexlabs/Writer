@@ -251,6 +251,17 @@ section[id] { scroll-margin-top: 64px; }
   .cta-wrap::before { opacity: .22; }
 }
 
+/* Community */
+.community { margin-top: 40px; }
+.community-card { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; padding: 30px 36px; border-radius: 28px; }
+.community-card h2 { margin: 0; font-size: clamp(20px, 2.4vw, 26px); letter-spacing: -.02em; }
+.community-card p { margin: 7px 0 0; color: var(--ink-2); font-size: 14px; }
+.community-join { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
+.community-join span { display: block; color: var(--ink-3); font-size: 12px; }
+.community-join strong { display: block; font-size: 25px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.community-join button { border: 0; cursor: pointer; font-family: inherit; }
+@media (max-width: 600px) { .community-card { padding: 24px; } .community-join { width: 100%; justify-content: space-between; gap: 12px; } }
+
 /* Footer */
 .foot { margin-top: clamp(64px, 8vw, 104px); }
 .foot-in { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 28px 0 44px; border-top: 1px solid var(--line); }

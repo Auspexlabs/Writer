@@ -1,0 +1,22 @@
+[Unit]
+Description=Writer website download click counter
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=writer-download-stats
+SupplementaryGroups=writer-stats-public
+ReadWritePaths=/srv/writer/public-stats
+ExecStart=/usr/bin/python3 /srv/writer/download-stats/server.py --db /var/lib/writer-download-stats/stats.sqlite3 --snapshot /srv/writer/public-stats/data.json
+Restart=on-failure
+RestartSec=3
+Environment=PYTHONDONTWRITEBYTECODE=1
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

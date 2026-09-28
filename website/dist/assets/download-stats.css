@@ -1,0 +1,26 @@
+.stats-private { margin-left: auto; color: var(--ink-3); font-size: 14px; }
+.stats-main { max-width: 1080px; padding-block: 64px; }
+.stats-eyebrow { margin: 0 0 14px; color: var(--ink-3); font: 11px var(--mono); letter-spacing: .16em; }
+.stats-main h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); line-height: 1.25; letter-spacing: -.04em; }
+.stats-intro { margin: 20px 0 8px; color: var(--ink-2); font-size: 15px; }
+.stats-status { min-height: 22px; margin: 0 0 30px; color: var(--ink-3); font-size: 12px; }
+.stats-cards { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 16px; }
+.stats-card { padding: 26px; border-radius: 24px; }
+.stats-card h2 { margin: 0; font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.stats-card strong { display: block; margin-block: 12px 8px; font-size: clamp(30px, 4vw, 46px); font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.stats-card p { margin: 0; color: var(--ink-3); font-size: 11px; }
+.stats-history { margin-top: 28px; padding: 30px; border-radius: 28px; }
+.stats-history-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.stats-history h2 { margin: 0; font-size: 20px; }
+.stats-history-heading p, .stats-history-heading span, #empty { color: var(--ink-3); font-size: 12px; }
+.stats-table { overflow-x: auto; }
+.stats-table table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.stats-table th, .stats-table td { padding: 13px 12px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.stats-table th { color: var(--ink-3); font-size: 12px; font-weight: 500; }
+.stats-table th:first-child, .stats-table td:first-child { text-align: left; padding-left: 0; }
+.stats-table td:last-child { font-weight: 600; }
+.stats-footnote { max-width: 760px; color: var(--ink-3); font-size: 12px; margin: 24px 4px 0; }
+#refresh { border: 0; cursor: pointer; font-family: inherit; }
+#refresh:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 800px) { .stats-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .stats-main { padding-block: 38px; } .stats-card { padding: 20px; } .stats-history { padding: 20px; } .stats-history-heading { display: block; } .stats-history-heading > span { display: none; } }

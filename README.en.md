@@ -20,6 +20,8 @@
   <a href="README.md">中文</a>
 </p>
 
+<p align="center">QQ community group: <strong>799276170</strong> · Share tips, report issues and suggest improvements.</p>
+
 <p align="center">
   <img src="docs/images/hero.webp" alt="The Writer window with an event plan open. In the AI panel on the right the user asks to move the event to the following weekend and update every date; the assistant has changed the opening paragraph, the schedule table and one note, the changes are marked in the document, and buttons below offer to keep or undo them.">
 </p>
@@ -182,6 +184,7 @@ This is a summary; the LICENSE and NOTICE files are what count.
 
 ## Contact
 
+- QQ community group: **799276170** (search for the group number in QQ; Chinese-language community)
 - Commercial licensing, support and feedback: [mosheng9@outlook.com](mailto:mosheng9@outlook.com)
 
 ---

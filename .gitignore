@@ -14,6 +14,8 @@ dist/
 .signing/
 desktop/SIGNING.local.md
 website/.deploy.local
+website/.stats/
+website/stats/__pycache__/
 
 # fidelity audit output (node tools/fidelity/roundtrip.mjs)
 tools/fidelity/out/

@@ -19,6 +19,8 @@
   <a href="README.en.md">English</a>
 </p>
 
+<p align="center">QQ 交流群：<strong>799276170</strong> · 欢迎交流使用技巧、反馈问题和建议。</p>
+
 <p align="center">
   <img src="docs/images/hero.webp" alt="Writer 窗口：打开的是《城市咖啡节活动方案》。用户在右侧 AI 助手里说“活动改到下个周末了，把文中的日期都改过来”，助手改了开头一段、日程表和一条注意事项，改动在文档里标出，下方可以选择保留或撤销。">
 </p>
@@ -147,6 +149,7 @@ SKILL.md      给 AI 智能体的使用说明
 
 ## 联系
 
+- QQ 交流群：**799276170**（在 QQ 中搜索群号加入）
 - 商业许可、技术支持和反馈：[mosheng9@outlook.com](mailto:mosheng9@outlook.com)
 
 ---

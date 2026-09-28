@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>下载统计 · Writer</title>
+  <link rel="icon" href="/assets/writer-logo-light.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/download-stats.css">
+  <script src="/assets/download-stats.js?v=2" defer></script>
+</head>
+<body>
+  <header class="top"><div class="wrap top-in">
+    <a class="brand" href="/" aria-label="Writer 官网"><span class="wordmark" aria-hidden="true"></span></a>
+    <span class="stats-private">下载统计</span>
+    <button class="btn btn-small" id="refresh" type="button">刷新数据</button>
+  </div></header>
+  <main class="wrap stats-main">
+    <p class="stats-eyebrow">WRITER · DOWNLOADS</p>
+    <h1>每一次下载，从这里看见。</h1>
+    <p class="stats-intro">官网的 Mac 或 Windows 下载按钮，每点击一次记为一次下载。重复点击分别计数。</p>
+    <p id="status" class="stats-status" role="status">正在读取统计…</p>
+    <div class="stats-cards">
+      <section class="glass stats-card stats-total"><h2>累计下载</h2><strong data-stat="total">—</strong><p id="since">从统计启用时开始累计</p></section>
+      <section class="glass stats-card"><h2>今日下载</h2><strong data-stat="today">—</strong><p>北京时间 00:00 起</p></section>
+      <section class="glass stats-card"><h2>Mac</h2><strong data-stat="mac">—</strong><p>累计下载次数</p></section>
+      <section class="glass stats-card"><h2>Windows</h2><strong data-stat="windows">—</strong><p>累计下载次数</p></section>
+    </div>
+    <section class="glass stats-history">
+      <div class="stats-history-heading"><div><h2>最近 30 天</h2><p>近 7 天 <b data-stat="last_7_days">—</b> 次 · 近 30 天 <b data-stat="last_30_days">—</b> 次</p></div><span>按北京时间汇总</span></div>
+      <div class="stats-table"><table><thead><tr><th scope="col">日期</th><th scope="col">Mac</th><th scope="col">Windows</th><th scope="col">合计</th></tr></thead><tbody id="days"></tbody></table></div>
+      <p id="empty" hidden>还没有下载记录。收到第一次点击后，这里就会更新。</p>
+    </section>
+    <p class="stats-footnote">这里记录下载按钮的点击次数，不代表独立用户数、安装数或下载完成数。每 30 秒自动刷新；统计启用前的下载无法补记。</p>
+  </main>
+</body>
+</html>
