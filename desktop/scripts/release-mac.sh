@@ -61,10 +61,18 @@ updater_files() { # the in-app updater's files, from the stapled app: a signed a
   # keeps a windows-x86_64 entry of this version (scripts/release-win.sh)
   node scripts/latest-json.mjs "$OUT/latest.json" darwin-aarch64 "$VERSION" "$OUT/$tgz.sig" \
     "https://github.com/Auspexlabs/writer/releases/download/v$VERSION/$tgz" "$NOTES"
+  if [ "$TARGET" = universal-apple-darwin ]; then
+    node scripts/latest-json.mjs "$OUT/latest.json" darwin-x86_64 "$VERSION" "$OUT/$tgz.sig" \
+      "https://github.com/Auspexlabs/writer/releases/download/v$VERSION/$tgz" "$NOTES"
+  fi
   # the website's feed, which installed copies read first (website/deploy.sh --updates dist/updates)
   mkdir -p "$OUT/updates/mac" && cp "$OUT/$tgz" "$OUT/$tgz.sig" "$OUT/updates/mac/"
   node scripts/latest-json.mjs "$OUT/updates/mac/latest.json" darwin-aarch64 "$VERSION" "$OUT/$tgz.sig" \
     "https://thewriter.cn/updates/mac/$tgz" "$NOTES"
+  if [ "$TARGET" = universal-apple-darwin ]; then
+    node scripts/latest-json.mjs "$OUT/updates/mac/latest.json" darwin-x86_64 "$VERSION" "$OUT/$tgz.sig" \
+      "https://thewriter.cn/updates/mac/$tgz" "$NOTES"
+  fi
 }
 
 notarize() { # notarize a zip/dmg/pkg and staple the ticket to what was submitted (or to the app for a zip)
