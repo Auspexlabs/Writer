@@ -95,7 +95,7 @@
             <sc-for list="{{ ch.lines }}" as="l" hint-placeholder-count="0"><polyline points="{{ l.pts }}" style="fill:none;stroke:{{ l.stroke }};stroke-width:2.5"></polyline></sc-for>
             <sc-for list="{{ ch.dots }}" as="d" hint-placeholder-count="0"><circle cx="{{ d.x }}" cy="{{ d.y }}" r="3.5" style="fill:{{ d.fill }}"></circle></sc-for>
             <sc-for list="{{ ch.slices }}" as="s" hint-placeholder-count="0"><path d="{{ s.d }}" style="fill:{{ s.fill }};stroke:var(--k0, #FFFFFF);stroke-width:2"></path></sc-for>
-            <sc-for list="{{ ch.labels }}" as="t" hint-placeholder-count="0"><text x="{{ t.x }}" y="{{ t.y }}" style="font-size:11px;fill:{{ t.fill }};text-anchor:{{ t.anchor }};font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">{{ t.text }}</text></sc-for>
+            <sc-for list="{{ ch.labels }}" as="t" hint-placeholder-count="0"><text x="{{ t.x }}" y="{{ t.y }}" transform="{{ t.transform }}" style="font-size:11px;fill:{{ t.fill }};text-anchor:{{ t.anchor }};font-family:'IBM Plex Sans','Noto Sans SC',sans-serif">{{ t.text }}</text></sc-for>
           </svg>
           <div style="flex:1;order:{{ ch.lgOrder }};display:{{ ch.lgDisp }};flex-wrap:wrap;gap:4px 14px;padding:4px 14px 8px;font-size:11.5px;color:var(--k11, #6E6E73);align-content:flex-start">
             <sc-for list="{{ ch.legend }}" as="lg" hint-placeholder-count="0"><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:{{ lg.fill }}"></span>{{ lg.name }}</span></sc-for>
@@ -107,13 +107,13 @@
         <div onMouseDown="{{ selAll }}" style="grid-row:1;grid-column:1;position:sticky;top:0;left:0;z-index:{{ z.corner }};background:var(--k48, #F5F5F7);border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);cursor:pointer"></div>
         <sc-for list="{{ colHeads }}" as="h" hint-placeholder-count="12">
           <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" onContextMenu="{{ h.onCtx }}" style="grid-row:1;grid-column:{{ h.gc }};position:sticky;top:0;left:{{ h.left }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:s-resize">
-            {{ h.l }}
+            <sc-if value="{{ h.outline }}"><button onMouseDown="{{ h.onOutline }}" style="position:absolute;left:2px;width:14px;padding:0;border:1px solid #ccc;background:white;font-size:10px;cursor:pointer">{{ h.outline }}</button></sc-if>{{ h.l }}
             <span onMouseDown="{{ h.onResize }}" onDoubleClick="{{ h.onAuto }}" style="position:absolute;right:-4px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2"></span>
           </div>
         </sc-for>
         <sc-for list="{{ rowHeads }}" as="h" hint-placeholder-count="20">
           <div onMouseDown="{{ h.onMD }}" onMouseEnter="{{ h.onME }}" onContextMenu="{{ h.onCtx }}" style="grid-row:{{ h.gr }};grid-column:1;position:sticky;left:0;top:{{ h.top }};z-index:{{ h.z }};background:{{ h.bg }};color:{{ h.color }};font-weight:{{ h.fw }};border-right:1px solid var(--k6, #E5E5EA);border-bottom:1px solid var(--k6, #E5E5EA);display:flex;align-items:center;justify-content:center;font-size:11.5px;cursor:e-resize">
-            {{ h.n }}
+            <sc-if value="{{ h.outline }}"><button onMouseDown="{{ h.onOutline }}" style="position:absolute;left:1px;width:14px;padding:0;border:1px solid #ccc;background:white;font-size:10px;cursor:pointer">{{ h.outline }}</button></sc-if>{{ h.n }}
             <span onMouseDown="{{ h.onResize }}" style="position:absolute;left:0;right:0;bottom:-4px;height:8px;cursor:row-resize;z-index:2"></span>
           </div>
         </sc-for>
@@ -219,7 +219,7 @@ const DV_TYPES = [['any', $t('任何值')], ['list', $t('序列')], ['whole', $t
 const FONTS = ['思源宋体', '思源黑体', 'Arial', 'Times New Roman', 'Calibri', '微软雅黑']; // i18n-ok: font family names (CSS font-family values)
 const SIZES = [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36]; // 字号 the ribbon and the panel offer
 const ROTATIONS = [[0, '水平'], [45, '逆时针 45°'], [-45, '顺时针 45°'], [90, '向上 90°'], [-90, '向下 90°']]; // 文字方向, degrees
-const CHART_TYPES = [['column', $t('柱形图')], ['bar', $t('条形图')], ['line', $t('折线图')], ['pie', $t('饼图')], ['area', $t('面积图')], ['scatter', $t('散点图')], ['doughnut', $t('圆环图')]];
+const CHART_TYPES = [['column', $t('柱形图')], ['bar', $t('条形图')], ['line', $t('折线图')], ['pie', $t('饼图')], ['area', $t('面积图')], ['scatter', $t('散点图')], ['doughnut', $t('圆环图')], ['combo', $t('组合图')]];
 const LEGENDS = [['right', $t('右侧')], ['bottom', $t('底部')], ['top', $t('顶部')], ['left', $t('左侧')], ['none', $t('无图例')]];
 const BORDER_CSS = { thin: '1px solid', medium: '2px solid', thick: '3px solid', dashed: '1px dashed', dotted: '1px dotted', double: '3px double', hair: '1px solid',
   mediumDashed: '2px dashed', dashDot: '1px dashed', mediumDashDot: '2px dashed', dashDotDot: '1px dotted', mediumDashDotDot: '2px dotted', slantDashDot: '2px dashed' };
@@ -375,7 +375,7 @@ class Component extends DCLogic {
     return tools;
   }
   toast(m) { this.props.toast && this.props.toast(m); }
-  commit(fn, silent, allowProtected = false) { if (this.sh.protected && !silent && !allowProtected) { this.toast($t('工作表已保护，请先取消保护')); return; } const d = this.E.editWorkbook(this.doc, fn); this.props.onChange && this.props.onChange(d, silent ? { silent: true } : undefined); }
+  commit(fn, silent, allowProtected = false) { if (this.sh.protected && !silent && !allowProtected) { this.toast($t('工作表已保护，请先取消保护')); return; } const d = this.E.editWorkbook(this.doc, (sh,d) => {fn(sh,d);this.E.syncTableHeaders(d);}); this.props.onChange && this.props.onChange(d, silent ? { silent: true } : undefined); }
   gridExtent() {
     const sh = this.sh;
     if (this.extentFor !== sh) {
@@ -486,7 +486,7 @@ class Component extends DCLogic {
     const ed = this.state.edit; if (!ed) return;
     const { v, patch } = this.parseInput(ed.val, (this.sh.cells[this.E.A(ed.r, ed.c)] || {}).s);
     const bad = this.dvBad(ed.r, ed.c, v); if (bad) { this.toast($t('数据验证：{msg}', { msg: bad })); this.wantFocus = true; return; }
-    if (v !== this.raw(ed.r, ed.c) || patch) this.commit(sh => this.setCellRaw(sh, ed.r, ed.c, v, patch));
+    if (v !== this.raw(ed.r, ed.c) || patch) this.commit(sh => {this.setCellRaw(sh, ed.r, ed.c, v, patch); const t=this.E.tableAt(sh,ed.r,ed.c);if(t&&String(v).startsWith('=')){const [a,b]=t.range.split(':').map(this.E.parseA);if(ed.r>a.r&&ed.r<=b.r-(t.totals?1:0)){t.columns[ed.c-a.c].formula=this.E.shiftF(v.slice(1),a.r+1-ed.r,0);for(let r=a.r+1;r<=b.r-(t.totals?1:0);r++)if(r!==ed.r)this.setCellRaw(sh,r,ed.c,'='+this.E.shiftF(v.slice(1),r-ed.r,0),patch);}}});
     // move in the state callback, not a timer: keys typed right after Enter must land in the next cell, not the one just committed
     this.setState({ edit: null, anc: { r: ed.r, c: ed.c }, sel: { r: ed.r, c: ed.c } }, () => { if (dr || dc) { this.move(dr, dc); if (toCol != null) this.setSel(ed.r + dr, toCol); } });
     if (!dr && !dc) this.wantFocus = true;
@@ -592,6 +592,28 @@ class Component extends DCLogic {
   async deletePicture() {
     const pic = this.pic; if (!pic || this.sh.protected) return;
     try { const src = this.EN ? await this.EN.dataUrlOf(pic.src) : pic.src; this.commit(sh => { const im = sh.images.find(i => i.id === pic.id); if (im) im.src = src; }, true); this.commit(sh => { sh.images = sh.images.filter(i => i.id !== pic.id); }); this.setState({ picSel: null }); } catch (e) { this.toast(e.message); }
+  }
+  groupRows(axis='r',remove=false) {
+    const R=this.rng(),start=axis==='r'?R.r1:R.c1,end=axis==='r'?R.r2:R.c2;
+    this.commit(sh=>{const groups=sh.outline||[];if(remove){sh.outline=groups.filter(g=>g.axis!==axis||g.end<start||g.start>end);return;}const level=1+Math.max(0,...groups.filter(g=>g.axis===axis&&g.start<=start&&g.end>=end).map(g=>g.level||1));if(level>7){this.toast($t('最多支持七级分组'));return;}sh.outline=groups.concat([{axis,start,end,level,collapsed:false}]);});
+  }
+  outlineLevel(level) {this.commit(sh=>{for(const g of sh.outline||[])g.collapsed=(g.level||1)>=level;});}
+  toggleOutline(axis,end) {this.commit(sh=>{const g=(sh.outline||[]).filter(x=>x.axis===axis&&x.end+1===end).sort((a,b)=>b.level-a.level)[0];if(g)g.collapsed=!g.collapsed;});}
+  subtotalSetup() {
+    const E=this.E,R=this.rng(),box=R.r1===R.r2&&R.c1===R.c2?E.currentRegion(this.sh,R.r1,R.c1):R;if(!box||box.r2<=box.r1)return;
+    const cols=Array.from({length:box.c2-box.c1+1},(_,i)=>{const c=box.c1+i;return [String(c),String(this.sh.cells[E.A(box.r1,c)]?.v||E.colName(c))];});
+    this.prompt($t('分类汇总到新工作表'),[{key:'group',label:$t('分类字段'),value:String(box.c1),options:cols},{key:'value',label:$t('汇总字段'),value:String(Math.min(box.c2,box.c1+1)),options:cols},{key:'fn',label:$t('汇总方式'),value:'9',options:[['9',$t('求和')],['1',$t('平均值')],['2',$t('计数')],['4',$t('最大值')],['5',$t('最小值')]]}],v=>{if(v.group===v.value){this.toast($t('分类字段与汇总字段不能相同'));return;}let name=$t('分类汇总'),i=2;while(this.doc.sheets.some(s=>s.name===name))name=$t('分类汇总')+i++;this.commit((sh,d)=>{d.sheets.push(E.subtotalSheet(sh,box,+v.group,+v.value,+v.fn,name));d.active=d.sheets.length-1;});this.setSel(0,0);});
+  }
+  tableSetup() {
+    const E=this.E, R=this.rng(), existing=E.tableAt(this.sh,this.state.sel.r,this.state.sel.c), region=existing?null:R.r1===R.r2&&R.c1===R.c2?E.currentRegion(this.sh,R.r1,R.c1):R;
+    let name='Table1',i=1;while(this.doc.sheets.some(s=>(s.tables||[]).some(t=>t.name.toLowerCase()===name.toLowerCase())))name='Table'+(++i);
+    this.prompt($t('套用表格格式'),[{key:'name',label:$t('名称'),value:existing?.name||name,first:true},{key:'range',label:$t('区域'),value:existing?.range||this.rangeStr(region||R)},{key:'style',label:$t('样式'),value:existing?.style||'TableStyleMedium2',options:['TableStyleMedium2','TableStyleMedium4','TableStyleMedium7','TableStyleLight9','TableStyleDark2'].map(v=>[v,v])},{key:'action',label:$t('操作'),value:'set',options:[['set',$t('创建或更新表格')],['remove',$t('转换为普通区域')]]}],v=>{
+      const [a,b0]=v.range.replace(/\$/g,'').toUpperCase().split(':').map(E.parseA),b=b0||a;
+      if(v.action==='remove'){if(existing){const calc=new E.Calc(this.doc);this.commit((sh,d)=>{d.sheets.forEach((sheet,si)=>{for(const [ref,cell] of Object.entries(sheet.cells))if(String(cell.v).startsWith('=')){const p=E.parseA(ref);cell.v=E.convertTableRefs(cell.v,existing,calc,si,p.r,p.c);}});sh.tables=sh.tables.filter(t=>t.name!==existing.name);});}return;}
+      if(!a||!b||b.r<=a.r||b.c<a.c||!/^[_\\A-Za-z一-龥][\w.\\一-龥]*$/.test(v.name)||/^(?:[A-Z]{1,3}[1-9]\d*|[RC])$/i.test(v.name)||this.doc.sheets.some(s=>(s.tables||[]).some(t=>t!==existing&&t.name.toLowerCase()===v.name.toLowerCase()))){this.toast($t('请输入唯一的表格名称，以及包含标题和数据的有效区域'));return;}
+      if((this.sh.merges||[]).some(m=>m.r<=b.r&&m.r+m.rs>a.r&&m.c<=b.c&&m.c+m.cs>a.c)||(this.sh.tables||[]).some(t=>{if(t===existing)return false;const [p,q]=t.range.split(':').map(E.parseA);return p.r<=b.r&&q.r>=a.r&&p.c<=b.c&&q.c>=a.c;})){this.toast($t('表格不能与合并单元格或其他表格重叠'));return;}
+      this.commit((sh,d)=>{const t={...(existing?E.cloneValue(existing):{}),name:v.name,range:E.A(a.r,a.c)+':'+E.A(b.r,b.c),style:v.style,header:existing?.header!==false,stripes:true};t.columns=E.tableColumns(sh,t);if(t.header)t.columns.forEach((col,j)=>this.setCellRaw(sh,a.r,a.c+j,col.name));sh.tables=(sh.tables||[]).filter(x=>x.name!==existing?.name).concat([t]);if(existing&&existing.name!==v.name)for(const sheet of d.sheets)for(const cell of Object.values(sheet.cells))if(String(cell.v).startsWith('='))cell.v=E.renameTableRefs(cell.v,existing.name,v.name);});
+    });
   }
   nameManager() {
     const names = this.doc.names || {}, ref = "'" + this.sh.name.replace(/'/g, "''") + "'!" + this.rangeStr(this.rng()).replace(/([A-Z]+)(\d+)/g, '$$$1$$$2');
@@ -706,7 +728,9 @@ class Component extends DCLogic {
       const shiftRange = rg => String(rg || '').split(' ').map(one => { const [p, q0] = one.split(':').map(E.parseA), q = q0 || p; if (!p || !q) return null; const s2 = span(p[k], q[k]); if (!s2) return null; const a = E.A(k === 'r' ? s2[0] : p.r, k === 'c' ? s2[0] : p.c), b = E.A(k === 'r' ? s2[1] : q.r, k === 'c' ? s2[1] : q.c); return a === b ? a : a + ':' + b; }).filter(Boolean).join(' ') || null;
       const shiftRules = rules => (rules || []).map(x => { const rg = shiftRange(x.range); return rg && Object.assign({}, x, { range: rg }); }).filter(Boolean);
       if (sh.filter) { sh.filter = shiftRange(sh.filter); if (!sh.filter) { sh.filters = {}; sh.frows = []; } }
+      sh.outline=(sh.outline||[]).map(g=>{if(g.axis!==axis)return g;const s=span(g.start,g.end);return s?{...g,start:s[0],end:s[1]}:null;}).filter(Boolean);
       sh.cf = shiftRules(sh.cf); sh.dv = shiftRules(sh.dv); sh.tables = shiftRules(sh.tables);
+      for(const t of sh.tables) { if(axis==='c') { const old=(this.sh.tables||[]).find(o=>o.name===t.name),[start]=old.range.split(':').map(E.parseA); if(at>start.c&&at<=E.parseA(old.range.split(':')[1]).c) { const j=at-start.c;if(n>0)t.columns.splice(j,0,...Array.from({length:n},()=>({})));else t.columns.splice(j,-n); } } t.columns=E.tableColumns(sh,t); const [a,b]=t.range.split(':').map(E.parseA); for(let j=0;j<t.columns.length;j++)if(t.columns[j].formula){t.columns[j].formula=E.adjF(t.columns[j].formula,name,name,axis,at,n);if(axis==='r'&&n>0&&at>a.r&&at<=b.r)for(let r=at;r<at+n&&r<=b.r-(t.totals?1:0);r++)this.setCellRaw(sh,r,a.c+j,'='+E.shiftF(t.columns[j].formula,r-a.r-1,0));} }
       const mvIdx = i => n < 0 && i >= at && i < at - n ? null : i >= at ? i + n : i, lines = arr => (arr || []).map(mvIdx).filter(i => i != null);
       if (axis === 'r') { sh.hiddenRows = lines(sh.hiddenRows); sh.frows = lines(sh.frows); }
       else { sh.hiddenCols = lines(sh.hiddenCols); const f = {}; Object.entries(sh.filters || {}).forEach(([key, v]) => { const i = mvIdx(E.colIdx(key)); if (i != null) f[E.colName(i)] = v; }); sh.filters = f; }
@@ -958,7 +982,7 @@ class Component extends DCLogic {
     const ser = cols.map(c => Object.assign({ values: rg(c) }, hdr ? { name: E.A(R.r1, c) } : null, type === 'scatter' && cat ? { x: cat } : null));
     const x = this.gridMap((this.xs ? this.xs[Math.min(R.c2 + 1, this.nCols)] : 400) + 24, 'x', true), y = this.gridMap(this.ys ? this.ys[R.r1] : 0, 'y', true); // beside the data, in sheet px
     const title = hdr && cols.length === 1 ? String(calc.value(this.si, R.r1, cols[0])) : this.sh.name + ' ' + $t('图表');
-    this.commit(sh => { sh.charts = (sh.charts || []).concat([{ id: 'ch' + Date.now().toString(36), type, title, cat, ser, legend: 'right', stacked: !!stacked, x, y, w: 460, h: 300 }]); });
+    this.commit(sh => { sh.charts = (sh.charts || []).concat([{ id: 'ch' + Date.now().toString(36), type, title, cat, ser, legend: 'right', stacked: !!stacked, percentStacked:stacked==='percent', x, y, w: 460, h: 300 }]); });
   }
   openPop(id, e, x, y) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && !x ? null : { id, x: x ?? r.left, y: y ?? r.bottom + 4 } }); }
   prompt(title, fields, ok) { this.setState({ dlg: { title, fields: fields.map(f => Object.assign({ value: '' }, f)), ok } }); }
@@ -1012,6 +1036,9 @@ class Component extends DCLogic {
     for (let i = 0; i < 20000; i++) { const p = toSheet ? ed(i) : ex(i), q = toSheet ? ex(i) : ed(i); if (v < a + p) return Math.round(b + (v - a) * q / p); a += p; b += q; }
     return Math.round(b);
   }
+  chartOptions(ch) {
+    this.prompt($t('图表选项'),[{key:'xTitle',label:$t('横轴标题'),value:ch.xTitle||'',first:true},{key:'yTitle',label:$t('纵轴标题'),value:ch.yTitle||''},{key:'labels',label:$t('数据标签'),value:ch.dataLabels?'yes':'no',options:[['yes',$t('显示')],['no',$t('隐藏')]]},{key:'stack',label:$t('堆积方式'),value:ch.percentStacked?'percent':ch.stacked?'stacked':'none',options:[['none',$t('不堆积')],['stacked',$t('堆积')],['percent',$t('百分比堆积')]]},...(ch.type==='combo'?(ch.ser||[]).map((s,i)=>({key:'kind'+i,label:$t('系列 {n}',{n:i+1}),value:s.kind||(i?'line':'column'),options:CHART_TYPES.filter(([t])=>['column','line','area'].includes(t))})):[])],v=>this.commit(sh=>{const chart=sh.charts.find(x=>x.id===ch.id);Object.assign(chart,{xTitle:v.xTitle,yTitle:v.yTitle,dataLabels:v.labels==='yes',stacked:ch.type!=='combo'&&v.stack!=='none',percentStacked:ch.type!=='combo'&&v.stack==='percent'});if(ch.type==='combo')chart.ser.forEach((s,i)=>s.kind=v['kind'+i]);}));
+  }
   chartAt(ch) { const lv = this.state.live; return lv && lv.kind === 'chart' && lv.id === ch.id ? lv : { x: this.gridMap(ch.x || 0, 'x'), y: this.gridMap(ch.y || 0, 'y') }; } // editor grid px
   chartVals(ch, calc) {
     const E = this.E, pos = this.chartAt(ch), d = this.doc;
@@ -1021,25 +1048,26 @@ class Component extends DCLogic {
     const lit = rng => { const m = /^\s*\{(.*)\}\s*$/.exec(String(rng || '')); return m ? (m[1].match(/"(?:[^"]|"")*"|[^,;]+/g) || []).map(x => unq(x.trim())) : null; };
     const nums = rng => { const k = lit(rng); if (k) return k.map(x => Number(x) || 0); const l = this.refList(rng); return l.refs.map(([r, c]) => { const v = calc.value(l.si, r, c); return typeof v === 'number' ? v : 0; }); };
     const cat = this.refList(ch.cat), catLit = lit(ch.cat);
-    const series = (ch.ser || []).map((s, i) => { const nm = s.name ? this.refList(s.name) : null; return { name: nm && nm.refs.length ? text(nm.si, ...nm.refs[0]) : (unq(s.name || '') || $t('系列 {n}', { n: i + 1 })), fill: PAL[i % PAL.length], vals: nums(s.values), xs: s.x ? nums(s.x) : null }; });
+    const series = (ch.ser || []).map((s, i) => { const nm = s.name ? this.refList(s.name) : null; return { name: nm && nm.refs.length ? text(nm.si, ...nm.refs[0]) : (unq(s.name || '') || $t('系列 {n}', { n: i + 1 })), fill: PAL[i % PAL.length], kind: s.kind || (i?'line':'column'), vals: nums(s.values), xs: s.x ? nums(s.x) : null }; });
     const n = Math.max(1, catLit ? catLit.length : cat.refs.length, ...series.map(s => s.vals.length));
     const labels = Array.from({ length: n }, (_, i) => catLit ? catLit[i] ?? String(i + 1) : cat.refs[i] ? text(cat.si, ...cat.refs[i]) : String(i + 1));
-    const type = ch.type || 'column', round = type === 'pie' || type === 'doughnut', horiz = type === 'bar', stacked = !!ch.stacked && (type === 'column' || horiz || type === 'area'), noLg = ch.legend === 'none';
+    const type = ch.type || 'column', round = type === 'pie' || type === 'doughnut', horiz = type === 'bar', stacked = (!!ch.stacked || !!ch.percentStacked) && (type === 'column' || horiz || type === 'area' || type === 'line'), noLg = ch.legend === 'none';
+    if(ch.percentStacked&&stacked){const sums=Array.from({length:n},(_,i)=>series.reduce((sum,s)=>sum+Math.abs(s.vals[i]||0),0));for(const s of series){s.rawVals=s.vals;s.vals=s.vals.map((v,i)=>sums[i]?v/sums[i]:0);}}
     const sw = ch.w - 2, shh = ch.h - 34 - (noLg ? 8 : 28);
     const out = { grid: [], rects: [], lines: [], dots: [], slices: [], areas: [], labels: [] };
     if (round) {
       const s = series[0] || { vals: [] }; const tot = s.vals.reduce((a, b) => a + Math.max(0, b), 0) || 1; const cx = sw / 2, cy = shh / 2 + 4, R = Math.min(sw, shh) / 2 - 12; let a0 = -Math.PI / 2;
-      s.vals.forEach((v, i) => { const a1 = a0 + Math.max(0, v) / tot * Math.PI * 2; const large = a1 - a0 > Math.PI ? 1 : 0; const p = (a) => `${(cx + R * Math.cos(a)).toFixed(1)} ${(cy + R * Math.sin(a)).toFixed(1)}`; out.slices.push({ d: a1 - a0 >= Math.PI * 2 - 1e-6 ? `M ${cx - R} ${cy} a ${R} ${R} 0 1 0 ${2 * R} 0 a ${R} ${R} 0 1 0 ${-2 * R} 0` : `M ${cx} ${cy} L ${p(a0)} A ${R} ${R} 0 ${large} 1 ${p(a1)} Z`, fill: PAL[i % PAL.length] }); const am = (a0 + a1) / 2, lr = type === 'doughnut' ? 0.78 : 0.62; if (v / tot > 0.05) out.labels.push({ x: (cx + R * lr * Math.cos(am)).toFixed(1), y: (cy + R * lr * Math.sin(am) + 4).toFixed(1), text: Math.round(v / tot * 100) + '%', anchor: 'middle', fill: '#FFFFFF' }); a0 = a1; });
+      s.vals.forEach((v, i) => { const a1 = a0 + Math.max(0, v) / tot * Math.PI * 2; const large = a1 - a0 > Math.PI ? 1 : 0; const p = (a) => `${(cx + R * Math.cos(a)).toFixed(1)} ${(cy + R * Math.sin(a)).toFixed(1)}`; out.slices.push({ d: a1 - a0 >= Math.PI * 2 - 1e-6 ? `M ${cx - R} ${cy} a ${R} ${R} 0 1 0 ${2 * R} 0 a ${R} ${R} 0 1 0 ${-2 * R} 0` : `M ${cx} ${cy} L ${p(a0)} A ${R} ${R} 0 ${large} 1 ${p(a1)} Z`, fill: PAL[i % PAL.length] }); const am = (a0 + a1) / 2, lr = type === 'doughnut' ? 0.78 : 0.62; if (v / tot > 0.05 || ch.dataLabels) out.labels.push({ x: (cx + R * lr * Math.cos(am)).toFixed(1), y: (cy + R * lr * Math.sin(am) + 4).toFixed(1), text: ch.dataLabels ? short(v) : Math.round(v / tot * 100) + '%', anchor: 'middle', fill: '#FFFFFF' }); a0 = a1; });
       if (type === 'doughnut') { const ri = R * 0.55; out.slices.push({ d: `M ${cx - ri} ${cy} a ${ri} ${ri} 0 1 0 ${2 * ri} 0 a ${ri} ${ri} 0 1 0 ${-2 * ri} 0`, fill: 'var(--k0, #FFFFFF)' }); }
       out.legend = labels.map((l, i) => ({ name: l, fill: PAL[i % PAL.length] }));
     } else {
-      const L = horiz ? 64 : 48, Rr = 12, T = 10, B = 26, pw = sw - L - Rr, ph = shh - T - B;
+      const L = (horiz ? 64 : 48) + (ch.yTitle?18:0), Rr = 12, T = 10, B = 26 + (ch.xTitle?20:0), pw = sw - L - Rr, ph = shh - T - B;
       const sums = i => series.reduce((a, s) => { const v = s.vals[i] || 0; return [a[0] + Math.max(0, v), a[1] + Math.min(0, v)]; }, [0, 0]);
       const all = stacked ? Array.from({ length: n }, (_, i) => sums(i)).flat() : series.flatMap(s => s.vals);
       let mx = Math.max(0, ...all), mn = Math.min(0, ...all); if (mx === mn) mx = mn + 1;
       const mag = Math.pow(10, Math.floor(Math.log10(mx - mn))); const stepv = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => (mx - mn) / s <= 5) || mag * 10; mx = Math.ceil(mx / stepv) * stepv; mn = Math.floor(mn / stepv) * stepv;
       const V = v => horiz ? L + (v - mn) / (mx - mn) * pw : T + ph - (v - mn) / (mx - mn) * ph;
-      for (let v = mn; v <= mx + 1e-9; v += stepv) { const p = V(v).toFixed(1), stroke = v === 0 ? 'var(--k47, #C7C7CC)' : 'var(--k6, #E5E5EA)'; if (horiz) { out.grid.push({ x1: p, y1: T, x2: p, y2: T + ph, stroke }); out.labels.push({ x: p, y: T + ph + 17, text: short(v), anchor: 'middle', fill: '#8E8E93' }); } else { out.grid.push({ x1: L, y1: p, x2: L + pw, y2: p, stroke }); out.labels.push({ x: L - 6, y: (V(v) + 4).toFixed(1), text: short(v), anchor: 'end', fill: '#8E8E93' }); } }
+      for (let v = mn; v <= mx + 1e-9; v += stepv) { const p = V(v).toFixed(1), stroke = v === 0 ? 'var(--k47, #C7C7CC)' : 'var(--k6, #E5E5EA)'; if (horiz) { out.grid.push({ x1: p, y1: T, x2: p, y2: T + ph, stroke }); out.labels.push({ x: p, y: T + ph + 17, text: ch.percentStacked ? Math.round(v*100)+'%' : short(v), anchor: 'middle', fill: '#8E8E93' }); } else { out.grid.push({ x1: L, y1: p, x2: L + pw, y2: p, stroke }); out.labels.push({ x: L - 6, y: (V(v) + 4).toFixed(1), text: ch.percentStacked ? Math.round(v*100)+'%' : short(v), anchor: 'end', fill: '#8E8E93' }); } }
       if (type === 'scatter') {
         const xall = series.flatMap(s => s.xs || s.vals.map((_, i) => i + 1)); let xmn = Math.min(...xall), xmx = Math.max(...xall); if (xmn === xmx) xmx = xmn + 1;
         const X = x => L + (x - xmn) / (xmx - xmn) * pw;
@@ -1050,14 +1078,22 @@ class Component extends DCLogic {
         labels.forEach((l, i) => out.labels.push(horiz ? { x: L - 6, y: (cAt(i) + 4).toFixed(1), text: clip(l), anchor: 'end', fill: '#6E6E73' } : { x: cAt(i).toFixed(1), y: T + ph + 17, text: clip(l), anchor: 'middle', fill: '#6E6E73' }));
         const accP = Array(n).fill(0), accN = Array(n).fill(0);
         const span = (i, v) => { if (!stacked) return [Math.min(0, v), Math.max(0, v)]; const b = v >= 0 ? accP : accN, lo = b[i]; b[i] += v; return v >= 0 ? [lo, b[i]] : [b[i], lo]; };
-        if (type === 'line' || type === 'area') series.forEach(s => {
-          const pts = s.vals.map((v, i) => { const [lo, hi] = span(i, v); return [cAt(i).toFixed(1), V(stacked ? (v >= 0 ? hi : lo) : v).toFixed(1), V(stacked ? (v >= 0 ? lo : hi) : 0).toFixed(1)]; });
-          if (type === 'area') out.areas.push({ d: 'M ' + pts.map(p => p[0] + ' ' + p[1]).join(' L ') + ' L ' + pts.slice().reverse().map(p => p[0] + ' ' + p[2]).join(' L ') + ' Z', fill: s.fill });
-          out.lines.push({ pts: pts.map(p => p[0] + ',' + p[1]).join(' '), stroke: s.fill });
-          if (type === 'line') pts.forEach(p => out.dots.push({ x: p[0], y: p[1], fill: s.fill }));
+        const bars=series.filter(s=>!['line','area'].includes(type==='combo'?s.kind:type));let barIndex=0;
+        series.forEach(s=>{
+          const kind=type==='combo'?s.kind:type;
+          if(kind==='line'||kind==='area'){
+            const pts=s.vals.map((v,i)=>{const [lo,hi]=span(i,v);return [cAt(i).toFixed(1),V(stacked?(v>=0?hi:lo):v).toFixed(1),V(stacked?(v>=0?lo:hi):0).toFixed(1)];});
+            if(kind==='area')out.areas.push({d:'M '+pts.map(p=>p[0]+' '+p[1]).join(' L ')+' L '+pts.slice().reverse().map(p=>p[0]+' '+p[2]).join(' L ')+' Z',fill:s.fill});
+            out.lines.push({pts:pts.map(p=>p[0]+','+p[1]).join(' '),stroke:s.fill});
+            pts.forEach((p,i)=>{if(kind==='line')out.dots.push({x:p[0],y:p[1],fill:s.fill});if(ch.dataLabels)out.labels.push({x:p[0],y:+p[1]-7,text:short((s.rawVals||s.vals)[i]),anchor:'middle',fill:s.fill});});
+          }else{
+            const bw=gw*.7/(stacked?1:Math.max(1,bars.length)),index=barIndex++;
+            s.vals.forEach((v,i)=>{const [lo,hi]=span(i,v),a=cAt(i)-gw*.35+(stacked?0:index*bw),p0=V(hi),p1=V(lo);out.rects.push(horiz?{x:p1.toFixed(1),y:a.toFixed(1),w:Math.max(.5,p0-p1).toFixed(1),h:Math.max(1,bw-2).toFixed(1),fill:s.fill}:{x:a.toFixed(1),y:p0.toFixed(1),w:Math.max(1,bw-2).toFixed(1),h:Math.max(.5,p1-p0).toFixed(1),fill:s.fill});if(ch.dataLabels)out.labels.push({x:horiz?(p0+p1)/2:a+bw/2,y:horiz?a+bw/2+4:(p0+p1)/2+4,text:short((s.rawVals||s.vals)[i]),anchor:'middle',fill:'#FFFFFF'});});
+          }
         });
-        else { const bw = gw * 0.7 / (stacked ? 1 : Math.max(1, series.length)); series.forEach((s, si) => s.vals.forEach((v, i) => { const [lo, hi] = span(i, v), a = cAt(i) - gw * 0.35 + (stacked ? 0 : si * bw), p0 = V(hi), p1 = V(lo); out.rects.push(horiz ? { x: p1.toFixed(1), y: a.toFixed(1), w: Math.max(0.5, p0 - p1).toFixed(1), h: Math.max(1, bw - 2).toFixed(1), fill: s.fill } : { x: a.toFixed(1), y: p0.toFixed(1), w: Math.max(1, bw - 2).toFixed(1), h: Math.max(0.5, p1 - p0).toFixed(1), fill: s.fill }); })); }
       }
+      if(ch.xTitle)out.labels.push({x:L+pw/2,y:shh-3,text:ch.xTitle,anchor:'middle',fill:'#6E6E73'});
+      if(ch.yTitle)out.labels.push({x:12,y:T+ph/2,text:ch.yTitle,anchor:'middle',fill:'#6E6E73',transform:`rotate(-90 12 ${T+ph/2})`});
       out.legend = series.map(s => ({ name: s.name, fill: s.fill }));
     }
     return Object.assign(out, {
@@ -1095,6 +1131,7 @@ class Component extends DCLogic {
     if (tab === 'insert') return { tabs, groups: [
       G('图表', grid(3, card('柱形图', 'chart', () => this.insertChart('column')), card('折线图', 'lineChart', () => this.insertChart('line')), card('饼图', 'pieChart', () => this.insertChart('pie')),
         card('条形图', 'barChart', () => this.insertChart('bar')), card('面积图', 'areaChart', () => this.insertChart('area')), menuCard('chart', '更多图表', 'plus', null, { title: '全部图表类型，堆积图' }))),
+      G('表格', R(btn('套用表格格式', null, () => this.tableSetup()))),
       G('常用', grid(3, card('超链接', 'link', () => this.setLink(), { title: '超链接（Ctrl+点击打开）' }), card('批注', 'comment', () => this.setNote()), card('图片', 'picture', () => this.insertImage()))),
       G('行列与工作表', grid(3, card('插入行', 'rowAbove', () => this.insDel('r', rg.r1, rows)), card('插入列', 'colLeft', () => this.insDel('c', rg.c1, cols)), card('新工作表', 'grid', () => this.addSheet()))),
       G('函数', R(menuBtn('fns', '函数库', 'fx', null, { title: '按类别插入函数' }), menuBtn('sum', '求和', 'sigma', null, { title: '自动求和、平均值、计数…' })))] };
@@ -1106,6 +1143,7 @@ class Component extends DCLogic {
     if (tab === 'data') return { tabs, groups: [
       G('排序和筛选', grid(3, btn('升序', 'up', () => this.sort([{ c: s0.c, asc: true }])), btn('降序', 'down', () => this.sort([{ c: s0.c, asc: false }])), btn('自定义', 'sort', () => this.sortCustom(), { title: '自定义排序…' }),
         btn('筛选', 'filter', () => this.toggleFilter(), { on: !!sh.filter, title: '筛选 Ctrl+Shift+L' }), btn('清除筛选', null, () => this.setFilters({}), { dis: noFilters }), btn('重新应用', 'refresh', () => this.setFilters(sh.filters || {}), { dis: noFilters, title: '按当前数据重新筛选' }))),
+      G('分组与汇总', R(btn('行分组', null, () => this.groupRows()), btn('列分组', null, () => this.groupRows('c')), btn('取消行分组', null, () => this.groupRows('r',true)), btn('取消列分组', null, () => this.groupRows('c',true))), R(btn('折叠全部',null,()=>this.outlineLevel(1)),btn('展开全部',null,()=>this.outlineLevel(8)),btn('分类汇总',null,()=>this.subtotalSetup()))),
       G('数据工具', grid(2, btn('删除重复项', null, () => this.dedupe()), btn('分列', null, () => this.splitCols(), { title: '按分隔符把所选列拆到右侧各列' }),
         btn('数据验证', null, () => this.dvSet(), { on: !!cs.dv }), menuBtn('cf', '条件格式', null, null))),
       G('填充', R(btn('向下填充', 'down', () => this.fillDir('down'), { title: '向下填充 Ctrl+D' }), btn('向右填充', null, () => this.fillDir('right'), { title: '向右填充 Ctrl+R' })))] };
@@ -1203,8 +1241,9 @@ class Component extends DCLogic {
       B($t('查找'), () => { this.focusFind = true; this.setState({ showFind: true }); }, { title: 'Ctrl+F' })
     ];
     if (tab === 'insert') ribbon = [
+      B($t('套用表格格式'), () => this.tableSetup()), SEP,
       B($t('柱形图'), () => this.insertChart('column')), B($t('折线图'), () => this.insertChart('line')), B($t('饼图'), () => this.insertChart('pie')),
-      M('chart', $t('图表'), CHART_TYPES.map(([k, l]) => I(l, () => this.insertChart(k))).concat([IS, HD($t('堆积')), I($t('堆积柱形图'), () => this.insertChart('column', true)), I($t('堆积条形图'), () => this.insertChart('bar', true)), I($t('堆积面积图'), () => this.insertChart('area', true))])), SEP,
+      M('chart', $t('图表'), CHART_TYPES.map(([k, l]) => I(l, () => this.insertChart(k))).concat([IS, HD($t('堆积')), I($t('堆积柱形图'), () => this.insertChart('column', true)), I($t('堆积条形图'), () => this.insertChart('bar', true)), I($t('堆积面积图'), () => this.insertChart('area', true)),I($t('百分比堆积柱形图'), () => this.insertChart('column','percent'))])), SEP,
       B($t('超链接'), () => this.setLink(), { on: !!cs.link, title: $t('超链接（Ctrl+点击打开）') }), B($t('批注'), () => this.setNote(), { on: !!cs.note }), B($t('图片'), () => this.insertImage()), SEP,
       fnMenu, SEP,
       B($t('插入行'), () => this.insDel('r', R.r1, R.r2 - R.r1 + 1)), B($t('插入列'), () => this.insDel('c', R.c1, R.c2 - R.c1 + 1)), SEP,
@@ -1216,6 +1255,7 @@ class Component extends DCLogic {
       B($t('显示公式'), () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF })
     ];
     if (tab === 'data') ribbon = [
+      M('outline',$t('分组'),[I($t('行分组'),()=>this.groupRows()),I($t('列分组'),()=>this.groupRows('c')),I($t('取消行分组'),()=>this.groupRows('r',true)),I($t('取消列分组'),()=>this.groupRows('c',true)),I($t('折叠全部'),()=>this.outlineLevel(1)),I($t('展开全部'),()=>this.outlineLevel(8)),...Array.from({length:7},(_,i)=>I(String(i+1),()=>this.outlineLevel(i+1)))]),B($t('分类汇总'),()=>this.subtotalSetup()), SEP,
       B($t('升序'), () => this.sort([{ c: s0.c, asc: true }])), B($t('降序'), () => this.sort([{ c: s0.c, asc: false }])), sortMenu, SEP,
       B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter, title: $t('筛选 Ctrl+Shift+L') }), B($t('清除筛选'), () => this.setFilters({}), { dis: !Object.keys(sh.filters || {}).length }), B($t('重新应用'), () => this.setFilters(sh.filters || {}), { dis: !Object.keys(sh.filters || {}).length, title: $t('按当前数据重新筛选') }), SEP,
       B($t('删除重复项'), () => this.dedupe()), B($t('分列'), () => this.splitCols(), { title: $t('按分隔符把所选列拆到右侧各列') }), B($t('数据验证'), () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
@@ -1231,9 +1271,10 @@ class Component extends DCLogic {
     const heights = E.autoRowHeights(sh, E.parseA, E.colName, (r, c) => calc.value(this.si, r, c), d.fs || 11, d);
     if (JSON.stringify(this.autoH) !== JSON.stringify(heights)) this.autoH = heights;
     // Coordinate arrays are reused when an edit changes values but no row/column sizes.
-    const geometryKey = [sh.colW, sh.rowH, this.autoH, sh.hiddenCols, sh.hiddenRows, sh.frows, st.live, this.nRows, this.nCols];
+    const geometryKey = [sh.colW, sh.rowH, this.autoH, sh.hiddenCols, sh.hiddenRows, sh.frows, sh.outline, st.live, this.nRows, this.nCols];
     if (!this.geometry || geometryKey.some((v, i) => v !== this.geometry.key[i])) {
       const hiddenC = new Set(sh.hiddenCols || []), hidden = new Set([...(sh.frows || []), ...(sh.hiddenRows || [])]);
+      for(const g of sh.outline||[])if(g.collapsed)for(let i=g.start;i<=g.end;i++)(g.axis==='r'?hidden:hiddenC).add(i);
       this.geometry = { key: geometryKey, id: (this.geometry?.id || 0) + 1, hiddenC, hidden,
         xs: E.axisCoordinates(this.nCols, c => hiddenC.has(c) ? 0 : this.colW(c)), ys: E.axisCoordinates(this.nRows, r => hidden.has(r) ? 0 : this.rowH(r)) };
     }
@@ -1267,7 +1308,7 @@ class Component extends DCLogic {
     const colHeads = [], rowHeads = []; let cells = [];
     // a right-click on a header opens its menu for the whole line, selecting it first unless it is already inside the selection
     const headCtx = (axis, i) => e => { e.preventDefault(); const inSel = axis === 'c' ? i >= R.c1 && i <= R.c2 && R.r1 === 0 && R.r2 === this.nRows - 1 : i >= R.r1 && i <= R.r2 && R.c1 === 0 && R.c2 === this.nCols - 1; if (!inSel) this.setState(axis === 'c' ? { anc: { r: 0, c: i }, sel: { r: this.nRows - 1, c: i } } : { anc: { r: i, c: 0 }, sel: { r: i, c: this.nCols - 1 } }); this.setState({ pop: { id: axis === 'c' ? 'colctx' : 'rowctx', x: e.clientX, y: e.clientY } }); };
-    for (const c of view.cols.indices) { if (hiddenC.has(c)) continue; const on = c >= R.c1 && c <= R.c2; colHeads.push({ l: E.colName(c), gc: view.cols.line(c), left: c < (sh.frC || 0) ? RHW + xs[c] + 'px' : 'auto', z: c < (sh.frC || 0) ? Z.frozenColHead : Z.colHead, bg: on ? HEAD_ON : 'var(--k48, #F5F5F7)', color: on ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: on ? 600 : 400,
+    for (const c of view.cols.indices) { if (hiddenC.has(c)) continue; const on = c >= R.c1 && c <= R.c2; colHeads.push({ l: E.colName(c), outline:(sh.outline||[]).some(g=>g.axis==='c'&&g.end+1===c)?((sh.outline||[]).some(g=>g.axis==='c'&&g.end+1===c&&g.collapsed)?'+':'−'):'', onOutline:e=>{e.preventDefault();e.stopPropagation();this.toggleOutline('c',c);}, gc: view.cols.line(c), left: c < (sh.frC || 0) ? RHW + xs[c] + 'px' : 'auto', z: c < (sh.frC || 0) ? Z.frozenColHead : Z.colHead, bg: on ? HEAD_ON : 'var(--k48, #F5F5F7)', color: on ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: on ? 600 : 400,
       onMD: e => { if (e.button === 2) return; e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r: this.nRows - 1, c } }); else this.setState({ anc: { r: 0, c }, sel: { r: this.nRows - 1, c } }); this.op = { kind: 'colsel' }; this.wantFocus = true; },
       onME: () => { if (this.op && this.op.kind === 'colsel') this.setState({ sel: { r: this.nRows - 1, c } }); },
       onCtx: headCtx('c', c),
@@ -1289,7 +1330,7 @@ class Component extends DCLogic {
     for (const r of view.rows.indices) {
       if (hidden.has(r)) continue;
       const onR = r >= R.r1 && r <= R.r2;
-      rowHeads.push({ n: r + 1, gr: view.rows.line(r), top: r < (sh.frR || 0) ? CHH + ys[r] + 'px' : 'auto', z: r < (sh.frR || 0) ? Z.frozenRowHead : Z.rowHead, bg: onR ? HEAD_ON : 'var(--k48, #F5F5F7)', color: onR ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: onR ? 600 : 400,
+      rowHeads.push({ n: r + 1, outline:(sh.outline||[]).some(g=>g.axis==='r'&&g.end+1===r)?((sh.outline||[]).some(g=>g.axis==='r'&&g.end+1===r&&g.collapsed)?'+':'−'):'', onOutline:e=>{e.preventDefault();e.stopPropagation();this.toggleOutline('r',r);}, gr: view.rows.line(r), top: r < (sh.frR || 0) ? CHH + ys[r] + 'px' : 'auto', z: r < (sh.frR || 0) ? Z.frozenRowHead : Z.rowHead, bg: onR ? HEAD_ON : 'var(--k48, #F5F5F7)', color: onR ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: onR ? 600 : 400,
         onMD: e => { if (e.button === 2) return; e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r, c: this.nCols - 1 } }); else this.setState({ anc: { r, c: 0 }, sel: { r, c: this.nCols - 1 } }); this.op = { kind: 'rowsel' }; this.wantFocus = true; },
         onME: () => { if (this.op && this.op.kind === 'rowsel') this.setState({ sel: { r, c: this.nCols - 1 } }); },
         onCtx: headCtx('r', r),
@@ -1298,7 +1339,7 @@ class Component extends DCLogic {
       for (const c of view.cols.indices) {
         if (covered.has(r + ':' + c) || hiddenC.has(c)) continue;
         const a = E.A(r, c), m = merges.find(mm => mm.r === r && mm.c === c);
-        let x = sh.cells[a], s = (x && x.s) || {}, v = calc.value(this.si, r, c);
+        let x = sh.cells[a], s = {...E.tableStyle(sh,r,c),...((x && x.s) || {})}, v = calc.value(this.si, r, c);
         let text = sh.showF && x && String(x.v).startsWith('=') ? String(x.v) : this.fmtV(v, s);
         // the file's colours (fill, font, border) are drawn as they are in both themes; only the automatic ones follow the theme
         let bg = s.fill || '', color = E.fmtColor(v, s.code) || s.color || (s.fill === '#1D1D1F' ? '#FFFFFF' : E.isErr(v) ? '#B5563A' : ''), cfB = null, cfI = null, icon = '', iconColor = '';
@@ -1412,7 +1453,7 @@ class Component extends DCLogic {
     // charts (their menus are registered here, before the popover reads them)
     const charts = (sh.charts || []).map(ch => {
       const set = patch => this.commit(s => Object.assign(s.charts.find(x => x.id === ch.id), patch));
-      this.menus['cht' + ch.id] = [HD($t('图表类型'))].concat(CHART_TYPES.map(([k, l]) => I(l, () => set({ type: k }), { on: (ch.type || 'column') === k })), [IS, I($t('堆积'), () => set({ stacked: !ch.stacked }), { on: !!ch.stacked, hint: $t('柱形 / 条形 / 面积') }), IS, HD($t('图例'))], LEGENDS.map(([k, l]) => I(l, () => set({ legend: k }), { on: (ch.legend || 'right') === k })), [IS, I($t('数据区域…'), () => this.prompt($t('图表数据'), [{ key: 'c', label: $t('分类（如 A2:A6）'), value: ch.cat || '', first: true }, { key: 's', label: $t('系列（JSON，如 [{"name":"B1","values":"B2:B6"}]）'), value: JSON.stringify(ch.ser || []) }], v => { let ser; try { ser = JSON.parse(v.s || '[]'); } catch (e) { return this.toast($t('系列格式无效')); } set({ cat: v.c.trim(), ser }); }))]);
+      this.menus['cht' + ch.id] = [I($t('图表选项'),()=>this.chartOptions(ch)),HD($t('图表类型'))].concat(CHART_TYPES.map(([k, l]) => I(l, () => set({ type: k }), { on: (ch.type || 'column') === k })), [IS, I($t('堆积'), () => set({ stacked: !ch.stacked, percentStacked:false }), { on: !!ch.stacked, hint: $t('柱形 / 条形 / 面积') }), IS, HD($t('图例'))], LEGENDS.map(([k, l]) => I(l, () => set({ legend: k }), { on: (ch.legend || 'right') === k })), [IS, I($t('数据区域…'), () => this.prompt($t('图表数据'), [{ key: 'c', label: $t('分类（如 A2:A6）'), value: ch.cat || '', first: true }, { key: 's', label: $t('系列（JSON，如 [{"name":"B1","values":"B2:B6"}]）'), value: JSON.stringify(ch.ser || []) }], v => { let ser; try { ser = JSON.parse(v.s || '[]'); } catch (e) { return this.toast($t('系列格式无效')); } set({ cat: v.c.trim(), ser }); }))]);
       const p = this.chartAt(ch), lv2 = st.live;
       return Object.assign(this.chartVals(lv2 && lv2.kind === 'chartsz' && lv2.id === ch.id ? Object.assign({}, ch, { w: lv2.w, h: lv2.h }) : ch, calc), objPane(p.x, p.y));
     });
@@ -1606,6 +1647,7 @@ class Component extends DCLogic {
     while (d.sheets.some(s => s.name === `${d.sheets[i].name} (${m})`)) m++;
     n.name = `${d.sheets[i].name} (${m})`; delete n.path;
     (n.charts || []).forEach((ch, j) => { ch.id = 'ch' + k + j; delete ch.eid; delete ch.path; });
+    (n.tables || []).forEach(t => { const old=t.name; let name=old+'Copy',j=2;while(d.sheets.some(s=>(s.tables||[]).some(x=>x.name.toLowerCase()===name.toLowerCase())))name=old+'Copy'+j++;t.name=name;delete t.id;n.cells=this.E.shareCells(Object.fromEntries(Object.entries(n.cells).map(([a,x])=>[a,String(x.v).startsWith('=')?{...x,v:this.E.renameTableRefs(x.v,old,name)}:x]))); });
     (n.images || []).forEach((im, j) => { im.id = 'im' + k + j; delete im.path; });
     this.props.onChange(Object.assign({}, d, { sheets: d.sheets.slice(0, i + 1).concat([n], d.sheets.slice(i + 1)), active: i + 1 }));
   }

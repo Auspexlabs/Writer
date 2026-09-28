@@ -191,6 +191,7 @@ static class XlsxCells
         else if (isNumber) SetNumber(cell, number);
         else if (isDate) SetDate(doc, cell, date);
         else SetString(doc, cell, value);
+        XlsxTables.HeaderChanged(doc, sheet, cell, value);
     }
 
     public static void SetTyped(XlsxDocument doc, XlsxSheet sheet, Cell cell, string type, string current)

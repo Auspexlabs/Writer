@@ -464,7 +464,7 @@ test('the format panel: the Word 定稿 panel with the sheet\'s own tabs and gro
   assert.deepEqual(titles(v), ['剪贴板', '字体', '颜色', '对齐', '数字', '边框与样式', '行和列', '编辑']);
   const bius = v.panelGroups[1].rows[1].items.find(it => it.t === 'seg');
   assert.deepEqual(plain(bius.opts.map(o => [o.label, !!o.on])), [['B', true], ['I', false], ['U', false], ['S', false]]);
-  for (const [tab, want] of [['insert', ['图表', '常用', '行列与工作表', '函数']], ['formula', ['函数', '常用函数', '名称', '显示']], ['data', ['排序和筛选', '数据工具', '填充']], ['view', ['页面', '冻结窗格', '显示', '缩放']]]) {
+  for (const [tab, want] of [['insert', ['图表', '表格', '常用', '行列与工作表', '函数']], ['formula', ['函数', '常用函数', '名称', '显示']], ['data', ['排序和筛选', '分组与汇总', '数据工具', '填充']], ['view', ['页面', '冻结窗格', '显示', '缩放']]]) {
     c.state.tab = tab; v = c.renderVals(); assert.deepEqual(titles(v), want, tab);
   }
   c.state.pop = null; v.panelTabs[0].onClick(); assert.equal(c.state.tab, 'home');

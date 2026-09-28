@@ -2112,7 +2112,7 @@ const pxOfCm = v => Math.round(cmOf(v) * CM_PX), cmOfPx = px => cmStr(px / CM_PX
 /** A chart on a sheet: `eid` is the engine's id, which every sheet numbers anew, so the editor's id adds the sheet. */
 function chartModel(c, sheetPath) {
   const p = c.props || {}, ser = jsonOr(p.series, []);
-  return { id: `${sheetPath}/chart[@id=${p.id}]`, eid: String(p.id), path: c.path, type: p.type || 'column', title: p.title || '', cat: p.categories || '', ser: Array.isArray(ser) ? ser : [], legend: p.legend || 'right', stacked: p.stacked === 'true' || p.stacked === true,
+  return { id: `${sheetPath}/chart[@id=${p.id}]`, eid: String(p.id), path: c.path, type: p.type || 'column', title: p.title || '', cat: p.categories || '', ser: Array.isArray(ser) ? ser : [], legend: p.legend || 'right', stacked: p.stacked === 'true' || p.stacked === true, percentStacked:p.percentStacked === 'true' || p.percentStacked === true, dataLabels:p.dataLabels === 'true' || p.dataLabels === true, xTitle:p.xTitle || '', yTitle:p.yTitle || '',
     x: p.x ? pxOfCm(p.x) : 0, y: p.y ? pxOfCm(p.y) : 0, w: p.w ? pxOfCm(p.w) : 460, h: p.h ? pxOfCm(p.h) : 300 };
 }
 /** Engine sheet node → editor sheet model. */
@@ -2142,7 +2142,8 @@ export function sheetModel(s, file) {
   (hid.rows || []).forEach(n => { const r = +n - 1; if (r < 0) return; (fb && fb[0] && r > fb[0].r && r <= (fb[1] || fb[0]).r ? frows : hiddenRows).push(r); });
   const hiddenCols = (hid.cols || []).map(k => xParse(String(k) + '1')).filter(Boolean).map(a => a.c);
   const autoH = Object.fromEntries(Object.entries(jsonOr(p.autoHeights, {})).map(([r, h]) => [r, Math.round(+h * PT_PX)]));
-  const m = { name: p.name, path: sheetPath, cells: shareCells(cells), colW, rowH, autoH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, print: jsonOr(p.print, {}), visibility: p.visibility || 'visible', protected: p.protected === 'true' || p.protected === true, charts, images };
+  const m = { name: p.name, path: sheetPath, cells: shareCells(cells), colW, rowH, autoH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, print: jsonOr(p.print, {}), visibility: p.visibility || 'visible', protected: p.protected === 'true' || p.protected === true, tables: jsonOr(p.tables, []), outline: jsonOr(p.outline, []), charts, images };
+  for(const group of m.outline.filter(g=>g.collapsed)) { const key=group.axis==='r'?'hiddenRows':'hiddenCols';m[key]=m[key].filter(i=>i<group.start||i>group.end); }
   if (p.gridlines === 'false' || p.gridlines === false) m.noGrid = true; // the file hides them; otherwise the settings decide
   return m;
 }
@@ -2150,7 +2151,7 @@ export function sheetModel(s, file) {
 const ruleColors = (r, f) => { const o = Object.assign({}, r); if (o.fill) o.fill = f(o.fill); if (o.color) o.color = f(o.color); if (Array.isArray(o.colors)) o.colors = o.colors.map(f); return o; };
 /** The snapshot a later save is diffed against. */
 const origOf = (sheets, names = {}) => ({ names: { ...names }, sheets: sheets.map(s => ({ ...JSON.parse(JSON.stringify({ path: s.path, name: s.name, colW: s.colW || {}, rowH: s.rowH || {}, autoH: s.autoH || {}, merges: s.merges || [], frR: s.frR || 0, frC: s.frC || 0, filter: s.filter || null,
-  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, print: s.print || {}, visibility: s.visibility || 'visible', protected: !!s.protected, noGrid: !!s.noGrid, charts: s.charts || [], images: s.images || [] })), cells: shareCells(s.cells) })) });
+  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, print: s.print || {}, visibility: s.visibility || 'visible', protected: !!s.protected, noGrid: !!s.noGrid, tables: s.tables || [], outline: s.outline || [], charts: s.charts || [], images: s.images || [] })), cells: shareCells(s.cells) })) });
 async function openXlsx(doc) {
   const t = await tree(doc.path);
   const sheets = (t.children || []).filter(s => s.kind === 'sheet').map(s => sheetModel(s, doc.path)), tp = t.props || {};
@@ -2188,6 +2189,8 @@ const RANGE_MIN = 8;
 /** Sheet-level props that differ between the saved snapshot and the model. */
 export function sheetProps(o, s) {
   const p = {};
+  if (!same(o.outline || [], s.outline || [])) p.outline = JSON.stringify(s.outline || []);
+  if (!same(o.tables || [], s.tables || [])) p.tables = JSON.stringify(s.tables || []);
   if (!same(o.print || {}, s.print || {})) p.print = JSON.stringify(s.print || {});
   if ((o.visibility || 'visible') !== (s.visibility || 'visible')) p.visibility = s.visibility || 'visible';
   if (!!o.protected !== !!s.protected) p.protected = String(!!s.protected);
@@ -2211,14 +2214,14 @@ export function sheetProps(o, s) {
   const cf = x => js((x.cf || []).map(r => ruleColors(r, unhex)));
   if (cf(o) !== cf(s)) p.cf = cf(s);
   if (js(o.dv || []) !== js(s.dv || [])) p.validations = js(s.dv || []);
-  const hid = x => js({ rows: [...new Set([...(x.hiddenRows || []), ...(x.frows || [])])].sort((a, b) => a - b).map(r => r + 1), cols: (x.hiddenCols || []).slice().sort((a, b) => a - b).map(xCol) });
+  const hid = x => { const rows=new Set([...(x.hiddenRows||[]),...(x.frows||[])]),cols=new Set(x.hiddenCols||[]); for(const g of x.outline||[])if(g.collapsed)for(let i=g.start;i<=g.end;i++)(g.axis==='r'?rows:cols).add(i);return js({rows:[...rows].sort((a,b)=>a-b).map(r=>r+1),cols:[...cols].sort((a,b)=>a-b).map(xCol)}); };
   if (hid(o) !== hid(s)) p.hidden = hid(s);
   if ((o.color || null) !== (s.color || null)) p.color = unhex(s.color);
   if (!!o.noGrid !== !!s.noGrid) p.gridlines = s.noGrid ? 'false' : 'true';
   return p;
 }
 export function chartProps(ch) {
-  return { type: ch.type || 'column', title: ch.title || '', categories: ch.cat || '', series: JSON.stringify(ch.ser || []), legend: ch.legend || 'right', stacked: ch.stacked ? 'true' : 'false', x: cmOfPx(ch.x || 0), y: cmOfPx(ch.y || 0), w: cmOfPx(ch.w || 460), h: cmOfPx(ch.h || 300) };
+  return { type: ch.type || 'column', title: ch.title || '', categories: ch.cat || '', series: JSON.stringify(ch.ser || []), legend: ch.legend || 'right', stacked: ch.stacked ? 'true' : 'false', percentStacked: ch.percentStacked ? 'true' : 'false', dataLabels: ch.dataLabels ? 'true' : 'false', xTitle: ch.xTitle || '', yTitle: ch.yTitle || '', x: cmOfPx(ch.x || 0), y: cmOfPx(ch.y || 0), w: cmOfPx(ch.w || 460), h: cmOfPx(ch.h || 300) };
 }
 const chartKey = ch => ch.eid || ch.id;
 /** Turns cell diffs into commands; identical style changes over a full rectangle of ≥ RANGE_MIN cells become one range set.

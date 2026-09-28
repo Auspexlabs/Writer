@@ -100,6 +100,8 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
         if (cells.Count > 0)
             props["range"] = XlsxCells.Reference(cells.Min(c => c.Col), cells.Min(c => c.Row)) + ":" + XlsxCells.Reference(cells.Max(c => c.Col), cells.Max(c => c.Row));
         props["print"] = XlsxBookFeatures.Print(doc, this);
+        props["tables"] = XlsxTables.Read(this);
+        props["outline"] = XlsxOutline.Groups(this).ToJsonString();
         if (sheet.SheetId?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
         if (XlsxLayout.Merges(Ws) is { } merges) props["merges"] = merges;
         if (XlsxLayout.Widths(Ws) is { } widths) props["widths"] = widths;
@@ -142,6 +144,8 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
                 if (sheet.Name.Value != old) XlsxCharts.RenameSheet(doc, old, sheet.Name.Value!);
                 break;
             case "print": XlsxBookFeatures.SetPrint(doc, this, value); break;
+            case "tables": XlsxTables.Write(doc, this, value); break;
+            case "outline": XlsxOutline.Write(this, value); break;
             case "protected": XlsxBookFeatures.SetProtection(Ws, value); break;
             case "visibility":
                 if (value != "visible" && doc.Sheets.Count(s => s.Sheet.State is null || s.Sheet.State.Value == SheetStateValues.Visible) <= 1 && (sheet.State is null || sheet.State.Value == SheetStateValues.Visible)) throw new WriterException(ErrorCode.Validation, "At least one worksheet must stay visible", "Unhide another worksheet first.");

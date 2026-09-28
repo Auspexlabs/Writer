@@ -32,6 +32,7 @@ export function sheetPrint(doc, E) {
     const margin = [p.top ?? .75, p.right ?? .7, p.bottom ?? .75, p.left ?? .7].map(n => n * 25.4);
     const usableW = px(w - margin[1] - margin[3]), usableH = px(h - margin[0] - margin[2]) - 48;
     const hiddenR = new Set([...(sh.hiddenRows || []), ...(sh.frows || [])]), hiddenC = new Set(sh.hiddenCols || []);
+    for(const g of sh.outline||[])if(g.collapsed)for(let i=g.start;i<=g.end;i++)(g.axis==='r'?hiddenR:hiddenC).add(i);
     const autoH = autoRowHeights(sh, E.parseA, E.colName, (r, c) => calc.value(si, r, c), doc.fs || 11, doc);
     const cw = c => sh.colW?.[E.colName(c)] || 100, rh = r => sh.rowH?.[r + 1] || autoH[r + 1] || 26;
     const repeatR = new Set(), repeatC = new Set();
@@ -58,7 +59,7 @@ export function sheetPrint(doc, E) {
             const merge = sh.merges?.find(m => r >= m.r && r < m.r + m.rs && c >= m.c && c < m.c + m.cs);
             let rs = 1, cs = 1, ar = r, ac = c;
             if (merge) { const mr = rr.filter(i => i >= merge.r && i < merge.r + merge.rs), mc = cc.filter(i => i >= merge.c && i < merge.c + merge.cs); if (r !== mr[0] || c !== mc[0]) continue; rs = mr.length; cs = mc.length; ar = merge.r; ac = merge.c; }
-            const cell = sh.cells[E.A(ar, ac)], s = cell?.s || {}, v = calc.value(si, ar, ac), styled = { ...s, align: s.align || (typeof v === 'number' ? 'right' : 'left') };
+            const cell = sh.cells[E.A(ar, ac)], s = {...E.tableStyle?.(sh,ar,ac),...cell?.s}, v = calc.value(si, ar, ac), styled = { ...s, align: s.align || (typeof v === 'number' ? 'right' : 'left') };
             table += `<td rowspan="${rs}" colspan="${cs}" style="${cellStyle(styled, p.gridlines)}">${esc(E.fmt(v, s))}</td>`;
           }
           table += '</tr>';

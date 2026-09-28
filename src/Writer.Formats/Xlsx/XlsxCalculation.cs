@@ -27,6 +27,10 @@ static class XlsxCalculation
             }
         }
         source.AppendLine("""
+            function convertTableFormulaBatch(json) {
+              const input=JSON.parse(json),calc=new Calc(input.doc),table=input.doc.sheets[input.sheet].tables.find(t=>t.name===input.table);
+              return JSON.stringify(input.formulas.map(([si,r,c,formula])=>convertTableRefs(formula,table,calc,si,r,c)));
+            }
             function calculateWorkbook(json) {
               const doc = JSON.parse(json);
               doc.sheets.forEach((sh, si) => {
@@ -46,6 +50,20 @@ static class XlsxCalculation
         return source.ToString();
     }
 
+    internal static void ConvertTableReferences(XlsxDocument doc, int sheet, string table)
+    {
+        var sheets = doc.Sheets.Select(s => new XlsxSheet(doc, s.Sheet, s.Part)).ToArray();
+        var formulas = sheets.SelectMany((s, si) => s.Data.Descendants<Cell>().Where(c => c.CellFormula is not null).Select(c => (Cell: c, Sheet: si))).ToArray();
+        if (formulas.Length == 0) return;
+        var input = new JsonObject { ["sheet"] = sheet, ["table"] = table,
+            ["doc"] = new JsonObject { ["sheets"] = new JsonArray(sheets.Select(s => (JsonNode)new JsonObject { ["name"] = s.SheetName, ["tables"] = JsonNode.Parse(XlsxTables.Read(s)) }).ToArray()) },
+            ["formulas"] = new JsonArray(formulas.Select(f => { var (c, r) = XlsxCells.Position(f.Cell); return (JsonNode)new JsonArray(JsonValue.Create(f.Sheet), JsonValue.Create(r - 1), JsonValue.Create(c - 1), JsonValue.Create(f.Cell.CellFormula!.Text)); }).ToArray()) };
+        var engine = new Engine(o => o.TimeoutInterval(TimeSpan.FromSeconds(30)).LimitRecursion(512).LimitMemory(256_000_000)); var program = Program.Value; engine.Execute(in program);
+        var output = JsonNode.Parse(engine.Call(engine.GetValue("convertTableFormulaBatch"), Jint.Native.JsValue.Undefined, [new Jint.Native.JsString(input.ToJsonString())]).AsString())!.AsArray();
+        for (var i = 0; i < formulas.Length; i++) formulas[i].Cell.CellFormula!.Text = output[i]!.GetValue<string>();
+        doc.RecalculateOnLoad();
+    }
+
     internal static void Recalculate(XlsxDocument doc)
     {
         var sheets = doc.Sheets.Select(s => new XlsxSheet(doc, s.Sheet, s.Part)).ToArray();
@@ -57,7 +75,15 @@ static class XlsxCalculation
         {
             var maxR = rows[i].Keys.DefaultIfEmpty(1).Max();
             var maxC = rows[i].Values.SelectMany(r => r.Elements<Cell>()).Select(c => XlsxCells.Position(c).Col).DefaultIfEmpty(1).Max();
+            var hidden = JsonNode.Parse(XlsxRules.Hidden(sheets[i].Ws) ?? "{}")?["rows"] as JsonArray ?? [];
+            var filter = sheets[i].Ws.GetFirstChild<AutoFilter>()?.Reference?.Value;
+            var filterBox = filter is not null ? XlsxCells.ParseRange(filter) : (Col1: 0, Row1: 0, Col2: 0, Row2: 0);
+            bool Filtered(JsonNode? n) => filter is not null && n!.GetValue<int>() > filterBox.Row1 && n.GetValue<int>() <= filterBox.Row2;
             nodes.Add((JsonNode)new JsonObject { ["name"] = sheets[i].SheetName,
+                ["tables"] = JsonNode.Parse(XlsxTables.Read(sheets[i])),
+                ["outline"] = XlsxOutline.Groups(sheets[i]),
+                ["hiddenRows"] = new JsonArray(hidden.Where(n => !Filtered(n)).Select(n => (JsonNode?)JsonValue.Create(n!.GetValue<int>() - 1)).ToArray()),
+                ["frows"] = new JsonArray(hidden.Where(Filtered).Select(n => (JsonNode?)JsonValue.Create(n!.GetValue<int>() - 1)).ToArray()),
                 ["_used"] = new JsonObject { ["r1"] = 0, ["c1"] = 0, ["r2"] = maxR - 1, ["c2"] = maxC - 1 },
                 ["formulas"] = new JsonArray(formulas[i].Select(c => JsonValue.Create(c.CellReference!.Value)).ToArray<JsonNode?>()) });
         }

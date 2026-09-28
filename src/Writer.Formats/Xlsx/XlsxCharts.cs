@@ -13,10 +13,10 @@ using Xdr = DocumentFormat.OpenXml.Drawing.Spreadsheet;
 
 namespace Writer.Formats.Xlsx;
 
-sealed record ChartSeries(string? Name, string Values, string? X);
+sealed record ChartSeries(string? Name, string Values, string? X, string? Kind = null);
 
 /// <summary>What the engine models of a chart. Everything else in the chart part is left alone.</summary>
-sealed record ChartSpec(string Type, string? Title, string? Categories, IReadOnlyList<ChartSeries> Series, string Legend, bool Stacked);
+sealed record ChartSpec(string Type, string? Title, string? Categories, IReadOnlyList<ChartSeries> Series, string Legend, bool Stacked, bool Percent = false, bool Labels = false, string? XTitle = null, string? YTitle = null);
 
 /// <summary>A chart on a worksheet: its anchor in the drawing part plus its chart part.</summary>
 sealed class XlsxChart(XlsxDocument doc, XlsxSheet sheet, OpenXmlCompositeElement anchor, ChartPart part) : Node
@@ -38,6 +38,10 @@ sealed class XlsxChart(XlsxDocument doc, XlsxSheet sheet, OpenXmlCompositeElemen
         props["series"] = XlsxChartXml.SeriesJson(spec.Series);
         props["legend"] = spec.Legend;
         if (spec.Stacked) props["stacked"] = "true";
+        if (spec.Percent) props["percentStacked"] = "true";
+        if (spec.Labels) props["dataLabels"] = "true";
+        if (spec.XTitle is { Length: > 0 } xt) props["xTitle"] = xt;
+        if (spec.YTitle is { Length: > 0 } yt) props["yTitle"] = yt;
         var box = XlsxAnchors.Read(anchor, sheet.Grid);
         props["x"] = box.X.ToString(Inv);
         props["y"] = box.Y.ToString(Inv);
@@ -55,7 +59,7 @@ sealed class XlsxChart(XlsxDocument doc, XlsxSheet sheet, OpenXmlCompositeElemen
         {
             case "title": XlsxChartXml.SetTitle(chart, value); break;
             case "legend": XlsxChartXml.SetLegend(chart, value); break;
-            case "type" or "series" or "categories" or "stacked":
+            case "type" or "series" or "categories" or "stacked" or "percentStacked" or "dataLabels" or "xTitle" or "yTitle":
                 var spec = XlsxChartXml.Read(chart, sheet.SheetName);
                 if (name != "type" && !XlsxChartXml.CanBuild(spec.Type))
                     throw new WriterException(ErrorCode.Validation, $"A {spec.Type} chart's series cannot be edited here",
@@ -65,9 +69,15 @@ sealed class XlsxChart(XlsxDocument doc, XlsxSheet sheet, OpenXmlCompositeElemen
                     "type" => spec with { Type = value },
                     "series" => spec with { Series = XlsxChartXml.ParseSeries(value) },
                     "categories" => spec with { Categories = value.Trim().Length == 0 ? null : value.Trim() },
-                    _ => spec with { Stacked = value == "true" },
+                    "stacked" => spec with { Stacked = value == "true", Percent = value == "true" && spec.Percent },
+                    "percentStacked" => spec with { Percent = value == "true", Stacked = value == "true" || spec.Stacked },
+                    "dataLabels" => spec with { Labels = value == "true" },
+                    "xTitle" => spec with { XTitle = value },
+                    _ => spec with { YTitle = value },
                 };
-                chart.PlotArea = XlsxChartXml.PlotArea(doc, sheet, spec);
+                var rebuilt = XlsxChartXml.PlotArea(doc, sheet, spec);
+                XlsxChartXml.KeepAppearance(chart.PlotArea, rebuilt);
+                chart.PlotArea = rebuilt;
                 break;
             case "x" or "y" or "w" or "h":
                 var box = XlsxAnchors.Read(anchor, sheet.Grid);
@@ -126,7 +136,7 @@ static class XlsxCharts
             props.GetValueOrDefault("categories") is { Length: > 0 } categories ? categories.Trim() : null,
             props.TryGetValue("series", out var series) ? XlsxChartXml.ParseSeries(series) : [],
             props.GetValueOrDefault("legend") ?? "bottom",
-            props.GetValueOrDefault("stacked") == "true");
+            props.GetValueOrDefault("stacked") == "true" || props.GetValueOrDefault("percentStacked") == "true", props.GetValueOrDefault("percentStacked") == "true", props.GetValueOrDefault("dataLabels") == "true", props.GetValueOrDefault("xTitle"), props.GetValueOrDefault("yTitle"));
         var space = XlsxChartXml.ChartSpace(doc, sheet, spec);
         var drawings = Drawings(sheet);
         var drawing = drawings.WorksheetDrawing!;
@@ -194,7 +204,7 @@ static class XlsxCharts
 static class XlsxChartXml
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-    static readonly string[] Buildable = ["column", "bar", "line", "pie", "area", "scatter", "doughnut"];
+    static readonly string[] Buildable = ["column", "bar", "line", "pie", "area", "scatter", "doughnut", "combo"];
 
     public static bool CanBuild(string type) => Buildable.Contains(type);
 
@@ -213,13 +223,13 @@ static class XlsxChartXml
             var other => other[..^5],
         };
         var series = new List<ChartSeries>();
-        foreach (var ser in charts.SelectMany(el => el.ChildElements.Where(s => s.LocalName == "ser")))
+        foreach (var ser in charts.SelectMany(el => el.ChildElements.Where(s => s.LocalName == "ser")).OrderBy(s => uint.TryParse(Val(Child(s, "idx")), out var i) ? i : 0))
         {
             var tx = Child(ser, "tx");
             var name = Formula(tx) is { } f ? XlsxRefs.Display(f, sheetName) : Child(tx, "v")?.InnerText;
             var values = Formula(Child(ser, "val") ?? Child(ser, "yVal"));
             var x = Formula(Child(ser, "xVal"));
-            series.Add(new ChartSeries(name, values is null ? "" : XlsxRefs.Display(values, sheetName), x is null ? null : XlsxRefs.Display(x, sheetName)));
+            series.Add(new ChartSeries(name, values is null ? "" : XlsxRefs.Display(values, sheetName), x is null ? null : XlsxRefs.Display(x, sheetName), charts.Count > 1 ? ser.Parent?.LocalName switch { "lineChart" => "line", "areaChart" => "area", "barChart" => Val(Child(ser.Parent, "barDir")) == "bar" ? "bar" : "column", _ => null } : null));
         }
         string? categories = null;
         if (type == "scatter" || first?.LocalName == "bubbleChart")
@@ -243,7 +253,20 @@ static class XlsxChartXml
             _ => "right",
         };
         var stacked = Val(Child(first, "grouping")) is "stacked" or "percentStacked";
-        return new ChartSpec(type, title, categories, series, legend, stacked);
+        string? AxisTitle(string local) => chart?.PlotArea?.ChildElements.FirstOrDefault(e => e.LocalName == local)?.GetFirstChild<C.Title>() is { } axisTitle ? string.Concat(axisTitle.Descendants<A.Text>().Select(t => t.Text)) : null;
+        return new ChartSpec(charts.Count > 1 ? "combo" : type, title, categories, series, legend, stacked, Val(Child(first, "grouping")) == "percentStacked", charts.Any(c => Val(Child(Child(c, "dLbls"), "showVal")) == "1" || Val(Child(Child(c, "dLbls"), "showVal")) == "true"), AxisTitle("catAx"), AxisTitle("valAx"));
+    }
+
+    internal static void KeepAppearance(C.PlotArea? old, C.PlotArea next)
+    {
+        if (old is null) return;
+        var series = old.ChildElements.SelectMany(g => g.ChildElements.Where(e => e.LocalName == "ser")).GroupBy(s => Val(Child(s, "idx")) ?? "0").ToDictionary(g => g.Key, g => g.First());
+        foreach (var s in next.ChildElements.SelectMany(g => g.ChildElements.Where(e => e.LocalName == "ser")).OfType<OpenXmlCompositeElement>())
+            if (series.TryGetValue(Val(Child(s, "idx")) ?? "0", out var source))
+                foreach (var look in source.ChildElements.Where(e => e.LocalName is "spPr" or "marker" or "dPt")) s.AddChild(look.CloneNode(true), false);
+        foreach (var axis in next.ChildElements.Where(e => e.LocalName is "catAx" or "valAx").OfType<OpenXmlCompositeElement>())
+            if (old.ChildElements.FirstOrDefault(e => e.LocalName == axis.LocalName && Val(Child(e, "axId")) == Val(Child(axis, "axId"))) is { } source)
+                foreach (var look in source.ChildElements.Where(e => e.LocalName is "spPr" or "txPr")) axis.AddChild(look.CloneNode(true), false);
     }
 
     static OpenXmlElement? Child(OpenXmlElement? parent, string localName) => parent?.ChildElements.FirstOrDefault(e => e.LocalName == localName);
@@ -262,6 +285,7 @@ static class XlsxChartXml
             if (s.Name is not null) w.WriteString("name", s.Name);
             w.WriteString("values", s.Values);
             if (s.X is not null) w.WriteString("x", s.X);
+            if (s.Kind is not null) w.WriteString("kind", s.Kind);
             w.WriteEndObject();
         }
         w.WriteEndArray();
@@ -278,7 +302,8 @@ static class XlsxChartXml
         {
             if (e.ValueKind != JsonValueKind.Object || Text(e, "values") is not { Length: > 0 } values)
                 throw new WriterException(ErrorCode.Validation, "Every series needs a values range", hint);
-            list.Add(new ChartSeries(Text(e, "name"), values.Trim(), Text(e, "x")?.Trim()));
+            var kind = Text(e, "kind"); if (kind is not null && kind is not ("column" or "line" or "area")) throw new WriterException(ErrorCode.Validation, "Invalid combination series kind", "Use column, line or area.");
+            list.Add(new ChartSeries(Text(e, "name"), values.Trim(), Text(e, "x")?.Trim(), kind));
         }
         return list;
     }
@@ -349,36 +374,43 @@ static class XlsxChartXml
     {
         if (!CanBuild(spec.Type))
             throw new WriterException(ErrorCode.Validation, $"'{spec.Type}' is not a chart type writer can draw", "Types: " + string.Join(" | ", Buildable) + ".");
-        var stacked = spec.Stacked && spec.Type is "column" or "bar" or "line" or "area";
-        var sers = string.Concat(spec.Series.Select((s, i) => Series(doc, sheet, spec, s, i)));
-        var body = spec.Type switch
+        string Build(string type, IEnumerable<(ChartSeries Series, int Index)> items)
         {
-            "column" or "bar" => $"<c:barChart><c:barDir val=\"{(spec.Type == "bar" ? "bar" : "col")}\"/><c:grouping val=\"{(stacked ? "stacked" : "clustered")}\"/><c:varyColors val=\"0\"/>{sers}"
-                + $"<c:gapWidth val=\"150\"/>{(stacked ? "<c:overlap val=\"100\"/>" : "")}<c:axId val=\"1\"/><c:axId val=\"2\"/></c:barChart>",
-            "line" => $"<c:lineChart><c:grouping val=\"{(stacked ? "stacked" : "standard")}\"/><c:varyColors val=\"0\"/>{sers}<c:marker val=\"1\"/><c:axId val=\"1\"/><c:axId val=\"2\"/></c:lineChart>",
-            "area" => $"<c:areaChart><c:grouping val=\"{(stacked ? "stacked" : "standard")}\"/><c:varyColors val=\"0\"/>{sers}<c:axId val=\"1\"/><c:axId val=\"2\"/></c:areaChart>",
-            "pie" => $"<c:pieChart><c:varyColors val=\"1\"/>{sers}<c:firstSliceAng val=\"0\"/></c:pieChart>",
-            "doughnut" => $"<c:doughnutChart><c:varyColors val=\"1\"/>{sers}<c:firstSliceAng val=\"0\"/><c:holeSize val=\"50\"/></c:doughnutChart>",
-            _ => $"<c:scatterChart><c:scatterStyle val=\"lineMarker\"/><c:varyColors val=\"0\"/>{sers}<c:axId val=\"1\"/><c:axId val=\"2\"/></c:scatterChart>",
-        };
+            var stacked = spec.Stacked && type is "column" or "bar" or "line" or "area";
+            var grouping = stacked ? spec.Percent ? "percentStacked" : "stacked" : type is "column" or "bar" ? "clustered" : "standard";
+            var sers = string.Concat(items.Select(s => Series(doc, sheet, spec with { Type = type }, s.Series, s.Index)));
+            var labels = spec.Labels ? "<c:dLbls><c:showLegendKey val=\"0\"/><c:showVal val=\"1\"/><c:showCatName val=\"0\"/><c:showSerName val=\"0\"/><c:showPercent val=\"0\"/><c:showBubbleSize val=\"0\"/></c:dLbls>" : "";
+            var ids = "<c:axId val=\"1\"/><c:axId val=\"2\"/>";
+            return type switch
+            {
+                "column" or "bar" => $"<c:barChart><c:barDir val=\"{(type == "bar" ? "bar" : "col")}\"/><c:grouping val=\"{grouping}\"/><c:varyColors val=\"0\"/>{sers}{labels}<c:gapWidth val=\"150\"/>{(stacked ? "<c:overlap val=\"100\"/>" : "")}{ids}</c:barChart>",
+                "line" => $"<c:lineChart><c:grouping val=\"{grouping}\"/><c:varyColors val=\"0\"/>{sers}{labels}<c:marker val=\"1\"/>{ids}</c:lineChart>",
+                "area" => $"<c:areaChart><c:grouping val=\"{grouping}\"/><c:varyColors val=\"0\"/>{sers}{labels}{ids}</c:areaChart>",
+                "pie" => $"<c:pieChart><c:varyColors val=\"1\"/>{sers}{labels}<c:firstSliceAng val=\"0\"/></c:pieChart>",
+                "doughnut" => $"<c:doughnutChart><c:varyColors val=\"1\"/>{sers}{labels}<c:firstSliceAng val=\"0\"/><c:holeSize val=\"50\"/></c:doughnutChart>",
+                _ => $"<c:scatterChart><c:scatterStyle val=\"lineMarker\"/><c:varyColors val=\"0\"/>{sers}{labels}{ids}</c:scatterChart>",
+            };
+        }
+        var indexed = spec.Series.Select((s, i) => (Series: s, Index: i));
+        var body = spec.Type == "combo" ? string.Concat(indexed.GroupBy(s => s.Series.Kind ?? (s.Index == 0 ? "column" : "line")).Select(g => Build(g.Key, g))) : Build(spec.Type, indexed);
         var axes = spec.Type switch
         {
             "pie" or "doughnut" => "",
-            "scatter" => ValueAxis(1, "b", 2, false, "midCat") + ValueAxis(2, "l", 1, true, "midCat"),
-            "bar" => CategoryAxis("l") + ValueAxis(2, "b", 1, true, "between"),
-            _ => CategoryAxis("b") + ValueAxis(2, "l", 1, true, "between"),
+            "scatter" => ValueAxis(1, "b", 2, false, "midCat", spec.XTitle) + ValueAxis(2, "l", 1, true, "midCat", spec.YTitle),
+            "bar" => CategoryAxis("l", spec.XTitle) + ValueAxis(2, "b", 1, true, "between", spec.YTitle, spec.Percent),
+            _ => CategoryAxis("b", spec.XTitle) + ValueAxis(2, "l", 1, true, "between", spec.YTitle, spec.Percent),
         };
         return "<c:plotArea><c:layout/>" + body + axes + "</c:plotArea>";
     }
 
-    static string CategoryAxis(string pos) =>
-        $"<c:catAx><c:axId val=\"1\"/><c:scaling><c:orientation val=\"minMax\"/></c:scaling><c:delete val=\"0\"/><c:axPos val=\"{pos}\"/><c:numFmt formatCode=\"General\" sourceLinked=\"1\"/>"
+    static string CategoryAxis(string pos, string? title) =>
+        $"<c:catAx><c:axId val=\"1\"/><c:scaling><c:orientation val=\"minMax\"/></c:scaling><c:delete val=\"0\"/><c:axPos val=\"{pos}\"/>{Title(title)}<c:numFmt formatCode=\"General\" sourceLinked=\"1\"/>"
         + "<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"2\"/><c:crosses val=\"autoZero\"/><c:auto val=\"1\"/>"
         + "<c:lblAlgn val=\"ctr\"/><c:lblOffset val=\"100\"/><c:noMultiLvlLbl val=\"0\"/></c:catAx>";
 
-    static string ValueAxis(int id, string pos, int crossAx, bool gridlines, string crossBetween) =>
+    static string ValueAxis(int id, string pos, int crossAx, bool gridlines, string crossBetween, string? title = null, bool percent = false) =>
         $"<c:valAx><c:axId val=\"{id}\"/><c:scaling><c:orientation val=\"minMax\"/></c:scaling><c:delete val=\"0\"/><c:axPos val=\"{pos}\"/>{(gridlines ? "<c:majorGridlines/>" : "")}"
-        + $"<c:numFmt formatCode=\"General\" sourceLinked=\"1\"/><c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"{crossAx}\"/>"
+        + $"{Title(title)}<c:numFmt formatCode=\"{(percent ? "0%" : "General")}\" sourceLinked=\"{(percent ? 0 : 1)}\"/><c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"{crossAx}\"/>"
         + $"<c:crosses val=\"autoZero\"/><c:crossBetween val=\"{crossBetween}\"/></c:valAx>";
 
     static string Series(XlsxDocument doc, XlsxSheet sheet, ChartSpec spec, ChartSeries s, int i)

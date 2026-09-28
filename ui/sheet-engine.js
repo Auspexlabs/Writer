@@ -28,6 +28,13 @@ function tokenize(s) {
   const out = []; let i = 0;
   while (i < s.length) {
     if (/^\s*$/.test(s.slice(i))) break;
+    // Structured references have nested brackets and escaped punctuation; consume them before A1 tokens.
+    const lead = /^\s*([A-Za-z_\\一-龥][\w.\\一-龥]*)?\[/.exec(s.slice(i));
+    if (lead) {
+      const start = i + lead[0].length - 1; let end = start, depth = 0;
+      for (; end < s.length; end++) { if (s[end] === "'" && /[\[\]#@']/.test(s[end + 1] || '')) { end++; continue; } if (s[end] === '[') depth++; else if (s[end] === ']' && --depth === 0) break; }
+      if (depth) fail(E.REF); out.push({t:'structured', name:lead[1] || '', spec:s.slice(start, end + 1)}); i = end + 1; continue;
+    }
     TK.lastIndex = i; const m = TK.exec(s); if (!m) fail(E.NAME); i = TK.lastIndex;
     if (m[1]) out.push({ t: 'ref', v: m[1] });
     else if (m[2]) out.push({ t: 'n', v: +m[2] });
@@ -66,6 +73,7 @@ function parse(src) {
     const k = next(); if (!k) fail(E.VALUE);
     if (k.t === 'n' || k.t === 's' || k.t === 'b') return { t: k.t, v: k.v };
     if (k.t === 'e') return { t: 'err', e: k.v };
+    if (k.t === 'structured') return k;
     if (k.t === 'name') return { t: 'name', v: k.v };
     if (k.t === 'ref') return refNode(k.v);
     if (k.t === 'fn') {
@@ -386,7 +394,15 @@ Object.assign(FN, {
   QUOTIENT: S((x, y) => { x = num(x); y = num(y); if (!y) fail(E.DIV0); return Math.trunc(snap(x / y)); }, 2),
   EVEN: S(x => { x = num(x); return x >= 0 ? 2 * Math.ceil(snap(x / 2)) : 2 * Math.floor(snap(x / 2)); }, 1),
   ODD: S(x => { x = num(x); const n = x >= 0 ? Math.ceil(snap(x)) : Math.floor(snap(x)); return n % 2 ? n : x >= 0 ? n + 1 : n - 1; }, 1),
-  SUBTOTAL: (a, ev) => { const k = num(ev(a[0])), f = SUBS[k > 100 ? k - 100 : k]; if (!f || k > 11 && k < 101 || k > 111) fail(E.VALUE); return FN[f](a.slice(1), ev); },
+  SUBTOTAL: (a, ev, calc, si) => {
+    const k=num(ev(a[0])), f=SUBS[k>100?k-100:k]; if(!f||k>11&&k<101||k>111)fail(E.VALUE);
+    const nested=node=>node&&typeof node==='object'&&(node.t==='fn'&&['SUBTOTAL','AGGREGATE'].includes(node.name)||Object.values(node).some(v=>Array.isArray(v)?v.some(nested):typeof v==='object'&&nested(v)));
+    const values=[];
+    for(const ref of a.slice(1)) {const b=calc.bounds(ref,si),sh=calc.doc.sheets[b.si],hidden=new Set(sh.frows||[]);if(k>100){for(const r of sh.hiddenRows||[])hidden.add(r);for(const g of sh.outline||[])if(g.axis==='r'&&g.collapsed)for(let r=g.start;r<=g.end;r++)hidden.add(r);}
+      for(let r=b.r1;r<=b.r2;r++)if(!hidden.has(r))for(let c=b.c1;c<=b.c2;c++){const raw=sh.cells[A(r,c)]?.v;if(typeof raw==='string'&&raw[0]==='='&&nested(ast(raw.slice(1))))continue;values.push(calc.value(b.si,r,c));}
+    }
+    return FN[f]([{t:'rng'}],()=>({range:values.map(v=>[v])}));
+  },
   AGGREGATE: (a, ev) => {
     const k = num(ev(a[0])), o = num(ev(a[1])), f = SUBS[k]; if (!f || o < 0 || o > 7) fail(E.VALUE);
     const refs = k >= 14 ? a.slice(2, -1) : a.slice(2), ign = o >= 2 && o !== 4 && o !== 5; // options 2,3,6,7 ignore errors
@@ -969,8 +985,30 @@ export class Calc {
     if (typeof raw !== 'string') return null;
     const ref = raw.replace(/^=/, ''); return REFSTR.test(ref) ? refNode(ref) : ast(ref);
   }
+  tableRef(n, si) {
+    let table, owner = si;
+    for (let i = 0; i < this.doc.sheets.length && !table; i++) for (const t of this.doc.sheets[i].tables || []) {
+      const [a, b = a] = t.range.split(':').map(parseA);
+      if (n.name ? t.name.toUpperCase() === n.name.toUpperCase() : i === si && this.cur.r >= a.r && this.cur.r <= b.r && this.cur.c >= a.c && this.cur.c <= b.c) { table = t; owner = i; break; }
+    }
+    if (!table) fail(E.NAME);
+    const [a, b = a] = table.range.split(':').map(parseA), spec = n.spec || '[#Data]';
+    const pieces = [...spec.matchAll(/\[((?:'[^]|[^\[\]])*)\]/g)].map(m => m[1]);
+    const tags = pieces.filter(p => /^#/.test(p)).map(p => p.toLowerCase());
+    const columns = pieces.filter(p => !/^#/.test(p)).map(p => p.replace(/^@/, '').replace(/'([\[\]#@'])/g, '$1')).filter(Boolean);
+    let r1 = a.r + (table.header === false ? 0 : 1), r2 = b.r - (table.totals ? 1 : 0), c1 = a.c, c2 = b.c;
+    if (tags.includes('#all')) { r1 = a.r; r2 = b.r; }
+    else { if (tags.includes('#headers')) { if (table.header === false) fail(E.REF); r1 = a.r; if (!tags.includes('#data')) r2 = a.r; } if (tags.includes('#totals')) { if (!table.totals) fail(E.REF); r2 = b.r; if (!tags.includes('#data')) r1 = b.r; } }
+    if (tags.includes('#this row') || /(?:^|\[)@/.test(spec)) { if (owner !== si || this.cur.r < a.r + (table.header === false ? 0 : 1) || this.cur.r > b.r - (table.totals ? 1 : 0)) fail(E.VALUE); r1 = r2 = this.cur.r; }
+    if (columns.length) {
+      const all = table.columns || [], indices = columns.map(name => all.findIndex(c => String(c.name).toLowerCase() === name.toLowerCase()));
+      if (indices.some(i => i < 0)) fail(E.REF); c1 += Math.min(...indices); c2 = a.c + Math.max(...indices);
+    }
+    return {t:'rng',sh:this.doc.sheets[owner].name,r1,r2,c1,c2};
+  }
   bounds(n, si) {
-    if (n.t === 'name') { const named = this.nameNode(n.v); if (!named) fail(E.NAME); return this.bounds(named, si); }
+    if (n.t === 'structured') return this.bounds(this.tableRef(n, si), si);
+    if (n.t === 'name') { const named = this.nameNode(n.v) || this.tableRef({name:n.v}, si); return this.bounds(named, si); }
     if (n.t !== 'ref' && n.t !== 'rng') fail(E.VALUE);
     const s2 = this.sheetIdx(n.sh, si), open = n.t === 'rng' && (n.r2 == null || n.c2 == null);
     const u = open ? (this.used || (this.used = new Map())).get(s2) ?? this.used.set(s2, usedRange(this.doc.sheets[s2])).get(s2) : null; // only whole rows/columns need the used range; one scan per sheet per Calc
@@ -1010,8 +1048,9 @@ export class Calc {
       case 'n': case 's': case 'b': return n.v;
       case 'name': {
         if (this.scope.has(n.v)) return this.scope.get(n.v);
-        const named = this.nameNode(n.v); if (!named) fail(E.NAME); return this.ev(named, si);
+        const named = this.nameNode(n.v) || this.tableRef({name:n.v}, si); return this.ev(named, si);
       }
+      case 'structured': { const ref = this.tableRef(n, si); if (ref.r1 === ref.r2 && ref.c1 === ref.c2) return this.value(this.sheetIdx(ref.sh, si), ref.r1, ref.c1); return this.ev(ref, si); }
       case 'ref': { const v = this.value(this.sheetIdx(n.sh, si), n.r, n.c); if (isErr(v)) fail(v.err); return v; }
       case 'spill': { if (n.a.t !== 'ref') fail(E.REF); const s = this.sheetIdx(n.a.sh, si), key = `${s}:${n.a.r}:${n.a.c}`; this.value(s, n.a.r, n.a.c); const matrix = this.arrays.get(key); if (!matrix) fail(E.REF); return { range: matrix }; }
       case 'rng': { const b = this.bounds(n, si); return { range: grid(b.r2 - b.r1 + 1, b.c2 - b.c1 + 1, (i, j) => this.value(b.si, b.r1 + i, b.c1 + j)) }; }
@@ -1042,7 +1081,8 @@ const REFRE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(\\$?)([A-Za-z]{1,3})(
 const WHOLERE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(?:(\\$?)([A-Za-z]{1,3}):(\\$?)([A-Za-z]{1,3})|(\\$?)(\\d+):(\\$?)(\\d+))(?![\\w(:])', 'g');
 const nameChar = ch => ch && /[A-Za-z0-9_.\u4e00-\u9fa5]/.test(ch);
 // Rewrites every reference: cells through `cell(sh, abs1, col, abs2, row)`, whole columns/rows through `whole(sh, axis, abs1, i1, abs2, i2)` (0-based indexes).
-function mapRefs(f, cell, whole) {
+function mapRefs(f, cell, whole) { return structuredChunks(f, (s, structured) => structured ? s : mapPlainRefs(s, cell, whole)); }
+function mapPlainRefs(f, cell, whole) {
   const out = f.replace(REFRE, (m, s, sh, d1, col, d2, row, off, full) => s || (!sh && nameChar(full[off - 1])) ? m : cell(sh || '', d1, colIdx(col), d2, +row - 1));
   return out.replace(WHOLERE, (m, s, sh, c1, ca, c2, cb, r1, ra, r2, rb, off, full) => {
     if (s || (!sh && nameChar(full[off - 1]))) return m;
@@ -1088,12 +1128,88 @@ export function currentRegion(sh, r, c) {
 }
 export function moveRefs(formula, currentSheet, sourceSheet, targetSheet, box, dr, dc, formulaSheet = currentSheet) {
   const quote = name => "'" + name.replace(/'/g, "''") + "'!";
-  return formula.replace(new RegExp('("(?:[^"]|"")*")|(' + REFSRC + ')(?![\\w(])', 'gi'), (m, str, ref, off, full) => {
+  return structuredChunks(formula, (s, structured) => structured ? s : s.replace(new RegExp('("(?:[^"]|"")*")|(' + REFSRC + ')(?![\\w(])', 'gi'), (m, str, ref, off, full) => {
     if (str || /[\w.]/.test(full[off - 1] || '')) return m;
     const bang = ref.lastIndexOf('!'), prefix = bang < 0 ? '' : ref.slice(0, bang + 1), name = prefix ? prefix.slice(0, -1).replace(/^'|'$/g, '').replace(/''/g, "'") : currentSheet;
     if (!sameSheet(name, sourceSheet)) return m;
     const parts = (prefix ? ref.slice(bang + 1) : ref).split(':'), ps = parts.map(parseA);
     if (ps.some(p => !p || p.r < box.r1 || p.r > box.r2 || p.c < box.c1 || p.c > box.c2)) return !prefix && !sameSheet(currentSheet, formulaSheet) ? quote(currentSheet) + ref : m;
     return (sameSheet(formulaSheet, targetSheet) ? (prefix ? quote(targetSheet) : '') : quote(targetSheet)) + parts.map((s, i) => { const p = ps[i]; return (s.startsWith('$') ? '$' : '') + colName(p.c + dc) + (/\$\d/.test(s) ? '$' : '') + (p.r + dr + 1); }).join(':');
+  }));
+}
+
+export function tableAt(sh, r, c) {
+  return (sh.tables || []).find(t => { const [a,b=a]=t.range.split(':').map(parseA); return a && b && r>=a.r && r<=b.r && c>=a.c && c<=b.c; });
+}
+export function tableStyle(sh, r, c) {
+  const t=tableAt(sh,r,c); if(!t) return {};
+  const [a,b=a]=t.range.split(':').map(parseA), number=+(String(t.style).match(/\d+$/)?.[0]||2), colors=['#44546A','#4472C4','#ED7D31','#A5A5A5','#FFC000','#70AD47'], color=colors[(number+4)%6];
+  const dark=/Dark/.test(t.style), light=/Light/.test(t.style), header=t.header!==false&&r===a.r, total=t.totals&&r===b.r;
+  if(header) return {fill:light?color+'22':color,color:light?color:'#FFFFFF',b:true};
+  if(total) return {fill:color+'22',b:true,bd:{top:'thin'},bdc:color};
+  return t.stripes!==false && (r-a.r)%2===1 ? {fill:dark?color+'66':color+'18'} : {};
+}
+export function tableColumns(sh, table) {
+  const [a,b]=table.range.split(':').map(parseA), seen=new Set();
+  return Array.from({length:b.c-a.c+1},(_,i)=>{
+    const previous=table.columns?.[i]||{}, raw=table.header===false?previous.name:sh.cells[A(a.r,a.c+i)]?.v;
+    const stem=String(raw||'Column'+(i+1));let name=stem,j=2;while(seen.has(name.toUpperCase()))name=stem+j++;seen.add(name.toUpperCase());
+    return {...previous,name};
   });
+}
+// Protect bracketed column names (even columns named A1) when ordinary A1 references shift.
+function structuredChunks(f, fn) {
+  let out='',start=0,i=0;
+  while(i<f.length){
+    if(f[i]==='"'){i++;while(i<f.length){if(f[i++]==='"'){if(f[i]==='"')i++;else break;}}continue;}
+    const m=/^([A-Za-z_\\一-龥][\w.\\一-龥]*)?\[/.exec(f.slice(i));
+    if(m && !nameChar(f[i-1])) {let end=i+m[0].length-1,depth=0;for(;end<f.length;end++){if(f[end]==="'"&&/[\[\]#@']/.test(f[end+1]||'')){end++;continue;}if(f[end]==='[')depth++;else if(f[end]===']'&&--depth===0)break;}out+=fn(f.slice(start,i),false)+fn(f.slice(i,end+1),true);i=end+1;start=i;}else i++;
+  }
+  return out+fn(f.slice(start),false);
+}
+export function renameTableRefs(f, from, to) {
+  return structuredChunks(f,(s,structured)=>structured?s.replace(/^[^\[]+/,name=>sameSheet(name,from)?to:name):s.replace(/("(?:[^"]|"")*")|([A-Za-z_\\一-龥][\w.\\一-龥]*)(?!\w)/g,(m,str,name,off,full)=>!str&&sameSheet(name,from)&&full[off+m.length]!=='('?to:m));
+}
+export function renameTableColumnRefs(f, table, from, to, local=false) {
+  const escaped=to.replace(/[\[\]#@']/g,"'$&");
+  return structuredChunks(f,(s,structured)=>{
+    if(!structured)return s;const name=s.slice(0,s.indexOf('['));if(name?!sameSheet(name,table):!local)return s;
+    return s.replace(/\[((?:'[^]|[^\[\]])*)\]/g,(m,raw)=>{const at=raw.startsWith('@')?'@':'',text=raw.slice(at.length).replace(/'([\[\]#@'])/g,'$1');return sameSheet(text,from)?'['+at+escaped+']':m;});
+  });
+}
+export function syncTableHeaders(doc) {
+  for(const sh of doc.sheets) for(const t of sh.tables||[]) {
+    if(t.header===false)continue;const [a]=t.range.split(':').map(parseA), next=tableColumns(sh,t);
+    next.forEach((col,i)=>{
+      const old=t.columns?.[i]?.name;if(old===col.name)return;
+      const address=A(a.r,a.c+i);sh.cells[address]={...sh.cells[address],v:col.name};
+      if(old)for(const owner of doc.sheets)for(const [ref,cell] of Object.entries(owner.cells))if(String(cell.v).startsWith('=')){const p=parseA(ref);const value=renameTableColumnRefs(cell.v,t.name,old,col.name,tableAt(owner,p.r,p.c)?.name===t.name);if(value!==cell.v)cell.v=value;}
+    });
+    if(next.some((c,i)=>c.name!==t.columns?.[i]?.name))t.columns=next;
+  }
+}
+export function convertTableRefs(formula, table, calc, si, r, c) {
+  const prior=calc.cur;calc.cur={r,c};
+  const reference=spec=>{try{const b=calc.tableRef({name:table.name,spec},si),rowRelative=spec&&(/(?:^|\[)@|#This Row/i.test(spec)),address=(r,c)=>'$'+colName(c)+(rowRelative?'':'$')+(r+1);return "'"+b.sh.replace(/'/g,"''")+"'!"+address(b.r1,b.c1)+(b.r1===b.r2&&b.c1===b.c2?'':':'+address(b.r2,b.c2));}catch{return '#REF!';}};
+  try{return structuredChunks(formula,(s,structured)=>{
+    if(!structured)return s.replace(/("(?:[^"]|"")*")|([A-Za-z_\\一-龥][\w.\\一-龥]*)(?!\w)/g,(m,str,name,off,full)=>!str&&sameSheet(name,table.name)&&full[off+m.length]!=='('?reference(null):m);
+    const name=s.slice(0,s.indexOf('['));if(name?!sameSheet(name,table.name):tableAt(calc.doc.sheets[si],r,c)?.name!==table.name)return s;
+    return reference(s.slice(s.indexOf('[')));
+  });}finally{calc.cur=prior;}
+}
+
+export function subtotalSheet(source, box, groupCol, valueCol, fn, name) {
+  const cells={},outline=[],quote="'"+source.name.replace(/'/g,"''")+"'!",g=groupCol-box.c1,v=valueCol-box.c1;
+  for(let c=box.c1;c<=box.c2;c++)cells[A(0,c-box.c1)]={v:String(source.cells[A(box.r1,c)]?.v||colName(c)),s:{b:true}};
+  let row=1,start=box.r1+1;
+  while(start<=box.r2) {
+    const key=String(source.cells[A(start,groupCol)]?.v??'');let end=start;while(end<box.r2&&String(source.cells[A(end+1,groupCol)]?.v??'')===key)end++;
+    const first=row;
+    for(let r=start;r<=end;r++,row++)for(let c=box.c1;c<=box.c2;c++)cells[A(row,c-box.c1)]={v:'='+quote+'$'+colName(c)+'$'+(r+1),s:{...source.cells[A(r,c)]?.s}};
+    cells[A(row,g)]={v:key+' Total',s:{b:true}};cells[A(row,v)]={v:`=SUBTOTAL(${fn},${quote}${A(start,valueCol)}:${A(end,valueCol)})`,s:{b:true}};
+    outline.push({axis:'r',start:first,end:row-1,level:2,collapsed:false});row++;start=end+1;
+  }
+  cells[A(row,g)]={v:'Grand Total',s:{b:true}};cells[A(row,v)]={v:`=SUBTOTAL(${fn},${A(1,v)}:${A(row-1,v)})`,s:{b:true}};
+  outline.unshift({axis:'r',start:1,end:row-1,level:1,collapsed:false});
+  return {name,cells,outline,colW:Object.fromEntries(Array.from({length:box.c2-box.c1+1},(_,i)=>[colName(i),source.colW?.[colName(box.c1+i)]||100]))};
 }

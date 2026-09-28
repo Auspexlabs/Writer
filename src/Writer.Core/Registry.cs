@@ -195,6 +195,8 @@ public static class Registry
             Formats = Xlsx, Parents = ["document"], Summary = true,
             Props =
             [
+                new("outline", PropType.Json, "Outline groups: array of {axis:r/c,start,end,level:1..7,collapsed} with zero-based inclusive indices."),
+                new("tables", PropType.Json, "Native Excel tables: array of {id, name, range, header, totals, style, stripes, columns:[{id,name,formula,total,label}]}. Writing replaces the list and preserves matching table parts."),
                 new("print", PropType.Json, "Page setup: orientation, paper (9=A4), scale, fitWidth, fitHeight, margins in inches, area, titles, header, footer and gridlines."),
                 new("visibility", PropType.Enum, "Worksheet visibility.") { Values = ["visible", "hidden", "veryHidden"] },
                 new("protected", PropType.Bool, "Protect the worksheet from ordinary edits."),
@@ -223,11 +225,15 @@ public static class Registry
             Formats = Xlsx, Parents = ["sheet"],
             Props =
             [
-                new("type", PropType.Enum, "Chart type. Changing it keeps the series.") { Values = ["column", "bar", "line", "pie", "area", "scatter", "doughnut"], Example = "column" },
+                new("type", PropType.Enum, "Chart type. Changing it keeps the series.") { Values = ["column", "bar", "line", "pie", "area", "scatter", "doughnut", "combo"], Example = "column" },
                 new("title", PropType.String, "Title above the chart; empty removes it.") { Example = "Sales" },
                 new("series", PropType.Json, "JSON array of {name, values}: name is a cell (B1) or a text, values a range. Scatter series may add x, their X range.") { Example = "[{\"name\":\"B1\",\"values\":\"B2:B6\"}]" },
                 new("categories", PropType.String, "Category labels range, on this sheet (A2:A6) or another (Sheet2!A2:A6). Scatter charts use it as the shared X range.") { Example = "A2:A6" },
                 new("legend", PropType.Enum, "Legend position.") { Values = ["none", "right", "bottom", "top", "left"], Example = "bottom" },
+                new("percentStacked", PropType.Bool, "Stack each category as a percentage of its total."),
+                new("dataLabels", PropType.Bool, "Show each data point's value."),
+                new("xTitle", PropType.String, "Category axis title, or the scatter X axis title."),
+                new("yTitle", PropType.String, "Value axis title."),
                 new("stacked", PropType.Bool, "Stack the series (column, bar, line and area charts).") { Example = "true" },
                 new("x", PropType.Length, "Left edge on the sheet.") { Example = "10cm" },
                 new("y", PropType.Length, "Top edge on the sheet.") { Example = "1cm" },

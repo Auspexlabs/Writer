@@ -81,7 +81,15 @@ export function cloneWorkbook(doc) {
 
 // Small clipboard/style values may be drafts; structuredClone rejects proxies.
 export const cloneValue = v => Array.isArray(v) ? v.map(cloneValue) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, cloneValue(x)])) : v;
-export const isSpillFormula = text => typeof text === 'string' && text[0] === '=' && /[{:;]|\b(?:SEQUENCE|FILTER|SORT|SORTBY|UNIQUE|TRANSPOSE|TEXTSPLIT|HSTACK|VSTACK|TAKE|DROP|CHOOSECOLS|CHOOSEROWS|REGEXEXTRACT|TREND|GROWTH|FREQUENCY)\s*\(|^=[A-Za-z_]+$/i.test(text);
+export function isSpillFormula(text) {
+  if(typeof text!=='string'||text[0]!=='=')return false;
+  // A table's current-row references are scalars, even in a million-row calculated column.
+  // They must not make every blank viewport cell pre-evaluate that entire column.
+  if(text.includes('[@')||/#This Row/i.test(text)){
+    let probe='',start=0,i=0;while(i<text.length){if(text[i]!=='['){i++;continue;}let end=i,depth=0;for(;end<text.length;end++){if(text[end]==="'"&&/[\[\]#@']/.test(text[end+1]||'')){end++;continue;}if(text[end]==='[')depth++;else if(text[end]===']'&&--depth===0)break;}const token=text.slice(i,end+1);probe+=text.slice(start,i)+(/\[@|#This Row/i.test(token)?'1':token);i=end+1;start=i;}text=probe+text.slice(start);
+  }
+  return /[\[{:;]|\b(?:SEQUENCE|FILTER|SORT|SORTBY|UNIQUE|TRANSPOSE|TEXTSPLIT|HSTACK|VSTACK|TAKE|DROP|CHOOSECOLS|CHOOSEROWS|REGEXEXTRACT|TREND|GROWTH|FREQUENCY)\s*\(|^=[A-Za-z_]+$/i.test(text);
+}
 const PART_STATS = new WeakMap(), MAP_STATS = new WeakMap();
 export function cellStats(cells) {
   if (META.has(cells) && MAP_STATS.has(cells)) return MAP_STATS.get(cells);

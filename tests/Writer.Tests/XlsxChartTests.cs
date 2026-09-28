@@ -92,6 +92,17 @@ public class XlsxChartTests
     }
 
     [Fact]
+    public void Percentage_combo_labels_and_axis_titles_round_trip()
+    {
+        using var doc=Data(); var chart=Mutations.Add(doc.Root.Children[0],"chart",Props(("type","column"),("categories","A2:A6"),("series",Series),("percentStacked","true"),("dataLabels","true"),("xTitle","Month"),("yTitle","Share")),null);
+        var bytes=Save(doc);using(var package=SpreadsheetDocument.Open(new MemoryStream(bytes),false))Assert.Empty(new DocumentFormat.OpenXml.Validation.OpenXmlValidator().Validate(package).Select(e=>e.Description));
+        using var opened=new XlsxAdapter().Open(new MemoryStream(bytes));var p=PathResolver.Single(opened.Root,"//chart[1]").GetProps();Assert.Equal("true",p["percentStacked"]);Assert.Equal("true",p["dataLabels"]);Assert.Equal("Month",p["xTitle"]);Assert.Equal("Share",p["yTitle"]);
+        chart.SetProp("type","combo");chart.SetProp("stacked","false");chart.SetProp("series","""[{"name":"B1","values":"B2:B6","kind":"column"},{"name":"C1","values":"C2:C6","kind":"line"}]""");
+        bytes=Save(doc);using(var package=SpreadsheetDocument.Open(new MemoryStream(bytes),false)){Assert.Empty(new DocumentFormat.OpenXml.Validation.OpenXmlValidator().Validate(package).Select(e=>e.Description));var plot=package.WorkbookPart!.WorksheetParts.Single().DrawingsPart!.ChartParts.Single().ChartSpace!.GetFirstChild<C.Chart>()!.PlotArea!;Assert.Single(plot.Elements<C.BarChart>());Assert.Single(plot.Elements<C.LineChart>());}
+        using var combo=new XlsxAdapter().Open(new MemoryStream(bytes));p=PathResolver.Single(combo.Root,"//chart[1]").GetProps();Assert.Equal("combo",p["type"]);Assert.Contains("line",p["series"]);Assert.Equal("Month",p["xTitle"]);
+    }
+
+    [Fact]
     public void Position_round_trips_over_custom_widths_and_heights()
     {
         using var doc = Data();
@@ -187,13 +198,13 @@ public class XlsxChartTests
         var charts = PathResolver.Query(doc.Root, "/sheet[1]/chart");
         Assert.Equal(4, charts.Count);
         var first = charts[0].GetProps();
-        Assert.Equal(("column", "Monthly Sales and YoY Growth Trend", "bottom", "A2:A13", "2"), (first["type"], first["title"], first["legend"], first["categories"], first["id"]));
+        Assert.Equal(("combo", "Monthly Sales and YoY Growth Trend", "bottom", "A2:A13", "2"), (first["type"], first["title"], first["legend"], first["categories"], first["id"]));
         Assert.Equal(5, JsonDocument.Parse(first["series"]).RootElement.GetArrayLength());
-        Assert.Contains("{\"name\":\"East Sales\",\"values\":\"B2:B13\"}", first["series"]);
+        Assert.Contains("{\"name\":\"East Sales\",\"values\":\"B2:B13\",\"kind\":\"column\"}", first["series"]);
         Assert.Equal(((7 * Col).ToString(), "0", (11 * Col).ToString(), (18 * Row).ToString()), (first["x"], first["y"], first["w"], first["h"]));
         Assert.Equal(new[] { "column", "pie", "doughnut" }, charts.Skip(1).Select(c => c.GetProps()["type"]));
         Assert.Equal("/sheet[1]/chart[3]", PathResolver.Single(doc.Root, "//chart[@id=4]").Path);
-        Assert.Contains("/sheet[1]/chart[1]  type=column  title=Monthly Sales and YoY Growth Trend", Views.Outline(doc.Root));
+        Assert.Contains("/sheet[1]/chart[1]  type=combo  title=Monthly Sales and YoY Growth Trend", Views.Outline(doc.Root));
         var types = PathResolver.Query(doc.Root, "//chart").Select(c => c.GetProps()["type"]).ToList();
         Assert.Equal(8, types.Count);
         Assert.Contains("scatter", types);

@@ -37,12 +37,12 @@ test('tree → model maps sheet props and charts', () => {
   assert.deepEqual(m.rowH, { 2: 40 });
   assert.equal(m.frR, 1); assert.equal(m.frC, 1);
   assert.equal(m.filter, 'A2:C3');
-  assert.deepEqual(m.charts, [{ id: '/sheet[1]/chart[@id=7]', eid: '7', path: '/sheet[1]/chart[1]', type: 'column', title: 'Sales', cat: 'A2:A3', ser: [{ name: 'B1', values: 'B2:B3' }], legend: 'bottom', stacked: true, x: 96, y: 192, w: 480, h: 288 }]);
+  assert.deepEqual(m.charts, [{ id: '/sheet[1]/chart[@id=7]', eid: '7', path: '/sheet[1]/chart[1]', type: 'column', title: 'Sales', cat: 'A2:A3', ser: [{ name: 'B1', values: 'B2:B3' }], legend: 'bottom', stacked: true, percentStacked: false, dataLabels: false, xTitle: '', yTitle: '', x: 96, y: 192, w: 480, h: 288 }]);
 });
 
 test('freeze none / no sheet props → defaults', () => {
   const m = sheetModel({ kind: 'sheet', path: '/sheet[2]', props: { name: 'S2', freeze: 'none', filter: 'none' }, children: [] });
-  assert.deepEqual(m, { name: 'S2', path: '/sheet[2]', print: {}, protected: false, visibility: 'visible', autoH: {}, cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, filters: {}, frows: [], cf: [], dv: [], hiddenRows: [], hiddenCols: [], color: null, charts: [], images: [] });
+  assert.deepEqual(m, { name: 'S2', path: '/sheet[2]', print: {}, protected: false, visibility: 'visible', autoH: {}, cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, filters: {}, frows: [], cf: [], dv: [], hiddenRows: [], hiddenCols: [], color: null, tables: [], outline: [], charts: [], images: [] });
 });
 
 test('sheet rules: cf, validations, filter criteria, hidden lines and the tab colour map both ways; filter-hidden rows are the filter\'s, not the user\'s', async () => {
@@ -148,7 +148,7 @@ test('plan: charts add / set / remove, positions as cm strings, ids written back
   const cmds = await plan(orig, cur);
   assert.deepEqual(cmds, [
     ['set', 'f.xlsx', '/sheet[1]/chart[@id=7]', '--prop', 'title=Revenue', '--prop', 'legend=none', '--prop', 'x=5.08cm'],
-    ['add', 'f.xlsx', '/sheet[1]', '--type', 'chart', '--prop', 'type=pie', '--prop', 'title=Share', '--prop', 'categories=A2:A3', '--prop', 'series=[{"name":"B1","values":"B2:B3"}]', '--prop', 'legend=right', '--prop', 'stacked=false', '--prop', 'x=0cm', '--prop', 'y=2.54cm', '--prop', 'w=12.171cm', '--prop', 'h=7.938cm']
+    ['add', 'f.xlsx', '/sheet[1]', '--type', 'chart', '--prop', 'type=pie', '--prop', 'title=Share', '--prop', 'categories=A2:A3', '--prop', 'series=[{"name":"B1","values":"B2:B3"}]', '--prop', 'legend=right', '--prop', 'stacked=false', '--prop', 'percentStacked=false', '--prop', 'dataLabels=false', '--prop', 'xTitle=', '--prop', 'yTitle=', '--prop', 'x=0cm', '--prop', 'y=2.54cm', '--prop', 'w=12.171cm', '--prop', 'h=7.938cm']
   ]);
   assert.equal(s.charts[1].eid, '101'); assert.equal(s.charts[1].path, '/sheet[1]/chart[1]'); assert.equal(s.charts[1].id, 'chabc', 'the editor id stays');
   assert.deepEqual(chartProps(s.charts[1]).x, '0cm');

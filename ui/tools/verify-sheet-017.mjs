@@ -44,6 +44,9 @@ try {
   const results = await page.evaluate(async () => {
     const E = await import('/ui/sheet-engine.js'), EN = await import('/ui/engine.js');
     const check = (yes, msg) => { if (!yes) throw new Error(msg); };
+    const tick=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const mount=async doc=>{window.__sheetParent.setState({doc});await tick();};
+    const editor=()=>{const el=document.querySelector('.sh-cell');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return)if(f.stateNode?.logic?.tableSetup)return f.stateNode.logic;throw new Error('editor not mounted');};
     const clip = E.readTableHTML('<style>.xl1{font-weight:700;color:#ff0000}</style><table><tr><td class="xl1" colspan="2">hello<br>world</td></tr><tr><td>001</td><td style="background:#00ff00">12</td></tr></table>');
     check(clip.cells[0][0].v === 'hello\nworld' && clip.cells[0][0].s.b, 'Office HTML text/format');
     check(clip.merges[0].cs === 2, 'Office HTML merged cell');
@@ -63,7 +66,23 @@ try {
     const image = {...doc.sheets[0].images[0],src:await EN.dataUrlOf(doc.sheets[0].images[0].src)};
     doc = E.editWorkbook(doc, sh => { sh.images=[]; }); await EN.save(doc); doc = await EN.open(doc); check(doc.sheets[0].images.length === 0, 'image removal lost');
     doc = E.editWorkbook(doc, sh => { sh.images=[image]; }); await EN.save(doc); doc = await EN.open(doc); check(doc.sheets[0].images.length === 1, 'deleted image undo lost bytes');
-    return ['virtual grid navigation to AAA10001', 'Office HTML multiline, style and merge import', 'far cell, names, dynamic arrays and print settings save/reopen', 'image insert, move, resize, delete and undo round trips'];
+    await EN.run(['create','tables.xlsx']);let tables=await EN.open({id:'tables',path:'tables.xlsx',type:'xlsx'});
+    tables=E.editWorkbook(tables,sh=>{for(const [a,v] of Object.entries({A1:'Region',B1:'Amount',C1:'Tax',A2:'East',B2:3,A3:'East',B3:7,A4:'West',B4:5,E1:'=SUM(Sales[Amount])'}))sh.cells[a]={v};});
+    await mount(tables);let c=editor();c.setState({sel:{r:3,c:2},anc:{r:0,c:0}});await tick();c.tableSetup();await tick();c.state.dlg.ok({name:'Sales',range:'A1:C4',style:'TableStyleMedium2',action:'set'});c.setState({dlg:null});await tick();
+    check(window.__sheetParent.state.doc.sheets[0].tables.length===1,'table command did not create a table');
+    c.setState({edit:{r:1,c:2,val:'=[@Amount]*2'}});c.commitEdit(0,0);await tick();
+    tables=window.__sheetParent.state.doc;check(new E.Calc(tables).value(0,2,2)===14,'table formula did not fill calculated column');
+    await EN.save(tables);tables=await EN.open(tables);check(tables.sheets[0].tables[0].columns[1].name==='Amount','native table columns lost');check(await EN.save(tables)===0,'table no-op save rewrote file');
+    await mount(tables);c=editor();c.commit(sh=>c.setCellRaw(sh,0,1,'Revenue'));await tick();tables=window.__sheetParent.state.doc;
+    check(tables.sheets[0].cells.E1.v==='=SUM(Sales[Revenue])','table header rename broke references');await EN.save(tables);tables=await EN.open(tables);check(new E.Calc(tables).value(0,0,4)===15,'renamed table formula wrong');
+    await mount(tables);c=editor();c.insDel('r',2,1);await tick();tables=window.__sheetParent.state.doc;check(tables.sheets[0].tables[0].range==='A1:C5','row insert failed to extend table');
+    c.setState({anc:{r:1,c:0},sel:{r:4,c:0}});c.groupRows();await tick();c.outlineLevel(1);await tick();tables=window.__sheetParent.state.doc;await EN.save(tables);tables=await EN.open(tables);
+    check(tables.sheets[0].outline[0].collapsed && tables.sheets[0].outline[0].end===4,'outline collapse did not round trip');check(await EN.save(tables)===0,'outline no-op save rewrote file');
+    await mount(tables);c=editor();c.outlineLevel(8);await tick();tables=window.__sheetParent.state.doc;await EN.save(tables);tables=await EN.open(tables);check(!tables.sheets[0].outline[0].collapsed&&!tables.sheets[0].hiddenRows.length,'outline expansion left rows hidden');
+    await mount(tables);c=editor();c.setState({anc:{r:0,c:0},sel:{r:4,c:2}});c.insertChart('column','percent');await tick();tables=window.__sheetParent.state.doc;let chart=tables.sheets[0].charts[0];c.chartOptions(chart);await tick();c.state.dlg.ok({xTitle:'Region',yTitle:'Share',labels:'yes',stack:'percent'});c.setState({dlg:null});await tick();tables=window.__sheetParent.state.doc;await EN.save(tables);tables=await EN.open(tables);chart=tables.sheets[0].charts[0];check(chart.percentStacked&&chart.dataLabels&&chart.xTitle==='Region'&&chart.yTitle==='Share','chart percentage/labels/titles missing');
+    await mount(tables);c=editor();let vals=c.chartVals(chart,new E.Calc(tables));check(vals.labels.some(x=>x.text==='100%')&&vals.labels.some(x=>x.text==='Share'),'percentage chart not rendered');
+    c.commit(sh=>{const ch=sh.charts[0];ch.type='combo';ch.stacked=false;ch.percentStacked=false;ch.ser.forEach((s,i)=>s.kind=i?'line':'column');});await tick();tables=window.__sheetParent.state.doc;await EN.save(tables);tables=await EN.open(tables);check(tables.sheets[0].charts[0].type==='combo','combo chart missing');await mount(tables);c=editor();vals=c.chartVals(tables.sheets[0].charts[0],new E.Calc(tables));check(vals.rects.length&&vals.lines.length,'combo chart needs columns and line');check(await EN.save(tables)===0,'combo no-op save rewrote file');
+    return ['percentage and combination charts, value labels and axis titles', 'native tables, calculated columns, header rename and structural edits', 'outline collapse/expand save and reopen', 'virtual grid navigation to AAA10001', 'Office HTML multiline, style and merge import', 'far cell, names, dynamic arrays and print settings save/reopen', 'image insert, move, resize, delete and undo round trips'];
   });
   assert.deepEqual(errors, []); for (const result of results) console.log('PASS', result);
 } finally {
