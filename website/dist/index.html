@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/writer-logo-dark.svg" media="(prefers-color-scheme: dark)">
   <link rel="preload" as="image" href="assets/shots/hero-light.webp" media="(prefers-color-scheme: light)">
   <link rel="preload" as="image" href="assets/shots/hero-dark.webp" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="assets/style.css?v=8">
+  <link rel="stylesheet" href="assets/style.css?v=9">
   <script>
     // Hide the sections that rise in; if site.js never runs, show everything after 2.5 s.
     document.documentElement.classList.add('js');
@@ -38,6 +38,7 @@
         <a href="#formats">功能</a>
         <a href="#ai">AI 助手</a>
         <a href="#developers">开发者</a>
+        <a href="#community">QQ 交流群</a>
       </nav>
       <a class="btn btn-small" href="#download">免费下载</a>
     </div>
@@ -46,6 +47,18 @@
   <main id="main">
     <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="wrap">
+        <section class="community" id="community" aria-labelledby="community-title">
+          <div class="community-card glass">
+            <div>
+              <h2 id="community-title">加入 Writer 交流群</h2>
+              <p>交流使用技巧，反馈问题和建议。</p>
+            </div>
+            <div class="community-join">
+              <div><span>QQ 群</span><strong id="qq-group-number">799276170</strong></div>
+              <button class="btn btn-small" type="button" data-copy="qq-group-number" aria-live="polite">复制群号</button>
+            </div>
+          </div>
+        </section>
         <h1 id="hero-title" class="reveal"><span class="nb dim">Word、Excel、PPT，</span><span class="nb">在 Mac 和 Windows 上</span><span class="nb">直接改。</span></h1>
         <p class="lead reveal" style="--d: 1"><span class="nb">改动一秒内存回原文件，没动过的内容原样保留。</span><span class="nb">内置 AI 助手，用你自己的模型。</span></p>
         <div class="cta reveal" style="--d: 2">
@@ -240,18 +253,6 @@ $W mcp</code></pre>
           </div>
           <p class="small" data-latest hidden></p>
           <p class="small">Mac 版已签名并通过 Apple 公证：打开 dmg，把 Writer 拖进「应用程序」文件夹。Windows 版运行安装程序即可；如果弹出 SmartScreen 提示，点「更多信息」再点「仍要运行」。</p>
-        </div>
-      </div>
-    </section>
-    <section class="wrap community" id="community" aria-labelledby="community-title">
-      <div class="community-card glass">
-        <div>
-          <h2 id="community-title">加入 Writer 交流群</h2>
-          <p>交流使用技巧，反馈问题和建议。</p>
-        </div>
-        <div class="community-join">
-          <div><span>QQ 群</span><strong id="qq-group-number">799276170</strong></div>
-          <button class="btn btn-small" type="button" data-copy="qq-group-number" aria-live="polite">复制群号</button>
         </div>
       </div>
     </section>
