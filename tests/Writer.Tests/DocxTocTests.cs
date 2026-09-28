@@ -225,6 +225,6 @@ public class DocxTocTests
         Assert.Equal(names.IndexOf("pagebreak") + 1, names.IndexOf("toc"));
         var toc = Registry.Get("docx", "toc");
         Assert.Equal(["body"], toc.Parents);
-        Assert.Equal(["levels", "title", "style", "text"], toc.Props.Select(p => p.Name));
+        Assert.Equal(["caption", "levels", "title", "style", "text"], toc.Props.Select(p => p.Name));
     }
 }

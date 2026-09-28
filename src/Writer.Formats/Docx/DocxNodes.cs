@@ -27,6 +27,10 @@ sealed class DocxRoot(DocxDocument doc) : Node
         props["revisions"] = DocxRevisions.Count(doc).ToString(CultureInfo.InvariantCulture);
         props["comments"] = DocxComments.Count(doc).ToString(CultureInfo.InvariantCulture);
         if (doc.Styles.HeadingNumbering() is { } headingNumbering) props["headingNumbering"] = headingNumbering;
+        if (doc.Main.ThemePart?.Theme?.Name?.Value is { } theme) props["theme"] = theme;
+        var protection = doc.Main.DocumentSettingsPart?.Settings?.GetFirstChild<W.DocumentProtection>();
+        if (protection?.Enforcement?.Value == true) props["protected"] = "true";
+        if (DocxSection.PageBorder(doc.Main.Document!.Body!.GetFirstChild<W.SectionProperties>()) is { Length: > 0 } border) props["pageBorder"] = border;
         props["styles"] = DocxStyleGallery.Read(doc);
         var sources = DocxSources.Read(doc);
         if (sources.Count > 0) props["sources"] = DocxSources.Json(sources);
@@ -47,6 +51,11 @@ sealed class DocxRoot(DocxDocument doc) : Node
         switch (name)
         {
             case "fields": DocxFields.Refresh(doc); break;
+            case "theme": DocxDesign.Theme(doc, value); break;
+            case "styleSet": DocxDesign.StyleSet(doc, value); break;
+            case "protected": DocxDesign.Protection(doc, value == "true"); break;
+            case "pageBorder": DocxSection.SetPageBorder(doc, value); break;
+            case "chartData": DocxCharts.Write(doc, value); break;
             case "mergeData": DocxFields.Merge(doc, value); break;
             case "textRevision": DocxRevisions.ResolveText(doc, value); break;
             case "formatRevision": DocxRevisions.ResolveFormat(doc, value); break;

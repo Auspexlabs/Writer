@@ -858,7 +858,7 @@ async function openDocx(doc) {
   const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true', noteFormat: p.noteFormat || '' };
   return { html, rev: (doc.rev || 0) + 1, track, comments: comments.map(c => ({ id: c.cid, author: c.author, initials: c.initials, mine: c.mine, time: c.time, text: c.text, quote: c.quote, path: c.path, resolved: c.resolved, parent: c.parent })),
     notes: notes.map(noteOf), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
-    formatRevisions: sourcesOf(p.formatRevisions), sources: sourcesOf(p.sources), citeStyle: p.citationStyle || '',
+    protected: p.protected === 'true', theme: p.theme || '', pageBorder: jsonOr(p.pageBorder, null), formatRevisions: sourcesOf(p.formatRevisions), sources: sourcesOf(p.sources), citeStyle: p.citationStyle || '',
     _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns, pageColor: p.pageColor, watermark: p.watermark }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes, cites, officeObjects } };
 }
 
@@ -3018,6 +3018,23 @@ export function diffBlocks(before, after) {
   const gone = before.length - to.filter(i => i >= 0).length;
   if (gone) items.push([_t('删除'), _t('{n} 处内容', { n: gone })]);
   return items;
+}
+/** A review report that leaves both source documents untouched. */
+export function compareWord(before, after) {
+  const a = blocksFromHtml(before.html || ''), b = blocksFromHtml(after.html || '');
+  const key = x => x.kind + ':' + blockText(x);
+  const to = pairUp(a.map(key), b.map(key), [(i, j) => a[i].kind === b[j].kind]);
+  const used = new Set(to.filter(i => i >= 0)), rows = [], emitted = new Set();
+  const text = x => x ? textOf(x.rows ? x.rows.map(r => r.cells.map(c => c.props.html).join(' | ')).join('<br>') : x.props.html || x.props.text || x.props.title || labelOf(x)) : '';
+  b.forEach((x, j) => {
+    const index = to[j], old = a[index];
+    if (index >= 0) for (let i = 0; i < index; i++) if (!used.has(i) && !emitted.has(i)) { rows.push({ kind: '删除', before: text(a[i]), after: '' }); emitted.add(i); }
+    const formatted = old && (lookOf(old) !== lookOf(x) || !sameRuns(old.props.html, x.props.html) || old.kind === 'table' && !same(old.rows.map(r => r.cells.map(c => c.props)), x.rows.map(r => r.cells.map(c => c.props))) || old.kind === 'object' && !same([old.props.chart, old.props.smartart, old.props.width, old.props.height], [x.props.chart, x.props.smartart, x.props.width, x.props.height]));
+    if (!old || key(old) !== key(x) || formatted) rows.push({ kind: !old ? '新增' : text(old) === text(x) ? '格式或结构修改' : '修改', before: text(old), after: text(x) });
+  });
+  a.forEach((x, i) => { if (!used.has(i) && !emitted.has(i)) rows.push({ kind: '删除', before: text(x), after: '' }); });
+  for (const key of ['page', 'header', 'footer', 'firstHeader', 'firstFooter', 'evenHeader', 'evenFooter', 'pageNumberFormat', 'pageNumberStart', 'pageBorder']) if (!same(before[key], after[key])) rows.push({ kind: key, before: typeof before[key] === 'object' ? JSON.stringify(before[key]) : textOf(before[key] || ''), after: typeof after[key] === 'object' ? JSON.stringify(after[key]) : textOf(after[key] || '') });
+  return rows;
 }
 /** What a block says, without markup or spaces (the editor's markup and the engine's differ there); with its kind, what pairs it. */
 const blockText = b => (b.rows ? b.rows.map(r => r.cells.map(c => c.props.html).join('|')).join('|') : b.props.html || b.props.text || '').replace(/<[^>]*>|&nbsp;|[\s\u200B]+/g, '');

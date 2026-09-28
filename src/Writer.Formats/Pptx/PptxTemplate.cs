@@ -218,7 +218,7 @@ public static class PptxTemplate
 
     // ---------- theme and palettes ----------
 
-    const string ThemeXml =
+    internal const string ThemeXml =
         $"""
         <a:theme xmlns:a="{ANs}" name="Writer">
         <a:themeElements>

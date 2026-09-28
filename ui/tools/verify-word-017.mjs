@@ -166,6 +166,25 @@ try {
     const check = (yes, msg) => { if (!yes) throw new Error(msg); };
     const editor = () => { const el = document.querySelector('[data-edroot]'); let f = el[Object.keys(el).find(k => k.startsWith('__reactFiber'))]; for (; f; f = f.return) if (f.stateNode?.logic?.replaceAll) return f.stateNode.logic; throw new Error('editor not mounted'); };
     const parent = window.__wordParent;
+    await EN.run(['create', 'design.docx']);
+    await EN.run(['add', 'design.docx', '/body', '--type', 'heading', '--prop', 'text=Design']);
+    parent.setState({ docs: [await EN.open({ id: 'design', path: 'design.docx', type: 'docx' })] }); await tick();
+    const design = editor(); design.EN = EN;
+    await design.nativeChange('theme', 'mist'); await tick();
+    await design.nativeChange('styleSet', 'formal'); await tick();
+    await design.nativeChange('pageBorder', { style: 'double', color: '112233', width: 1.5, space: 24 }); await tick();
+    check(parent.doc.theme === 'Writer mist' && design.edRef.current.parentElement.querySelector('.wd-page-border').style.border.includes('double'), 'theme or page border not shown');
+    await design.nativeChange('chartData', { title: 'Sales', type: 'column', labels: ['Jan', 'Feb'], values: [4, -7] }); await tick();
+    check(design.edRef.current.querySelector('[data-office-object] svg'), 'native Word chart preview missing');
+    check(await EN.save(parent.doc, { root: design.edRef.current }) === 0, 'unchanged native chart rewritten');
+    await design.nativeChange('protected', 'true'); await tick();
+    check(design.edRef.current.contentEditable === 'false', 'protected document remains editable');
+    const savedHtml = parent.doc.html; design.change({ html: '<p>lost</p>' }); await tick();
+    check(parent.doc.html === savedHtml, 'protected document allowed toolbar mutation');
+    await design.nativeChange('protected', 'false'); await tick();
+    check(design.edRef.current.contentEditable === 'true', 'unprotected document remains readonly');
+    const changes = EN.compareWord({ type: 'docx', html: '<p>First</p><p>Gone</p><p>Last</p>' }, { type: 'docx', html: '<p>First</p><p>Last</p><p>Added</p>' });
+    check(changes.some(r => r.kind === '删除' && r.before === 'Gone') && changes.some(r => r.kind === '新增' && r.after === 'Added'), 'comparison lost insertion/deletion details');
     let formula = await EN.open({ id: 'formula', path: 'wmf-preview.docx', type: 'docx' });
     parent.setState({ docs: [formula] }); await tick();
     const MF = await import('/ui/metafile.js'); await MF.paintMetafiles(editor().edRef.current);
@@ -283,7 +302,7 @@ try {
       perf.push({ paragraph: index, pages: full.length, incrementalMs: Math.round(elapsed), fullMs: Math.round(fullElapsed) });
     }
     window.__wordPaginationPerf = perf;
-    return ['MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing', 'WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving', 'WordEditor table commands: insert row, save, undo, save/reopen and redo', 'Word shortcuts: justify, line spacing, subscript without zoom, Heading 2', 'Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op', 'Section numbering, independent odd/even headers, paginated print and stable save', 'Native numbering start values and heading numbering; individual text and formatting revision resolution'];
+    return ['Native chart preview/no-op save, theme/style set/page borders, edit protection and document comparison', 'MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing', 'WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving', 'WordEditor table commands: insert row, save, undo, save/reopen and redo', 'Word shortcuts: justify, line spacing, subscript without zoom, Heading 2', 'Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op', 'Section numbering, independent odd/even headers, paginated print and stable save', 'Native numbering start values and heading numbering; individual text and formatting revision resolution'];
   });
   for (const result of editorResults) console.log('PASS', result);
   console.log('PASS incremental page boundaries match full layout', JSON.stringify(await page.evaluate(() => window.__wordPaginationPerf)));

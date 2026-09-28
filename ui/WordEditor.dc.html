@@ -231,6 +231,7 @@
         <div data-light="1" onMouseDown="{{ onSheetDown }}" onDoubleClick="{{ onSheetDbl }}" style="width:{{ pageW }};min-height:{{ sheetH }};background:{{ sheetBg }};padding:{{ pad }};position:relative;display:flex;flex-direction:column;color:{{ pageInk }}">
           <sc-for list="{{ sheets }}" as="s" hint-placeholder-count="1">
             <div style="position:absolute;left:{{ s.left }};width:{{ s.w }};top:{{ s.top }};height:{{ s.h }};background:{{ pageBg }};box-shadow:{{ pageSh }};border-radius:6px;pointer-events:none;overflow:hidden">
+              <div class="wd-page-border" style="{{ pageBorderStyle }}"></div>
               <sc-if value="{{ hasWm }}" hint-placeholder-val="{{ false }}">
                 <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="transform:rotate(-32deg);font-size:110px;font-weight:700;color:rgba(29,29,31,0.07);white-space:nowrap;font-family:'Noto Sans SC',sans-serif">{{ wm }}</span></div>
               </sc-if>
@@ -239,7 +240,7 @@
               </sc-if>
             </div>
           </sc-for>
-          <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-cstyle="{{ citeStyleAttr }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="true" suppressContentEditableWarning="{{ true }}" spellCheck="true" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
+          <div ref="{{ edRef }}" data-pg="{{ pgId }}" data-cstyle="{{ citeStyleAttr }}" data-markup="{{ markupAttr }}" data-cm="{{ cmAttr }}" data-side="{{ sideAttr }}" class="wd-ed" data-complete="the body of a Word document" contentEditable="{{ canEdit }}" suppressContentEditableWarning="{{ true }}" spellCheck="true" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onClick="{{ onEdClick }}" onMouseUp="{{ onEdUp }}" onMouseDown="{{ onEdDown }}" onMouseMove="{{ onEdMove }}" style="flex:{{ edFlex }};width:{{ edW }};height:{{ edH }};min-height:200px;font-family:'Noto Serif SC',serif;font-size:11pt;line-height:1.8;column-count:{{ edCols }};column-width:{{ edColW }};column-gap:{{ edGap }};column-fill:{{ edFill }};position:relative;opacity:{{ edOp }};pointer-events:{{ edPe }};transition:opacity .2s"></div>
           <div ref="{{ fnRef }}" data-fnpg="{{ pgId }}" class="wd-fnotes" style="opacity:{{ edOp }};pointer-events:{{ edPe }}"></div>
           <sc-for list="{{ hfZones }}" as="z" hint-placeholder-count="0">
             <div title="{{ z.title }}" onDoubleClick="{{ z.onDbl }}" style="position:absolute;left:0;right:0;top:{{ z.top }};bottom:{{ z.bottom }};height:{{ z.h }};z-index:2;box-sizing:border-box;border-top:{{ z.lineT }};border-bottom:{{ z.lineB }}">
@@ -699,7 +700,7 @@ class Component extends DCLogic {
   }
   get doc() { return this.props.doc; }
   get page() { return Object.assign({ size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, color: '', wm: '', hf: true }, this.doc.page || {}); }
-  change(patch, silent) { this.props.onChange && this.props.onChange(Object.assign({}, this.doc, patch), silent ? { silent: true } : undefined); }
+  change(patch, silent) { if (this.doc.protected && !this.nativeUpdating && !silent) { this.edRef.current.innerHTML = this.doc.html; this.props.toast?.($t('文档已限制编辑，请在审阅中停止保护')); return; } this.props.onChange && this.props.onChange(Object.assign({}, this.doc, patch), silent ? { silent: true } : undefined); }
   load() {
     const ed = this.edRef.current; if (!ed) return; ed.innerHTML = this.doc.html || '<p><br></p>'; this.range = null; this.ink(); if (this.EN) this.refreshInfo(); // else engineReady does, in the document's own styles
     if (this.state.hf) this.setState({ hf: null, hfLive: null });
@@ -1720,6 +1721,22 @@ class Component extends DCLogic {
       this.insertHTML(`<span data-field="MERGEFIELD ${escHtml(name)}" contenteditable="false">«${escHtml(name)}»</span>`);
     });
   }
+  compareFile() {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.docx';
+    input.onchange = async () => {
+      const file = input.files[0]; if (!file || !this.EN) return;
+      let uploaded;
+      try {
+        this.flush(); uploaded = await this.EN.upload(file); const other = await this.EN.open(uploaded);
+        const rows = this.EN.compareWord(this.doc, other);
+        let report = await this.EN.open(await this.EN.create('docx', this.doc.title + ' · ' + $t('比较结果')));
+        const td = s => '<td><p>' + escHtml(s || '—').replace(/\n/g, '<br>') + '</p></td>';
+        report.html = `<h1>${escHtml($t('文档比较'))}</h1><p>${escHtml(this.doc.title)} → ${escHtml(file.name)}</p><p>${rows.length} ${escHtml($t('处差异'))}</p>` + (rows.length ? '<table data-w-style="TableGrid"><tbody><tr>' + td($t('变化')) + td($t('当前文档')) + td($t('对比文档')) + '</tr>' + rows.map(r => '<tr>' + td($t(r.kind)) + td(r.before) + td(r.after) + '</tr>').join('') + '</tbody></table>' : '<p>' + $t('没有发现文字、段落格式或页面设置差异') + '</p>');
+        await this.EN.save(report); report = await this.EN.open(report); this.props.onOpenDocuments?.([report]); this.props.toast?.($t('已生成比较结果'));
+      } catch (e) { this.props.toast?.(e.message); }
+      finally { if (uploaded) await this.EN.discard(uploaded).catch(() => {}); }
+    }; input.click();
+  }
   mergeFile() {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv,.tsv,.json';
     input.onchange = async () => {
@@ -2015,19 +2032,24 @@ class Component extends DCLogic {
     for (let i = 0; i < r; i++) h += '<tr>' + td(i === 0).repeat(c) + '</tr>';
     this.insertHTML(h + '</tbody></table><p><br></p>'); this.setState({ pop: null });
   }
-  insertChart() {
-    this.prompt('插入图表', [{ key: 'title', label: '图表标题', value: '', first: true, ai: 'the title of a chart in a Word document' }, { key: 'labels', label: '数据标签（逗号分隔）', value: 'A,B,C' }, { key: 'values', label: '数值（逗号分隔）', value: '12,18,15' }], v => {
-      const labels = v.labels.split(/[,，]/).map(s => s.trim()).filter(Boolean).slice(0, 12);
-      const values = v.values.split(/[,，]/).map(s => Number(s.trim())).slice(0, 12);
-      if (!labels.length || labels.length !== values.length || values.some(n => !Number.isFinite(n) || n < 0)) return this.props.toast && this.props.toast($t('请为每个标签输入一个非负数值'));
-      const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360;
-      const ctx = canvas.getContext('2d'); if (!ctx) return;
-      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, 640, 360);
-      ctx.fillStyle = '#1D1D1F'; ctx.font = '600 20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(v.title.trim().slice(0, 40) || $t('图表'), 320, 36);
-      const max = Math.max(1, ...values), left = 54, top = 67, bottom = 300, width = 560, barW = width / labels.length;
-      ctx.strokeStyle = '#D1D1D6'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(left, bottom + .5); ctx.lineTo(left + width, bottom + .5); ctx.stroke();
-      values.forEach((n, i) => { const h = n / max * (bottom - top), x = left + i * barW + barW * .18; ctx.fillStyle = '#2F6BD1'; ctx.fillRect(x, bottom - h, barW * .64, h); ctx.fillStyle = '#1D1D1F'; ctx.font = '12px sans-serif'; ctx.fillText(String(n), x + barW * .32, Math.max(top + 8, bottom - h - 8)); ctx.fillStyle = '#6E6E73'; ctx.fillText(labels[i].slice(0, 9), x + barW * .32, bottom + 22); });
-      this.insertHTML(`<p><img src="${canvas.toDataURL('image/png')}" style="max-width:100%;display:block;margin:8px auto" alt="${(v.title || $t('图表')).replace(/[&<>"']/g, '')}"></p>`);
+  async nativeChange(key, value) {
+    if (this.doc.protected && key !== 'protected') return this.props.toast?.($t('请先停止文档保护'));
+    try {
+      this.flush(); await this.EN.save(this.doc, { root: this.edRef.current });
+      await this.EN.run(['set', this.doc.path, '/', '--prop', key + '=' + (typeof value === 'string' ? value : JSON.stringify(value))]);
+      const doc = await this.EN.open(this.doc); this.nativeUpdating = true; try { this.change({ ...doc, rev: (this.doc.rev || 0) + 1 }); } finally { this.nativeUpdating = false; }
+    } catch (e) { this.props.toast?.(e.message); }
+  }
+  insertChart(edit = false) {
+    const object = this.contextTarget?.closest?.('[data-office-object]'), props = object && JSON.parse(object.getAttribute('data-office-props') || '{}');
+    const chart = edit && props?.type === 'chart' && JSON.parse(props.chart || '{}');
+    if (chart && (chart.series?.length > 1 || !['bar', 'column', 'line', 'area', 'pie', 'doughnut'].includes(chart.kind))) return this.props.toast?.($t('此图表含多个系列或特殊类型，请在 Word 或 Excel 中编辑数据'));
+    const types = { '柱形图': 'column', '条形图': 'bar', '折线图': 'line', '面积图': 'area', '饼图': 'pie', '圆环图': 'doughnut' };
+    const at = this.caretBlock()?.getAttribute('data-path'), blocks = this.EN?.blocksFromHtml(this.edRef.current) || [];
+    this.prompt(chart ? '编辑图表' : '插入图表', [{ key: 'title', label: '图表标题', value: chart?.title || '', first: true }, { key: 'type', label: '类型：柱形图、条形图、折线图、面积图、饼图、圆环图', value: Object.keys(types).find(k => types[k] === (chart?.kind === 'bar' ? chart.dir === 'bar' ? 'bar' : 'column' : chart?.kind)) || '柱形图' }, { key: 'labels', label: '数据标签（逗号分隔）', value: chart?.cats?.join(',') || 'A,B,C' }, { key: 'values', label: '数值（逗号分隔）', value: chart?.series?.[0]?.values?.join(',') || '12,18,15' }], v => {
+      const labels = v.labels.split(/[,，]/).map(s => s.trim()), values = v.values.split(/[,，]/).map(s => Number(s.trim()));
+      if (!labels.length || labels.length !== values.length || values.some(n => !Number.isFinite(n))) return this.props.toast?.($t('请为每个标签输入一个数值'));
+      this.nativeChange('chartData', { title: v.title, type: types[v.type.trim()] || v.type.trim(), labels, values, ...(chart ? { path: object.getAttribute('data-path') } : at ? { index: blocks.findIndex(b => b.path === at) + 2 } : {}) });
     });
   }
   cell() { let n = this.range && this.range.startContainer; if (!n) return null; n = n.nodeType === 3 ? n.parentNode : n; const td = n.closest && n.closest('td,th'); return td && this.edRef.current.contains(td) ? td : null; }
@@ -2367,8 +2389,15 @@ class Component extends DCLogic {
     const FP = this.FP; if (!FP || !c.formatOpen) return { tabs: [], groups: [] };
     const k = FP.kit(this), tab = c.tab;
     const tabs = FP.tabs(c.tabsDef.map(([key, l]) => [key, key === 'shape' ? '形状' : l, key === 'table' || key === 'image' || key === 'shape']), tab, key => this.setState({ tab: key, pop: null, bubble: false }));
-    const make = { home: this.panelHome, insert: this.panelInsert, layout: this.panelLayout, refs: this.panelRefs, review: this.panelReview, view: this.panelView, table: this.panelTable, image: this.panelImage, shape: this.panelShape }[tab];
+    const make = { design: this.panelDesign, home: this.panelHome, insert: this.panelInsert, layout: this.panelLayout, refs: this.panelRefs, review: this.panelReview, view: this.panelView, table: this.panelTable, image: this.panelImage, shape: this.panelShape }[tab];
     return { tabs, groups: make ? make.call(this, k, c) : [] };
+  }
+  panelDesign(k, c) {
+    const { G, R, btn, sel, lab, sp } = k, { d, I } = c;
+    const themes = [['paper', '纸白'], ['mist', '雾蓝'], ['clay', '陶土'], ['sand', '暖沙'], ['rose', '玫瑰']];
+    return [G('主题', R(sel('word-theme', themes.find(t => d.theme === 'Writer ' + t[0])?.[1] || '选择主题', themes.map(([key, name]) => I(name, () => this.nativeChange('theme', key)))))),
+      G('样式集', R(...[['modern', '现代'], ['formal', '正式'], ['compact', '紧凑']].map(([key, name]) => btn(name, 'style', () => this.nativeChange('styleSet', key))))),
+      G('页面边框', R(...[['single', '实线'], ['double', '双线'], ['dotted', '点线'], ['none', '无']].map(([style, name]) => btn(name, 'border', () => this.nativeChange('pageBorder', { style, color: '333333', width: style === 'double' ? 1.5 : .5, space: 24 })))), R(btn('边框设置…', 'border', () => this.prompt('页面边框', [{ key: 'color', label: '颜色（六位色值）', value: d.pageBorder?.color || '333333', first: true }, { key: 'width', label: '线宽（磅）', value: String(d.pageBorder?.width || .5) }, { key: 'space', label: '距纸张边缘（磅）', value: String(d.pageBorder?.space ?? 24) }], v => this.nativeChange('pageBorder', { style: d.pageBorder?.style || 'single', color: v.color, width: +v.width, space: +v.space })))))] ;
   }
   panelHome(k, c) {
     const { G, R, wrap, sel, swatch, seg, num, chk, lab, sp, size, btn } = k, { st, f, I } = c, pat = f.pat || {}, gal = this.gallery(), ps = f.ps || 'Normal';
@@ -2424,7 +2453,7 @@ class Component extends DCLogic {
     const { G, grid, card, menuCard } = k;
     return [
       G('常用', grid(3, menuCard('table', '表格', 'table', null, { title: '插入表格：选择行列' }), card('图片', 'picture', () => { this.restore(); this.imgRef.current.click(); }),
-        menuCard('shapes', '形状', 'shape', null), card('图表', 'chart', () => this.insertChart(), { title: '插入柱状图图片' }),
+        menuCard('shapes', '形状', 'shape', null), card('图表', 'chart', () => this.insertChart(), { title: '插入可编辑图表' }),
         card('文本框', 'textbox', () => this.insertShape('textbox'), { title: '插入文本框，可拖到页面任意位置' }), card('链接', 'link', () => this.linkDlg(), { title: '链接 Ctrl+K' }))),
       G('页面', grid(3, card('页眉', 'header', () => this.enterHF('header', this.caretPage()), { title: '编辑页眉（也可双击页面顶部）' }),
         card('页脚', 'footer', () => this.enterHF('footer', this.caretPage()), { title: '编辑页脚（也可双击页面底部）' }), menuCard('pagenum', '页码', 'pageNumber', null, { title: '在页脚插入页码' }),
@@ -2492,6 +2521,7 @@ class Component extends DCLogic {
     const { G, R, grid, btn, link, lab, sp, sel, sw, stat, input, empty } = k, { st, d, info, comments, moveComment } = c;
     const n = x => Number(x || 0).toLocaleString($lang() === 'en' ? 'en-US' : 'zh-CN');
     return [
+      G('文档', R(btn(d.protected ? '停止保护' : '限制编辑', 'lock', () => this.nativeChange('protected', d.protected ? 'false' : 'true')), btn('比较文档…', 'search', () => this.compareFile()))),
       G('字数统计', grid(4, stat(n(info.count), '字数'), stat(n(info.chars), '字符'), stat(n(info.paras), '段落'), stat(n(info.pages), '页'))),
       G('批注', comments.map(cm => ({ items: [{ t: 'cmt', av: cm.av, avBg: cm.avBg, head: cm.head, text: cm.text, quote: cm.quote, on: st.activeCid === cm.id, done: cm.resolved,
           resolveLabel: cm.resolveLabel, resolveTitle: cm.resolveTitle, onResolve: cm.onResolve, onDelete: cm.onDelete, onText: cm.onText, onClick: cm.onFocus,
@@ -2596,7 +2626,7 @@ class Component extends DCLogic {
         HD(''), I('修改样式以匹配所选内容', () => this.updateStyle(), { hint: this.styleLabel(f.ps) }), I('新建样式…', () => this.newStyle())])(this.gallery());
     this.menus.sty = styleItems; this.menus.fsize = SIZES.map(z => I(String(z), () => this.setFontSize(z), { on: f.size === z }));
     const setPage = patch => this.change({ page: Object.assign({}, pg, patch) });
-    const tabsDef = [['home', '开始'], ['insert', '插入'], ['layout', '布局'], ['refs', '引用@@tab'], ['review', '审阅'], ['view', '视图']];
+    const tabsDef = [['home', '开始'], ['insert', '插入'], ['design', '设计'], ['layout', '布局'], ['refs', '引用@@tab'], ['review', '审阅'], ['view', '视图']];
     if (f.inTable) tabsDef.push(['table', '表格']);
     if (st.imgSel) tabsDef.push(['image', '图片']);
     if (st.shapeSel && this.selShape) tabsDef.push(['shape', '形状格式']);
@@ -2635,7 +2665,7 @@ class Component extends DCLogic {
     const bookmarks = tab === 'insert' || tab === 'refs' ? this.refTargets() : [];
     if (tab === 'insert') ribbon = [
       M('table', '表格', []), B('图片', () => { this.restore(); this.imgRef.current.click(); }), B('链接', () => this.linkDlg(), { title: 'Ctrl+K' }), SEP,
-      B('文本框', () => this.insertShape('textbox'), { title: '插入文本框，可拖到页面任意位置' }), M('shapes', '形状', SHAPE_KINDS.map(([k, l]) => I(l, () => this.insertShape(k)))), B('图表', () => this.insertChart(), { title: '插入柱状图图片' }),
+      B('文本框', () => this.insertShape('textbox'), { title: '插入文本框，可拖到页面任意位置' }), M('shapes', '形状', SHAPE_KINDS.map(([k, l]) => I(l, () => this.insertShape(k)))), B('图表', () => this.insertChart(), { title: '插入可编辑图表' }),
       B('公式@@word', () => this.eqDialog(), { title: '用 LaTeX 输入公式，保存为 Word 公式' }), SEP,
       B('分隔线', () => this.insertRule()), B('分页符', () => this.insertHTML('<hr data-pb="1"><p><br></p>')), SEP,
       B('页眉', () => this.enterHF('header', this.caretPage()), { title: '编辑页眉（也可双击页面顶部）' }), B('页脚', () => this.enterHF('footer', this.caretPage()), { title: '编辑页脚（也可双击页面底部）' }),
@@ -2757,6 +2787,7 @@ class Component extends DCLogic {
       onFocus: () => { this.setState({ activeNote: x.id, focusNote: null }); if (!(this.paged && x.kind !== 'endnote' && this.toNote(x.id))) this.focusEl(m); } }; });
     const sideNotes = notes.filter(n => !n.foot); // the notes the page does not show: beside it
     const side = !this.props.pure && !this.props.formatOpen && !this.props.panelOpen && !this.props.aiOn && ((!st.hideCm && (d.comments || []).length > 0) || sideNotes.length > 0);
+    if (tab === 'design') ribbon.push(B('主题：雾蓝', () => this.nativeChange('theme', 'mist')), B('正式样式', () => this.nativeChange('styleSet', 'formal')), B('页面边框', () => this.nativeChange('pageBorder', { style: 'single', color: '333333', width: .5, space: 24 })));
     const dlg = st.dlg;
     const info = st.info;
     const pure = !!this.props.pure, showTh = pure ? this.props.showThumbs === true : this.props.showThumbs !== false; // 纯净模式: the panel only when its 缩略图 asks, over the page
@@ -2789,7 +2820,7 @@ class Component extends DCLogic {
     const tbx = !pure && !st.hf && f.inTable ? st.tblBox || null : null; // the table the caret is in: its letters, numbers and frame
     const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ st, f, pg, d, tab, tabsDef, I, HD, info, comments, notes, moveComment, formatOpen });
     // popover: after the panel, whose controls register their menus as it builds them
-    this.menus.context = [I('剪切', () => this.clipboardCommand('cut')), I('复制', () => this.clipboardCommand('copy')), I('粘贴', () => this.clipboardCommand('paste')), I('新建批注', () => this.addComment()), I('编辑链接', () => this.linkDlg()), I('取消链接', () => { this.restore(); this.exec('unlink'); }), ...(f.inTable ? [I('上方插入行', () => this.tbl('rowAbove')), I('下方插入行', () => this.tbl('rowBelow')), I('删除行', () => this.tbl('delRow')), I('删除表格', () => this.tbl('delTable'))] : []), ...(this.contextTarget?.closest?.('img') ? [I('删除图片', () => { const image = this.contextTarget.closest('img'); this.selectImg(null); frameOf(image).remove(); this.after(); })] : []), I('删除选中内容', () => this.exec('delete'))];
+    this.menus.context = [I('剪切', () => this.clipboardCommand('cut')), I('复制', () => this.clipboardCommand('copy')), I('粘贴', () => this.clipboardCommand('paste')), I('新建批注', () => this.addComment()), I('编辑链接', () => this.linkDlg()), I('取消链接', () => { this.restore(); this.exec('unlink'); }), ...(f.inTable ? [I('上方插入行', () => this.tbl('rowAbove')), I('下方插入行', () => this.tbl('rowBelow')), I('删除行', () => this.tbl('delRow')), I('删除表格', () => this.tbl('delTable'))] : []), ...(this.contextTarget?.closest?.('[data-office-object]')?.getAttribute('data-office-props')?.includes('"chart"') ? [I('编辑图表', () => this.insertChart(true))] : []), ...(this.contextTarget?.closest?.('img') ? [I('删除图片', () => { const image = this.contextTarget.closest('img'); this.selectImg(null); frameOf(image).remove(); this.after(); })] : []), I('删除选中内容', () => this.exec('delete'))];
     if (st.hf) this.menus.hfStyle = presetPick(tpl => this.applyHfPreset(tpl));
     let popItems = [], popIsGrid = false, gridCells = [], gridLabel = '';
     if (st.pop) {
@@ -2802,6 +2833,7 @@ class Component extends DCLogic {
       } else popItems = this.menus[st.pop.id] || [];
     }
     return {
+      canEdit: !d.protected, pageBorderStyle: d.pageBorder ? `position:absolute;inset:${Math.max(0, Math.min(31, d.pageBorder.space || 0))}pt;border:${d.pageBorder.width || .5}pt ${{single:'solid',double:'double',dotted:'dotted',dashed:'dashed'}[d.pageBorder.style] || 'solid'} #${/^[0-9a-f]{6}$/i.test(d.pageBorder.color) ? d.pageBorder.color : '333333'};pointer-events:none` : 'display:none',
       md, stop: e => e.stopPropagation(), tabs, ribbon, panelTabs: panel.tabs, panelGroups: panel.groups, formatOpen, panelEnter: this.props.panelEnter || 'open', bubbleOpen: pure && !!st.bubble, rbx: (st.bx || 200) + 'px', bMax: Math.max(240, Math.min(760, (st.bRootW || 900) - 24)) + 'px', tabKey: tab, barL: this.props.pure ? '12px' : (this.props.merged ? '12px' : (this.props.barLeft || '196px')), barJ: 'center', spW: this.props.merged && !this.props.pure ? '48px' : '0px', spD: this.props.merged && !this.props.pure ? 'flex' : 'none', barR: this.props.barRight || '12px', aiClick: () => { const fn = this.props.onAi || this.props.onAI; fn && fn(); }, aiBg: this.props.aiOn ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', aiSh: 'none', aiFg: this.props.aiOn ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', playClick: () => this.props.onPlay && this.props.onPlay(), fileMenu: e => this.props.onFileMenu && this.props.onFileMenu(e.currentTarget.getBoundingClientRect()),
       notPure: !pure, pure, showBar: pure && !!this.props.pureTools, rootBg: 'transparent', pageThumbs, addPageQuick: () => this.addPage(), thumbHtml: { __html: d.html || '' }, closeThumbs: () => this.props.onToggleThumbs && this.props.onToggleThumbs(),
       hasWordSelection: !!st.ctxBar, bx: st.ctxBar ? st.ctxBar.x + 'px' : 0, by: st.ctxBar ? st.ctxBar.y + 'px' : 0, selBelow: st.ctxBar && st.ctxBar.below ? '1' : '0', tailX: st.ctxBar ? `calc(50% + ${st.ctxBar.dx || 0}px)` : '50%', onCtx: this.onCtx,
