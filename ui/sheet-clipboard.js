@@ -1,12 +1,12 @@
 // Excel uses quoted fields when a cell includes tabs, newlines, or quotes.
 export const writeTSV = rows => rows.map(row => row.map(v => { const s = String(v ?? ''); return /[\t\r\n"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join('\t')).join('\n');
-export function readTSV(text) {
+export function readTSV(text, separator = '\t') {
   const rows = [], row = []; let value = '', quoted = false, start = true;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (quoted) { if (c === '"') { if (text[i + 1] === '"') { value += '"'; i++; } else quoted = false; } else value += c; continue; }
     if (c === '"' && start) { quoted = true; start = false; continue; }
-    if (c === '\t') { row.push(value); value = ''; start = true; continue; }
+    if (c === separator) { row.push(value); value = ''; start = true; continue; }
     if (c === '\r' || c === '\n') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(value); rows.push(row.splice(0)); value = ''; start = true; continue; }
     value += c; start = false;
   }

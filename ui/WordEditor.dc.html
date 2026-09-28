@@ -40,6 +40,7 @@
 .wd-ed :is(p,h1,h2,h3,li,blockquote):has(> img[data-w-wrap], > figure[data-pic]){position:relative} /* the paragraph a floating picture is placed in */
 .wd-ed img[data-w-wrap]:not([data-w-wrap="inline"]),.wd-ed figure[data-placed] img{cursor:move}
 .wd-ed .wd-busy{opacity:.5;transition:opacity .2s}
+.wd-ed [data-field]{background:rgba(120,120,120,.07);border-radius:2px;cursor:pointer}
 .wd-ed a{color:var(--k2, #2F5D8A)}
 .wd-ed ins[data-t]{color:var(--k61, #2E7350);text-decoration:underline;text-decoration-color:var(--k61, #2E7350)}
 .wd-ed del[data-t]{color:var(--k62, #B5563A);text-decoration:line-through}
@@ -1713,10 +1714,28 @@ class Component extends DCLogic {
   }
   /** 交叉引用: a link to the target at the caret, showing its text (a caption's label and number); the target gets a bookmark
    *  (a hidden _Ref one, as Word's own are) when it has none. Word opens the link at the target; the editor keeps caption numbers current. */
+  insertMergeField() {
+    this.prompt('插入合并字段', [{ key: 'name', label: '数据表中的字段名', value: '', first: true }], v => {
+      const name = v.name.trim(); if (!/^[\p{L}_][\p{L}\p{N}_]{0,63}$/u.test(name)) return this.props.toast?.($t('字段名只能包含字母、汉字、数字和下划线'));
+      this.insertHTML(`<span data-field="MERGEFIELD ${escHtml(name)}" contenteditable="false">«${escHtml(name)}»</span>`);
+    });
+  }
+  mergeFile() {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv,.tsv,.json';
+    input.onchange = async () => {
+      const file = input.files[0]; if (!file || !this.EN) return;
+      try {
+        const MM = await import('./word-mailmerge.js'), records = MM.mergeRecords(await file.text(), file.name);
+        this.flush(); await this.EN.save(this.doc, { root: this.edRef.current });
+        const docs = await MM.mergeDocuments(this.EN, this.doc, records, (i, total) => this.props.toast?.($t('正在生成') + ` ${i}/${total}`));
+        this.props.onOpenDocuments?.(docs); this.props.toast?.($t('已生成独立文档') + ': ' + docs.length);
+      } catch (e) { this.props.toast?.(e.message); }
+    }; input.click();
+  }
   insertRef(t) {
     let name = t.el.getAttribute('data-w-bookmark');
     if (!name) { name = '_Ref' + String(Date.now()).slice(-9); t.el.setAttribute('data-w-bookmark', name); }
-    this.insertHTML(`<a href="#${escHtml(name)}">${escHtml(t.text)}</a>`);
+    this.insertHTML(`<span data-field="REF ${escHtml(name)} \\h" contenteditable="false">${escHtml(t.text)}</span>`);
   }
   /** 插入题注: a numbered caption paragraph (图 1, 表 1…) after the caret's block, or above the caret's table for a table, with the caret
    *  at its end to type the title. */
@@ -1732,11 +1751,18 @@ class Component extends DCLogic {
   /** Numbers the captions 1, 2… per label in reading order, and gives the cross-references to captions their new numbers. */
   numberCaptions(ed) {
     if (!ed || !ed.querySelectorAll) return; const caps = ed.querySelectorAll('[data-w-caption]'); if (!caps.length) return;
-    const count = {}, now = {};
-    caps.forEach(p => {
-      const label = p.getAttribute('data-w-caption'), n = count[label] = (count[label] || 0) + 1;
-      const w = document.createTreeWalker(p, 4); let t;
-      while ((t = w.nextNode())) { if (t.parentElement.closest('span[data-eq],span[data-shape],sup[data-fn]')) continue; const m = /\d+/.exec(t.nodeValue); if (m) { if (m[0] !== String(n)) t.replaceData(m.index, m[0].length, String(n)); break; } }
+    const count = {}, now = {}, headings = [0,0,0,0,0,0];
+    ed.querySelectorAll('h1,h2,h3,h4,h5,h6,[data-w-caption]').forEach(p => {
+      if (/^H[1-6]$/.test(p.tagName)) { const level = +p.tagName[1]; headings[level - 1]++; for (let j = level; j < 6; j++) headings[j] = 0; }
+      if (!p.hasAttribute('data-w-caption')) return;
+      const label = p.getAttribute('data-w-caption'), chapter = +p.getAttribute('data-w-captionchapter') || 0, prefix = chapter ? headings.slice(0, chapter).join('.') : '', key = label + '|' + prefix;
+      const n = (prefix ? prefix + '-' : '') + (count[key] = (count[key] || 0) + 1);
+      const match = /\d+(?:[.-]\d+)*/.exec(p.textContent);
+      if (match && match[0] !== String(n)) {
+        const w = document.createTreeWalker(p, 4), r = document.createRange(); let t, at = 0, begun = false;
+        while ((t = w.nextNode())) { const end = at + t.nodeValue.length; if (!begun && end > match.index) { r.setStart(t, match.index - at); begun = true; } if (begun && end >= match.index + match[0].length) { r.setEnd(t, match.index + match[0].length - at); break; } at = end; }
+        r.deleteContents(); r.insertNode(document.createTextNode(String(n)));
+      }
       const bm = p.getAttribute('data-w-bookmark'); if (bm) now[bm] = label + ' ' + n;
     });
     ed.querySelectorAll('a[href^="#"]').forEach(a => { const t = now[a.getAttribute('href').slice(1)]; if (t && a.textContent !== t) a.textContent = t; });
@@ -2188,10 +2214,10 @@ class Component extends DCLogic {
   }
   /** 目录: a real Word table of contents (a toc block the engine builds from the headings and Word updates on open), shown
    * read-only; it is drawn again from the headings on every save that changes them. Clicking it on an existing one refreshes it. */
-  insertToc() {
+  insertToc(caption = '') {
     const ed = this.edRef.current, EN = this.EN; if (!EN) return;
-    const old = ed.querySelector('[data-toc]'), levels = old ? old.getAttribute('data-levels') || '3' : '3', title = old ? old.getAttribute('data-title') || '' : $t('目录');
-    const html = EN.tocHtml({ path: old && old.getAttribute('data-path'), levels, title, entries: EN.editorHeadings(ed, levels), style: old ? old.getAttribute('data-toc-style') : this.state.tocStyle });
+    const old = Array.from(ed.querySelectorAll('[data-toc]')).find(n => (n.getAttribute('data-toc-caption') || '') === caption), levels = old ? old.getAttribute('data-levels') || '3' : '3', title = old ? old.getAttribute('data-title') || '' : caption ? caption + $t('目录') : $t('目录');
+    const html = EN.tocHtml({ caption, path: old && old.getAttribute('data-path'), levels, title, entries: EN.editorHeadings(ed, levels, caption), style: old ? old.getAttribute('data-toc-style') : this.state.tocStyle });
     if (!old) return this.insertHTML(html + '<p><br></p>');
     const box = document.createElement('div'); box.innerHTML = html; const nav = box.firstChild;
     if (old.getAttribute('data-path')) nav.setAttribute('data-refresh', '1');
@@ -2202,8 +2228,8 @@ class Component extends DCLogic {
   setTocStyle(key) {
     this.setState({ tocStyle: key });
     const ed = this.edRef.current, EN = this.EN, old = ed && ed.querySelector('[data-toc]'); if (!old || !EN) return;
-    const levels = old.getAttribute('data-levels') || '3', box = document.createElement('div');
-    box.innerHTML = EN.tocHtml({ path: old.getAttribute('data-path'), levels, title: old.getAttribute('data-title') || '', entries: EN.editorHeadings(ed, levels), style: key });
+    const levels = old.getAttribute('data-levels') || '3', caption = old.getAttribute('data-toc-caption') || '', box = document.createElement('div');
+    box.innerHTML = EN.tocHtml({ caption, path: old.getAttribute('data-path'), levels, title: old.getAttribute('data-title') || '', entries: EN.editorHeadings(ed, levels, caption), style: key });
     old.replaceWith(box.firstChild); this.change({ html: ed.innerHTML });
   }
   /** 脚注和尾注 › 编号: how both kinds of notes count (the file's footnotePr and endnotePr); the marks count again in it now. */
@@ -2452,10 +2478,11 @@ class Component extends DCLogic {
         R(menuBtn('cite-go', '插入引文', 'cite', this.citeItems(I, HD), { title: '在光标处插入所选来源的引文；Chicago 脚注样式插入脚注' }), btn('管理源', 'sources', () => this.openSources(), { title: '粘贴 DOI、ISBN、网址或整条参考文献，自动查到来源' })),
         R(btn('插入书目', 'bib', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }), btn('更新@@cite', 'refresh', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' })),
         R(chk('引文建议', this.citeHints(), v => { try { localStorage.setItem('writerCiteHints', v ? 'on' : 'off'); } catch (e) { } this.citeFind(); this.forceUpdate(); }, { title: '像是用了某个来源却没有引文的句子标成灰色，句末给出建议的引文，按 Tab 插入' }))),
-      G('题注', R(btn('插入题注', 'picture', () => this.insertCaption(capLabel), { title: '图、表、公式的题注，编号自动更新' }),
+      G('题注', R(btn('题注包含章节号', 'numbers', () => { const p = this.caretBlock(); if (!p?.hasAttribute('data-w-caption')) return; p.setAttribute('data-w-captionchapter', '1'); this.numberCaptions(this.edRef.current); this.change({ html: this.edRef.current.innerHTML, headingNumbering: d.headingNumbering || 'decimal' }); }), btn('连续题注编号', 'numbers', () => { const p = this.caretBlock(); if (!p?.hasAttribute('data-w-caption')) return; p.removeAttribute('data-w-captionchapter'); this.numberCaptions(this.edRef.current); this.after(); })), R(btn('图目录', 'toc', () => this.insertToc('图')), btn('表目录', 'toc', () => this.insertToc('表'))), R(btn('插入题注', 'picture', () => this.insertCaption(capLabel), { title: '图、表、公式的题注，编号自动更新' }),
         sel('caplab', $t('标签：{l}', { l: capLabel }), CAPTIONS.map(l => I(l, () => this.setState({ capLabel: l }), { on: capLabel === l })), { w: 120, title: '题注标签' }))),
       G('交叉引用', R(sel('xkind', $t('引用：{k}', { k: $t(kinds.find(x => x[0] === kind)[1]) }), kinds.map(([key, l]) => I(l, () => this.setState({ xrefKind: key }), { on: kind === key })), { title: '引用的类型' }),
         menuBtn('xref-go', '插入', 'link', list.length ? list.map(t => I(t.label, () => this.insertRef(t))) : [I('没有可引用的项目', () => { })], { title: '引用标题、题注或书签；在 Word 中按住 Ctrl 点击可跳转' }))),
+      G('邮件合并', R(btn('插入合并字段', 'field', () => this.insertMergeField()), btn('选择数据并生成…', 'table', () => this.mergeFile()))),
       G('书签', R(btn('添加书签', 'bookmark', () => this.addBookmark(), { title: '给所在段落加上书签，交叉引用和链接可以跳到这里' }),
         menuBtn('bm-go', '跳转到…', 'down', (marks.length ? marks.map(t => I(t.label, () => this.focusEl(t.el), { hint: $t('定位') })) : [I('还没有书签', () => { })])
           .concat([HD(''), I('删除所在段落的书签', () => { const b = this.caretBlock(); if (b && b.hasAttribute('data-w-bookmark')) { b.removeAttribute('data-w-bookmark'); this.after(); } })]))))

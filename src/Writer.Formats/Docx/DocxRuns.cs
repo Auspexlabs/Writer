@@ -142,8 +142,19 @@ static class DocxRuns
 
     /// <summary>Runs for the specs; a spec with a change becomes a run wrapped in w:ins or w:del, attributed to its author
     /// (else the document's, else Writer) at its date (else now).</summary>
-    public static List<OpenXmlElement> MakeRuns(DocxDocument doc, IEnumerable<RunSpec> specs, W.RunProperties? baseProperties) =>
-        specs.Select(spec => MakeRun(doc, spec, Properties(doc, spec, baseProperties))).ToList();
+    public static List<OpenXmlElement> MakeRuns(DocxDocument doc, IEnumerable<RunSpec> specs, W.RunProperties? baseProperties)
+    {
+        var result = new List<OpenXmlElement>(); string? previous = null;
+        foreach (var spec in specs)
+        {
+            var made = MakeRun(doc, spec, Properties(doc, spec, baseProperties));
+            if (made is W.SimpleField field && result.LastOrDefault() is W.SimpleField prior && spec.FieldGroup is not null && spec.FieldGroup == previous && field.Instruction?.Value == prior.Instruction?.Value)
+                foreach (var child in field.ChildElements.ToList()) { child.Remove(); prior.Append(child); }
+            else result.Add(made);
+            previous = spec.FieldGroup;
+        }
+        return result;
+    }
 
     /// <summary>A run of the spec's text with exactly these properties, in the spec's link and revision mark.</summary>
     public static OpenXmlElement MakeRun(DocxDocument doc, RunSpec spec, W.RunProperties? rp)
@@ -152,6 +163,7 @@ static class DocxRuns
         if (rp is not null) run.RunProperties = rp;
         foreach (var e in TextElements(spec.Text, spec.Deleted)) run.Append(e);
         var element = spec.Link is null ? run : (OpenXmlElement)MakeHyperlink(doc, spec.Link, run);
+        if (spec.Field is { Length: > 0 } instruction) element = DocxFields.Create(instruction, element);
         return spec.Change is "inserted" or "deleted" ? DocxRevisions.Wrap(doc, spec, element) : element;
     }
 

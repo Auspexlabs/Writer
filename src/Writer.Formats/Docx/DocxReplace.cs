@@ -28,7 +28,7 @@ static class DocxReplace
             {
                 Source.Text => null,
                 Source.Markdown => new RunSpec("", s.Bold, s.Italic, s.Strike, s.Code, s.Link),
-                _ => s with { Text = "", Change = null, Author = null, Date = null, RevisionId = null },
+                _ => s with { Text = "", Change = null, Author = null, Date = null, RevisionId = null, FieldGroup = null },
             };
             // Who and when are not compared: the editor's own <ins> / <del> carry neither, and must not rewrite stored revisions.
             return revisions && key is not null ? key with { Change = s.Change } : key;
@@ -141,18 +141,27 @@ static class DocxReplace
             else foreach (var run in TextOnly(x.Run)) deletion = Delete(doc, run, deletion, author, now);
         }
         if (tracked) middle = middle.Select(s => s with { Change = "inserted", Author = author, Date = now }).ToList();
+        W.SimpleField? previousField = null; string? previousGroup = null;
+        void Insert(OpenXmlElement made, RunSpec spec)
+        {
+            if (made is W.SimpleField inner && placeholder.Ancestors<W.SimpleField>().FirstOrDefault() is { } outer && inner.Instruction?.Value?.Trim() == outer.Instruction?.Value?.Trim())
+            { foreach (var child in inner.ChildElements.ToList()) { child.Remove(); placeholder.InsertBeforeSelf(child); } return; }
+            if (made is W.SimpleField field && previousField is not null && spec.FieldGroup is not null && spec.FieldGroup == previousGroup && field.Instruction?.Value == previousField.Instruction?.Value)
+            { foreach (var child in field.ChildElements.ToList()) { child.Remove(); previousField.Append(child); } return; }
+            placeholder.InsertBeforeSelf(made); previousField = made as W.SimpleField; previousGroup = spec.FieldGroup;
+        }
         foreach (var spec in middle)
         {
             var like = looks.FindIndex(x => x.Link == spec.Link && Equals(x.Key, key(spec)));
             if (like < 0)
             {
-                placeholder.InsertBeforeSelf(DocxRuns.MakeRuns(doc, [spec], baseProperties)[0]);
+                Insert(DocxRuns.MakeRuns(doc, [spec], baseProperties)[0], spec);
                 continue;
             }
             var rp = looks[like].RunProperties?.CloneNode(true) as W.RunProperties;
             // A format change stays with text typed into its run (the two join again); an insertion, or a run that stays apart, starts without it.
             if (tracked || !looks[like].Whole) rp?.RunPropertiesChange?.Remove();
-            placeholder.InsertBeforeSelf(DocxRuns.MakeRun(doc, spec, rp));
+            Insert(DocxRuns.MakeRun(doc, spec, rp), spec);
         }
         placeholder.Remove();
         foreach (var e in emptied) RemoveIfEmpty(e);

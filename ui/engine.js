@@ -584,16 +584,17 @@ const rowStyle = props => props.height ? ` style="height:${Math.round(cmOf(props
 const TOC_STYLE = "border:1px solid #E5E5EA;border-radius:6px;padding:14px 18px;margin:12px 0;font-family:'Noto Sans SC',sans-serif;font-size:14px;line-height:1.9;background:#FFFFFF;color:#1D1D1F";
 /** A table of contents in the editor: read-only, its entries indented by level, page numbers when the file has them. Its style
  *  (DocxToc.StyleOf) says how an entry ends: classic runs dots to the number, simple leaves a gap, plain has no number. */
-export function tocHtml({ path, levels, title, entries, style }) {
+export function tocHtml({ path, levels, title, entries, style, caption }) {
   style = style === 'simple' || style === 'plain' ? style : 'classic';
   const head = title ? `<div style="font-weight:600;margin-bottom:4px">${esc(title)}</div>` : '';
   const dots = style === 'classic' ? '<span style="flex:1;min-width:12px;margin:0 4px;border-bottom:1.5px dotted #AEAEB2;transform:translateY(-5px)"></span>' : '<span style="flex:1;min-width:12px"></span>';
   const body = entries.length ? entries.map(e => `<div style="display:flex;align-items:baseline;padding-left:${(Math.max(1, e.level) - 1) * 18}px"><span>${e.href ? `<a href="#${esc(e.href)}">${esc(e.text)}</a>` : esc(e.text)}</span>${style !== 'plain' && e.page ? dots + `<span style="color:#8E8E93">${esc(e.page)}</span>` : ''}</div>`).join('')
     : `<div style="color:#8E8E93">${_t('添加标题后，目录会在保存时生成')}</div>`;
-  return `<nav data-toc="1"${path ? ` data-path="${esc(path)}"` : ''} data-levels="${esc(levels || '3')}" data-title="${esc(title || '')}"${style !== 'classic' ? ` data-toc-style="${style}"` : ''} contenteditable="false" style="${TOC_STYLE}">${head}${body}</nav>`;
+  return `<nav data-toc="1"${caption ? ` data-toc-caption="${esc(caption)}"` : ''}${path ? ` data-path="${esc(path)}"` : ''} data-levels="${esc(levels || '3')}" data-title="${esc(title || '')}"${style !== 'classic' ? ` data-toc-style="${style}"` : ''} contenteditable="false" style="${TOC_STYLE}">${head}${body}</nav>`;
 }
 /** Headings of the live editor that a contents of `levels` levels lists, each with an id to jump to. */
-export function editorHeadings(root, levels) {
+export function editorHeadings(root, levels, caption) {
+  if (caption) return Array.from(root.querySelectorAll('[data-w-caption]')).filter(p => p.getAttribute('data-w-caption') === caption).map((p, i) => { if (!p.id) p.id = 'cap' + Date.now().toString(36) + i; return { level: 1, text: (p.innerText || p.textContent).replace(/\s+/g, ' ').trim(), href: p.id }; });
   return Array.from(root.querySelectorAll('h1,h2,h3')).filter(h => !h.closest('[data-toc]') && (!h.hasAttribute('data-style') || h.hasAttribute('data-level'))) // Title is no heading; a paragraph with an outline level is
     .map((h, i) => { if (!h.id) h.id = 'h' + Date.now().toString(36) + i; return { level: +(h.getAttribute('data-level') || h.tagName[1]), text: h.innerText.replace(/\s+/g, ' ').trim(), href: h.id }; })
     .filter(e => e.text && e.level <= (+levels || 3));
@@ -602,7 +603,7 @@ export function editorHeadings(root, levels) {
 export function refreshTocs(root) {
   for (const nav of Array.from(root.querySelectorAll('[data-toc]'))) {
     const levels = nav.getAttribute('data-levels') || '3', title = nav.getAttribute('data-title') || '';
-    const tmp = parseHtml(tocHtml({ path: nav.getAttribute('data-path'), levels, title, entries: editorHeadings(root, levels), style: nav.getAttribute('data-toc-style') })).firstChild;
+    const tmp = parseHtml(tocHtml({ path: nav.getAttribute('data-path'), levels, title, entries: editorHeadings(root, levels, nav.getAttribute('data-toc-caption')), caption: nav.getAttribute('data-toc-caption'), style: nav.getAttribute('data-toc-style') })).firstChild;
     nav.replaceWith(tmp);
   }
 }
@@ -725,7 +726,7 @@ export function blocksOf(nodes, file) {
           props: Object.assign({ html: c.props.html != null ? c.props.html : esc(c.props.text) },
             Object.fromEntries(['fill', 'colspan', 'rowspan', 'borders', 'valign', 'width', 'align'].filter(k => c.props?.[k] != null).map(k => [k, c.props[k]]))) })) }));
     }
-    else if (n.kind === 'toc') b.props = { levels: p.levels || '3', title: p.title || '', text: p.text || '', style: p.style || 'classic' };
+    else if (n.kind === 'toc') b.props = { caption: p.caption || '', levels: p.levels || '3', title: p.title || '', text: p.text || '', style: p.style || 'classic' };
     else if (n.kind === 'bibliography') b.props = { title: p.title || '', html: p.html || '' };
     else if (n.kind === 'image') Object.assign(b, picOf(n, file, byId));
     else if (n.kind === 'object') Object.assign(b, officeObjectOf(n, file));
@@ -799,7 +800,7 @@ export function blocksToHtml(blocks) {
     else if (b.kind === 'toc') {
       const oneLine = h => plainOf(h).replace(/\s+/g, ' ').trim(), levels = new Map(blocks.filter(h => h.kind === 'heading').map(h => [oneLine(h.props.html), +h.props.level || 1]));
       const entries = (b.props.text || '').split('\n').filter(Boolean).map(line => { const tab = line.lastIndexOf('\t'); const text = tab < 0 ? line : line.slice(0, tab); return { text, page: tab < 0 ? '' : line.slice(tab + 1), level: levels.get(text.replace(/\s+/g, ' ').trim()) || 1 }; });
-      out += tocHtml({ path: b.path, levels: b.props.levels, title: b.props.title, entries, style: b.props.style });
+      out += tocHtml({ path: b.path, caption: b.props.caption, levels: b.props.levels, title: b.props.title, entries, style: b.props.style });
     }
     else if (b.kind === 'image') out += picHtml(b);
     else if (b.kind === 'object') out += officeObjectHtml(b, true);
@@ -1472,7 +1473,7 @@ export function blocksFromHtml(root) {
       if (tag === 'PRE') { out.push({ kind: 'code', path: pathOf(c), props: { text: c.innerText.replace(/\n$/, '') }, el: c }); continue; }
       if (tag === 'BLOCKQUOTE') { out.push(withPics({ kind: 'paragraph', path: pathOf(c), props: Object.assign({ html: inlineHtml(c), style: c.getAttribute('data-style') || 'Quote' }, paraAttrs(c)), el: c, align: alignOf(c) }, picsIn(c))); continue; }
       if (c.hasAttribute('data-bib')) { out.push({ kind: 'bibliography', path: pathOf(c), props: { title: c.getAttribute('data-title') ?? '' }, el: c }); continue; }
-      if (c.hasAttribute('data-toc')) { out.push({ kind: 'toc', path: pathOf(c), props: { levels: c.getAttribute('data-levels') ?? '3', title: c.getAttribute('data-title') ?? '目录', style: c.getAttribute('data-toc-style') || 'classic' }, refresh: c.hasAttribute('data-refresh'), el: c }); continue; }
+      if (c.hasAttribute('data-toc')) { out.push({ kind: 'toc', path: pathOf(c), props: { caption: c.getAttribute('data-toc-caption') || '', levels: c.getAttribute('data-levels') ?? '3', title: c.getAttribute('data-title') ?? '目录', style: c.getAttribute('data-toc-style') || 'classic' }, refresh: c.hasAttribute('data-refresh'), el: c }); continue; }
       if (tag === 'TABLE') {
         let ops = []; try { ops = JSON.parse(c.getAttribute('data-ops') || '[]'); } catch (e) { ops = null; } // unreadable: the save writes the table anew
         out.push({ kind: 'table', path: pathOf(c), el: c, ops, props: docxAttrs(c, ['style', 'header', 'borders', 'borderColor', 'width', 'widths', 'align']),
@@ -1506,7 +1507,7 @@ const listKind = (el, parent) => el.tagName === 'UL' ? 'bullet' : el.getAttribut
 /** A heading or paragraph's own props that its element keeps as data-w-* (the file's; not what its style gives), and the value
  *  that turns each off. */
 const SECTION_PROPS = ['page', 'orientation', 'margin', 'columns', 'pageNumberFormat', 'pageNumberStart', 'titlePg', ...HF]; // of the section a paragraph ends: only with its sectionBreak
-const PARA_OWN = ['pageBreakBefore', 'fill', 'lineSpacing', 'spaceBefore', 'spaceAfter', 'indentLeft', 'indentRight', 'indentFirst', 'border', 'keepNext', 'keepLines', 'widowControl', 'tabs', 'bookmark', 'caption', 'dropCap', 'sectionBreak', ...SECTION_PROPS];
+const PARA_OWN = ['pageBreakBefore', 'fill', 'lineSpacing', 'spaceBefore', 'spaceAfter', 'indentLeft', 'indentRight', 'indentFirst', 'border', 'keepNext', 'keepLines', 'widowControl', 'tabs', 'bookmark', 'caption', 'captionChapter', 'dropCap', 'sectionBreak', ...SECTION_PROPS];
 const PARA_OFF = Object.fromEntries(PARA_OWN.map(k => [k, k === 'pageBreakBefore' || k === 'keepNext' || k === 'keepLines' ? 'false' : 'none']));
 const paraAttrs = el => docxAttrs(el, PARA_OWN);
 /** A Word length as CSS: characters (2ch) as em, lines (0.5lines, Word's 行, 12pt each) as pt, cm and pt as they are. */
@@ -1647,7 +1648,7 @@ function ptOf(v) { const m = /^([\d.]+)\s*(pt|px)$/i.exec(String(v || '').trim()
 export function runsOf(html) {
   const root = typeof html === 'string' ? parseHtml(html) : html, out = [];
   const add = (t, s) => { if (!t) return; const last = out[out.length - 1]; if (last && last.s === s) last.t += t; else out.push({ t, s }); };
-  const key = f => JSON.stringify([f.b, f.i, f.u, f.s, f.c, f.a, f.color, f.bg, f.size, f.font, f.ins, f.del, f.rs, f.va, f.ls, f.sh, f.ol, f.caps, f.fontEa === f.font ? null : f.fontEa].map(x => x || 0));
+  const key = f => JSON.stringify([f.b, f.i, f.u, f.s, f.c, f.a, f.color, f.bg, f.size, f.font, f.ins, f.del, f.rs, f.va, f.ls, f.sh, f.ol, f.caps, f.fontEa === f.font ? null : f.fontEa, f.field].map(x => x || 0));
   const walk = (node, f) => {
     for (const c of Array.from(node.childNodes)) {
       if (c.nodeType === 3) { add(c.nodeValue.replace(/\u00a0/g, ' ').replace(/\u200B/g, ''), key(f)); continue; }
@@ -1666,6 +1667,7 @@ export function runsOf(html) {
       if (tag === 'S' || tag === 'STRIKE' || (st.textDecoration || '').includes('line-through')) g.s = 1;
       if (tag === 'CODE' || tag === 'TT' || tag === 'KBD') g.c = 1;
       if (tag === 'A' && c.getAttribute('href')) g.a = c.getAttribute('href');
+      if (c.getAttribute?.('data-field')) g.field = c.getAttribute('data-field').trim();
       if (tag === 'MARK') g.bg = 'FFFF00';
       if (c.getAttribute && c.getAttribute('data-style')) g.rs = c.getAttribute('data-style'); // a character style
       if (tag === 'FONT') { if (c.getAttribute('color')) g.color = colorHex(c.getAttribute('color')); if (c.getAttribute('face')) g.font = c.getAttribute('face').split(',')[0].trim().replace(/["']/g, ''); }
@@ -1748,7 +1750,7 @@ function blockProps(b, forNew) {
   else if (b.kind === 'table') { p.data = JSON.stringify(tableData(b.rows)); Object.assign(p, b.props); }
   else if (b.kind === 'row') { p.data = JSON.stringify(b.cells.map(c => textOf(c.props.html))); Object.assign(p, b.props); }
   else if (b.kind === 'cell') Object.assign(p, b.props);
-  else if (b.kind === 'toc') { p.levels = b.props.levels || '3'; p.title = b.props.title || ''; if (b.props.style && b.props.style !== 'classic') p.style = b.props.style; }
+  else if (b.kind === 'toc') { if (b.props.caption) p.caption = b.props.caption; p.levels = b.props.levels || '3'; p.title = b.props.title || ''; if (b.props.style && b.props.style !== 'classic') p.style = b.props.style; }
   else if (b.kind === 'bibliography') p.title = b.props.title || '';
   return p;
 }
@@ -1776,6 +1778,7 @@ function changedProps(orig, b) {
   }
   if (b.kind === 'bibliography' && (orig.props.title || '') !== (b.props.title || '')) p.title = b.props.title || '';
   if (b.kind === 'toc') {
+    if ((orig.props.caption || '') !== (b.props.caption || '')) p.caption = b.props.caption || '';
     if (String(orig.props.levels || '3') !== String(b.props.levels || '3')) p.levels = b.props.levels || '3';
     if ((orig.props.title || '') !== (b.props.title || '')) p.title = b.props.title || '';
     if ((orig.props.style || 'classic') !== (b.props.style || 'classic')) p.style = b.props.style || 'classic';
@@ -2017,7 +2020,7 @@ async function saveDocx(doc, root, log) {
   n += officeObjects.count;
   n += await planPicturesAfter(doc.path, orig.blocks || [], blocks, run, log, byId);
   // a table of contents lists the headings: build it again in the file, and show it, once headings or contents changed
-  if (tocs.length && (tocAdded || tocs.some(b => b.refresh) || headingsOf(orig.blocks || []) !== headingsOf(blocks))) {
+  if (tocs.length && (tocAdded || tocs.some(b => b.refresh) || JSON.stringify((orig.blocks || []).filter(b => b.props.caption).map(b => [b.props.caption, b.props.html])) !== JSON.stringify(blocks.filter(b => b.props.caption).map(b => [b.props.caption, b.props.html])) || headingsOf(orig.blocks || []) !== headingsOf(blocks))) {
     for (const b of tocs) { await run(['set', doc.path, b.path, '--prop', 'levels=' + (b.props.levels || '3')]); n++; log && log('set', b.path, { levels: b.props.levels }); }
     refreshTocs(el);
   }
@@ -2034,6 +2037,18 @@ async function saveDocx(doc, root, log) {
   doc.notes = notes.list.map(noteOf);
   const cites = await planCites(doc.path, orig.cites || [], citesIn(el, blocks), log);
   n += cites.count;
+  if (n && el.querySelector('[data-field]')) {
+    await run(['set', doc.path, '/', '--prop', 'fields=all']); n++;
+    const current = await tree(doc.path), body = current.children?.find(c => c.kind === 'body');
+    const native = blocksOf(body?.children || [], doc.path);
+    for (const b of blocks) {
+      if (!b.el || !b.el.querySelector('[data-field]')) continue;
+      const raw = native.find(x => x.path === b.path); if (!raw?.props.html) continue;
+      const fields = Array.from(parseHtml(raw.props.html).querySelectorAll('[data-field]')), local = Array.from(b.el.querySelectorAll('[data-field]'));
+      local.forEach((f, i) => { if (fields[i]?.getAttribute('data-field') === f.getAttribute('data-field')) f.innerHTML = fields[i].innerHTML; });
+      b.props.html = inlineHtml(b.el);
+    }
+  }
   const pageProps = Object.fromEntries(['page', 'orientation', 'margin', 'columns', 'pageColor', 'watermark'].filter(k => k in pp).map(k => [k, pp[k]]));
   const now = Object.assign({}, orig, { titlePg: String(!!orig.titlePg), evenAndOdd: String(!!orig.evenAndOdd) }, pp); // headers and footers as the file has them now
   doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list, cites: cites.list, officeObjects: officeObjects.list.map(({ el, ...o }) => o) });

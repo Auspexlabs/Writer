@@ -46,6 +46,8 @@ sealed class DocxRoot(DocxDocument doc) : Node
     {
         switch (name)
         {
+            case "fields": DocxFields.Refresh(doc); break;
+            case "mergeData": DocxFields.Merge(doc, value); break;
             case "textRevision": DocxRevisions.ResolveText(doc, value); break;
             case "formatRevision": DocxRevisions.ResolveFormat(doc, value); break;
             case "headingNumbering": doc.Styles.SetHeadingNumbering(value); break;
@@ -143,6 +145,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
             props["markSize"] = (markHalfPoints / 2).ToString("0.##", CultureInfo.InvariantCulture);
         if (DocxMarks.Bookmark(p) is { } bookmark) props["bookmark"] = bookmark;
         if (Kind != "code" && DocxMarks.Caption(p) is { } caption) props["caption"] = caption;
+        if (DocxMarks.CaptionChapter(p) is { } captionChapter) props["captionChapter"] = captionChapter;
         if (DocxMarks.DropCap(p) is { } dropCap) props["dropCap"] = dropCap;
         if (DocxSection.SectionBreakOf(p) is { } sectionBreak) { props["sectionBreak"] = sectionBreak; DocxSection.ReadPage(p.ParagraphProperties!.SectionProperties!, props); DocxSection.ReadHeaders(doc, p.ParagraphProperties.SectionProperties!, props); props["titlePg"] = DocxRun.On(p.ParagraphProperties.SectionProperties!.GetFirstChild<W.TitlePage>()) ? "true" : "false"; }
         if (p.ParagraphId?.Value is { } id) props["id"] = id;
@@ -241,6 +244,7 @@ sealed class DocxParagraph(DocxDocument doc, W.Paragraph p) : Node, IDocxContain
                 break;
             case "sectionBreak": DocxSection.SetSectionBreak(doc, p, value); break;
             case "bookmark": DocxMarks.SetBookmark(doc, p, value); break;
+            case "captionChapter": DocxMarks.SetCaptionChapter(doc, p, value); break;
             case "caption": DocxMarks.SetCaption(doc, p, value); break;
             case "dropCap": DocxMarks.SetDropCap(p, value); break;
             case "header" or "footer" or "firstHeader" or "firstFooter" or "evenHeader" or "evenFooter" or "titlePg" or "pageNumberFormat" or "pageNumberStart":
@@ -390,6 +394,7 @@ sealed class DocxRun(DocxDocument doc, W.Run run, W.Hyperlink? link) : Node
         var currentLink = link ?? run.Parent as W.Hyperlink;
         if (currentLink is not null && LinkTarget(doc, currentLink) is { } target) props["link"] = target;
         if (rp?.RunStyle?.Val?.Value is { Length: > 0 } characterStyle && !characterStyle.Equals("Hyperlink", StringComparison.OrdinalIgnoreCase)) props["style"] = characterStyle;
+        if (run.Ancestors<W.SimpleField>().FirstOrDefault() is { } field && DocxFields.Editable(field.Instruction?.Value)) { props["field"] = field.Instruction!.Value!.Trim(); props["fieldGroup"] = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(field).ToString(CultureInfo.InvariantCulture); }
         if (DocxRuns.Revision(run) is W.RunTrackChangeType change)
         {
             props["change"] = change is W.DeletedRun ? "deleted" : "inserted";

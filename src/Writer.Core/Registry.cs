@@ -50,6 +50,7 @@ public static class Registry
         new("widowControl", PropType.String, "Widow/orphan control (孤行控制): false lets a single line sit alone at a page's top or bottom, true keeps it off (Word's default); none leaves it to the style.") { Example = "false", Formats = Docx },
         new("tabs", PropType.String, "Tab stops from the left margin, comma-separated, each a kind and a position: left 2cm, center 8cm, right 15cm, decimal 10cm; none removes them.") { Example = "left 2cm, right 15cm", Formats = Docx },
         new("bookmark", PropType.String, "A bookmark around the paragraph: its name (a letter, then letters, digits or _); cross-references and #name links go to it. none removes it.") { Example = "Results", Formats = Docx },
+        new("captionChapter", PropType.String, "Caption chapter heading level, 1 through 6; none uses continuous numbering.") { Example = "1", Formats = Docx },
         new("caption", PropType.String, "A numbered caption: the label (图, 表, Figure, Table…) and a SEQ field counting the captions with that label, in front of the paragraph's text, which takes the Caption style; none takes the numbering out.") { Example = "Figure", Formats = Docx },
         new("dropCap", PropType.Enum, "The paragraph is a drop cap three lines high: drop sits in the text, margin beside it; the next paragraph flows around it. none makes it an ordinary paragraph.") { Values = ["none", "drop", "margin"], Example = "drop", Formats = Docx },
         new("sectionBreak", PropType.Enum, "The paragraph ends a section: the next one starts on the next page, right after it (continuous), or on an even or odd page; none removes the break (the text joins the following section). A new section copies the document's page setup; page, orientation, margin and columns then set this section's own.") { Values = ["none", "nextPage", "continuous", "evenPage", "oddPage"], Example = "nextPage", Formats = Docx },
@@ -126,6 +127,8 @@ public static class Registry
                 new("evenHeader", PropType.Html, "Even-page header, when evenAndOdd is true.") { Formats = Docx, Example = "Even page" },
                 new("evenFooter", PropType.Html, "Even-page footer, when evenAndOdd is true.") { Formats = Docx, Example = "{page}" },
                 new("formatRevisions", PropType.Json, "Pending run and paragraph formatting changes.") { ReadOnly = true, Formats = Docx },
+                new("fields", PropType.String, "Refresh caption and cross-reference field results.") { Example = "all", Formats = Docx },
+                new("mergeData", PropType.Json, "Replace MERGEFIELD fields with this record, preserving their formatting.") { Example = "{\"Name\":\"Ann\"}", Formats = Docx },
                 new("textRevision", PropType.Json, "Accept or reject a single tracked insertion or deletion: {id,index,accept}.") { Formats = Docx, Example = """{"id":"1","accept":true}""" },
                 new("formatRevision", PropType.Json, "Accept or reject one formatting change: {id,accept}.") { Formats = Docx, Example = """{"id":"1","accept":true}""" },
                 new("headingNumbering", PropType.Enum, "Bind heading styles 1 through 6 to a native multilevel numbering definition.") { Values = ["none", "decimal", "chapter"], Formats = Docx, Example = "chapter" },
@@ -292,6 +295,7 @@ public static class Registry
             Formats = Docx, Parents = ["body"],
             Props =
             [
+                new("caption", PropType.String, "Caption label to list instead of headings: Figure, Table, 图 or 表. Empty lists headings.") { Example = "Figure" },
                 new("levels", PropType.Int, "Heading levels listed, 1 up to this. Writing it regenerates the entries.") { Min = 1, Max = 9, Example = "3" },
                 new("title", PropType.String, "Heading shown above the entries, e.g. Contents or 目录; empty for none.") { Example = "Contents" },
                 new("style", PropType.Enum, "How the entries end: classic draws dots to the page number, simple leaves a gap before it, plain has no page numbers. Writing it regenerates the entries.") { Values = ["classic", "simple", "plain"], Example = "simple" },
@@ -333,6 +337,8 @@ public static class Registry
                 new("underlineStyle", PropType.Enum, "The underline's line; writing it underlines the run (in html text-decoration-style on u).") { Values = ["single", "double", "dotted", "dashed", "wavy"], Example = "double", Formats = Pptx },
                 new("outline", PropType.Bool, "Outlined letters (Word's text effect; in html -webkit-text-stroke).") { Example = "true", Formats = Docx },
                 new("shadow", PropType.Bool, "Shadowed letters (Word's text effect; in html text-shadow).") { Example = "true", Formats = Docx },
+                new("fieldGroup", PropType.String, "Read-session identity joining runs in one field.") { ReadOnly = true, Formats = Docx },
+                new("field", PropType.String, "REF or MERGEFIELD instruction containing this run.") { ReadOnly = true, Formats = Docx },
                 new("revisionId", PropType.String, "Native tracked-change identity.") { ReadOnly = true, Formats = Docx },
                 new("change", PropType.Enum, "Set when the run is a tracked change. Deleted runs are left out of the paragraph text.") { Values = ["inserted", "deleted"], ReadOnly = true, Formats = Docx },
                 new("author", PropType.String, "Who made the tracked change.") { ReadOnly = true, Formats = Docx },

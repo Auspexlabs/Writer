@@ -81,8 +81,8 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
     public static (OpenXmlElement Element, string[] Consumed) New(DocxDocument doc, IReadOnlyDictionary<string, string> props)
     {
         var sdt = NewSdt();
-        Fill(doc, sdt, props.TryGetValue("levels", out var l) ? int.Parse(l, Inv) : 3, props.GetValueOrDefault("title") ?? "", props.GetValueOrDefault("style") ?? "classic");
-        return (sdt, ["levels", "title", "style"]);
+        Fill(doc, sdt, props.TryGetValue("levels", out var l) ? int.Parse(l, Inv) : 3, props.GetValueOrDefault("title") ?? "", props.GetValueOrDefault("style") ?? "classic", props.GetValueOrDefault("caption") ?? "");
+        return (sdt, ["levels", "title", "style", "caption"]);
     }
 
     static W.SdtBlock NewSdt() => new(
@@ -95,6 +95,7 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
         var field = paragraphs.FirstOrDefault(HasTocField);
         var at = field is null ? 0 : paragraphs.IndexOf(field);
         var props = new Dictionary<string, string> { ["levels"] = LevelsOf(field).ToString(Inv), ["style"] = StyleOf(field, paragraphs.Skip(at)) };
+        if (CaptionOf(field) is { Length: > 0 } caption) props["caption"] = caption;
         var title = string.Join("\n", paragraphs.Take(at).Select(DocxRuns.ParagraphText).Where(t => t.Length > 0));
         if (title.Length > 0) props["title"] = title;
         props["text"] = string.Join("\n", paragraphs.Skip(at).Select(p => DocxRuns.ParagraphText(p).TrimEnd('\t')).Where(t => t.Length > 0));
@@ -108,6 +109,13 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
         if (Regex.IsMatch(code, @"\\n(\s|$)")) return "plain";
         var leader = entries.Select(p => p.ParagraphProperties?.Tabs?.Elements<W.TabStop>().FirstOrDefault(t => t.Val?.Value == W.TabStopValues.Right)).FirstOrDefault(t => t is not null)?.Leader?.Value;
         return leader == W.TabStopLeaderCharValues.None ? "simple" : "classic";
+    }
+
+    static string CaptionOf(W.Paragraph? field)
+    {
+        var code = field?.Descendants<W.FieldCode>().Select(c => c.Text).FirstOrDefault(IsTocCode) ?? "";
+        var match = Regex.Match(code, @"\\c\s+""([^""]+)""");
+        return match.Success ? match.Groups[1].Value : "";
     }
 
     static int LevelsOf(W.Paragraph? field)
@@ -133,12 +141,13 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
             foreach (var e in _elements) e.Remove();
             _elements = [sdt];
         }
-        Fill(doc, sdt, levels, title, style);
+        Fill(doc, sdt, levels, title, style, name == "caption" ? value : props.GetValueOrDefault("caption") ?? "");
     }
 
     /// <summary>The entries of the headings up to `levels`, under the title; style says how an entry ends (see StyleOf).</summary>
-    static void Fill(DocxDocument doc, W.SdtBlock sdt, int levels, string title, string style)
+    static void Fill(DocxDocument doc, W.SdtBlock sdt, int levels, string title, string style, string caption = "")
     {
+        if (caption.Any(c => c == '"' || char.IsControl(c))) throw new WriterException(ErrorCode.Validation, "Invalid caption label", "Use a caption label such as Figure or 图.");
         var content = sdt.SdtContentBlock ??= new W.SdtContentBlock();
         content.RemoveAllChildren();
         if (title.Length > 0)
@@ -147,14 +156,14 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
                 new W.Run(DocxRuns.TextElements(title))));
         var pos = DocxTable.ContentWidthTwips(doc);
         var first = true;
-        foreach (var (text, level, anchor) in Headings(doc, sdt, levels))
+        foreach (var (text, level, anchor) in Headings(doc, sdt, levels, caption))
         {
             var p = new W.Paragraph(new W.ParagraphProperties(
                 new W.ParagraphStyleId { Val = doc.Styles.ResolveStyle($"TOC{level}", "paragraph") },
                 new W.Tabs(new W.TabStop { Val = W.TabStopValues.Right, Leader = style == "simple" ? W.TabStopLeaderCharValues.None : W.TabStopLeaderCharValues.Dot, Position = pos })));
             if (first)
             {
-                p.Append(FieldChar(W.FieldCharValues.Begin), Code($" TOC \\o \"1-{levels}\" \\h \\z \\u {(style == "plain" ? "\\n " : "")}"), FieldChar(W.FieldCharValues.Separate));
+                p.Append(FieldChar(W.FieldCharValues.Begin), Code((caption.Length > 0 ? $" TOC \\c \"{caption}\" \\h \\z " : $" TOC \\o \"1-{levels}\" \\h \\z \\u ") + (style == "plain" ? "\\n " : "")), FieldChar(W.FieldCharValues.Separate));
                 first = false;
             }
             p.Append(anchor is null ? new W.Run(DocxRuns.TextElements(text)) : Entry(text, anchor, style != "plain"));
@@ -175,12 +184,12 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
         : new(new W.Run(DocxRuns.TextElements(text))) { Anchor = anchor, History = true };
 
     /// <summary>Headings of the wanted levels with a _Toc bookmark on each (added when missing); the placeholder when there are none.</summary>
-    static IEnumerable<(string Text, int Level, string? Anchor)> Headings(DocxDocument doc, W.SdtBlock self, int levels)
+    static IEnumerable<(string Text, int Level, string? Anchor)> Headings(DocxDocument doc, W.SdtBlock self, int levels, string caption = "")
     {
         var document = doc.Main.Document!;
         var found = document.Body!.Descendants<W.Paragraph>()
             .Where(p => !p.Ancestors().Contains(self))
-            .Select(p => (Paragraph: p, Level: doc.Styles.HeadingLevel(p), Text: Whitespace.Replace(DocxRuns.ParagraphText(p), " ").Trim()))
+            .Select(p => (Paragraph: p, Level: caption.Length > 0 ? (DocxMarks.Caption(p) == caption ? 1 : 0) : doc.Styles.HeadingLevel(p), Text: Whitespace.Replace(DocxRuns.ParagraphText(p), " ").Trim()))
             .Where(x => x.Level >= 1 && x.Level <= levels && x.Text.Length > 0)
             .ToList();
         if (found.Count == 0)
@@ -211,7 +220,7 @@ sealed class DocxToc(DocxDocument doc, List<OpenXmlElement> elements) : Node
         }
     }
 
-    static void UpdateFieldsOnOpen(DocxDocument doc)
+    internal static void UpdateFieldsOnOpen(DocxDocument doc)
     {
         var part = doc.Main.DocumentSettingsPart ?? doc.Main.AddNewPart<DocumentSettingsPart>();
         var settings = part.Settings ??= new W.Settings();

@@ -87,9 +87,11 @@ public static partial class InlineHtml
     /// <summary>The runs as HTML: text escaped, newlines as br, links only to safe schemes.</summary>
     public static string Render(IEnumerable<RunSpec> runs)
     {
-        var sb = new StringBuilder();
+        var sb = new StringBuilder(); string? fieldGroup = null;
         foreach (var run in runs)
         {
+            var group = run.Field is null ? null : run.FieldGroup ?? run.Field;
+            if (fieldGroup != group) { if (fieldGroup is not null) sb.Append("</span>"); if (group is not null) sb.Append("<span data-field=\"").Append(Esc(run.Field!.Trim())).Append("\" contenteditable=\"false\">"); fieldGroup = group; }
             var open = new StringBuilder();
             var close = new StringBuilder();
             if (run.Change is "inserted" or "deleted")
@@ -146,6 +148,7 @@ public static partial class InlineHtml
             Wrap(run.VertAlign == "subscript", "sub", open, close);
             sb.Append(open).Append(Esc(run.Text).Replace("\n", "<br>").Replace("\f", PageBreak)).Append(close);
         }
+        if (fieldGroup is not null) sb.Append("</span>");
         return sb.ToString();
     }
 
@@ -168,6 +171,7 @@ public static partial class InlineHtml
 
     static RunSpec Apply(RunSpec style, string tag, Dictionary<string, string> attrs)
     {
+        if (tag == "span" && attrs.TryGetValue("data-field", out var field)) style = style with { Field = field, FieldGroup = Guid.NewGuid().ToString("N") };
         var s = tag switch
         {
             "b" or "strong" => style with { Bold = true },

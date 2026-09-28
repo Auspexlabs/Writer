@@ -54,6 +54,61 @@ static partial class DocxMarks
         p.Descendants<W.SimpleField>().Select(f => f.Instruction?.Value).Concat(p.Descendants<W.FieldCode>().Select(c => c.Text))
             .Select(i => i is null ? null : Seq.Match(i)).FirstOrDefault(m => m is { Success: true })?.Groups[1].Value;
 
+    public static string? CaptionChapter(W.Paragraph p)
+    {
+        var instruction = p.Descendants<W.SimpleField>().Select(f => f.Instruction?.Value).Concat(p.Descendants<W.FieldCode>().Select(c => c.Text)).FirstOrDefault(i => Seq.IsMatch(i ?? "")) ?? "";
+        var match = Regex.Match(instruction, @"\\s\s+([1-6])(?:\s|$)");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+    public static void SetCaptionChapter(DocxDocument doc, W.Paragraph p, string value)
+    {
+        var label = Caption(p) ?? throw new WriterException(ErrorCode.Validation, "This paragraph has no caption", "Set caption first.");
+        var field = p.Descendants<W.SimpleField>().FirstOrDefault(f => Seq.IsMatch(f.Instruction?.Value ?? ""))
+            ?? throw new WriterException(ErrorCode.Validation, "This imported caption uses a complex field", "Insert a new caption to set chapter numbering.");
+        var level = value is "none" or "" or "0" ? 0 : int.TryParse(value, out var n) && n is >= 1 and <= 6 ? n
+            : throw new WriterException(ErrorCode.Validation, "Caption chapter level must be 1 through 6", "Use none for continuous numbering.");
+        // Newly inserted HTML already displays chapter-sequence, while the existing
+        // SEQ result initially holds its first number. Replace the literal suffix.
+        if (level > 0 && CaptionChapter(p) is null && field.NextSibling() is W.Run suffix)
+        {
+            var text = DocxRuns.RunText(suffix); var prefix = Regex.Match(text, @"^-\d+(?=\s|$)");
+            if (prefix.Success) DocxRuns.SetRunText(suffix, text[prefix.Length..]);
+        }
+        foreach (var old in p.Elements<W.SimpleField>().Where(f => Regex.IsMatch(f.Instruction?.Value ?? "", @"^\s*STYLEREF\s+[1-6]\s+\\s", RegexOptions.IgnoreCase)).ToList())
+        {
+            if (old.NextSibling() is W.Run separator && separator.InnerText == "-") separator.Remove(); old.Remove();
+        }
+        field.Instruction = $" SEQ {label} \\* ARABIC " + (level > 0 ? $"\\s {level} " : "");
+        if (level > 0)
+        {
+            if (doc.Styles.HeadingNumbering() is null) doc.Styles.SetHeadingNumbering("decimal");
+            field.InsertBeforeSelf(new W.SimpleField(new W.Run(new W.Text("1"))) { Instruction = $" STYLEREF {level} \\s " });
+            field.InsertBeforeSelf(new W.Run(new W.Text("-")));
+        }
+        RefreshCaptions(doc);
+        DocxToc.UpdateFieldsOnOpen(doc);
+    }
+    public static void RefreshCaptions(DocxDocument doc)
+    {
+        var headings = new int[6]; var counts = new Dictionary<string, int>();
+        foreach (var p in doc.Main.Document!.Body!.Descendants<W.Paragraph>())
+        {
+            var level = doc.Styles.HeadingLevel(p);
+            if (level is >= 1 and <= 6) { headings[level - 1]++; for (var j = level; j < 6; j++) headings[j] = 0; }
+            if (Caption(p) is not { } label) continue;
+            var chapter = int.TryParse(CaptionChapter(p), out var ch) ? ch : 0;
+            var prefix = chapter > 0 ? string.Join(".", headings.Take(chapter)) : "";
+            var key = label + "|" + prefix; var number = counts.GetValueOrDefault(key) + 1; counts[key] = number;
+            foreach (var f in p.Elements<W.SimpleField>())
+            {
+                var instruction = f.Instruction?.Value ?? "";
+                var value = Seq.IsMatch(instruction) ? number.ToString(Inv) : chapter > 0 && instruction.TrimStart().StartsWith("STYLEREF", StringComparison.OrdinalIgnoreCase) ? prefix : null;
+                if (value is null) continue;
+                var first = f.GetFirstChild<W.Run>()?.RunProperties?.CloneNode(true); f.RemoveAllChildren(); var run = new W.Run(); if (first is not null) run.AppendChild(first); run.Append(new W.Text(value)); f.Append(run);
+            }
+        }
+    }
+
     /// <summary>Makes the paragraph a caption with this label: the Caption style and, in front, the label and a SEQ field whose result
     /// is the caption's number among those with the label before it (Word updates it on printing). An existing SEQ field just takes the
     /// new label; none takes the field out, keeping its number as text.</summary>
@@ -71,13 +126,23 @@ static partial class DocxMarks
             return;
         }
         if (label.Any(char.IsWhiteSpace)) throw new WriterException(ErrorCode.Validation, $"'{label}' is not a caption label", "One word, e.g. 图, 表, Figure, Table, Equation.");
-        var instruction = $" SEQ {label} \\* ARABIC ";
+        var chapter = CaptionChapter(p);
+        var instruction = $" SEQ {label} \\* ARABIC " + (chapter is null ? "" : $"\\s {chapter} ");
         var pp = p.ParagraphProperties ??= new W.ParagraphProperties();
         if (pp.ParagraphStyleId is null || pp.ParagraphStyleId.Val?.Value == "Normal")
             pp.ParagraphStyleId = new W.ParagraphStyleId { Val = doc.Styles.ResolveStyle("Caption", "paragraph") };
         if (simple is not null) { simple.Instruction = instruction; return; }
         if (p.Descendants<W.FieldCode>().FirstOrDefault(c => Seq.IsMatch(c.Text)) is { } complex) { complex.Text = instruction; return; }
         var number = 1 + doc.Main.Document!.Body!.Descendants<W.Paragraph>().TakeWhile(x => x != p).Count(x => Caption(x) == label);
+        // HTML captions already include the displayed prefix; replace it with fields once.
+        var prefix = Regex.Match(DocxRuns.ParagraphText(p), @"^" + Regex.Escape(label) + @"\s+\d+(?:[.-]\d+)*");
+        var remaining = prefix.Success ? prefix.Length : 0;
+        foreach (var (run, _) in DocxRuns.Walk(p).ToList())
+        {
+            if (remaining <= 0) break;
+            var text = DocxRuns.RunText(run); var take = Math.Min(remaining, text.Length);
+            DocxRuns.SetRunText(run, text[take..]); remaining -= take;
+        }
         var field = new W.SimpleField(new W.Run(new W.Text(number.ToString(Inv)))) { Instruction = instruction };
         var labelRun = new W.Run(new W.Text(label + " ") { Space = SpaceProcessingModeValues.Preserve });
         var first = p.ChildElements.FirstOrDefault(c => c is not (W.ParagraphProperties or W.BookmarkStart));
