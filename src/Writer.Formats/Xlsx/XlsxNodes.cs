@@ -101,6 +101,7 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
             props["range"] = XlsxCells.Reference(cells.Min(c => c.Col), cells.Min(c => c.Row)) + ":" + XlsxCells.Reference(cells.Max(c => c.Col), cells.Max(c => c.Row));
         props["print"] = XlsxBookFeatures.Print(doc, this);
         props["tables"] = XlsxTables.Read(this);
+        props["pivots"] = XlsxPivots.Read(this).ToJsonString();
         props["outline"] = XlsxOutline.Groups(this).ToJsonString();
         if (sheet.SheetId?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
         if (XlsxLayout.Merges(Ws) is { } merges) props["merges"] = merges;
@@ -145,6 +146,7 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
                 break;
             case "print": XlsxBookFeatures.SetPrint(doc, this, value); break;
             case "tables": XlsxTables.Write(doc, this, value); break;
+            case "pivots": XlsxPivots.Write(doc, this, value); break;
             case "outline": XlsxOutline.Write(this, value); break;
             case "protected": XlsxBookFeatures.SetProtection(Ws, value); break;
             case "visibility":

@@ -196,6 +196,7 @@ public static class Registry
             Props =
             [
                 new("outline", PropType.Json, "Outline groups: array of {axis:r/c,start,end,level:1..7,collapsed} with zero-based inclusive indices."),
+                new("pivots", PropType.Json, "Native pivot tables: array of {id,name,sourceSheet,sourceRange,target,rows:[field],cols:[] or [field],values:[{field,fn,name}],style}. Field indices start at zero; fn is sum/count/countNums/average/min/max. Changed entries rebuild the cache and output; unchanged entries preserve existing parts."),
                 new("tables", PropType.Json, "Native Excel tables: array of {id, name, range, header, totals, style, stripes, columns:[{id,name,formula,total,label}]}. Writing replaces the list and preserves matching table parts."),
                 new("print", PropType.Json, "Page setup: orientation, paper (9=A4), scale, fitWidth, fitHeight, margins in inches, area, titles, header, footer and gridlines."),
                 new("visibility", PropType.Enum, "Worksheet visibility.") { Values = ["visible", "hidden", "veryHidden"] },

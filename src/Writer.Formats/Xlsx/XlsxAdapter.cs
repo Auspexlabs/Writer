@@ -76,9 +76,13 @@ public sealed class XlsxDocument : Document
     internal bool CalculateAll { get; private set; }
     internal HashSet<(string Sheet, string Cell)> CalculationChanges { get; } = [];
 
-    public override void Save(Stream stream)
+    internal void Calculate()
     {
         if (CalculationPending) { XlsxCalculation.Recalculate(this); CalculationPending = false; CalculateAll = false; CalculationChanges.Clear(); }
+    }
+    public override void Save(Stream stream)
+    {
+        Calculate();
         Styles.Trim(Sheets.Select(s => s.Part));
         using var clone = Package.Clone(stream);
     }

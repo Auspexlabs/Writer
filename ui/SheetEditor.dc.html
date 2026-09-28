@@ -599,6 +599,23 @@ class Component extends DCLogic {
   }
   outlineLevel(level) {this.commit(sh=>{for(const g of sh.outline||[])g.collapsed=(g.level||1)>=level;});}
   toggleOutline(axis,end) {this.commit(sh=>{const g=(sh.outline||[]).filter(x=>x.axis===axis&&x.end+1===end).sort((a,b)=>b.level-a.level)[0];if(g)g.collapsed=!g.collapsed;});}
+  pivotSetup() {
+    const E=this.E,R=this.rng(),box=R.r1===R.r2&&R.c1===R.c2?E.currentRegion(this.sh,R.r1,R.c1):R;if(!box||box.r2<=box.r1)return;
+    const fields=Array.from({length:box.c2-box.c1+1},(_,i)=>[String(i),String(this.sh.cells[E.A(box.r1,box.c1+i)]?.v||E.colName(box.c1+i))]);
+    this.prompt($t('数据透视表'),[{key:'row',label:$t('行字段'),value:'0',options:fields},{key:'col',label:$t('列字段'),value:'',options:[['',$t('无')],...fields]},{key:'value',label:$t('值字段'),value:String(fields.length-1),options:fields},{key:'fn',label:$t('汇总方式'),value:'sum',options:[['sum',$t('求和')],['count',$t('计数')],['average',$t('平均值')],['min',$t('最小值')],['max',$t('最大值')]]}],v=>{
+      let name=$t('数据透视表'),i=2;while(this.doc.sheets.some(s=>s.name===name))name=$t('数据透视表')+i++;let pivotName='PivotTable1',j=2;while(this.doc.sheets.some(s=>(s.pivots||[]).some(p=>p.name===pivotName)))pivotName='PivotTable'+j++;
+      const pivot={name:pivotName,sourceSheet:this.sh.name,sourceRange:this.rangeStr(box),target:'A1',rows:[+v.row],cols:v.col===''?[]:[+v.col],values:[{field:+v.value,fn:v.fn}],style:'PivotStyleMedium9'};
+      try{this.commit((sh,d)=>{const target={name,cells:{},pivots:[pivot]};d.sheets.push(target);E.refreshPivot(d,d.sheets[d.sheets.length-1],d.sheets[d.sheets.length-1].pivots[0]);d.active=d.sheets.length-1;});this.setSel(0,0);}catch(e){this.toast(e.message);}
+    });
+  }
+  pivotManage() {
+    const E=this.E,at=this.act(),p=(this.sh.pivots||[]).find(p=>{const [a,b]=p.range.split(':').map(E.parseA);return at.r>=a.r&&at.r<=b.r&&at.c>=a.c&&at.c<=b.c;})||this.sh.pivots?.[0];if(!p)return;
+    const fields=(p.fields||[]).map((name,i)=>[String(i),name]);
+    this.prompt($t('透视表设置'),[{key:'action',label:$t('操作'),value:'update',options:[['update',$t('更新布局')],['remove',$t('删除透视表')]]},{key:'row',label:$t('行字段'),value:String(p.rows[0]??0),options:fields},{key:'col',label:$t('列字段'),value:p.cols?.length?String(p.cols[0]):'',options:[['',$t('无')],...fields]},{key:'value',label:$t('值字段'),value:String(p.values[0]?.field??0),options:fields},{key:'fn',label:$t('汇总方式'),value:p.values[0]?.fn||'sum',options:[['sum',$t('求和')],['count',$t('计数')],['average',$t('平均值')],['min',$t('最小值')],['max',$t('最大值')]]}],v=>{
+      try{this.commit((sh,d)=>{const pivot=sh.pivots.find(x=>x.name===p.name);if(v.action==='remove'){const [a,b]=pivot.range.split(':').map(E.parseA);for(const ref of Object.keys(sh.cells)){const pt=E.parseA(ref);if(pt.r>=a.r&&pt.r<=b.r&&pt.c>=a.c&&pt.c<=b.c)delete sh.cells[ref];}sh.pivots=sh.pivots.filter(x=>x.name!==p.name);return;}pivot.rows=[+v.row];pivot.cols=v.col===''?[]:[+v.col];pivot.values=[{field:+v.value,fn:v.fn}];E.refreshPivot(d,sh,pivot);});}catch(e){this.toast(e.message);}
+    });
+  }
+  refreshPivots() {try{this.commit((sh,d)=>{for(const p of sh.pivots||[])this.E.refreshPivot(d,sh,p);});}catch(e){this.toast(e.message);}}
   subtotalSetup() {
     const E=this.E,R=this.rng(),box=R.r1===R.r2&&R.c1===R.c2?E.currentRegion(this.sh,R.r1,R.c1):R;if(!box||box.r2<=box.r1)return;
     const cols=Array.from({length:box.c2-box.c1+1},(_,i)=>{const c=box.c1+i;return [String(c),String(this.sh.cells[E.A(box.r1,c)]?.v||E.colName(c))];});
@@ -708,6 +725,7 @@ class Component extends DCLogic {
     if (n > 0 && parsed.some(p => { const i = axis === 'r' ? p.r : p.c; return i >= at && i + n >= limit; })) {
       this.toast($t('插入会超出 Excel 工作表的行列上限，未修改文件')); return;
     }
+    for(const p of this.sh.pivots||[]){const [a,b]=p.range.split(':').map(E.parseA),start=axis==='r'?a.r:a.c,end=axis==='r'?b.r:b.c;if(n>0?at>start&&at<=end:at<=end&&at-n>start){this.toast($t('请先移除透视表，再修改其结果区域内的行列'));return;}}
     this.commit((sh, d) => {
       const nc = {};
       Object.entries(sh.cells).forEach(([a, x]) => { const p = E.parseA(a); let i = axis === 'r' ? p.r : p.c; if (n < 0 && i >= at && i < at - n) return; if (i >= at) i += n; if (i < 0) return; nc[axis === 'r' ? E.A(i, p.c) : E.A(p.r, i)] = x; });
@@ -726,6 +744,8 @@ class Component extends DCLogic {
       d.sheets.forEach(s2 => (s2.charts || []).forEach(ch => { const adj = s => s ? E.adjF(s, s2.name, name, axis, at, n) : s; ch.cat = adj(ch.cat); (ch.ser || []).forEach(s => { s.values = adj(s.values); if (s.name) s.name = adj(s.name); if (s.x) s.x = adj(s.x); }); }));
       // ranges grow/shrink with their rows and columns, like Excel; one goes only when all of it is deleted
       const shiftRange = rg => String(rg || '').split(' ').map(one => { const [p, q0] = one.split(':').map(E.parseA), q = q0 || p; if (!p || !q) return null; const s2 = span(p[k], q[k]); if (!s2) return null; const a = E.A(k === 'r' ? s2[0] : p.r, k === 'c' ? s2[0] : p.c), b = E.A(k === 'r' ? s2[1] : q.r, k === 'c' ? s2[1] : q.c); return a === b ? a : a + ':' + b; }).filter(Boolean).join(' ') || null;
+      for(const p of sh.pivots||[]){p.range=shiftRange(p.range);p.target=p.range.split(':')[0];}
+      for(const owner of d.sheets)for(const p of owner.pivots||[])if(p.sourceSheet?.toLowerCase()===name.toLowerCase()&&p.sourceRange){const before=p.sourceRange,range=shiftRange(before);if(range&&range!==before){if(axis==='c'){const [a]=before.split(':').map(E.parseA),[b]=range.split(':').map(E.parseA),map=i=>{const c=a.c+i;return n<0&&c>=at&&c<at-n?-1:(c>=at?c+n:c)-b.c;};p.rows=p.rows.map(map);p.cols=p.cols.map(map);p.values.forEach(v=>v.field=map(v.field));}p.sourceRange=range;p.sourceChanged=true;}}
       const shiftRules = rules => (rules || []).map(x => { const rg = shiftRange(x.range); return rg && Object.assign({}, x, { range: rg }); }).filter(Boolean);
       if (sh.filter) { sh.filter = shiftRange(sh.filter); if (!sh.filter) { sh.filters = {}; sh.frows = []; } }
       sh.outline=(sh.outline||[]).map(g=>{if(g.axis!==axis)return g;const s=span(g.start,g.end);return s?{...g,start:s[0],end:s[1]}:null;}).filter(Boolean);
@@ -1131,7 +1151,7 @@ class Component extends DCLogic {
     if (tab === 'insert') return { tabs, groups: [
       G('图表', grid(3, card('柱形图', 'chart', () => this.insertChart('column')), card('折线图', 'lineChart', () => this.insertChart('line')), card('饼图', 'pieChart', () => this.insertChart('pie')),
         card('条形图', 'barChart', () => this.insertChart('bar')), card('面积图', 'areaChart', () => this.insertChart('area')), menuCard('chart', '更多图表', 'plus', null, { title: '全部图表类型，堆积图' }))),
-      G('表格', R(btn('套用表格格式', null, () => this.tableSetup()))),
+      G('表格', R(btn('套用表格格式', null, () => this.tableSetup()),btn('数据透视表',null,()=>this.pivotSetup()))),
       G('常用', grid(3, card('超链接', 'link', () => this.setLink(), { title: '超链接（Ctrl+点击打开）' }), card('批注', 'comment', () => this.setNote()), card('图片', 'picture', () => this.insertImage()))),
       G('行列与工作表', grid(3, card('插入行', 'rowAbove', () => this.insDel('r', rg.r1, rows)), card('插入列', 'colLeft', () => this.insDel('c', rg.c1, cols)), card('新工作表', 'grid', () => this.addSheet()))),
       G('函数', R(menuBtn('fns', '函数库', 'fx', null, { title: '按类别插入函数' }), menuBtn('sum', '求和', 'sigma', null, { title: '自动求和、平均值、计数…' })))] };
@@ -1143,6 +1163,7 @@ class Component extends DCLogic {
     if (tab === 'data') return { tabs, groups: [
       G('排序和筛选', grid(3, btn('升序', 'up', () => this.sort([{ c: s0.c, asc: true }])), btn('降序', 'down', () => this.sort([{ c: s0.c, asc: false }])), btn('自定义', 'sort', () => this.sortCustom(), { title: '自定义排序…' }),
         btn('筛选', 'filter', () => this.toggleFilter(), { on: !!sh.filter, title: '筛选 Ctrl+Shift+L' }), btn('清除筛选', null, () => this.setFilters({}), { dis: noFilters }), btn('重新应用', 'refresh', () => this.setFilters(sh.filters || {}), { dis: noFilters, title: '按当前数据重新筛选' }))),
+      G('数据透视表', R(btn('数据透视表',null,()=>this.pivotSetup()),btn('刷新透视表',null,()=>this.refreshPivots(),{dis:!(sh.pivots||[]).length}),btn('透视表设置',null,()=>this.pivotManage(),{dis:!(sh.pivots||[]).length}))),
       G('分组与汇总', R(btn('行分组', null, () => this.groupRows()), btn('列分组', null, () => this.groupRows('c')), btn('取消行分组', null, () => this.groupRows('r',true)), btn('取消列分组', null, () => this.groupRows('c',true))), R(btn('折叠全部',null,()=>this.outlineLevel(1)),btn('展开全部',null,()=>this.outlineLevel(8)),btn('分类汇总',null,()=>this.subtotalSetup()))),
       G('数据工具', grid(2, btn('删除重复项', null, () => this.dedupe()), btn('分列', null, () => this.splitCols(), { title: '按分隔符把所选列拆到右侧各列' }),
         btn('数据验证', null, () => this.dvSet(), { on: !!cs.dv }), menuBtn('cf', '条件格式', null, null))),
@@ -1241,7 +1262,7 @@ class Component extends DCLogic {
       B($t('查找'), () => { this.focusFind = true; this.setState({ showFind: true }); }, { title: 'Ctrl+F' })
     ];
     if (tab === 'insert') ribbon = [
-      B($t('套用表格格式'), () => this.tableSetup()), SEP,
+      B($t('套用表格格式'), () => this.tableSetup()),B($t('数据透视表'),()=>this.pivotSetup()), SEP,
       B($t('柱形图'), () => this.insertChart('column')), B($t('折线图'), () => this.insertChart('line')), B($t('饼图'), () => this.insertChart('pie')),
       M('chart', $t('图表'), CHART_TYPES.map(([k, l]) => I(l, () => this.insertChart(k))).concat([IS, HD($t('堆积')), I($t('堆积柱形图'), () => this.insertChart('column', true)), I($t('堆积条形图'), () => this.insertChart('bar', true)), I($t('堆积面积图'), () => this.insertChart('area', true)),I($t('百分比堆积柱形图'), () => this.insertChart('column','percent'))])), SEP,
       B($t('超链接'), () => this.setLink(), { on: !!cs.link, title: $t('超链接（Ctrl+点击打开）') }), B($t('批注'), () => this.setNote(), { on: !!cs.note }), B($t('图片'), () => this.insertImage()), SEP,
@@ -1255,7 +1276,7 @@ class Component extends DCLogic {
       B($t('显示公式'), () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF })
     ];
     if (tab === 'data') ribbon = [
-      M('outline',$t('分组'),[I($t('行分组'),()=>this.groupRows()),I($t('列分组'),()=>this.groupRows('c')),I($t('取消行分组'),()=>this.groupRows('r',true)),I($t('取消列分组'),()=>this.groupRows('c',true)),I($t('折叠全部'),()=>this.outlineLevel(1)),I($t('展开全部'),()=>this.outlineLevel(8)),...Array.from({length:7},(_,i)=>I(String(i+1),()=>this.outlineLevel(i+1)))]),B($t('分类汇总'),()=>this.subtotalSetup()), SEP,
+      B($t('数据透视表'),()=>this.pivotSetup()),B($t('刷新透视表'),()=>this.refreshPivots(),{dis:!(sh.pivots||[]).length}),B($t('透视表设置'),()=>this.pivotManage(),{dis:!(sh.pivots||[]).length}),M('outline',$t('分组'),[I($t('行分组'),()=>this.groupRows()),I($t('列分组'),()=>this.groupRows('c')),I($t('取消行分组'),()=>this.groupRows('r',true)),I($t('取消列分组'),()=>this.groupRows('c',true)),I($t('折叠全部'),()=>this.outlineLevel(1)),I($t('展开全部'),()=>this.outlineLevel(8)),...Array.from({length:7},(_,i)=>I(String(i+1),()=>this.outlineLevel(i+1)))]),B($t('分类汇总'),()=>this.subtotalSetup()), SEP,
       B($t('升序'), () => this.sort([{ c: s0.c, asc: true }])), B($t('降序'), () => this.sort([{ c: s0.c, asc: false }])), sortMenu, SEP,
       B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter, title: $t('筛选 Ctrl+Shift+L') }), B($t('清除筛选'), () => this.setFilters({}), { dis: !Object.keys(sh.filters || {}).length }), B($t('重新应用'), () => this.setFilters(sh.filters || {}), { dis: !Object.keys(sh.filters || {}).length, title: $t('按当前数据重新筛选') }), SEP,
       B($t('删除重复项'), () => this.dedupe()), B($t('分列'), () => this.splitCols(), { title: $t('按分隔符把所选列拆到右侧各列') }), B($t('数据验证'), () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
@@ -1648,6 +1669,7 @@ class Component extends DCLogic {
     n.name = `${d.sheets[i].name} (${m})`; delete n.path;
     (n.charts || []).forEach((ch, j) => { ch.id = 'ch' + k + j; delete ch.eid; delete ch.path; });
     (n.tables || []).forEach(t => { const old=t.name; let name=old+'Copy',j=2;while(d.sheets.some(s=>(s.tables||[]).some(x=>x.name.toLowerCase()===name.toLowerCase())))name=old+'Copy'+j++;t.name=name;delete t.id;n.cells=this.E.shareCells(Object.fromEntries(Object.entries(n.cells).map(([a,x])=>[a,String(x.v).startsWith('=')?{...x,v:this.E.renameTableRefs(x.v,old,name)}:x]))); });
+    (n.pivots||[]).forEach(p=>{let name=p.name+'Copy',j=2;while(d.sheets.some(s=>(s.pivots||[]).some(x=>x.name.toLowerCase()===name.toLowerCase())))name=p.name+'Copy'+j++;p.name=name;delete p.id;});
     (n.images || []).forEach((im, j) => { im.id = 'im' + k + j; delete im.path; });
     this.props.onChange(Object.assign({}, d, { sheets: d.sheets.slice(0, i + 1).concat([n], d.sheets.slice(i + 1)), active: i + 1 }));
   }
@@ -1661,6 +1683,7 @@ class Component extends DCLogic {
         for (const key of Object.keys(nd.names || {})) nd.names[key] = rename(nd.names[key]);
         nd.sheets.forEach(s => { Object.values(s.cells).forEach(x => { if (typeof x.v === 'string' && x.v[0] === '=') x.v = rename(x.v); });
           if (s.print) for (const key of ['area', 'titles']) s.print[key] = rename(s.print[key]);
+          for(const p of s.pivots||[])if(p.sourceSheet?.toLowerCase()===old.toLowerCase())p.sourceSheet=nn;
           (s.charts || []).forEach(ch => { ch.cat = rename(ch.cat); (ch.ser || []).forEach(ser => { for (const key of ['values', 'name', 'x']) ser[key] = rename(ser[key]); }); });
         });
       });

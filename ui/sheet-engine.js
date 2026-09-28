@@ -1213,3 +1213,32 @@ export function subtotalSheet(source, box, groupCol, valueCol, fn, name) {
   outline.unshift({axis:'r',start:1,end:row-1,level:1,collapsed:false});
   return {name,cells,outline,colW:Object.fromEntries(Array.from({length:box.c2-box.c1+1},(_,i)=>[colName(i),source.colW?.[colName(box.c1+i)]||100]))};
 }
+export function pivotOutput(doc, spec) {
+  let source=doc.sheets.find(s=>sameSheet(s.name,spec.sourceSheet)),range=spec.sourceRange;
+  if(spec.sourceTable)for(const s of doc.sheets){const t=(s.tables||[]).find(t=>sameSheet(t.name,spec.sourceTable));if(t){source=s;const [a,b]=t.range.split(':').map(parseA);range=A(a.r,a.c)+':'+A(b.r-(t.totals?1:0),b.c);break;}}
+  if(!source)throw new Error('Pivot source worksheet is missing');const [a,b]=String(range).split(':').map(parseA),anchor=parseA(spec.target||'A1');
+  if(!a||!b||!anchor||b.r<=a.r||b.c<a.c)throw new Error('Pivot source needs a header and data');
+  if(spec.rows?.length!==1||(spec.cols||[]).length>1||spec.values?.length!==1)throw new Error('Choose one row field, an optional column field and one value field');
+  const rf=spec.rows[0],cf=spec.cols?.[0]??-1,vf=spec.values[0].field,fn=spec.values[0].fn||'sum',width=b.c-a.c+1;
+  if(rf<0||rf>=width||cf>=width||vf<0||vf>=width||rf===cf||rf===vf||cf===vf)throw new Error('Choose distinct valid pivot fields');
+  const calc=new Calc(doc),si=doc.sheets.indexOf(source),fields=Array.from({length:width},(_,i)=>String(calc.value(si,a.r,a.c+i)));
+  if(fields.some(s=>!s)||new Set(fields.map(s=>s.toLowerCase())).size!==fields.length)throw new Error('Pivot source headers must be nonempty and unique');
+  const rows=new Map(),cols=new Map(),groups=new Map(),key=v=>JSON.stringify(v),take=(map,v)=>{const k=key(v);if(!map.has(k))map.set(k,{index:map.size,value:v});return map.get(k).index;};
+  const update=(r,c,v)=>{const k=r+':'+c,stat=groups.get(k)||{count:0,n:0,sum:0,min:Infinity,max:-Infinity,error:null};if(v!==''&&v!=null)stat.count++;if(typeof v==='number'){stat.n++;stat.sum+=v;stat.min=Math.min(stat.min,v);stat.max=Math.max(stat.max,v);}if(isErr(v))stat.error=v.err;groups.set(k,stat);};
+  for(let r=a.r+1;r<=b.r;r++){const ri=take(rows,calc.value(si,r,a.c+rf)),ci=cf<0?0:take(cols,calc.value(si,r,a.c+cf)),v=calc.value(si,r,a.c+vf);update(ri,ci,v);update(ri,-1,v);update(-1,ci,v);update(-1,-1,v);}
+  if(cf<0)take(cols,'');const rr=[...rows.values()],cc=[...cols.values()],cells={},endR=anchor.r+rr.length+1,endC=anchor.c+cc.length+(cf<0?0:1);
+  if(endR>=1048576||endC>=16384)throw new Error('Pivot output exceeds the worksheet');
+  const put=(r,c,v,bold=false)=>cells[A(r,c)]={v,s:bold?{b:true,fill:'#E8EEF7'}:{}},value=(r,c)=>{const s=groups.get(r+':'+c);if(!s)return '';if(fn==='count')return s.count;if(fn==='countNums')return s.n;if(s.error)return s.error;if(!s.n)return '';return fn==='average'?s.sum/s.n:fn==='min'?s.min:fn==='max'?s.max:s.sum;};
+  put(anchor.r,anchor.c,fields[rf],true);cc.forEach((col,j)=>put(anchor.r,anchor.c+j+1,cf<0?spec.values[0].name||fn+' '+fields[vf]:String(col.value),true));if(cf>=0)put(anchor.r,endC,'Grand Total',true);
+  rr.forEach((row,i)=>{put(anchor.r+i+1,anchor.c,String(row.value));cc.forEach((col,j)=>put(anchor.r+i+1,anchor.c+j+1,value(i,j)));if(cf>=0)put(anchor.r+i+1,endC,value(i,-1),true);});
+  put(endR,anchor.c,'Grand Total',true);cc.forEach((col,j)=>put(endR,anchor.c+j+1,value(-1,j),true));if(cf>=0)put(endR,endC,value(-1,-1),true);
+  return {cells,range:A(anchor.r,anchor.c)+':'+A(endR,endC),fields};
+}
+export function refreshPivot(doc, sheet, pivot) {
+  const output=pivotOutput(doc,pivot),inside=(ref,range)=>{if(!range)return false;const p=parseA(ref),[a,b]=range.split(':').map(parseA);return p.r>=a.r&&p.r<=b.r&&p.c>=a.c&&p.c<=b.c;};
+  for(const ref of Object.keys(output.cells))if(!inside(ref,pivot.range)&&sheet.cells[ref]?.v!=null&&sheet.cells[ref].v!=='')throw new Error('Pivot output would overwrite existing cells');
+  const styles=new Map();for(const ref of Object.keys(sheet.cells))if(inside(ref,pivot.range)){const s=sheet.cells[ref].s;if(s){styles.set(ref,s);sheet.cells[ref]={v:'',s};}else delete sheet.cells[ref];}
+  for(const [ref,cell] of Object.entries(output.cells))sheet.cells[ref]={...cell,s:styles.get(ref)||cell.s};
+  delete pivot.sourceChanged;pivot.range=output.range;pivot.fields=output.fields;pivot.refresh=(pivot.refresh||0)+1;
+  return output;
+}

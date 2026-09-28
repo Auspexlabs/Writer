@@ -194,6 +194,8 @@ static class XlsxCharts
         foreach (var (_, part) in doc.Sheets)
             foreach (var formula in part.Worksheet?.Descendants<DocumentFormat.OpenXml.Spreadsheet.CellFormula>() ?? [])
                 if (formula.Text.Length > 0) formula.Text = XlsxRefs.Renamed(formula.Text, oldName, newName);
+        foreach (var cache in doc.Workbook.PivotTableCacheDefinitionParts)
+            if (cache.PivotCacheDefinition?.CacheSource?.GetFirstChild<WorksheetSource>() is { } source && string.Equals(source.Sheet?.Value, oldName, StringComparison.OrdinalIgnoreCase)) source.Sheet = newName;
         doc.RecalculateOnLoad();
         foreach (var name in doc.Workbook.Workbook!.DefinedNames?.Elements<DefinedName>() ?? [])
             name.Text = XlsxRefs.Renamed(name.Text, oldName, newName);

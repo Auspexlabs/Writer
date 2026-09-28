@@ -2142,7 +2142,7 @@ export function sheetModel(s, file) {
   (hid.rows || []).forEach(n => { const r = +n - 1; if (r < 0) return; (fb && fb[0] && r > fb[0].r && r <= (fb[1] || fb[0]).r ? frows : hiddenRows).push(r); });
   const hiddenCols = (hid.cols || []).map(k => xParse(String(k) + '1')).filter(Boolean).map(a => a.c);
   const autoH = Object.fromEntries(Object.entries(jsonOr(p.autoHeights, {})).map(([r, h]) => [r, Math.round(+h * PT_PX)]));
-  const m = { name: p.name, path: sheetPath, cells: shareCells(cells), colW, rowH, autoH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, print: jsonOr(p.print, {}), visibility: p.visibility || 'visible', protected: p.protected === 'true' || p.protected === true, tables: jsonOr(p.tables, []), outline: jsonOr(p.outline, []), charts, images };
+  const m = { name: p.name, path: sheetPath, cells: shareCells(cells), colW, rowH, autoH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, print: jsonOr(p.print, {}), visibility: p.visibility || 'visible', protected: p.protected === 'true' || p.protected === true, tables: jsonOr(p.tables, []), pivots: jsonOr(p.pivots, []), outline: jsonOr(p.outline, []), charts, images };
   for(const group of m.outline.filter(g=>g.collapsed)) { const key=group.axis==='r'?'hiddenRows':'hiddenCols';m[key]=m[key].filter(i=>i<group.start||i>group.end); }
   if (p.gridlines === 'false' || p.gridlines === false) m.noGrid = true; // the file hides them; otherwise the settings decide
   return m;
@@ -2151,7 +2151,7 @@ export function sheetModel(s, file) {
 const ruleColors = (r, f) => { const o = Object.assign({}, r); if (o.fill) o.fill = f(o.fill); if (o.color) o.color = f(o.color); if (Array.isArray(o.colors)) o.colors = o.colors.map(f); return o; };
 /** The snapshot a later save is diffed against. */
 const origOf = (sheets, names = {}) => ({ names: { ...names }, sheets: sheets.map(s => ({ ...JSON.parse(JSON.stringify({ path: s.path, name: s.name, colW: s.colW || {}, rowH: s.rowH || {}, autoH: s.autoH || {}, merges: s.merges || [], frR: s.frR || 0, frC: s.frC || 0, filter: s.filter || null,
-  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, print: s.print || {}, visibility: s.visibility || 'visible', protected: !!s.protected, noGrid: !!s.noGrid, tables: s.tables || [], outline: s.outline || [], charts: s.charts || [], images: s.images || [] })), cells: shareCells(s.cells) })) });
+  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, print: s.print || {}, visibility: s.visibility || 'visible', protected: !!s.protected, noGrid: !!s.noGrid, tables: s.tables || [], pivots: s.pivots || [], outline: s.outline || [], charts: s.charts || [], images: s.images || [] })), cells: shareCells(s.cells) })) });
 async function openXlsx(doc) {
   const t = await tree(doc.path);
   const sheets = (t.children || []).filter(s => s.kind === 'sheet').map(s => sheetModel(s, doc.path)), tp = t.props || {};
@@ -2190,6 +2190,7 @@ const RANGE_MIN = 8;
 export function sheetProps(o, s) {
   const p = {};
   if (!same(o.outline || [], s.outline || [])) p.outline = JSON.stringify(s.outline || []);
+  if (!same(o.pivots || [], s.pivots || [])) p.pivots = JSON.stringify(s.pivots || []);
   if (!same(o.tables || [], s.tables || [])) p.tables = JSON.stringify(s.tables || []);
   if (!same(o.print || {}, s.print || {})) p.print = JSON.stringify(s.print || {});
   if ((o.visibility || 'visible') !== (s.visibility || 'visible')) p.visibility = s.visibility || 'visible';
@@ -2228,7 +2229,11 @@ const chartKey = ch => ch.eid || ch.id;
  * ponytail: only exact rectangles are batched, a ragged block falls back to per-cell sets. */
 function planCells(file, sheetPath, o, s, exec, log) {
   const cmds = [], sets = [];
+  const config=p=>Object.fromEntries(Object.entries(p).filter(([key])=>!['sourceSheet','sourceRange','sourceChanged','range','target','name','id'].includes(key)));
+  const changedPivots=(s.pivots||[]).filter(p=>{const old=(o.pivots||[]).find(old=>old.id&&old.id===p.id||old.name===p.name);return !old||!p.sourceChanged&&!same(config(p),config(old));});
+  const pivotCell=ref=>{const p=xParse(ref);return changedPivots.some(t=>{if(!t.range)return false;const [a,b]=t.range.split(':').map(xParse);return a&&b&&p.r>=a.r&&p.r<=b.r&&p.c>=a.c&&p.c<=b.c;});};
   for (const ref of changedCellKeys(o.cells, s.cells).sort((a, b) => { const p = xParse(a), q = xParse(b); return p.r - q.r || p.c - q.c; })) {
+    if(pivotCell(ref))continue;
     const oc = o.cells[ref], nc = s.cells[ref];
     const styled = nc && nc.s && Object.keys(nc.s).some(k => k !== 'dv');
     if (!nc || ((nc.v == null || nc.v === '') && !styled)) { if (oc) cmds.push({ argv: ['remove', file, `${sheetPath}/cell[${ref}]`], what: ['remove', `${sheetPath}/cell[${ref}]`] }); continue; }
@@ -2261,7 +2266,7 @@ export async function dataUrlOf(src) {
 export async function planXlsx(file, origSheets, sheets, exec, log) {
   let n = 0;
   const go = async (argv, what) => { const r = await exec(argv); n++; log && log(...what); return r; };
-  const used = new Set();
+  const used = new Set(), pendingPivots = [];
   // the file's sheet order as it changes: each sheet goes right after the one before it in the editor (sheets are addressed by id,
   // so a move leaves every path valid); sheets that go away are removed last, since a workbook keeps at least one
   const order = origSheets.map(o => o.path), stays = new Set(sheets.map(s => s.path).filter(Boolean));
@@ -2281,6 +2286,7 @@ export async function planXlsx(file, origSheets, sheets, exec, log) {
     used.add(o.path); prev = o.path;
     for (const c of planCells(file, o.path, o, s, exec, log)) await go(c.argv, c.what);
     const sp = sheetProps(o, s);
+    if(sp.pivots){pendingPivots.push({sheet:s,value:sp.pivots});delete sp.pivots;}
     if (Object.keys(sp).length) await go(['set', file, o.path, ...propsArgs(sp)], ['set', o.path, sp]);
     // chart ids are unique per sheet only (every sheet's first chart is id 2), so a chart is addressed under its sheet
     const oc = new Map((o.charts || []).map(ch => [chartKey(ch), ch])), at = id => `${o.path}/chart[@id=${id}]`;
@@ -2311,6 +2317,7 @@ export async function planXlsx(file, origSheets, sheets, exec, log) {
     for (const old of o.images || []) if (!(s.images || []).some(im => im.id === old.id)) await go(['remove', file, old.path], ['remove', old.path]);
   }
   for (const o of origSheets.slice().reverse()) if (!used.has(o.path)) await go(['remove', file, o.path], ['remove', o.path]);
+  for(const {sheet,value} of pendingPivots){const result=await go(['set',file,sheet.path,'--prop','pivots='+value],['set',sheet.path,{pivots:value}]);sheet.pivots=jsonOr(result.props?.pivots,sheet.pivots);}
   return n;
 }
 async function saveXlsx(doc, log) {
