@@ -44,7 +44,7 @@
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/sheet.webp" alt="Excel 表格：咖啡节预算，带公式算出的剩余和进度，旁边是预算与已支出的柱形图。"><br>表格：公式、图表和多个工作表</td>
+    <td width="50%"><img src="docs/images/sheet.webp" alt="Excel 表格：咖啡节预算，带公式算出的剩余和进度，下方是预算与已支出的柱形图。"><br>表格：公式、图表和多个工作表</td>
     <td width="50%"><img src="docs/images/slides.webp" alt="演示文稿：左侧是幻灯片缩略图，中间是“城市咖啡节”封面页。"><br>演示：编辑幻灯片，设置切换效果，直接放映</td>
   </tr>
   <tr>

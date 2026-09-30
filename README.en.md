@@ -64,7 +64,7 @@ This repository holds two things built from the same code:
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/sheet.webp" alt="A spreadsheet: an event budget with formulas for what is left and the progress, next to a column chart of budget against spending."><br>Spreadsheets: formulas, charts and several sheets</td>
+    <td width="50%"><img src="docs/images/sheet.webp" alt="A spreadsheet: an event budget with formulas for what is left and the progress, with a column chart of budget against spending under it."><br>Spreadsheets: formulas, charts and several sheets</td>
     <td width="50%"><img src="docs/images/slides.webp" alt="A presentation: slide thumbnails on the left and the title slide in the middle."><br>Slides: edit them, set transitions, present</td>
   </tr>
   <tr>

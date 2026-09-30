@@ -42,9 +42,16 @@ python3 -m http.server 8765 --directory website/dist
 
 ## 截图
 
-`assets/shots/` 里是真实的应用截图，浅色、深色各一套（WebP，最宽 1600 像素），页面按系统外观自动选择。截图用无头 Chrome 打开 `writer app --no-browser` 拍摄；示例文档（咖啡节方案、预算表、演示文稿、思维导图、会议纪要）是用 `writer` 命令生成的。两张 AI 对话截图里，模型的回复来自一个本地的模拟接口，对文档的修改由引擎真实执行，界面里的改动标记和「保留 / 撤销」也都是应用自己画的。
+`assets/shots/` 里是真实的应用截图，浅色、深色各一套（WebP，2 倍像素），页面按系统外观自动选择；README 用的 `docs/images/` 是其中浅色的 hero 和四张格式图。界面改版后重拍，以免官网展示旧界面：
 
-界面改版后需要重拍，以免官网展示旧界面。
+```bash
+node website/shots/shots.mjs                 # 全部，浅色和深色
+node website/shots/shots.mjs hero ai --dark  # 只重拍其中几张、一种外观
+```
+
+需要 macOS、Google Chrome 和一个引擎：仓库已用 `dotnet` 构建，或 `WRITER=<writer 可执行文件>`，或本机装好的 `/Applications/Writer.app`（没有 dotnet 时自动使用它的引擎，界面仍取仓库的 `ui/`）。屏幕上不会打开任何窗口。脚本依次：用 `writer` 命令在临时目录里生成示例文档（`make-samples.sh`：咖啡节方案、预算表、演示文稿、思维导图、会议纪要，内容都是虚构的）；启动 `writer serve --no-token --ui ui`；用无头 Chrome 打开 `mac.dc.html?native=1`，通过应用自己的菜单和按钮摆好每个画面（缩略图、AI 面板、适应画布、放映），截下窗口。深色一套同时打开「设置 › 外观 › 深色页面」，页面和 AI 的改动标记才是同一套深色。
+
+两张 AI 对话截图里，模型的回复来自本地的模拟接口 `mock-model.mjs`（面板里显示的模型名只是配置的名字），对文档的修改由引擎真实执行，界面里的改动标记和「保留 / 撤销」也都是应用自己画的。可选环境变量：`SHOTS_TMP`（临时目录）、`KEEP=1`（保留临时目录，里面有示例文档和窗口 PNG 原图）、`CHROME`（Chrome 路径）。
 
 ## 其他
 
