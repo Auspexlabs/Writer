@@ -24,6 +24,7 @@ test('morphPairs: the same picture, the same text, else the same kind of shape i
   const next = [{ id: 'n1', t: 'shape', shape: 'ellipse', fill: 'acc', html: '' }, { id: 'n2', t: 'text', html: '<p>Q3</p>' }, { id: 'n3', t: 'image', src: 'y.png' }];
   assert.deepEqual(Object.fromEntries(Object.entries(K.morphPairs(prev, next)).map(([k, v]) => [k, v.id])), { n1: 'p3', n2: 'p1' });
   assert.deepEqual(K.morphFrames({ x: 0, y: 0, w: 200, h: 100 }, { x: 100, y: 100, w: 100, h: 100 }), [{ translate: '-50px -100px', scale: '2 1' }, { translate: '0 0', scale: '1 1' }]);
+  assert.equal(K.morphFrames({x:0,y:0,w:100,h:100,rot:350},{x:0,y:0,w:100,h:100,rot:10})[0].rotate,'-20deg','pure rotation uses the shortest path across zero');
 });
 
 function editor(get, set) {
@@ -36,6 +37,16 @@ function editor(get, set) {
   return c;
 }
 const slide = (id, extra) => Object.assign({ id, layout: 'blank', decor: [], objs: [], notes: '', trans: 'none', hidden: false, bg: null }, extra);
+
+test('outline edits preserve rich text and nested object identity through the normal history path',()=>{
+  const a=K.txt({id:'title',html:'<p><b>Title</b></p>'}),b=K.txt({id:'nested',html:'<p>Before</p>'});
+  let doc={id:'d',type:'pptx',ratio:'16:9',slides:[slide('s1',{objs:[a]}),slide('s2',{objs:[{id:'group',t:'group',kids:[b]}]})]},changes=0;
+  const c=editor(()=>doc,d=>{doc=d;changes++;});
+  const boxes=c.renderVals().outlineItems[1].boxes;assert.equal(boxes.length,1);assert.equal(boxes[0].html.__html,'<p>Before</p>');
+  boxes[0].onBlur({currentTarget:{innerHTML:'<p><b>After</b></p>'}});assert.equal(changes,1);
+  assert.equal(doc.slides[1].objs[0].kids[0].html,'<p><b>After</b></p>');assert.equal(doc.slides[0].objs[0].html,'<p><b>Title</b></p>');
+  c.editOutline(1,'nested','<p><b>After</b></p>');assert.equal(changes,1,'unchanged focus does not create a history entry');
+});
 
 test('the show: digits and Enter jump, B blanks until the next key, Ctrl+P draws, 循环放映 starts over, 演示者视图 covers the show without a second window', () => {
   let doc = { id: 'd', type: 'pptx', ratio: '16:9', slides: [slide('s1', { notes: 'Say hello' }), slide('s2'), slide('s3')] };
@@ -51,10 +62,10 @@ test('the show: digits and Enter jump, B blanks until the next key, Ctrl+P draws
   c.renderVals().onShowDown({ button: 0, clientX: 100, clientY: 100, preventDefault() { } }); c.renderVals().onShowMove({ clientX: 200, clientY: 100 }); c.renderVals().onShowUp();
   assert.deepEqual(plain(c.state.ink[2]), [[[200, 200], [400, 200]]]);
   assert.match(c.renderVals().inkSvg.__html, /points="200,200 400,200"/);
-  c.persistInk = () => { c.state.ink = {}; }; // rasterization is exercised by verify-slide-017 in Chrome
+  c.persistInk = () => { c.state.ink = {}; }; // vector persistence is exercised by verify-slide-017 in Chrome
   key('Escape'); assert.equal(c.state.show.tool, null, 'Esc puts the pen away first');
   c.setState({ loop: true }); c.showNext(); assert.equal(c.state.show.i, 0, 'after the last slide, the first again');
-  c.persistInk = () => { c.state.ink = {}; }; // rasterization is exercised by verify-slide-017 in Chrome
+  c.persistInk = () => { c.state.ink = {}; }; // vector persistence is exercised by verify-slide-017 in Chrome
   key('Escape'); assert.equal(c.state.show, null);
 });
 
@@ -137,7 +148,7 @@ test('the format panel: the Word 定稿 panel with the deck\'s own tabs; a selec
   assert.deepEqual(plain(v.panelTabs.slice(-1).map(x => [x.label, x.ctx])), [['形状', true]]);
   assert.deepEqual(titles(v), ['幻灯片', '字体', '段落', '文本框']);
   c.state.tab = 'format'; v = c.renderVals(); assert.deepEqual(titles(v), ['填充与轮廓', '大小', '排列', '大小与位置']);
-  for (const [tab, want] of [['insert', ['常用', '页面']], ['design', ['主题', '背景', '幻灯片大小', '母版与版式']], ['trans', ['效果选项', '切换效果', '计时']], ['anim', ['添加动画', '效果选项', '计时', '动画窗格']], ['show', ['开始放映', '视图']]]) {
+  for (const [tab, want] of [['insert', ['常用', '页面']], ['design', ['主题', '背景', '幻灯片大小', '母版与版式']], ['trans', ['效果选项', '切换效果', '计时']], ['anim', ['添加动画', '效果选项', '计时', '重复与反向', '动画窗格']], ['show', ['开始放映', '自定义放映', '视图']]]) {
     c.state.tab = tab; v = c.renderVals(); assert.deepEqual(titles(v), want, tab);
   }
   c.state.tab = 'design'; v = c.renderVals();
@@ -145,3 +156,52 @@ test('the format panel: the Word 定稿 panel with the deck\'s own tabs; a selec
   assert.notEqual(doc.theme, 'paper', 'a theme tile sets the deck\'s theme');
 });
 
+test('selection pane exposes nested objects; hidden items disappear and locked items reject edits',()=>{
+ const a=K.txt({id:'a',name:'Title',html:'<p>Hello</p>'}),b=K.shape({id:'b',name:'Child',fill:'#ff0000',x:10,y:10,w:20,h:20}),g=K.group([b]);
+ let doc={id:'pane',type:'pptx',ratio:'16:9',slides:[slide('s',{objs:[a,g]})]};const history=[],c=editor(()=>doc,d=>{history.push(doc);doc=d;});
+ assert.deepEqual(plain(c.objectRows().map(x=>[x.o.id,x.depth])),[[g.id,0],['b',1],['a',0]]);
+ c.objectState('b',{name:'Nested',locked:true});assert.equal(c.objectRows()[1].o.name,'Nested');
+ c.patchObj(g.id,{x:999});assert.notEqual(doc.slides[0].objs[1].x,999);c.select(g.id,false);assert.equal(c.obj,undefined);
+ c.state.sels=[g.id];c.deleteSels();assert.equal(doc.slides[0].objs.length,2);
+ c.objectState('a',{hidden:true});assert.ok(!c.renderVals().objs.some(x=>x.id==='a'));
+ c.objectState('b',{hidden:true});const group=doc.slides[0].objs[1];assert.equal(K.objView(group,K.THEMES.paper).groupInner.__html,'');
+ c.objectState('b',{locked:false});c.objectState('a',{hidden:false});c.select('a',false);c.patchSel({x:123});assert.equal(doc.slides[0].objs[0].x,123);
+ doc=history.at(-1);assert.notEqual(doc.slides[0].objs[0].x,123,'changes follow normal undo history');
+});
+
+test('nested group isolation edits members and preserves ancestor transforms and locked siblings',()=>{
+ const a=K.txt({id:'a',x:100,y:200,html:'<p>Before</p>'}),b=K.shape({id:'b',x:400,locked:true}),inner=K.group([a,b]),outer=K.group([inner]);inner.rot=30;outer.rot=90;
+ let doc={id:'groups',type:'pptx',ratio:'16:9',slides:[slide('s',{objs:[outer,K.txt({id:'outside'})]})]};const history=[],c=editor(()=>doc,d=>{history.push(doc);doc=d;});
+ c.enterGroup(outer.id);c.enterGroup(inner.id);assert.deepEqual(plain(c.objects().map(o=>o.id)),['a','b']);c.select('a',false);c.patchSel({x:123,html:'<p>Changed</p>'});
+ assert.equal(doc.slides[0].objs[0].kids[0].kids[0].x,123);assert.equal(doc.slides[0].objs[0].rot,90);assert.equal(doc.slides[0].objs[0].kids[0].rot,30);assert.equal(doc.slides[0].objs[0].kids[0].kids[1].x,400);
+ c.insertObj(K.txt({id:'new'}));assert.ok(c.objects().some(o=>o.id==='new'));assert.equal(doc.slides[0].objs.length,2);c.deleteSels();assert.equal(c.objects().length,2);doc=history.at(-1);assert.ok(c.objects().some(o=>o.id==='new'));
+ c.leaveGroup();assert.equal(c.objects()[0].id,inner.id);c.leaveGroup();assert.equal(c.objects().length,2);
+});
+test('handouts paginate slides, omit hidden content, escape notes and fit each column',()=>{
+ const doc={type:'pptx',theme:'paper',ratio:'16:9',slides:Array.from({length:10},(_,i)=>slide('s'+i,{hidden:i===2,notes:'<script>note</script>',objs:[K.txt({html:'<p>Slide '+i+'</p>'})]}))};
+ for(const count of [1,2,3,4,6,9]){const out=K.slidesPrint(doc,{mode:'handout',count});assert.equal((out.body.match(/class="handout"/g)||[]).length,Math.ceil(9/count));assert.doesNotMatch(out.body,/Slide 2</);assert.match(out.body,/Slide 9</);}
+ const notes=K.slidesPrint(doc,{mode:'notes',hidden:true});assert.equal((notes.body.match(/class="slide-notes"/g)||[]).length,10);assert.match(notes.body,/&lt;script&gt;note/);assert.match(notes.css,/height:auto/);
+});
+
+test('repeated reversing effects extend the next step and return to their starting visibility',()=>{
+ const fx={id:'a',fx:'fade',dur:500,repeat:3,autoReverse:true};
+ assert.equal(K.fxSpan(fx),3000);assert.deepEqual(K.fxTiming(fx),{duration:500,iterations:6,direction:'alternate'});
+ assert.equal(K.fxSteps([fx,{id:'b',fx:'spin',start:'after',dur:100}])[0].fx[1].at,3000);
+ assert.deepEqual(K.fxHidden([fx],1,false),['a']);assert.deepEqual(K.fxHidden([fx],1,true),[]);
+ assert.deepEqual(K.fxHidden([{...fx,fx:'fadeOut'}],1,false),[]);
+ assert.deepEqual(K.fxHidden([{...fx,repeat:1.5}],1,false),[]);
+ assert.deepEqual(K.fxHidden([{...fx,repeat:1.5,fx:'fadeOut'}],1,false),['a']);
+ assert.deepEqual(K.fxHidden([{...fx,repeat:1.25,fx:'fadeOut'}],1,false),[]);
+});
+
+ test('custom shows preserve repeated and hidden slides, route navigation, jumps and looping',()=>{
+ let doc={id:'custom',type:'pptx',ratio:'16:9',slides:[slide('a'),slide('b',{hidden:true}),slide('c'),slide('d')],customShows:[{name:'Demo',slides:['c','a','c','b','missing']}]};
+ const c=editor(()=>doc,d=>doc=d),key=k=>c.showKey({key:k,preventDefault(){}});
+ assert.deepEqual(K.customShowRoute(doc,'Demo'),[2,0,2,1]);
+ c.startShow(0,false,'Demo');assert.equal(c.state.show.i,2);assert.equal(c.state.show.routePos,0);
+ c.showNext();assert.equal(c.state.show.i,0);c.showNext();assert.equal(c.state.show.i,2);assert.equal(c.state.show.routePos,2);
+ c.showPrev();assert.equal(c.state.show.i,0);key('End');assert.equal(c.state.show.i,1);assert.equal(c.state.show.routePos,3);
+ c.state.loop=true;c.showNext();assert.equal(c.state.show.i,2);assert.equal(c.state.show.routePos,0);
+ key('4');key('Enter');assert.equal(c.state.show.i,2);key('1');key('Enter');assert.equal(c.state.show.routePos,1);
+ key('Home');assert.equal(c.state.show.routePos,0);key('End');c.state.loop=false;c.showNext();assert.equal(c.state.show,null);
+ });

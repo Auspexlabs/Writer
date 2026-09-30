@@ -41,8 +41,8 @@ test('tree → model maps sheet props and charts', () => {
 });
 
 test('freeze none / no sheet props → defaults', () => {
-  const m = sheetModel({ kind: 'sheet', path: '/sheet[2]', props: { name: 'S2', freeze: 'none', filter: 'none' }, children: [] });
-  assert.deepEqual(m, { name: 'S2', path: '/sheet[2]', print: {}, protected: false, visibility: 'visible', autoH: {}, cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, filters: {}, frows: [], cf: [], dv: [], hiddenRows: [], hiddenCols: [], color: null, tables: [], pivots: [], outline: [], charts: [], images: [] });
+  const m = sheetModel({ kind: 'sheet', path: '/sheet[2]', props: { name: 'S2', names: {}, freeze: 'none', filter: 'none' }, children: [] });
+  assert.deepEqual(m, { name: 'S2', names: {}, path: '/sheet[2]', print: {}, protected: false, protection: {}, visibility: 'visible', autoH: {}, cells: {}, colW: {}, rowH: {}, merges: [], frR: 0, frC: 0, filter: null, filters: {}, frows: [], cf: [], dv: [], hiddenRows: [], hiddenCols: [], color: null, tables: [], pivots: [], sparklines: [], outline: [], charts: [], images: [] });
 });
 
 test('sheet rules: cf, validations, filter criteria, hidden lines and the tab colour map both ways; filter-hidden rows are the filter\'s, not the user\'s', async () => {
@@ -228,4 +228,18 @@ test('the file\'s look: grid lines off both ways, date codes behind a locale tag
   assert.deepEqual(sheetProps(m, on), { gridlines: 'true' });
   assert.deepEqual(sheetProps(on, m), { gridlines: 'false' });
   assert.deepEqual(sheetProps(m, clone(m)), {});
+});
+
+test('literal formula-like text retains its string identity on reopen, edit and copy', () => {
+ const literal=cellModel({value:'=A1',type:'string'});
+ assert.equal(literal.literal,true);assert.deepEqual(cellProps(null,literal),{value:'=A1',type:'string'});
+ assert.deepEqual(cellProps(literal,{...literal,v:'=B2'}),{value:'=B2',type:'string'});
+ assert.deepEqual(cellProps(literal,{v:'=A1'}),{formula:'A1'});
+});
+
+test('cell and sheet protection flags round trip, default lock and saved undo are explicit',()=>{
+ const locked=cellModel({formula:'1+2',locked:'false',formulaHidden:'true'});
+ assert.deepEqual(locked,{v:'=1+2',s:{locked:false,formulaHidden:true}});
+ assert.deepEqual(cellProps(locked,{v:'=1+2'}),{locked:'true',formulaHidden:'false'});
+ assert.deepEqual(sheetProps({protected:false,protection:{sort:true}},{protected:true,protection:{sort:true}}),{protected:'true',protection:'{"sort":true}'});
 });

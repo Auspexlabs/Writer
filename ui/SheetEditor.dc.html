@@ -17,7 +17,7 @@
   <sc-if value="{{ formatOpen }}" hint-placeholder-val="{{ false }}">
     <dc-import name="FormatPanel" tabs="{{ panelTabs }}" groups="{{ panelGroups }}" tab="{{ tabKey }}" enter="{{ panelEnter }}" style="position:absolute;right:8px;top:6px;bottom:8px;width:304px;z-index:44" hint-size="304px,100%"></dc-import>
   </sc-if>
-  <div data-flip="1" style="flex:none;height:34px;width:min(760px,calc(100% - 48px));box-sizing:border-box;margin:4px auto 10px;display:grid;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:12px;background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-size:12.5px;overflow:hidden">
+  <div data-flip="1" style="display:{{ formulaDisplay }};flex:none;height:34px;width:min(760px,calc(100% - 48px));box-sizing:border-box;margin:4px auto 10px;grid-template-columns:96px 34px minmax(0,1fr);align-items:center;border-radius:12px;background:var(--glass-bg, linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.72)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-bd, rgba(0,0,0,0.07));box-shadow:var(--glass-sh, 0 8px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.95));font-size:12.5px;overflow:hidden">
     <input value="{{ nameBox }}" onChange="{{ onNameBox }}" onKeyDown="{{ onNameKey }}" onFocus="{{ onNameFocus }}" onBlur="{{ onNameBlur }}" style="height:100%;border:none;padding:0 14px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif);font-size:12.5px;font-weight:500;outline:none;color:var(--ink, #1D1D1F);background:linear-gradient(var(--line, rgba(0,0,0,0.1)),var(--line, rgba(0,0,0,0.1))) right center/1px 16px no-repeat">
     <button onMouseDown="{{ md }}" onClick="{{ openFx }}" title="插入函数" style="height:100%;border:none;background:transparent;color:var(--ink-3, rgba(29,29,31,0.36));font-family:Georgia,serif;font-style:italic;cursor:pointer;font-size:13px">fx</button>
     <div style="position:relative;height:100%;min-width:0">
@@ -42,7 +42,7 @@
     </div>
   </sc-if>
 
-  <div style="flex:1;min-height:0;display:flex;gap:10px;padding:0 24px">
+  <div data-split-grid="1" style="flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:{{ paneColumns }};grid-template-rows:{{ paneRows }};gap:6px;padding:{{ panePadding }}">
   <sc-if value="{{ neverThumbs }}" hint-placeholder-val="{{ false }}">
     <div data-thumbpanel="1" style="width:190px;flex:none;margin:-90px 0 0 4px;background:var(--k49, rgba(255,255,255,0.3));backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid var(--k17, rgba(0,0,0,0.07));box-shadow:inset 0 1px 0 var(--k64, rgba(255,255,255,0.85)),0 10px 30px var(--k65, rgba(0,0,0,0.07));border-radius:22px;overflow:auto;padding:12px 10px;display:flex;flex-direction:column;gap:3px;padding-top:60px">
       
@@ -59,9 +59,10 @@
       </sc-if>
     </div>
   </sc-if>
-  <div ref="{{ wrapRef }}" style="flex:1;min-width:0;min-height:0;overflow:auto;background:var(--k0, #FFFFFF);position:relative;border-radius:10px;box-shadow:var(--paper-sh, 0 0 0 1px rgba(0,0,0,0.05),0 10px 34px rgba(0,0,0,0.06))">
+  <div ref="{{ wrapRef }}" style="flex:1;min-width:0;min-height:0;overflow:auto;overflow-anchor:none;background:var(--k0, #FFFFFF);position:relative;border-radius:10px;box-shadow:var(--paper-sh, 0 0 0 1px rgba(0,0,0,0.05),0 10px 34px rgba(0,0,0,0.06))">
     <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}"><div style="padding:24px;font-size:13px;color:var(--k8, #8E8E93)">正在加载计算引擎…</div></sc-if>
     <div style="zoom:{{ zoom }};position:relative;width:{{ gridW }}">
+      <sc-if value="{{ hasTraceSvg }}" hint-placeholder-val="{{ false }}"><div style="position:sticky;top:0;left:0;width:0;height:0;z-index:65;pointer-events:none"><div dangerouslySetInnerHTML="{{ traceSvg }}" onClick="{{ traceClick }}" onKeyDown="{{ traceKey }}" style="position:absolute;left:0;top:0;pointer-events:none"></div></div></sc-if>
       <sc-if value="{{ hasClip }}" hint-placeholder-val="{{ false }}">
         <div style="position:sticky;top:{{ clipST }};left:{{ clipSL }};width:0;height:0;z-index:{{ clipZ }}"><div style="position:absolute;left:{{ clipL }};top:{{ clipT }};width:{{ clipW }};height:{{ clipH }};border:2px dashed var(--k59, #3F7D5C);pointer-events:none"></div></div>
       </sc-if>
@@ -120,6 +121,7 @@
         <sc-for list="{{ cells }}" as="c" memo="1" hint-placeholder-count="0">
           <div onMouseDown="{{ c.onMD }}" onContextMenu="{{ c.onCtx }}" onMouseEnter="{{ c.onME }}" onMouseLeave="{{ c.onML }}" onDoubleClick="{{ c.onDbl }}" title="{{ c.tip }}" class="sh-cell" style="grid-row:{{ c.gr }};grid-column:{{ c.gc }};position:{{ c.pos }};top:{{ c.top }};left:{{ c.left }};z-index:{{ c.z }};background:{{ c.bg }};color:{{ c.color }};font-weight:{{ c.fw }};font-style:{{ c.fst }};text-decoration:{{ c.td }};font-size:{{ c.fs }};font-family:{{ c.ff }};justify-content:{{ c.justify }};align-items:{{ c.ai }};white-space:{{ c.ws }};border-top:{{ c.bt }};border-left:{{ c.bl }};border-right:{{ c.br }};border-bottom:{{ c.bb }};padding:{{ c.pad }};cursor:{{ c.cursor }};overflow:{{ c.overflow }}">
             <sc-if value="{{ c.icon }}"><span style="color:{{ c.iconColor }};flex:none;pointer-events:none">{{ c.icon }}</span></sc-if>
+            <span style="position:absolute;inset:0;pointer-events:none" dangerouslySetInnerHTML="{{ c.sparkHtml }}"></span>
             <span style="overflow:hidden;min-width:0;max-width:{{ c.textW }};width:{{ c.textW }};overflow-wrap:anywhere;pointer-events:none;flex:{{ c.flex }};text-align:{{ c.ta }};opacity:{{ c.op }};transform:{{ c.tr }}">{{ c.text }}</span>
             <sc-if value="{{ c.hasF }}" hint-placeholder-val="{{ false }}">
               <button onMouseDown="{{ c.onF }}" style="flex:none;width:18px;height:18px;border:1px solid var(--k10, #D1D1D6);border-radius:3px;background:{{ c.fbg }};font-size:9px;color:var(--k11, #6E6E73);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">▼</button>
@@ -137,8 +139,13 @@
     </sc-if>
   </div>
 
+    <sc-for list="{{ extraPanes }}" as="pane" hint-placeholder-count="0">
+      <div style="min-width:0;min-height:0;position:relative;overflow:hidden">
+        <dc-import name="SheetEditor" max-import-depth="{{ 2 }}" pane-only="{{ true }}" pane-start="{{ pane.start }}" pane-key="{{ pane.key }}" doc="{{ paneDoc }}" grid="{{ paneGrid }}" on-change="{{ paneChange }}" on-undo="{{ paneUndo }}" on-redo="{{ paneRedo }}" on-pane-selection="{{ paneSelection }}" toast="{{ paneToast }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+      </div>
+    </sc-for>
   </div>
-  <div style="flex:none;height:46px;display:flex;align-items:center;gap:10px;padding:0 24px;background:transparent;font-size:12.5px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)">
+  <div style="flex:none;height:46px;display:{{ footerDisplay }};align-items:center;gap:10px;padding:0 24px;background:transparent;font-size:12.5px;font-family:var(--font-ui, -apple-system, 'PingFang SC', system-ui, sans-serif)">
     <div style="display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:0 1 auto;padding:4px;margin:-4px">
       <sc-for list="{{ sheetTabs }}" as="t" hint-placeholder-count="1">
         <button onClick="{{ t.onClick }}" onDoubleClick="{{ t.onDbl }}" onContextMenu="{{ t.onCtx }}" onMouseDown="{{ t.onMD }}" onMouseEnter="{{ t.onME }}" style="height:28px;padding:0 14px;border:none;border-radius:var(--tab-r, 9px);background:{{ t.bg }};color:{{ t.color }};font-size:12.5px;font-weight:{{ t.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ t.line }};transition:background .2s,color .2s">{{ t.name }}</button>
@@ -176,8 +183,8 @@
         <div style="font-size:15px;font-weight:600">{{ dlgTitle }}</div>
         <sc-for list="{{ dlgFields }}" as="f" hint-placeholder-count="1">
           <label style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--k11, #6E6E73)">{{ f.label }}
-            <sc-if value="{{ f.single }}" hint-placeholder-val="{{ true }}"><input data-complete="{{ f.ai }}" value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ dlgKey }}" autoFocus="{{ f.first }}" style="height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"></sc-if>
-            <sc-if value="{{ f.multi }}" hint-placeholder-val="{{ false }}"><textarea data-complete="{{ f.ai }}" value="{{ f.value }}" onChange="{{ f.onChange }}" autoFocus="{{ f.first }}" rows="4" style="padding:8px 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);resize:vertical;font-family:inherit"></textarea></sc-if>
+            <sc-if value="{{ f.single }}" hint-placeholder-val="{{ true }}"><input type="{{ f.type }}" autoComplete="off" data-complete="{{ f.ai }}" value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ dlgKey }}" autoFocus="{{ f.first }}" style="height:34px;padding:0 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"></sc-if>
+            <sc-if value="{{ f.multi }}" hint-placeholder-val="{{ false }}"><textarea data-complete="{{ f.ai }}" value="{{ f.value }}" readOnly="{{ f.readonly }}" onChange="{{ f.onChange }}" autoFocus="{{ f.first }}" rows="4" style="padding:8px 10px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F);resize:vertical;font-family:inherit"></textarea></sc-if>
             <sc-if value="{{ f.isSel }}" hint-placeholder-val="{{ false }}"><select value="{{ f.value }}" onChange="{{ f.onChange }}" style="height:34px;padding:0 8px;border:1px solid var(--k10, #D1D1D6);border-radius:7px;font-size:13.5px;outline:none;background:var(--k51, #fff);color:var(--k1, #1D1D1F)"><sc-for list="{{ f.options }}" as="o" hint-placeholder-count="2"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></sc-if>
           </label>
         </sc-for>
@@ -215,7 +222,7 @@ const BAR_COLORS = [['#638EC6', $t('蓝色')], ['#63C384', $t('绿色')], ['#FF5
 const SCALES = [[$t('绿 - 黄 - 红'), ['#63BE7B', '#FFEB84', '#F8696B']], [$t('红 - 黄 - 绿'), ['#F8696B', '#FFEB84', '#63BE7B']], [$t('白 - 绿'), ['#FFFFFF', '#63BE7B']], [$t('红 - 白'), ['#F8696B', '#FFFFFF']]];
 const TAB_COLORS = [[null, $t('无颜色')], ['#C0392B', $t('红色')], ['#E67E22', $t('橙色')], ['#F1C40F', $t('黄色')], ['#27AE60', $t('绿色')], ['#2F5D8A', $t('蓝色')], ['#8E44AD', $t('紫色')]];
 const CF_OPS = { greaterThan: $t('大于'), lessThan: $t('小于'), between: $t('介于'), equal: $t('等于'), notEqual: $t('不等于'), greaterThanOrEqual: $t('大于或等于'), lessThanOrEqual: $t('小于或等于'), notBetween: $t('未介于') };
-const DV_TYPES = [['any', $t('任何值')], ['list', $t('序列')], ['whole', $t('整数')], ['decimal', $t('小数')], ['date', $t('日期')], ['textLength', $t('文本长度')]];
+const DV_TYPES = [['any', $t('任何值')], ['list', $t('序列')], ['whole', $t('整数')], ['decimal', $t('小数')], ['date', $t('日期')], ['time', $t('时间')], ['custom', $t('自定义公式')], ['textLength', $t('文本长度')]];
 const FONTS = ['思源宋体', '思源黑体', 'Arial', 'Times New Roman', 'Calibri', '微软雅黑']; // i18n-ok: font family names (CSS font-family values)
 const SIZES = [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36]; // 字号 the ribbon and the panel offer
 const ROTATIONS = [[0, '水平'], [45, '逆时针 45°'], [-45, '顺时针 45°'], [90, '向上 90°'], [-90, '向下 90°']]; // 文字方向, degrees
@@ -240,6 +247,18 @@ const ZMIN = 0.2, ZMAX = 4;
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 
 class Component extends DCLogic {
+  // All selection paths (pointer, headers, keyboard, name box and auditing) share
+  // the same guard. Formatting/editing permissions remain in commit().
+  setState(update,done) {
+    let selectionChanged=false;
+    super.setState((state,props)=>{const patch=typeof update==='function'?update(state,props):update,sh=this.props?.doc?.sheets?.[this.props.doc.active||0];
+      selectionChanged=!!(patch?.sel||patch?.anc||patch?.special);
+      if(!patch||!this.E||!sh?.protected||sh.protection?.selectLockedCells!==false&&sh.protection?.selectUnlockedCells!==false||!patch.anc&&!patch.sel&&!patch.special)return patch;
+      const a=patch.anc||state.anc,b=patch.sel||state.sel,ranges=patch.special?.ranges||[{r1:Math.min(a.r,b.r),r2:Math.max(a.r,b.r),c1:Math.min(a.c,b.c),c2:Math.max(a.c,b.c)}];
+      if(this.E.selectionAllowed(sh,ranges))return patch;
+      const safe={...patch};delete safe.anc;delete safe.sel;delete safe.special;return safe;
+    },()=>{done?.();if(selectionChanged&&this.props.paneOnly)this.props.onPaneSelection?.({sel:this.state.sel,anc:this.state.anc,special:this.state.special});});
+  }
   state = { tab: 'home', sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null, pop: null, dlg: null, painter: null, zoom: 1, zoomEdit: null, showFind: false, fq: '', fr: '', fopt: {}, fcount: null, live: null, fillTo: null, showFx: false, nameEdit: null, chartSel: null, picSel: null, picLive: null, picBusy: null };
   wrapRef = React.createRef(); inRef = React.createRef(); fxRef = React.createRef(); findRef = React.createRef(); inMirRef = React.createRef(); fxMirRef = React.createRef(); tipRef = React.createRef();
   /** A sheet shows grid lines unless the user turned them off for it, or off by default in the settings (grid prop). */
@@ -247,7 +266,7 @@ class Component extends DCLogic {
   componentDidMount() {
     for (const r of [this.inRef, this.fxRef]) if (r.current) r.current.__complete = this.aiCell; // AI 自动补全's context (aiCell)
     import('./glass.js');
-    import('./sheet-engine.js').then(m => { this.E = m; this.forceUpdate(); this.wantFocus = true; });
+    import('./sheet-engine.js').then(m => { this.E = m; this.forceUpdate(); this.wantFocus = !this.props.paneOnly; });
     import('./picture.js').then(m => { this.P = m; this.forceUpdate(); }); // the 图片 tab
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./engine.js').then(m => { this.EN = m; });
@@ -268,7 +287,7 @@ class Component extends DCLogic {
     const cr = w.getBoundingClientRect(), ax = at ? at.x - cr.left : w.clientWidth / 2, ay = at ? at.y - cr.top : w.clientHeight / 2, r = z / z0, sx = w.scrollLeft, sy = w.scrollTop;
     this.setState({ zoom: z }, () => { w.scrollLeft = (sx + ax) * r - ax; w.scrollTop = (sy + ay) * r - ay; });
   }
-  onWheel = e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom(this.state.zoom * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
+  onWheel = e => { if (e.target.closest?.('[data-edroot]')!==this.rootEl || !(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.setZoom(this.state.zoom * wheelFactor(e), { x: e.clientX, y: e.clientY }); };
   applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
   /** AI 自动补全 in a cell or the formula bar (complete.js): the cell's text so far, told which column it is in (its heading) and
    *  what the cells above it and beside it hold. A formula (=, +, -, @) gets no suggestion. */
@@ -286,9 +305,14 @@ class Component extends DCLogic {
   componentDidUpdate(pp) {
     for (const r of [this.inRef, this.fxRef]) if (r.current && r.current.__complete !== this.aiCell) r.current.__complete = this.aiCell;
     this.attachWheel();
-    if (pp.doc && pp.doc.id !== this.props.doc.id) { this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); this.clip = null; }
+    if(this.props.paneOnly&&this.E&&this.xs&&this.ys){
+      const key=this.doc.id+':'+this.si+':'+this.props.paneKey;
+      if(this.paneStarted!==key){const p=this.E.parseA(this.props.paneStart||'A1')||{r:0,c:0};this.ensureGrid(p.r,p.c);if(p.r<this.ys.length&&p.c<this.xs.length){this.paneStarted=key;this.wrapRef.current.scrollLeft=this.xs[p.c]*this.state.zoom;this.wrapRef.current.scrollTop=this.ys[p.r]*this.state.zoom;this.setState({sel:p,anc:p});}}
+    }
+    if (pp.doc && pp.doc.id !== this.props.doc.id) { if(this.wrapRef.current){this.wrapRef.current.scrollLeft=0;this.wrapRef.current.scrollTop=0;} this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null, special:null, trace:null }); this.clip = null; }
     // a selected picture or chart belongs to its sheet: another sheet (tab, link, undo, a move or delete) starts with none
     const was = pp.doc && pp.doc.sheets[Math.min(pp.doc.active || 0, pp.doc.sheets.length - 1)];
+    if(was && (pp.doc.id !== this.props.doc.id || was.name !== this.sh.name) && this.state.special)this.setState({special:null});
     if (was && (pp.doc.id !== this.props.doc.id || was.name !== this.sh.name) && (this.state.picSel != null || this.state.chartSel != null)) this.setState({ picSel: null, chartSel: null });
     const pic = this.pic ? this.pic.id : null; // the 图片 tab comes and goes with the selected picture
     if (pic !== this.picWas && this.P) { this.picWas = pic; const patch = this.P.tabAfterSelect(this.state, 'picture', !!pic); if (patch || this.state.picLive) this.setState(Object.assign({ picLive: null }, patch)); }
@@ -359,7 +383,7 @@ class Component extends DCLogic {
     const tools = this.P.pictureTools({
       look: () => Object.assign({}, (find(this.doc) || {}).look),
       show: look => this.setState({ picLive: { id, look } }),
-      send: props => this.sh.protected ? Promise.reject(new Error($t('工作表已保护，请先取消保护'))) : !find(this.doc)?.path ? Promise.reject(new Error($t('请先保存图片，再调整图片格式'))) : this.EN ? this.EN.setPicture(this.doc.path, () => (find(this.doc) || {}).path, props) : Promise.reject(new Error($t('引擎还没有就绪'))),
+      send: props => !this.E.protectionAllows(this.sh,'objects') ? Promise.reject(new Error($t('工作表不允许编辑对象'))) : !find(this.doc)?.path ? Promise.reject(new Error($t('请先保存图片，再调整图片格式'))) : this.EN ? this.EN.setPicture(this.doc.path, () => (find(this.doc) || {}).path, props) : Promise.reject(new Error($t('引擎还没有就绪'))),
       commit: (r, binary) => {
         const c = this.EN.pictureSaved(this.doc, r.path, r.props), x0 = find(this.doc);
         if (binary && x0) this.P.bumpPic(x0.src);
@@ -375,7 +399,51 @@ class Component extends DCLogic {
     return tools;
   }
   toast(m) { this.props.toast && this.props.toast(m); }
-  commit(fn, silent, allowProtected = false) { if (this.sh.protected && !silent && !allowProtected) { this.toast($t('工作表已保护，请先取消保护')); return; } const d = this.E.editWorkbook(this.doc, (sh,d) => {fn(sh,d);this.E.syncTableHeaders(d);}); this.props.onChange && this.props.onChange(d, silent ? { silent: true } : undefined); }
+  iterationSettings() {
+    const settings = this.doc.iteration || {enabled:false,count:100,delta:.001};
+    this.prompt($t('迭代计算'), [
+      {key:'enabled',label:$t('循环引用'),value:settings.enabled?'on':'off',options:[['off',$t('禁用')],['on',$t('启用')]]},
+      {key:'count',label:$t('最大迭代次数'),value:String(settings.count),first:true},
+      {key:'delta',label:$t('最大变化值'),value:String(settings.delta)}
+    ], values => {
+      const count=Number(values.count),delta=Number(values.delta);
+      if(!Number.isInteger(count)||count<1||count>10000||!Number.isFinite(delta)||delta<0)return this.toast($t('迭代次数须为 1–10000，最大变化值须为非负数'));
+      this.commit((sh,doc)=>{doc.iteration={enabled:values.enabled==='on',count,delta};},false,true,true);
+    });
+  }
+  groupedSheets() {const selected=this.doc.sheets.map((s,i)=>s.tabSelected&&(!s.visibility||s.visibility==='visible')?i:-1).filter(i=>i>=0);return selected.includes(this.si)?selected:[this.si];}
+  selectSheet(i,event={}) {
+    const d=this.doc;let selected;
+    if(event.shiftKey){const a=this.groupAnchor??this.si;selected=d.sheets.map((s,j)=>j>=Math.min(a,i)&&j<=Math.max(a,i)&&(!s.visibility||s.visibility==='visible')?j:-1).filter(j=>j>=0);}
+    else if(event.ctrlKey||event.metaKey){const set=new Set(this.groupedSheets());if(set.has(i)&&set.size>1)set.delete(i);else set.add(i);selected=[...set];this.groupAnchor=i;}
+    else{selected=[i];this.groupAnchor=i;}
+    const active=selected.includes(i)?i:selected[0];
+    const next=this.E.editWorkbook(d,(sh,n)=>{n.active=active;n.sheets.forEach((s,j)=>s.tabSelected=selected.includes(j));});
+    this.props.onChange(next,{silent:true});this.setState({edit:null});this.wantFocus=true;
+  }
+  groupAllSheets() {const d=this.E.editWorkbook(this.doc,(sh,n)=>n.sheets.forEach(s=>s.tabSelected=!s.visibility||s.visibility==='visible'));this.props.onChange(d,{silent:true});}
+  commit(fn, silent, allowProtected = false, allowAreas = false, allowCalculated = false, protectionAction = null, grouped = false) {
+    if(this.selectionRanges().length>1&&!silent&&!allowAreas){this.toast($t('此操作需要单一区域，请先重新选择'));return false;}
+    const indices=this.groupedSheets();
+    if(indices.length>1&&!silent&&!grouped){this.toast($t('请先取消工作表组合，再执行此操作'));return false;}
+    const d=this.E.editWorkbook(this.doc,(sh,d)=>{if(grouped&&indices.length>1){for(const i of indices)fn(d.sheets[i],d);}else fn(sh,d);this.E.syncTableHeaders(d);});
+    if(this.E.workbookStructureViolation(this.doc,d)){this.structureBlocked();return false;}
+    if(!allowProtected){const violation=this.E.protectionViolation(this.doc,d,protectionAction);if(violation){this.toast($t('工作表已保护，当前操作不被允许')+(violation.ref?' · '+violation.sheet+'!'+violation.ref:''));return false;}}
+    let calc;
+    for(let si=0;si<this.doc.sheets.length;si++){
+      const before=this.doc.sheets[si],after=d.sheets.find(s=>s===before||s.path&&s.path===before.path||s.name===before.name);if(!after||before.cells===after.cells)continue;
+      const changed=this.E.changedCellKeys(before.cells,after.cells).filter(ref=>before.cells[ref]?.v!==after.cells[ref]?.v||!!before.cells[ref]?.literal!==!!after.cells[ref]?.literal);
+      if(!allowCalculated)for(const t of before.dataTables||[]){if(!(after.dataTables||[]).some(n=>JSON.stringify(n)===JSON.stringify(t)))continue;const [a,b]=t.range.split(':').map(this.E.parseA);if(changed.some(ref=>{const p=this.E.parseA(ref);return p.r>a.r&&p.r<=b.r&&p.c>a.c&&p.c<=b.c;})){this.toast($t('请先将模拟运算表转换为数值，再修改其结果区域'));return false;}}
+      if(grouped&&indices.length>1&&changed.length){
+        calc||=new this.E.Calc(this.doc);calc.ensureSpills(si);
+        const validation=Object.create(this);validation.props={...this.props,doc:{...d,active:si}};
+        for(const ref of changed){const p=this.E.parseA(ref);if(calc.spills.has(`${si}:${p.r}:${p.c}`)){this.toast($t('请在动态数组的起始单元格修改公式'));return false;}
+          const cell=after.cells[ref],bad=validation.dvBad(p.r,p.c,cell?.v??'',!!cell?.literal);if(bad){this.toast(before.name+'!'+ref+' · '+bad);return false;}}
+      }
+    }
+    this.props.onChange?.(d,silent?{silent:true}:undefined);return true;
+  }
+
   gridExtent() {
     const sh = this.sh;
     if (this.extentFor !== sh) {
@@ -397,18 +465,39 @@ class Component extends DCLogic {
     if (c >= size.cols) size.cols = Math.min(this.E.MAX_COLS, c + 9);
   }
   rng() { const { sel, anc } = this.state; return { r1: Math.min(sel.r, anc.r), c1: Math.min(sel.c, anc.c), r2: Math.max(sel.r, anc.r), c2: Math.max(sel.c, anc.c) }; }
+  selectionRanges() { const s=this.state.special;return s&&s.si===this.si&&s.anchor===JSON.stringify([this.state.anc,this.state.sel])?s.ranges:[this.rng()]; }
+  selectAreas(areas,active) {
+    const ranges=this.E.unionAreas(areas),b=active||ranges[0];if(!b)return;const anc={r:b.r1,c:b.c1},sel={r:b.r2,c:b.c2};
+    this.setState({anc,sel,special:ranges.length>1?{si:this.si,ranges,anchor:JSON.stringify([anc,sel]),manual:true}:null});this.wantFocus=true;
+  }
+  async evaluateFormula() {
+    const ref=this.E.A(this.act().r,this.act().c);
+    if(this.E.formulaHidden(this.sh,ref))return this.toast($t('受保护的隐藏公式不能求值查看'));
+    const cell=this.sh.cells[ref];if(cell?.literal||!String(cell?.v||'').startsWith('='))return this.toast($t('请选择含公式的单元格'));
+    try{await(await import('./sheet-evaluate.js')).showEvaluation(this.doc,this.si,ref);}catch(e){this.toast(e.message);}
+  }
+  goSpecial() {
+    this.prompt($t('定位条件'),[{key:'kind',label:$t('选择'),value:'formulas',options:[['formulas',$t('公式')],['constants',$t('常量')],['blanks',$t('空白')],['errors',$t('错误值')],['notes',$t('批注')],['validation',$t('数据验证')]]}],v=>{
+      const ranges=this.E.specialRanges(this.doc,this.si,this.rng(),v.kind);if(!ranges.length)return this.toast($t('没有符合条件的单元格'));
+      const first=ranges[0],anc={r:first.r1,c:first.c1},sel={r:first.r2,c:first.c2};this.ensureGrid(first.r2,first.c2);
+      this.setState({anc,sel,edit:null,special:{si:this.si,ranges,anchor:JSON.stringify([anc,sel])}});this.wantFocus=this.scrollReq=true;
+    });
+  }
+  traceCells(direction) { const p=this.act();if(direction==='precedents'&&this.E.formulaHidden(this.sh,this.E.A(p.r,p.c)))return this.toast($t('受保护的隐藏公式不能求值查看'));this.traceDoc=null;this.setState({tab:'formula',trace:{si:this.si,sheetKey:this.sh.path||this.sh.name,r:p.r,c:p.c,direction},tracePage:0}); }
+  traceResult() { const t=this.state.trace;if(!t)return null;const si=t.sheetKey?this.doc.sheets.findIndex(s=>(s.path||s.name)===t.sheetKey):t.si;if(!this.doc.sheets[si])return null;const key=JSON.stringify(t);if(this.traceDoc!==this.doc||this.traceKey!==key){this.traceData=this.E.traceReferences(this.doc,si,t.r,t.c,t.direction);this.traceDoc=this.doc;this.traceKey=key;}return this.traceData; }
+  goRange(b) { if(!this.E.selectionAllowed(this.doc.sheets[b.si],[b]))return this.toast($t('工作表已保护，当前操作不被允许'));this.manualUntil=0;this.wantFocus=this.scrollReq=true;if(b.si!==this.si)this.props.onChange({...this.doc,active:b.si},{silent:true});this.ensureGrid(b.r2,b.c2);this.setState({anc:{r:b.r1,c:b.c1},sel:{r:b.r2,c:b.c2},special:null,edit:null}); }
   colW(c) { const lv = this.state.live; if (lv && lv.kind === 'colw' && lv.c === c) return lv.w; const sh = this.sh; return (sh.colW && sh.colW[this.E.colName(c)]) || DW; }
   rowH(r) { const lv = this.state.live; if (lv && lv.kind === 'rowh' && lv.r === r) return lv.h; const sh = this.sh; return (sh.rowH && sh.rowH[r + 1]) || this.autoH?.[r + 1] || sh.autoH?.[r + 1] || DH; }
   mergeAt(r, c) { return (this.sh.merges || []).find(m => r >= m.r && r < m.r + m.rs && c >= m.c && c < m.c + m.cs); }
   /** The active cell (Excel's white cell): where the selection started, a merge's top-left — typing, the formula bar and the ribbon act on it.
    * `sel` is only the corner that mouse drags and Shift+arrows move. */
   act() { const a = this.state.anc, m = this.mergeAt(a.r, a.c); return m ? { r: m.r, c: m.c } : { r: a.r, c: a.c }; }
-  actStyle() { const a = this.act(); return (this.sh.cells[this.E.A(a.r, a.c)] || {}).s || {}; }
+  actStyle() { const a = this.act(); return this.E.effectiveCellStyle(this.sh,this.E.A(a.r,a.c)); }
   setSel(r, c, extend) {
     const E = this.E; this.ensureGrid(r, c); r = Math.max(0, Math.min(this.nRows - 1, r)); c = Math.max(0, Math.min(this.nCols - 1, c));
-    this.setState(s => ({ sel: { r, c }, anc: extend ? s.anc : { r, c }, pop: null })); this.wantFocus = true; this.scrollReq = true;
+    this.setState(s => ({ sel: { r, c }, anc: extend ? s.anc : { r, c }, pop: null, special:null })); this.wantFocus = true; this.scrollReq = true;
   }
-  move(dr, dc, extend) { const s = extend ? this.state.sel : this.act(); let r = s.r + dr, c = s.c + dc; const m = !extend && this.mergeAt(s.r, s.c); if (m) { if (dr > 0) r = m.r + m.rs; if (dc > 0) c = m.c + m.cs; } const hid = this.hidden || new Set(), hidC = this.hiddenC || new Set(); while (hid.has(r) && r > 0 && r < this.nRows - 1) r += dr || 1; while (hidC.has(c) && c > 0 && c < this.nCols - 1) c += dc || 1; this.setSel(r, c, extend); }
+  move(dr, dc, extend) { const s = extend ? this.state.sel : this.act(); let r = s.r + dr, c = s.c + dc; const m = !extend && this.mergeAt(s.r, s.c); if (m) { if (dr > 0) r = m.r + m.rs; if (dc > 0) c = m.c + m.cs; } const hid = this.hidden || new Set(), hidC = this.hiddenC || new Set(); while (hid.has(r) && r > 0 && r < this.nRows - 1) r += dr || 1; while (hidC.has(c) && c > 0 && c < this.nCols - 1) c += dc || 1; if(!extend&&this.sh.protected&&(this.sh.protection?.selectLockedCells===false||this.sh.protection?.selectUnlockedCells===false)){const axis=dr?'r':'c',next=this.E.nextSelectable(this.sh,{r,c},axis,Math.sign(dr||dc),axis==='r'?this.nRows:this.nCols,(row,col)=>!hid.has(row)&&!hidC.has(col));if(!next)return;r=next.r;c=next.c;} this.setSel(r, c, extend); }
   jump(dr, dc, extend) {
     const E = this.E, s = extend ? this.state.sel : this.act(), has = (r, c) => { const x = this.sh.cells[E.A(r, c)]; return x && x.v !== '' && x.v != null; };
     let r = s.r, c = s.c; const inb = (r, c) => r >= 0 && c >= 0 && r < this.nRows && c < this.nCols;
@@ -447,7 +536,7 @@ class Component extends DCLogic {
     });
   }; // a scroll we did not animate ⇒ scrollbar/trackpad
   raw(r, c) { const x = this.sh.cells[this.E.A(r, c)]; return x && x.v != null ? String(x.v) : ''; }
-  startEdit(init, mode) { const sel = this.act(), calc = new this.E.Calc(this.doc); calc.ensureSpills(this.si); if (calc.spills.has(`${this.si}:${sel.r}:${sel.c}`)) return this.toast($t('请在动态数组的起始单元格修改公式'));  this.setState({ edit: { r: sel.r, c: sel.c, val: init != null ? init : this.raw(sel.r, sel.c), mode } }); if (mode !== 'bar') this.wantFocus = true; }
+  startEdit(init, mode) { const sel = this.act();if(this.E.cellLocked(this.sh,this.E.A(sel.r,sel.c)))return this.toast($t('此单元格已锁定'));const calc = new this.E.Calc(this.doc); calc.ensureSpills(this.si); if (calc.spills.has(`${this.si}:${sel.r}:${sel.c}`)) return this.toast($t('请在动态数组的起始单元格修改公式'));  this.setState({ special:null, edit: { r: sel.r, c: sel.c, val: init != null ? init : this.raw(sel.r, sel.c), mode } }); if (mode !== 'bar') this.wantFocus = true; }
   /** Typed text → stored value plus the format Excel would pick for it (12% → 0%, ¥1,200 → 货币, 1,200 → 千分位, 2024/3/5 → 日期, 9:30 → 时间).
    * `s` is the target cell's style: a text cell keeps what was typed, a cell that already has a matching format keeps it. */
   parseInput(val, s) {
@@ -478,7 +567,7 @@ class Component extends DCLogic {
   setCellRaw(sh, r, c, val, patch) {
     const a = this.E.A(r, c), cur = sh.cells[a];
     if (val === '' && (!cur || !cur.s)) { delete sh.cells[a]; return; }
-    sh.cells[a] = Object.assign({}, cur, { v: val });
+    sh.cells[a] = Object.assign({}, cur, { v: val }); delete sh.cells[a].literal;
     if (patch) { sh.cells[a].s = Object.assign({}, cur && cur.s, patch); if (!('code' in patch)) delete sh.cells[a].s.code; }
   }
   /** Commits the edit and moves by (dr, dc); `toCol` lands the move in that column instead (Enter after Tabs). */
@@ -486,17 +575,17 @@ class Component extends DCLogic {
     const ed = this.state.edit; if (!ed) return;
     const { v, patch } = this.parseInput(ed.val, (this.sh.cells[this.E.A(ed.r, ed.c)] || {}).s);
     const bad = this.dvBad(ed.r, ed.c, v); if (bad) { this.toast($t('数据验证：{msg}', { msg: bad })); this.wantFocus = true; return; }
-    if (v !== this.raw(ed.r, ed.c) || patch) this.commit(sh => {this.setCellRaw(sh, ed.r, ed.c, v, patch); const t=this.E.tableAt(sh,ed.r,ed.c);if(t&&String(v).startsWith('=')){const [a,b]=t.range.split(':').map(this.E.parseA);if(ed.r>a.r&&ed.r<=b.r-(t.totals?1:0)){t.columns[ed.c-a.c].formula=this.E.shiftF(v.slice(1),a.r+1-ed.r,0);for(let r=a.r+1;r<=b.r-(t.totals?1:0);r++)if(r!==ed.r)this.setCellRaw(sh,r,ed.c,'='+this.E.shiftF(v.slice(1),r-ed.r,0),patch);}}});
+    if (v !== this.raw(ed.r, ed.c) || patch || this.groupedSheets().length>1) {const applied=this.commit(sh => {this.setCellRaw(sh, ed.r, ed.c, v, patch); const t=this.E.tableAt(sh,ed.r,ed.c);if(t&&String(v).startsWith('=')){const [a,b]=t.range.split(':').map(this.E.parseA);if(ed.r>a.r&&ed.r<=b.r-(t.totals?1:0)){t.columns[ed.c-a.c].formula=this.E.shiftF(v.slice(1),a.r+1-ed.r,0);for(let r=a.r+1;r<=b.r-(t.totals?1:0);r++)if(r!==ed.r)this.setCellRaw(sh,r,ed.c,'='+this.E.shiftF(v.slice(1),r-ed.r,0),patch);}}},false,false,true,false,null,true);if(applied===false)return;}
     // move in the state callback, not a timer: keys typed right after Enter must land in the next cell, not the one just committed
     this.setState({ edit: null, anc: { r: ed.r, c: ed.c }, sel: { r: ed.r, c: ed.c } }, () => { if (dr || dc) { this.move(dr, dc); if (toCol != null) this.setSel(ed.r + dr, toCol); } });
     if (!dr && !dc) this.wantFocus = true;
   }
-  eachCell(fn) { const r = this.rng(); for (let i = r.r1; i <= r.r2; i++) for (let j = r.c1; j <= r.c2; j++) fn(i, j); }
+  eachCell(fn) { for(const r of this.selectionRanges())for (let i = r.r1; i <= r.r2; i++) for (let j = r.c1; j <= r.c2; j++) fn(i, j); }
   style(patch, toggleKey) {
     const E = this.E, cur = this.actStyle();
     // a format change drops the file's original code so the bridge writes the new one
     const p = toggleKey ? { [toggleKey]: !cur[toggleKey] } : Object.assign({}, patch, patch && ('fmt' in patch || 'dec' in patch) && !('code' in patch) ? { code: null } : null);
-    this.commit(sh => this.eachCell((r, c) => { const a = E.A(r, c); const x = sh.cells[a] || { v: '' }; const s = Object.assign({}, x.s, p); Object.keys(s).forEach(k => (s[k] === null || s[k] === undefined) && delete s[k]); sh.cells[a] = Object.assign({}, x, { s }); }));
+    this.commit(sh => this.eachCell((r, c) => { const a = E.A(r, c); const x = sh.cells[a] || { v: '' }; const s = Object.assign({}, x.s, p); Object.keys(s).forEach(k => (s[k] === null || s[k] === undefined) && delete s[k]); sh.cells[a] = Object.assign({}, x, { s }); }),false,false,true,false,null,true);
   }
   /** s.bd is one style for every side or {top,right,bottom,left}; kind: none|all|out|thickOut|inner|top|bottom|left|right|tb|thickBottom|dblBottom|lr. */
   borders(kind) {
@@ -517,7 +606,7 @@ class Component extends DCLogic {
       if (kind === 'none') { delete s.bd; delete s.bdc; }
       else { const cur = s.bd && typeof s.bd === 'object' ? s.bd : s.bd ? Object.fromEntries(SIDES.map(k => [k, s.bd])) : {}; const o = Object.assign({}, cur, want(r, c)); const vals = SIDES.map(k => o[k]); s.bd = vals.every(v => v && v === vals[0]) ? vals[0] : o; }
       sh.cells[a] = Object.assign({}, x, { s });
-    }));
+    }),false,false,true,false,null,true);
   }
   indent(dir) { const cs = this.actStyle(); this.style({ indent: Math.max(0, Math.min(15, (cs.indent || 0) + dir)) || null }); }
   decimals(dir) { const E = this.E, calc = new E.Calc(this.doc), s0 = this.act(), x = this.sh.cells[E.A(s0.r, s0.c)]; const v = calc.value(this.si, s0.r, s0.c); const cur = x && x.s && x.s.dec != null ? x.s.dec : (x && x.s && ['money', 'usd', 'acct', 'number', 'plain'].includes(x.s.fmt) ? 2 : E.decimalsOf(v)); this.style({ dec: Math.max(0, Math.min(10, cur + dir)) }); }
@@ -527,14 +616,15 @@ class Component extends DCLogic {
       const a = E.A(r, c), x = sh.cells[a]; if (!x) return;
       let v = x.v, s = Object.assign({}, x.s);
       if (what === 'all') { v = ''; s = {}; } else if (what === 's') s = {}; else if (what === 'v') v = ''; else delete s[what];
-      if ((v === '' || v == null) && !Object.keys(s).length) delete sh.cells[a]; else sh.cells[a] = Object.keys(s).length ? { v, s } : { v };
-    }));
+      if(sh.protected)for(const key of ['locked','formulaHidden'])if(x.s?.[key]!==undefined)s[key]=x.s[key];
+      if ((v === '' || v == null) && !Object.keys(s).length) delete sh.cells[a]; else sh.cells[a] = Object.keys(s).length ? { v, s, ...(x.literal&&v!==''?{literal:true}:{}) } : { v, ...(x.literal&&v!==''?{literal:true}:{}) };
+    }),false,false,true,false,null,true);
   }
   /** Right-click on a cell: the selection stays when the cell is in it, else that cell is selected; then the cell menu at the pointer. */
   cellCtx(e, r, c) {
     e.preventDefault();
     if (this.state.edit) this.commitEdit(0, 0);
-    const R = this.rng(); if (!(r >= R.r1 && r <= R.r2 && c >= R.c1 && c <= R.c2)) { const m = this.mergeAt(r, c); this.setState({ anc: { r, c }, sel: m ? { r: m.r + m.rs - 1, c: m.c + m.cs - 1 } : { r, c } }); }
+    const R = this.rng(); if (!this.selectionRanges().some(b=>this.E.inArea(b,r,c))) { const m = this.mergeAt(r, c); this.setState({ anc: { r, c }, sel: m ? { r: m.r + m.rs - 1, c: m.c + m.cs - 1 } : { r, c } }); }
     this.wantFocus = true; this.setState({ chartSel: null, picSel: null, pop: { id: 'cellctx', x: e.clientX, y: e.clientY } });
   }
   /** Copy or cut from a menu: the cells go to the app's clipboard and their text to the system's (the keys use the copy event). */
@@ -542,55 +632,61 @@ class Component extends DCLogic {
   /** Paste from a menu: the system clipboard's text, or the app's own cells when that cannot be read. */
   clipIn() { const go = t => this.paste(t); try { navigator.clipboard.readText().then(go, () => go(null)); } catch (x) { go(null); } }
   copy(cut) {
-    const E = this.E, R = this.rng(), calc = new E.Calc(this.doc), cells = [], lines = [];
-    for (let r = R.r1; r <= R.r2; r++) { const row = [], line = []; for (let c = R.c1; c <= R.c2; c++) { const x = this.sh.cells[E.A(r, c)]; row.push(x ? this.E.cloneValue(x) : null); line.push(E.fmt(calc.value(this.si, r, c), x && x.s)); } cells.push(row); lines.push(line); }
-    this.clip = { si: this.si, r1: R.r1, c1: R.c1, r2: R.r2, c2: R.c2, cells, values: cells.map((row, i) => row.map((x, j) => calc.value(this.si, R.r1 + i, R.c1 + j))), cut, tsv: E.writeTSV(lines) };
-    this.forceUpdate(); return this.clip.tsv;
+    const E=this.E,areas=E.unionAreas(this.selectionRanges()),R=E.areaBounds(areas),calc=new E.Calc(this.doc),cells=[],values=[],lines=[],mask=[];
+    if((R.r2-R.r1+1)*(R.c2-R.c1+1)>500000){this.clip=null;this.toast($t('复制区域过大，请缩小选择范围'));return '';}
+    const selected=(r,c)=>areas.some(b=>E.inArea(b,r,c));calc.ensureSpills(this.si);
+    if(cut)for(const [key,matrix] of calc.arrays){const [si,r,c]=key.split(':').map(Number),b={r1:r,c1:c,r2:r+matrix.length-1,c2:c+matrix[0].length-1};if(si===this.si&&areas.some(a=>a.r1<=b.r2&&a.r2>=b.r1&&a.c1<=b.c2&&a.c2>=b.c1)&&!E.areaContains(areas,b)){this.clip=null;this.toast($t('请选择完整的动态数组区域'));return '';}}
+    const merges=(this.sh.merges||[]).filter(m=>areas.some(b=>b.r1<m.r+m.rs&&b.r2>=m.r&&b.c1<m.c+m.cs&&b.c2>=m.c));
+    if(merges.some(m=>!E.areaContains(areas,{r1:m.r,c1:m.c,r2:m.r+m.rs-1,c2:m.c+m.cs-1}))){this.clip=null;this.toast($t('请选择完整的合并单元格'));return '';}
+    for(let r=R.r1;r<=R.r2;r++){const row=[],vals=[],line=[],flags=[];for(let c=R.c1;c<=R.c2;c++){const yes=selected(r,c),x=this.sh.cells[E.A(r,c)],v=yes?calc.value(this.si,r,c):'';const spill=calc.spills.get(`${this.si}:${r}:${c}`),owner=spill?.owner.split(':').map(Number);row.push(!yes?null:E.formulaHidden(this.sh,E.A(r,c))?{v:v?.err||v,s:E.cloneValue(x?.s||{}),...(typeof v==='string'&&v.startsWith('=')?{literal:true}:{})}:spill?(selected(owner[1],owner[2])?null:{v,s:E.cloneValue(x?.s||{})}):x?E.cloneValue(x):null);vals.push(v);line.push(yes?E.fmt(v,{...x?.s,date1904:this.doc.date1904}):'');flags.push(yes);}cells.push(row);values.push(vals);lines.push(line);mask.push(flags);}
+    this.clip={si:this.si,sheet:this.sh.path||this.sh.name,...R,areas,cells,values,mask,merges:merges.map(m=>({...m,r:m.r-R.r1,c:m.c-R.c1})),cut,tsv:E.writeTSV(lines)};
+    this.forceUpdate();return this.clip.tsv;
   }
-  paste(text, options = {}) {
-    const E = this.E, R = this.rng(), r0 = R.r1, c0 = R.c1, mode = options.mode || 'all', transpose = mode === 'transpose';
-    let cl = this.clip;
-    if (!cl || (text != null && text.replace(/\r/g, '') !== cl.tsv.replace(/\r/g, ''))) {
-      const table = options.html && E.readTableHTML(options.html);
-      if (!text && !table) return;
-      cl = { r1: 0, c1: 0, cells: table ? table.cells : E.readTSV(text).map(row => row.map(v => ({ v }))), merges: table?.merges || [], external: true };
-    }
-    const H = cl.cells.length, W = Math.max(...cl.cells.map(row => row.length)), height = transpose ? W : H, width = transpose ? H : W;
-    if (r0 + height > E.MAX_ROWS || c0 + width > E.MAX_COLS) return this.toast($t('粘贴超出工作表范围'));
-    if (cl.cut && mode !== 'all') return this.toast($t('剪切内容请使用普通粘贴'));
-    this.ensureGrid(r0 + height - 1, c0 + width - 1);
-    const sourceName = cl.cut ? this.doc.sheets[cl.si].name : null;
-    this.commit((sh, d) => {
-      if (cl.cut) { const src = d.sheets[cl.si]; for (let r = cl.r1; r <= cl.r2; r++) for (let c = cl.c1; c <= cl.c2; c++) delete src.cells[E.A(r, c)]; }
-      for (let i = 0; i < H; i++) for (let j = 0; j < W; j++) {
-        const r = r0 + (transpose ? j : i), c = c0 + (transpose ? i : j), a = E.A(r, c), old = sh.cells[a], x = cl.cells[i]?.[j];
-        if (mode === 'formats') { sh.cells[a] = Object.assign({ v: '' }, old, { s: E.cloneValue(x?.s || {}) }); continue; }
-        if (!x) { delete sh.cells[a]; continue; }
-        const n = E.cloneValue(x); delete n.spill;
-        if (mode === 'values') n.v = cl.values?.[i]?.[j] ?? n.v;
-        if (mode === 'values' || mode === 'formulas') n.s = E.cloneValue(old?.s || {});
-        if (!cl.cut && !cl.external && mode !== 'values' && typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), r - (cl.r1 + i), c - (cl.c1 + j));
-        if (cl.external) { const p = this.parseInput(String(n.v), n.s); n.v = p.v; n.s = Object.assign({}, n.s, p.patch); }
-        sh.cells[a] = n;
+  paste(text,options={}) {
+    const E=this.E,mode=options.mode||'all',transpose=mode==='transpose',areas=this.selectionRanges();let cl=this.clip;
+    if(!cl||(text!=null&&text.replace(/\r/g,'')!==cl.tsv.replace(/\r/g,''))){const table=options.html&&E.readTableHTML(options.html);if(!text&&!table)return;cl={r1:0,c1:0,cells:table?table.cells:E.readTSV(text).map(row=>row.map(v=>({v}))),merges:table?.merges||[],external:true};}
+    const H=cl.cells.length,W=Math.max(0,...cl.cells.map(r=>r.length)),height=transpose?W:H,width=transpose?H:W;if(!H||!W)return;
+    if(cl.cut&&(mode!=='all'||areas.length>1))return this.toast($t('剪切内容请粘贴到一个目标区域'));
+    const sourceIndex=cl.sheet?this.doc.sheets.findIndex(s=>(s.path||s.name)===cl.sheet):cl.si;
+    if(cl.cut&&sourceIndex<0)return this.toast($t('剪切来源工作表已删除'));
+    const sourceName=cl.cut?this.doc.sheets[sourceIndex].name:null;
+    const plans=areas.map(area=>{const rows=area.r2-area.r1+1,cols=area.c2-area.c1+1,fill=!cl.cut&&rows>=height&&cols>=width&&rows%height===0&&cols%width===0;return {r1:area.r1,c1:area.c1,r2:fill?area.r2:area.r1+height-1,c2:fill?area.c2:area.c1+width-1};});
+    if(plans.some(t=>t.r2>=E.MAX_ROWS||t.c2>=E.MAX_COLS))return this.toast($t('粘贴超出工作表范围'));
+    const targets=function*(){for(const p of plans)for(let r=p.r1;r<=p.r2;r+=height)for(let c=p.c1;c<=p.c2;c+=width)yield {r,c};};
+    const clipAreas=cl.areas||[{r1:cl.r1,c1:cl.c1,r2:cl.r1+H-1,c2:cl.c1+W-1}],solid=E.areaContains(clipAreas,{r1:cl.r1,c1:cl.c1,r2:cl.r1+H-1,c2:cl.c1+W-1});
+    if(!solid&&plans.reduce((n,p)=>n+(p.r2-p.r1+1)*(p.c2-p.c1+1)/(height*width),0)*clipAreas.length>4096)return this.toast($t('多区域平铺过大，请缩小目标范围'));
+    const affected=E.unionAreas(solid?plans:[...targets()].flatMap(t=>clipAreas.map(b=>transpose?{r1:t.r+b.c1-cl.c1,c1:t.c+b.r1-cl.r1,r2:t.r+b.c2-cl.c1,c2:t.c+b.r2-cl.r1}:{r1:t.r+b.r1-cl.r1,c1:t.c+b.c1-cl.c1,r2:t.r+b.r2-cl.r1,c2:t.c+b.c2-cl.c1})));
+    if((this.sh.merges||[]).some(m=>affected.some(b=>b.r1<m.r+m.rs&&b.r2>=m.r&&b.c1<m.c+m.cs&&b.c2>=m.c)&&!E.areaContains(affected,{r1:m.r,c1:m.c,r2:m.r+m.rs-1,c2:m.c+m.cs-1})))return this.toast($t('粘贴不能覆盖合并单元格的一部分'));
+    const calc=new E.Calc(this.doc);calc.ensureSpills(this.si);if(mode!=='formats')for(const [key,spill] of calc.spills){const [si,r,c]=key.split(':').map(Number),owner=spill.owner.split(':').map(Number);if(si===this.si&&affected.some(b=>E.inArea(b,r,c))&&!affected.some(b=>E.inArea(b,owner[1],owner[2])))return this.toast($t('请在动态数组的起始单元格修改公式'));}
+    const box=E.areaBounds(affected);this.ensureGrid(box.r2,box.c2);
+    const accepted=this.commit((sh,d)=>{
+      if(cl.cut){const src=d.sheets[sourceIndex];for(const b of cl.areas||[cl])for(let r=b.r1;r<=b.r2;r++)for(let c=b.c1;c<=b.c2;c++){const ref=E.A(r,c);if(src.protected)src.cells[ref]={...src.cells[ref],v:''};else delete src.cells[ref];}src.merges=(src.merges||[]).filter(m=>!E.areaContains(cl.areas||[cl],{r1:m.r,c1:m.c,r2:m.r+m.rs-1,c2:m.c+m.cs-1}));}
+      if(mode==='all'||transpose)sh.merges=(sh.merges||[]).filter(m=>!E.areaContains(affected,{r1:m.r,c1:m.c,r2:m.r+m.rs-1,c2:m.c+m.cs-1}));
+      for(const t of targets()){for(let i=0;i<H;i++)for(let j=0;j<W;j++){
+        if(cl.mask&&!cl.mask[i]?.[j])continue;
+        const r=t.r+(transpose?j:i),c=t.c+(transpose?i:j),a=E.A(r,c),old=sh.cells[a],x=cl.cells[i]?.[j];
+        if(mode==='formats'){sh.cells[a]=Object.assign({v:''},old,{s:E.cloneValue(x?.s||{})});continue;}
+        if(!x&&mode!=='values'&&mode!=='formulas'){delete sh.cells[a];continue;}const n=E.cloneValue(x||{v:''});delete n.spill;
+        if(mode==='values')n.v=cl.values?.[i]?.[j]??n.v;
+        if(mode==='values'||mode==='formulas')n.s=E.cloneValue(old?.s||{});
+        if(!cl.cut&&!cl.external&&mode!=='values'&&!n.literal&&typeof n.v==='string'&&n.v[0]==='=')n.v='='+E.shiftF(n.v.slice(1),r-(cl.r1+i),c-(cl.c1+j));
+        if(cl.external){const p=this.parseInput(String(n.v),n.s);n.v=p.v;n.s=Object.assign({},n.s,p.patch);}sh.cells[a]=n;
       }
-      if (cl.cut) for (const sheet of d.sheets) for (const [address, x] of Object.entries(sheet.cells)) if (typeof x.v === 'string' && x.v[0] === '=') {
-        const p = E.parseA(address), moved = sheet === sh && p.r >= r0 && p.r < r0 + height && p.c >= c0 && p.c < c0 + width;
-        x.v = '=' + E.moveRefs(x.v.slice(1), moved ? sourceName : sheet.name, sourceName, sh.name, cl, r0 - cl.r1, c0 - cl.c1, sheet.name);
-      }
-      if (cl.merges?.length && mode === 'all') sh.merges = (sh.merges || []).filter(m => m.r + m.rs <= r0 || m.r >= r0 + height || m.c + m.cs <= c0 || m.c >= c0 + width).concat(cl.merges.map(m => ({ ...m, r: m.r + r0, c: m.c + c0 })));
-    });
-    this.setState({ anc: { r: r0, c: c0 }, sel: { r: r0 + height - 1, c: c0 + width - 1 } });
-    if (cl.cut) this.clip = null;
+      if(mode==='all'||transpose)sh.merges.push(...(cl.merges||[]).map(m=>transpose?{r:t.r+m.c,c:t.c+m.r,rs:m.cs,cs:m.rs}:{...m,r:t.r+m.r,c:t.c+m.c}));}
+      if(sh.protected)for(const b of affected)for(let r=b.r1;r<=b.r2;r++)for(let c=b.c1;c<=b.c2;c++){const ref=E.A(r,c);sh.cells[ref]=E.protectedPaste(this.sh,ref,sh.cells[ref]);}
+      if(cl.cut)for(const sheet of d.sheets)for(const [address,x] of Object.entries(sheet.cells))if(!x.literal&&typeof x.v==='string'&&x.v[0]==='='){const p=E.parseA(address),moved=sheet===sh&&affected.some(b=>E.inArea(b,p.r,p.c));x.v='='+E.moveRefs(x.v.slice(1),moved?sourceName:sheet.name,sourceName,sh.name,cl,plans[0].r1-cl.r1,plans[0].c1-cl.c1,sheet.name);}
+    },false,false,true);
+    if(accepted){this.selectAreas(affected,affected[0]);if(cl.cut)this.clip=null;}
   }
   async insertImage() {
-    if (this.sh.protected) return this.toast($t('工作表已保护，请先取消保护'));
+    if (!this.E.protectionAllows(this.sh,'objects')) return this.toast($t('工作表不允许编辑对象'));
     const P = this.P || await import('./picture.js'), src = await P.pickImage(); if (!src) return;
     const img = new Image(); img.onload = () => { const k = Math.min(1, 420 / img.naturalWidth, 320 / img.naturalHeight), id = 'im' + Date.now().toString(36), a = this.act();
       this.commit(sh => { sh.images = (sh.images || []).concat([{ id, src, x: this.gridMap(this.xs?.[a.c] || 0, 'x', true), y: this.gridMap(this.ys?.[a.r] || 0, 'y', true), w: Math.max(16, img.naturalWidth * k), h: Math.max(16, img.naturalHeight * k), alt: '', look: {} }]); }); this.setState({ picSel: id, chartSel: null }); this.wantFocus = true;
     }; img.onerror = () => this.toast($t('图片无法读取')); img.src = src;
   }
   async deletePicture() {
-    const pic = this.pic; if (!pic || this.sh.protected) return;
+    const pic = this.pic; if (!pic || !this.E.protectionAllows(this.sh,'objects')) return;
     try { const src = this.EN ? await this.EN.dataUrlOf(pic.src) : pic.src; this.commit(sh => { const im = sh.images.find(i => i.id === pic.id); if (im) im.src = src; }, true); this.commit(sh => { sh.images = sh.images.filter(i => i.id !== pic.id); }); this.setState({ picSel: null }); } catch (e) { this.toast(e.message); }
   }
   groupRows(axis='r',remove=false) {
@@ -599,23 +695,37 @@ class Component extends DCLogic {
   }
   outlineLevel(level) {this.commit(sh=>{for(const g of sh.outline||[])g.collapsed=(g.level||1)>=level;});}
   toggleOutline(axis,end) {this.commit(sh=>{const g=(sh.outline||[]).filter(x=>x.axis===axis&&x.end+1===end).sort((a,b)=>b.level-a.level)[0];if(g)g.collapsed=!g.collapsed;});}
-  pivotSetup() {
-    const E=this.E,R=this.rng(),box=R.r1===R.r2&&R.c1===R.c2?E.currentRegion(this.sh,R.r1,R.c1):R;if(!box||box.r2<=box.r1)return;
-    const fields=Array.from({length:box.c2-box.c1+1},(_,i)=>[String(i),String(this.sh.cells[E.A(box.r1,box.c1+i)]?.v||E.colName(box.c1+i))]);
-    this.prompt($t('数据透视表'),[{key:'row',label:$t('行字段'),value:'0',options:fields},{key:'col',label:$t('列字段'),value:'',options:[['',$t('无')],...fields]},{key:'value',label:$t('值字段'),value:String(fields.length-1),options:fields},{key:'fn',label:$t('汇总方式'),value:'sum',options:[['sum',$t('求和')],['count',$t('计数')],['average',$t('平均值')],['min',$t('最小值')],['max',$t('最大值')]]}],v=>{
-      let name=$t('数据透视表'),i=2;while(this.doc.sheets.some(s=>s.name===name))name=$t('数据透视表')+i++;let pivotName='PivotTable1',j=2;while(this.doc.sheets.some(s=>(s.pivots||[]).some(p=>p.name===pivotName)))pivotName='PivotTable'+j++;
-      const pivot={name:pivotName,sourceSheet:this.sh.name,sourceRange:this.rangeStr(box),target:'A1',rows:[+v.row],cols:v.col===''?[]:[+v.col],values:[{field:+v.value,fn:v.fn}],style:'PivotStyleMedium9'};
-      try{this.commit((sh,d)=>{const target={name,cells:{},pivots:[pivot]};d.sheets.push(target);E.refreshPivot(d,d.sheets[d.sheets.length-1],d.sheets[d.sheets.length-1].pivots[0]);d.active=d.sheets.length-1;});this.setSel(0,0);}catch(e){this.toast(e.message);}
-    });
+  async querySetup(existing = null) {
+    const E=this.E,R=this.rng(),box=R.r1===R.r2&&R.c1===R.c2?E.currentRegion(this.sh,R.r1,R.c1):R;if(!existing&&!box)return;
+    let name='Query1',i=2;while((this.doc.queries||[]).some(q=>q.name===name))name='Query'+i++;
+    let target=name,j=2;while(this.doc.sheets.some(sh=>sh.name===target))target=name+' '+j++;
+    const initial=existing||{name,source:{sheet:this.sh.name,range:this.rangeStr(box)},steps:[],targetSheet:target,target:'A1'},base=this.doc;
+    try { const [ui,Q]=await Promise.all([import('./sheet-query-editor.js'),import('./sheet-query.js')]),result=await ui.editQuery(this.doc,initial);if(!result||this.doc!==base)return;
+      this.commit((sh,d)=>{d.queries=d.queries||[];if(result.remove){if(d.queries.some(q=>q.source.query===result.name||q.steps.some(s=>s.source?.query===result.name)))throw Error($t('其他查询仍在引用此查询'));d.queries=d.queries.filter(q=>q.name!==result.name);return;}
+        if(existing&&(result.targetSheet!==existing.targetSheet||result.target!==existing.target))delete result.range;
+        d.queries=d.queries.filter(q=>q.name!==existing?.name).concat([result]);
+        if(existing&&existing.name!==result.name)for(const q of d.queries){if(q.source.query===existing.name)q.source.query=result.name;for(const step of q.steps)if(step.source?.query===existing.name)step.source.query=result.name;}
+        Q.refreshQueries(d,[result.name]);d.active=d.sheets.findIndex(s=>s.name===result.targetSheet);
+      });this.setSel(0,0);
+    } catch(e){this.toast(e.message);}
   }
-  pivotManage() {
-    const E=this.E,at=this.act(),p=(this.sh.pivots||[]).find(p=>{const [a,b]=p.range.split(':').map(E.parseA);return at.r>=a.r&&at.r<=b.r&&at.c>=a.c&&at.c<=b.c;})||this.sh.pivots?.[0];if(!p)return;
-    const fields=(p.fields||[]).map((name,i)=>[String(i),name]);
-    this.prompt($t('透视表设置'),[{key:'action',label:$t('操作'),value:'update',options:[['update',$t('更新布局')],['remove',$t('删除透视表')]]},{key:'row',label:$t('行字段'),value:String(p.rows[0]??0),options:fields},{key:'col',label:$t('列字段'),value:p.cols?.length?String(p.cols[0]):'',options:[['',$t('无')],...fields]},{key:'value',label:$t('值字段'),value:String(p.values[0]?.field??0),options:fields},{key:'fn',label:$t('汇总方式'),value:p.values[0]?.fn||'sum',options:[['sum',$t('求和')],['count',$t('计数')],['average',$t('平均值')],['min',$t('最小值')],['max',$t('最大值')]]}],v=>{
-      try{this.commit((sh,d)=>{const pivot=sh.pivots.find(x=>x.name===p.name);if(v.action==='remove'){const [a,b]=pivot.range.split(':').map(E.parseA);for(const ref of Object.keys(sh.cells)){const pt=E.parseA(ref);if(pt.r>=a.r&&pt.r<=b.r&&pt.c>=a.c&&pt.c<=b.c)delete sh.cells[ref];}sh.pivots=sh.pivots.filter(x=>x.name!==p.name);return;}pivot.rows=[+v.row];pivot.cols=v.col===''?[]:[+v.col];pivot.values=[{field:+v.value,fn:v.fn}];E.refreshPivot(d,sh,pivot);});}catch(e){this.toast(e.message);}
-    });
+  queryManage() { const queries=this.doc.queries||[];if(!queries.length)return this.querySetup();this.prompt($t('查询管理'),[{key:'name',label:$t('查询'),value:queries[0].name,options:queries.map(q=>[q.name,q.name])}],v=>this.querySetup(queries.find(q=>q.name===v.name))); }
+  async refreshQueries() {try{const Q=await import('./sheet-query.js');this.commit((sh,d)=>Q.refreshQueries(d));}catch(e){this.toast(e.message);}}
+  async pivotSetup() {
+    const E=this.E,R=this.rng(),source=this.sh,box=R.r1===R.r2&&R.c1===R.c2?E.currentRegion(source,R.r1,R.c1):R;if(!box||box.r2<=box.r1)return;
+    const fields=Array.from({length:box.c2-box.c1+1},(_,i)=>String(source.cells[E.A(box.r1,box.c1+i)]?.v||E.colName(box.c1+i)));
+    const spec=await (await import('./sheet-pivot-editor.js')).editPivot(fields,undefined,f=>E.pivotFieldItems(this.doc,{sourceSheet:source.name,sourceRange:this.rangeStr(box)},f));if(!spec||this.sh!==source)return;
+    let name=$t('数据透视表'),i=2;while(this.doc.sheets.some(s=>s.name===name))name=$t('数据透视表')+i++;let pivotName='PivotTable1',j=2;while(this.doc.sheets.some(s=>(s.pivots||[]).some(p=>p.name===pivotName)))pivotName='PivotTable'+j++;
+    const pivot={...spec,name:pivotName,sourceSheet:source.name,sourceRange:this.rangeStr(box),target:'A1',style:'PivotStyleMedium9'};
+    try{this.commit((sh,d)=>{const target={name,cells:{},pivots:[pivot]};d.sheets.push(target);E.refreshPivot(d,d.sheets[d.sheets.length-1],d.sheets[d.sheets.length-1].pivots[0]);d.active=d.sheets.length-1;});this.setSel(0,0);}catch(e){this.toast(e.message);}
   }
-  refreshPivots() {try{this.commit((sh,d)=>{for(const p of sh.pivots||[])this.E.refreshPivot(d,sh,p);});}catch(e){this.toast(e.message);}}
+  async pivotManage() {
+    if(!this.E.protectionAllows(this.sh,'pivotTables'))return this.toast($t('工作表不允许操作透视表'));
+    const E=this.E,at=this.act(),source=this.sh,p=(source.pivots||[]).find(p=>{const [a,b]=p.range.split(':').map(E.parseA);return at.r>=a.r&&at.r<=b.r&&at.c>=a.c&&at.c<=b.c;})||source.pivots?.[0];if(!p)return;
+    const spec=await (await import('./sheet-pivot-editor.js')).editPivot(p.fields||[],p,f=>E.pivotFieldItems(this.doc,p,f));if(!spec||this.sh!==source)return;
+    try{this.commit((sh,d)=>{const pivot=sh.pivots.find(x=>x.name===p.name);if(spec.remove){const [a,b=a]=pivot.range.split(':').map(E.parseA);for(let r=a.r;r<=b.r;r++)for(let c=a.c;c<=b.c;c++){const ref=E.A(r,c),cell=sh.cells[ref];if(cell?.s)sh.cells[ref]={v:'',s:cell.s};else delete sh.cells[ref];}sh.pivots=sh.pivots.filter(x=>x.name!==p.name);}else{Object.assign(pivot,spec);E.refreshPivot(d,sh,pivot);}},false,false,false,false,'pivotTables');}catch(e){this.toast(e.message);}
+  }
+  refreshPivots() {try{this.commit((sh,d)=>{for(const p of sh.pivots||[])this.E.refreshPivot(d,sh,p);},false,false,false,false,'pivotTables');}catch(e){this.toast(e.message);}}
   subtotalSetup() {
     const E=this.E,R=this.rng(),box=R.r1===R.r2&&R.c1===R.c2?E.currentRegion(this.sh,R.r1,R.c1):R;if(!box||box.r2<=box.r1)return;
     const cols=Array.from({length:box.c2-box.c1+1},(_,i)=>{const c=box.c1+i;return [String(c),String(this.sh.cells[E.A(box.r1,c)]?.v||E.colName(c))];});
@@ -626,17 +736,17 @@ class Component extends DCLogic {
     let name='Table1',i=1;while(this.doc.sheets.some(s=>(s.tables||[]).some(t=>t.name.toLowerCase()===name.toLowerCase())))name='Table'+(++i);
     this.prompt($t('套用表格格式'),[{key:'name',label:$t('名称'),value:existing?.name||name,first:true},{key:'range',label:$t('区域'),value:existing?.range||this.rangeStr(region||R)},{key:'style',label:$t('样式'),value:existing?.style||'TableStyleMedium2',options:['TableStyleMedium2','TableStyleMedium4','TableStyleMedium7','TableStyleLight9','TableStyleDark2'].map(v=>[v,v])},{key:'action',label:$t('操作'),value:'set',options:[['set',$t('创建或更新表格')],['remove',$t('转换为普通区域')]]}],v=>{
       const [a,b0]=v.range.replace(/\$/g,'').toUpperCase().split(':').map(E.parseA),b=b0||a;
-      if(v.action==='remove'){if(existing){const calc=new E.Calc(this.doc);this.commit((sh,d)=>{d.sheets.forEach((sheet,si)=>{for(const [ref,cell] of Object.entries(sheet.cells))if(String(cell.v).startsWith('=')){const p=E.parseA(ref);cell.v=E.convertTableRefs(cell.v,existing,calc,si,p.r,p.c);}});sh.tables=sh.tables.filter(t=>t.name!==existing.name);});}return;}
+      if(v.action==='remove'){if(existing){const calc=new E.Calc(this.doc);this.commit((sh,d)=>{d.sheets.forEach((sheet,si)=>{for(const [ref,cell] of Object.entries(sheet.cells))if((!cell.literal&&String(cell.v).startsWith('='))){const p=E.parseA(ref);cell.v=E.convertTableRefs(cell.v,existing,calc,si,p.r,p.c);}});sh.tables=sh.tables.filter(t=>t.name!==existing.name);});}return;}
       if(!a||!b||b.r<=a.r||b.c<a.c||!/^[_\\A-Za-z一-龥][\w.\\一-龥]*$/.test(v.name)||/^(?:[A-Z]{1,3}[1-9]\d*|[RC])$/i.test(v.name)||this.doc.sheets.some(s=>(s.tables||[]).some(t=>t!==existing&&t.name.toLowerCase()===v.name.toLowerCase()))){this.toast($t('请输入唯一的表格名称，以及包含标题和数据的有效区域'));return;}
       if((this.sh.merges||[]).some(m=>m.r<=b.r&&m.r+m.rs>a.r&&m.c<=b.c&&m.c+m.cs>a.c)||(this.sh.tables||[]).some(t=>{if(t===existing)return false;const [p,q]=t.range.split(':').map(E.parseA);return p.r<=b.r&&q.r>=a.r&&p.c<=b.c&&q.c>=a.c;})){this.toast($t('表格不能与合并单元格或其他表格重叠'));return;}
-      this.commit((sh,d)=>{const t={...(existing?E.cloneValue(existing):{}),name:v.name,range:E.A(a.r,a.c)+':'+E.A(b.r,b.c),style:v.style,header:existing?.header!==false,stripes:true};t.columns=E.tableColumns(sh,t);if(t.header)t.columns.forEach((col,j)=>this.setCellRaw(sh,a.r,a.c+j,col.name));sh.tables=(sh.tables||[]).filter(x=>x.name!==existing?.name).concat([t]);if(existing&&existing.name!==v.name)for(const sheet of d.sheets)for(const cell of Object.values(sheet.cells))if(String(cell.v).startsWith('='))cell.v=E.renameTableRefs(cell.v,existing.name,v.name);});
+      this.commit((sh,d)=>{const t={...(existing?E.cloneValue(existing):{}),name:v.name,range:E.A(a.r,a.c)+':'+E.A(b.r,b.c),style:v.style,header:existing?.header!==false,stripes:true};t.columns=E.tableColumns(sh,t);if(t.header)t.columns.forEach((col,j)=>this.setCellRaw(sh,a.r,a.c+j,col.name));sh.tables=(sh.tables||[]).filter(x=>x.name!==existing?.name).concat([t]);if(existing&&existing.name!==v.name)for(const sheet of d.sheets)for(const cell of Object.values(sheet.cells))if((!cell.literal&&String(cell.v).startsWith('=')))cell.v=E.renameTableRefs(cell.v,existing.name,v.name);});
     });
   }
   nameManager() {
     const names = this.doc.names || {}, ref = "'" + this.sh.name.replace(/'/g, "''") + "'!" + this.rangeStr(this.rng()).replace(/([A-Z]+)(\d+)/g, '$$$1$$$2');
-    this.prompt($t('名称管理器'), [{ key: 'name', label: $t('名称'), value: '', first: true }, { key: 'ref', label: $t('引用位置或公式'), value: ref }, { key: 'action', label: $t('操作'), value: 'set', options: [['set', $t('定义或修改')], ['delete', $t('删除')]] }, { key: 'existing', label: $t('已有名称'), value: Object.entries(names).map(([n, v]) => n + ' = ' + v).join('\n'), multi: true }], v => {
+    this.prompt($t('名称管理器'), [{ key: 'name', label: $t('名称'), value: '', first: true }, { key: 'ref', label: $t('引用位置或公式'), value: ref }, { key: 'scope', label: $t('作用域'), value: 'book', options: [['book', $t('工作簿')], ['sheet', this.sh.name]] }, { key: 'action', label: $t('操作'), value: 'set', options: [['set', $t('定义或修改')], ['delete', $t('删除')]] }, { key: 'existing', label: $t('已有名称'), value: Object.entries(names).map(([n, v]) => n + ' = ' + v).concat(Object.entries(this.sh.names || {}).map(([n,v])=>this.sh.name+'!'+n+' = '+v)).join('\n'), multi: true }], v => {
       const name = v.name.trim(); if (!/^[\p{L}_\\][\p{L}\p{N}_.\\]*$/u.test(name) || /^(?:[A-Z]{1,3}[1-9]\d*|[RC])$/i.test(name)) return this.toast($t('名称无效'));
-      this.commit((sh, d) => { d.names = { ...d.names }; const old = Object.keys(d.names).find(n => n.toLowerCase() === name.toLowerCase()); if (old) delete d.names[old]; if (v.action !== 'delete') d.names[name] = v.ref.replace(/^=/, '').trim(); });
+      this.commit((sh, d) => { const owner=v.scope==='sheet'?sh:d;owner.names={...owner.names};const old=Object.keys(owner.names).find(n=>n.toLowerCase()===name.toLowerCase());if(old)delete owner.names[old];if(v.action!=='delete')owner.names[name]=v.ref.replace(/^=/,'').trim(); });
     });
   }
   pageSetup() {
@@ -647,8 +757,79 @@ class Component extends DCLogic {
       this.commit(sh => { sh.print = { ...p, orientation: v.orientation, paper: +v.paper, scale: Math.max(10, Math.min(400, +v.scale || 100)), fitWidth: v.fit === 'none' ? null : 1, fitHeight: v.fit === 'page' ? 1 : v.fit === 'width' ? 0 : null, area: qualify(v.area), titles: qualify(v.titles), header: v.header, footer: v.footer, top: margins[0] / 2.54, right: margins[1] / 2.54, bottom: margins[2] / 2.54, left: margins[3] / 2.54 }; });
     });
   }
-  protectSheet() { this.commit(sh => { sh.protected = !sh.protected; }, false, true); }
+  pageBreak(action) {
+    const p=this.act();
+    this.commit(sh=>{sh.print={...sh.print};for(const [key,index] of [['rowBreaks',p.r],['colBreaks',p.c]]){
+      const values=new Set(sh.print[key]||[]);if(action==='reset')values.clear();else if(action==='remove')values.delete(index);else if(index>0&&(action==='both'||action===(key==='rowBreaks'?'row':'col')))values.add(index);
+      sh.print[key]=[...values].sort((a,b)=>a-b);
+    }});
+  }
+  structureBlocked() { if(!this.doc.workbookProtection?.structure)return false;this.toast($t('工作簿结构已保护，请先取消保护'));return true; }
+  protectWorkbook() {
+    if(this.passwordBusy)return;
+    const base=this.doc,protection=base.workbookProtection||{},locked=!!protection.structure;
+    const apply=verifier=>this.commit((sh,d)=>{d.workbookProtection={...protection,structure:!locked,verifier};},false,true,true);
+    if(locked&&!protection.verifier)return apply(null);
+    this.prompt($t(locked?'取消保护工作簿':'保护工作簿结构'),[
+      {key:'password',label:$t(locked?'密码':'密码（可留空）'),type:'password',value:'',first:true},
+      ...(!locked?[{key:'confirm',label:$t('确认密码'),type:'password',value:''}]:[])
+    ],async v=>{
+      if(this.passwordBusy)return;
+      if(!locked&&(v.password||'')!==(v.confirm||''))return this.toast($t('两次输入的密码不一致'));
+      this.passwordBusy=true;
+      try{
+        const result=locked?await this.EN.sheetPassword(v.password,protection.verifier):v.password?await this.EN.sheetPassword(v.password):null;
+        if(this.doc!==base)return this.toast($t('工作簿已变化，请重新操作'));
+        if(locked&&!result.valid)return this.toast($t('密码不正确，工作簿保持保护'));
+        apply(locked?null:result);
+      }catch(e){this.toast(e.message);}finally{this.passwordBusy=false;}
+    });
+  }
+  deleteSheet(i) {
+    if(this.structureBlocked())return;
+    const base=this.doc,source=base.sheets[i];if(!source)return;
+    if((!source.visibility||source.visibility==='visible')&&base.sheets.filter(s=>!s.visibility||s.visibility==='visible').length<=1)return this.toast($t('至少保留一个可见工作表'));
+    this.prompt($t('删除工作表「{name}」？',{name:source.name}),[],()=>{
+      if(this.doc!==base||this.structureBlocked())return;
+      const sheets=base.sheets.filter((_,j)=>j!==i),activeSheet=base.sheets[base.active||0];
+      let active=sheets.indexOf(activeSheet);if(active<0)active=sheets.findIndex(s=>!s.visibility||s.visibility==='visible');
+      this.props.onChange({...base,sheets,active});
+    });
+  }
+  protectSheet() {
+    if(this.passwordBusy)return;
+    const source=this.sh,docId=this.doc.id,unchanged=()=>this.doc.id===docId&&this.sh===source;
+    if(source.protected){
+      const unlock=()=>this.commit(sh=>{sh.protected=false;sh.protection={...sh.protection,passwordProtected:false,verifier:null};},false,true,true);
+      if(!source.protection?.passwordProtected)return unlock();
+      return this.prompt($t('取消保护工作表'),[{key:'password',label:$t('密码'),value:'',type:'password',first:true}],async v=>{
+        if(this.passwordBusy)return;this.passwordBusy=true;
+        try{if(!source.protection.verifier)throw Error($t('此密码格式暂不支持'));
+          const result=await this.EN.sheetPassword(v.password,source.protection.verifier);
+          if(!unchanged())return this.toast($t('工作表已变化，请重新操作'));
+          if(!result.valid)return this.toast($t('密码不正确，工作表保持保护'));
+          unlock();
+        }catch(e){this.toast(e.message);}finally{this.passwordBusy=false;}
+      });
+    }
+    const fields=[{key:'password',label:$t('密码（可留空）'),type:'password',value:'',first:true},{key:'confirm',label:$t('确认密码'),type:'password',value:''},...this.E.protectionOptions.map(([key,label])=>({key,label:$t(label),value:(source.protection?.[key]??key.startsWith('select'))?'yes':'no',options:[['no',$t('不允许')],['yes',$t('允许')]]}))];
+    this.prompt($t('保护工作表'),fields,async v=>{
+      if(this.passwordBusy)return;
+      if((v.password||'')!==(v.confirm||''))return this.toast($t('两次输入的密码不一致'));
+      this.passwordBusy=true;
+      try{const verifier=v.password?await this.EN.sheetPassword(v.password):null;
+        if(!unchanged())return this.toast($t('工作表已变化，请重新操作'));
+        this.commit(sh=>{sh.protection={...sh.protection,...Object.fromEntries(this.E.protectionOptions.map(([key])=>[key,v[key]==null?key.startsWith('select'):v[key]==='yes'])),verifier,passwordProtected:!!verifier};sh.protected=true;},false,true,true);
+      }catch(e){this.toast(e.message);}finally{this.passwordBusy=false;}
+    });
+  }
+  cellProtection() {
+    if(this.sh.protected)return this.toast($t('请先取消保护，再修改单元格保护设置'));
+    const p=this.act(),style=this.E.cellProtection(this.sh,this.E.A(p.r,p.c)),R=this.rng();
+    this.prompt($t('单元格保护'),[{key:'locked',label:$t('锁定单元格'),value:style.locked===false?'no':'yes',options:[['yes',$t('是')],['no',$t('否')]]},{key:'formulaHidden',label:$t('保护后隐藏公式'),value:style.formulaHidden?'yes':'no',options:[['no',$t('否')],['yes',$t('是')]]}],v=>{const patch={locked:v.locked==='yes',formulaHidden:v.formulaHidden==='yes'};if(R.r1===0&&R.r2===this.nRows-1)return this.commit(sh=>this.E.setAxisProtection(sh,'c',R.c1,R.c2,patch));if(R.c1===0&&R.c2===this.nCols-1)return this.commit(sh=>this.E.setAxisProtection(sh,'r',R.r1,R.r2,patch));this.style(patch);});
+  }
   hideSheet(i, hide = true) {
+    if(this.structureBlocked())return;
     const d = this.doc; if (hide && d.sheets.filter(s => !s.visibility || s.visibility === 'visible').length <= 1) return this.toast($t('至少保留一个可见工作表'));
     const next = this.E.editWorkbook(d, (sh, n) => { n.sheets[i].visibility = hide ? 'hidden' : 'visible'; if (hide && n.active === i) n.active = n.sheets.findIndex(s => !s.visibility || s.visibility === 'visible'); }); this.props.onChange(next);
   }
@@ -657,14 +838,14 @@ class Component extends DCLogic {
     const calc = new this.E.Calc(this.doc); let b;
     try { const n = calc.nameNode(value.trim()); if (n) b = calc.bounds(n, this.si); } catch {}
     if (!b) { const [p, q] = value.trim().toUpperCase().split(':').map(this.E.parseA); if (!p) return; b = { si: this.si, r1: p.r, c1: p.c, r2: q?.r ?? p.r, c2: q?.c ?? p.c }; }
-    if (b.si !== this.si) this.props.onChange({ ...this.doc, active: b.si }, { silent: true }); this.ensureGrid(b.r2, b.c2); this.setState({ anc: { r: b.r1, c: b.c1 }, sel: { r: b.r2, c: b.c2 }, nameEdit: null }); this.wantFocus = this.scrollReq = true;
+    if (b.si !== this.si) this.props.onChange({ ...this.doc, active: b.si }, { silent: true }); this.ensureGrid(b.r2, b.c2); this.setState({ anc: { r: b.r1, c: b.c1 }, sel: { r: b.r2, c: b.c2 }, nameEdit: null, special:null }); this.wantFocus = this.scrollReq = true;
   }
   pasteSpecial() {
     this.prompt($t('选择性粘贴'), [{ key: 'mode', label: $t('内容'), value: 'values', options: [['values', $t('值')], ['formats', $t('格式')], ['formulas', $t('公式')], ['transpose', $t('转置')]] }], v => this.paste(null, { mode: v.mode }));
   }
   // Series rule for one line of source cells (ordered far→near the fill direction; sg = ±1 default step): k ⇒ value of the k-th filled cell, or null ⇒ cyclic copy.
   seriesOf(xs, sg) {
-    if (!xs.length || xs.some(x => !x || x.v === '' || x.v == null || String(x.v)[0] === '=')) return null;
+    if (!xs.length || xs.some(x => !x || x.v === '' || x.v == null || (!x.literal && String(x.v)[0] === '='))) return null;
     const vs = xs.map(x => String(x.v).trim()), last = vs[vs.length - 1], prev = vs[vs.length - 2];
     // dates count as their serials (a file's and a typed date are ISO text) and go back as ISO text, so 2024-01-31 goes on to 2024-02-01
     const dated = xs.every(x => x.s && x.s.fmt === 'date'), num = v => dated && isNaN(Number(v)) ? this.E.dateSerial(v) ?? NaN : Number(v);
@@ -698,7 +879,7 @@ class Component extends DCLogic {
         if (!x) { items.push({ r: tr, c: tc, cell: null }); continue; }
         const nx = this.E.cloneValue(x);
         if (fn) nx.v = fn(k);
-        else if (typeof nx.v === 'string' && nx.v[0] === '=') nx.v = '=' + E.shiftF(nx.v.slice(1), tr - src[idx][0], tc - src[idx][1]);
+        else if (!nx.literal && typeof nx.v === 'string' && nx.v[0] === '=') nx.v = '=' + E.shiftF(nx.v.slice(1), tr - src[idx][0], tc - src[idx][1]);
         items.push({ r: tr, c: tc, cell: nx });
       }
     });
@@ -712,31 +893,39 @@ class Component extends DCLogic {
   fillDir(dir) {
     const E = this.E, R = this.rng();
     this.commit(sh => {
-      if (dir === 'down') for (let c = R.c1; c <= R.c2; c++) { const x = sh.cells[E.A(R.r1, c)]; for (let r = R.r1 + 1; r <= R.r2; r++) { if (!x) { delete sh.cells[E.A(r, c)]; continue; } const n = this.E.cloneValue(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), r - R.r1, 0); sh.cells[E.A(r, c)] = n; } }
-      else for (let r = R.r1; r <= R.r2; r++) { const x = sh.cells[E.A(r, R.c1)]; for (let c = R.c1 + 1; c <= R.c2; c++) { if (!x) { delete sh.cells[E.A(r, c)]; continue; } const n = this.E.cloneValue(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), 0, c - R.c1); sh.cells[E.A(r, c)] = n; } }
+      if (dir === 'down') for (let c = R.c1; c <= R.c2; c++) { const x = sh.cells[E.A(R.r1, c)]; for (let r = R.r1 + 1; r <= R.r2; r++) { if (!x) { delete sh.cells[E.A(r, c)]; continue; } const n = this.E.cloneValue(x); if (!n.literal && typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), r - R.r1, 0); sh.cells[E.A(r, c)] = n; } }
+      else for (let r = R.r1; r <= R.r2; r++) { const x = sh.cells[E.A(r, R.c1)]; for (let c = R.c1 + 1; c <= R.c2; c++) { if (!x) { delete sh.cells[E.A(r, c)]; continue; } const n = this.E.cloneValue(x); if (!n.literal && typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), 0, c - R.c1); sh.cells[E.A(r, c)] = n; } }
     });
   }
   insDel(axis, at, n) {
     const E = this.E, name = this.sh.name;
-    const refs = Object.keys(this.sh.cells), parsed = refs.map(a => E.parseA(a));
+    if(!['r','c'].includes(axis)||!Number.isInteger(at)||!Number.isInteger(n)||!n||at<0||at+Math.abs(n)>(axis==='r'?1048576:16384))return;
+    const permission=(n>0?'insert':'delete')+(axis==='r'?'Rows':'Columns');
+    if(!E.protectionAllows(this.sh,permission))return this.toast($t('工作表已保护，当前操作不被允许'));
+    if(this.sh.protected&&n<0&&E.areaHasLocked(this.sh,axis==='r'?{r1:at,r2:at-n-1,c1:0,c2:16383}:{c1:at,c2:at-n-1,r1:0,r2:1048575}))return this.toast($t('要删除的行列包含锁定单元格'));
+    if(this.sh.protected&&(this.sh.tables||[]).some(t=>{const [a,b]=t.range.split(':').map(E.parseA),k=axis==='r'?'r':'c';return n>0?at>a[k]&&at<=b[k]:at<=b[k]&&at-n>a[k];}))return this.toast($t('请先取消保护，再修改表格结构'));
+    const refs = Object.keys(this.sh.cells), parsed = refs.concat((this.sh.sparklines||[]).flatMap(g=>g.sparklines.map(s=>s.cell))).map(a => E.parseA(a));
     if (parsed.some(p => !p)) { this.toast($t('工作表包含当前编辑器无法移动的单元格地址，未执行插入或删除')); return; }
     // Reject overflow before applying a structural edit; preserve all offscreen cells.
     const limit = axis === 'r' ? 1048576 : 16384;
-    if (n > 0 && parsed.some(p => { const i = axis === 'r' ? p.r : p.c; return i >= at && i + n >= limit; })) {
+    const defaults=Object.keys(this.sh.rowColumnStyles?.[axis==='r'?'rows':'cols']||{}).map(key=>axis==='r'?+key-1:E.colIdx(key));
+    if (n > 0 && (parsed.some(p => { const i = axis === 'r' ? p.r : p.c; return i >= at && i + n >= limit; })||defaults.some(i=>i>=at&&i+n>=limit))) {
       this.toast($t('插入会超出 Excel 工作表的行列上限，未修改文件')); return;
     }
-    for(const p of this.sh.pivots||[]){const [a,b]=p.range.split(':').map(E.parseA),start=axis==='r'?a.r:a.c,end=axis==='r'?b.r:b.c;if(n>0?at>start&&at<=end:at<=end&&at-n>start){this.toast($t('请先移除透视表，再修改其结果区域内的行列'));return;}}
+    for(const p of [...(this.sh.pivots||[]),...(this.sh.dataTables||[])]){const [a,b]=p.range.split(':').map(E.parseA),start=axis==='r'?a.r:a.c,end=axis==='r'?b.r:b.c;if(n>0?at>start&&at<=end:at<=end&&at-n>start){this.toast($t('请先移除透视表，再修改其结果区域内的行列'));return;}}
     this.commit((sh, d) => {
       const nc = {};
       Object.entries(sh.cells).forEach(([a, x]) => { const p = E.parseA(a); let i = axis === 'r' ? p.r : p.c; if (n < 0 && i >= at && i < at - n) return; if (i >= at) i += n; if (i < 0) return; nc[axis === 'r' ? E.A(i, p.c) : E.A(p.r, i)] = x; });
       sh.cells = nc;
-      d.sheets.forEach(s2 => Object.values(s2.cells).forEach(x => { if (typeof x.v === 'string' && x.v[0] === '=') x.v = '=' + E.adjF(x.v.slice(1), s2.name, name, axis, at, n); }));
+      E.shiftStyleDefaults(sh,axis,at,n);
+      d.sheets.forEach(s2 => Object.values(s2.cells).forEach(x => { if (!x.literal && typeof x.v === 'string' && x.v[0] === '=') x.v = '=' + E.adjF(x.v.slice(1), s2.name, name, axis, at, n); }));
       if (axis === 'c' && sh.colW) { const w = {}; Object.entries(sh.colW).forEach(([k, v]) => { let i = E.colIdx(k); if (n < 0 && i >= at && i < at - n) return; if (i >= at) i += n; if (i >= 0) w[E.colName(i)] = v; }); sh.colW = w; }
       if (axis === 'r' && sh.rowH) { const h = {}; Object.entries(sh.rowH).forEach(([k, v]) => { let i = +k - 1; if (n < 0 && i >= at && i < at - n) return; if (i >= at) i += n; if (i >= 0) h[i + 1] = v; }); sh.rowH = h; }
       const k = axis === 'r' ? 'r' : 'c', len = axis === 'r' ? 'rs' : 'cs', span = this.spanShift(at, n);
       sh.merges = (sh.merges || []).map(m => { const s2 = span(m[k], m[k] + m[len] - 1); return s2 && Object.assign({}, m, { [k]: s2[0], [len]: s2[1] - s2[0] + 1 }); }).filter(m => m && m.rs * m.cs > 1);
-      for (const key of Object.keys(d.names || {})) d.names[key] = E.adjF(d.names[key], name, name, axis, at, n);
+      for (const owner of [d,...d.sheets]) for (const key of Object.keys(owner.names || {})) owner.names[key] = E.adjF(owner.names[key], name, owner.name || name, axis, at, n);
       d.sheets.forEach(s2 => { if (s2.print) for (const key of ['area', 'titles']) if (s2.print[key]) s2.print[key] = E.adjF(s2.print[key], s2.name, name, axis, at, n); });
+      const breaks=axis==='r'?'rowBreaks':'colBreaks';if(sh.print?.[breaks])sh.print[breaks]=[...new Set(sh.print[breaks].map(i=>i<at?i:n<0&&i<at-n?at:i+n).filter(i=>i>0&&i<limit))].sort((a,b)=>a-b);
       const sizeAt = i => axis === 'r' ? this.sh.rowH?.[i + 1] || 20 : this.sh.colW?.[E.colName(i)] || 64;
       let pixelAt = 0; for (let i = 0; i < at; i++) pixelAt += sizeAt(i);
       let removedPx = 0; for (let i = at; i < at - n; i++) removedPx += sizeAt(i);
@@ -744,17 +933,24 @@ class Component extends DCLogic {
       d.sheets.forEach(s2 => (s2.charts || []).forEach(ch => { const adj = s => s ? E.adjF(s, s2.name, name, axis, at, n) : s; ch.cat = adj(ch.cat); (ch.ser || []).forEach(s => { s.values = adj(s.values); if (s.name) s.name = adj(s.name); if (s.x) s.x = adj(s.x); }); }));
       // ranges grow/shrink with their rows and columns, like Excel; one goes only when all of it is deleted
       const shiftRange = rg => String(rg || '').split(' ').map(one => { const [p, q0] = one.split(':').map(E.parseA), q = q0 || p; if (!p || !q) return null; const s2 = span(p[k], q[k]); if (!s2) return null; const a = E.A(k === 'r' ? s2[0] : p.r, k === 'c' ? s2[0] : p.c), b = E.A(k === 'r' ? s2[1] : q.r, k === 'c' ? s2[1] : q.c); return a === b ? a : a + ':' + b; }).filter(Boolean).join(' ') || null;
-      for(const p of sh.pivots||[]){p.range=shiftRange(p.range);p.target=p.range.split(':')[0];}
-      for(const owner of d.sheets)for(const p of owner.pivots||[])if(p.sourceSheet?.toLowerCase()===name.toLowerCase()&&p.sourceRange){const before=p.sourceRange,range=shiftRange(before);if(range&&range!==before){if(axis==='c'){const [a]=before.split(':').map(E.parseA),[b]=range.split(':').map(E.parseA),map=i=>{const c=a.c+i;return n<0&&c>=at&&c<at-n?-1:(c>=at?c+n:c)-b.c;};p.rows=p.rows.map(map);p.cols=p.cols.map(map);p.values.forEach(v=>v.field=map(v.field));}p.sourceRange=range;p.sourceChanged=true;}}
+      for(const q of d.queries||[]){if(q.source.sheet===name&&q.source.range)q.source.range=shiftRange(q.source.range);if(q.targetSheet===name){q.range=shiftRange(q.range);q.target=q.range?.split(':')[0]||q.target;}for(const step of q.steps)if(step.source?.sheet===name&&step.source.range)step.source.range=shiftRange(step.source.range);}
+      sh.pivots=(sh.pivots||[]).filter(p=>{p.range=shiftRange(p.range);if(!p.range)return false;p.target=p.range.split(':')[0];return true;});
+      for(const t of sh.dataTables||[]){t.range=shiftRange(t.range);for(const key of ['rowInput','colInput'])if(t[key])t[key]=shiftRange(t[key])||'#REF!';}sh.dataTables=(sh.dataTables||[]).filter(t=>t.range);
+      for(const owner of d.sheets)for(const group of owner.sparklines||[]){if(group.dateSource)group.dateSource=E.adjF(group.dateSource,owner.name,name,axis,at,n);for(const line of group.sparklines){line.source=E.adjF(line.source,owner.name,name,axis,at,n);if(owner.name===name)line.cell=shiftRange(line.cell);}group.sparklines=group.sparklines.filter(l=>l.cell);}
+      for(const owner of d.sheets)if(owner.solver){const spec=owner.solver;for(const key of ['target','variables','integer'])if(spec[key])spec[key]=E.adjF(spec[key],owner.name,name,axis,at,n);for(const constraint of spec.constraints||[])for(const key of ['left','right'])constraint[key]=E.adjF(String(constraint[key]),owner.name,name,axis,at,n);}
+      for(const scenario of sh.scenarios||[])scenario.cells=Object.fromEntries(Object.entries(scenario.cells).map(([ref,value])=>[shiftRange(ref),value]).filter(([ref])=>ref));sh.scenarios=(sh.scenarios||[]).filter(s=>Object.keys(s.cells).length);
+      for(const owner of d.sheets)for(const p of owner.pivots||[])if(p.sourceSheet?.toLowerCase()===name.toLowerCase()&&p.sourceRange){const before=p.sourceRange,range=shiftRange(before);if(range&&range!==before){if(axis==='c'){const [a]=before.split(':').map(E.parseA),[b]=range.split(':').map(E.parseA),map=i=>{const c=a.c+i;return n<0&&c>=at&&c<at-n?-1:(c>=at?c+n:c)-b.c;};p.rows=p.rows.map(map);p.cols=p.cols.map(map);p.values.forEach(v=>{if(v.field!=null)v.field=map(v.field);if(v.baseField!=null)v.baseField=map(v.baseField);});(p.filters||[]).forEach(f=>f.field=map(f.field));(p.groups||[]).forEach(g=>g.field=map(g.field));}p.sourceRange=range;p.sourceChanged=true;}}
       const shiftRules = rules => (rules || []).map(x => { const rg = shiftRange(x.range); return rg && Object.assign({}, x, { range: rg }); }).filter(Boolean);
       if (sh.filter) { sh.filter = shiftRange(sh.filter); if (!sh.filter) { sh.filters = {}; sh.frows = []; } }
+      if(sh.advancedFilter){const spec=sh.advancedFilter;spec.range=shiftRange(spec.range);if(spec.criteria)spec.criteria=shiftRange(spec.criteria);if(!spec.range||this.sh.advancedFilter.criteria&&!spec.criteria){sh.advancedFilter=null;sh.frows=[];}}
       sh.outline=(sh.outline||[]).map(g=>{if(g.axis!==axis)return g;const s=span(g.start,g.end);return s?{...g,start:s[0],end:s[1]}:null;}).filter(Boolean);
       sh.cf = shiftRules(sh.cf); sh.dv = shiftRules(sh.dv); sh.tables = shiftRules(sh.tables);
       for(const t of sh.tables) { if(axis==='c') { const old=(this.sh.tables||[]).find(o=>o.name===t.name),[start]=old.range.split(':').map(E.parseA); if(at>start.c&&at<=E.parseA(old.range.split(':')[1]).c) { const j=at-start.c;if(n>0)t.columns.splice(j,0,...Array.from({length:n},()=>({})));else t.columns.splice(j,-n); } } t.columns=E.tableColumns(sh,t); const [a,b]=t.range.split(':').map(E.parseA); for(let j=0;j<t.columns.length;j++)if(t.columns[j].formula){t.columns[j].formula=E.adjF(t.columns[j].formula,name,name,axis,at,n);if(axis==='r'&&n>0&&at>a.r&&at<=b.r)for(let r=at;r<at+n&&r<=b.r-(t.totals?1:0);r++)this.setCellRaw(sh,r,a.c+j,'='+E.shiftF(t.columns[j].formula,r-a.r-1,0));} }
       const mvIdx = i => n < 0 && i >= at && i < at - n ? null : i >= at ? i + n : i, lines = arr => (arr || []).map(mvIdx).filter(i => i != null);
       if (axis === 'r') { sh.hiddenRows = lines(sh.hiddenRows); sh.frows = lines(sh.frows); }
       else { sh.hiddenCols = lines(sh.hiddenCols); const f = {}; Object.entries(sh.filters || {}).forEach(([key, v]) => { const i = mvIdx(E.colIdx(key)); if (i != null) f[E.colName(i)] = v; }); sh.filters = f; }
-    });
+      if(sh.advancedFilter){sh.advancedFilter.hidden=[...(sh.frows||[])];sh.advancedFilter.manualHidden=[...(sh.hiddenRows||[])];}
+    },false,true); // The structural permission and complete deleted lines were checked before remapping references.
   }
   /** Index span [i1, i2] after inserting n (> 0) or deleting -n rows/columns at `at`: grows when lines land inside it, shrinks when its lines go, null when all go. */
   spanShift(at, n) {
@@ -764,15 +960,36 @@ class Component extends DCLogic {
   region() { const R = this.rng(); if (R.r1 !== R.r2 || R.c1 !== R.c2) return R; return this.E.currentRegion(this.sh, R.r1, R.c1); }
   hasHeader(R, calc) { if (R.r2 <= R.r1) return false; let txt = 0, cnt = 0; for (let c = R.c1; c <= R.c2; c++) { const v = calc.value(this.si, R.r1, c); if (v !== '') { cnt++; if (typeof v === 'string') txt++; } } return cnt > 0 && txt === cnt; }
   /** Sorts the region's rows by `keys` [{ c, asc }] (a text header row stays put): numbers before text, blanks last either way, as Excel; a filter in force is reapplied. */
-  sort(keys) {
-    const E = this.E, R = this.region(); if (!R || !keys.length) return; const calc = new E.Calc(this.doc); const hdr = this.hasHeader(R, calc); const r1 = hdr ? R.r1 + 1 : R.r1;
-    const rows = []; for (let r = r1; r <= R.r2; r++) rows.push({ r, ks: keys.map(k => calc.value(this.si, r, k.c)), cells: Array.from({ length: R.c2 - R.c1 + 1 }, (_, j) => this.sh.cells[E.A(r, R.c1 + j)]) });
-    const blank = v => v === '' || v == null, cmp = (a, b) => { const na = typeof a === 'number', nb = typeof b === 'number'; return na && nb ? a - b : na ? -1 : nb ? 1 : String(a).localeCompare(String(b), 'zh'); };
-    rows.sort((a, b) => { for (let i = 0; i < keys.length; i++) { const x = a.ks[i], y = b.ks[i]; if (blank(x) || blank(y)) { if (blank(x) !== blank(y)) return blank(x) - blank(y); continue; } const d = cmp(x, y); if (d) return keys[i].asc ? d : -d; } return a.r - b.r; });
-    const si = this.si;
-    this.commit((sh, d) => { rows.forEach((row, i) => { const tr = r1 + i; row.cells.forEach((x, j) => { const a = E.A(tr, R.c1 + j); if (!x) { delete sh.cells[a]; return; } const n = this.E.cloneValue(x); if (typeof n.v === 'string' && n.v[0] === '=') n.v = '=' + E.shiftF(n.v.slice(1), tr - row.r, 0); sh.cells[a] = n; }); }); if (Object.keys(sh.filters || {}).length) sh.frows = this.frowsOf(d, si); });
-    this.toast(keys.length > 1 ? $t('已排序') : keys[0].asc ? $t('已升序排序') : $t('已降序排序'));
+  sort(keys,options={}) {
+    const E=this.E,R=this.region();if(!R||!keys.length)return;const calc=new E.Calc(this.doc),hdr=options.header??this.hasHeader(R,calc),r1=R.r1+(hdr?1:0),si=this.si;
+    if(this.sh.protected){if(!E.protectionAllows(this.sh,'sort'))return this.toast($t('工作表不允许排序'));for(let r=r1;r<=R.r2;r++)for(let c=R.c1;c<=R.c2;c++)if(E.cellLocked(this.sh,E.A(r,c)))return this.toast($t('排序区域包含锁定单元格'));}
+    if((this.sh.merges||[]).some(m=>m.r<=R.r2&&m.r+m.rs>R.r1&&m.c<=R.c2&&m.c+m.cs>R.c1))return this.toast($t('请先取消排序区域中的合并单元格'));
+    calc.ensureSpills(si);if([...calc.arrays.keys()].some(key=>{const [sheet,r,c]=key.split(':').map(Number),matrix=calc.arrays.get(key);return sheet===si&&r<=R.r2&&r+matrix.length>r1&&c<=R.c2&&c+matrix[0].length>R.c1;}))return this.toast($t('请先将数组公式转换为数值，再排序'));
+    const order=E.sortRowOrder(this.doc,si,R,keys,{...options,header:hdr}),rows=order.map(r=>({r,cells:Array.from({length:R.c2-R.c1+1},(_,j)=>this.sh.cells[E.A(r,R.c1+j)])}));
+    this.commit((sh,d)=>{rows.forEach((row,i)=>{const tr=r1+i;row.cells.forEach((x,j)=>{const a=E.A(tr,R.c1+j);if(!x){delete sh.cells[a];return;}const n=E.cloneValue(x);if(!n.literal&&typeof n.v==='string'&&n.v[0]==='=')n.v='='+E.shiftF(n.v.slice(1),tr-row.r,0);sh.cells[a]=n;});});if(sh.advancedFilter){const result=E.advancedFilter(d,si,sh.advancedFilter);sh.frows=result.hidden;sh.advancedFilter.hidden=result.hidden;}else if(Object.keys(sh.filters||{}).length)sh.frows=this.frowsOf(d,si);},false,false,false,false,'sort');
+    this.toast($t('已排序'));
   }
+  sortVisual() {
+    const E=this.E,R=this.region();if(!R)return;const cols=[],calc=new E.Calc(this.doc),look=E.sortAppearance(this.doc,this.si,calc),options=new Map();
+    for(let c=R.c1;c<=R.c2;c++){cols.push([E.colName(c),String(calc.value(this.si,R.r1,c)||E.colName(c))]);for(let r=R.r1+1;r<=R.r2;r++){for(const [by,value]of Object.entries(look(r,c)))if(value&&options.size<256)options.set(by+':'+value,$t(by==='fill'?'填充颜色':by==='color'?'字体颜色':'条件格式图标')+' '+value);}}
+    this.prompt($t('按颜色或图标排序'),[{key:'col',label:$t('列'),value:E.colName(this.act().c),options:cols},{key:'match',label:$t('颜色或图标'),value:options.keys().next().value,options:[...options]},{key:'where',label:$t('位置'),value:'top',options:[['top',$t('置于顶端')],['bottom',$t('置于底端')]]}],v=>{const at=v.match.indexOf(':');this.sort([{c:E.colIdx(v.col),by:v.match.slice(0,at),match:v.match.slice(at+1),asc:v.where!=='bottom'}]);});
+  }
+  sortList() {
+    const E=this.E,R=this.region();if(!R)return;const cols=[];for(let c=R.c1;c<=R.c2;c++)cols.push([E.colName(c),E.colName(c)]);
+    this.prompt($t('按自定义序列排序'),[{key:'col',label:$t('列'),value:E.colName(this.act().c),options:cols},{key:'list',label:$t('序列（逗号分隔）'),value:''},{key:'order',label:$t('顺序'),value:'asc',options:[['asc',$t('升序')],['desc',$t('降序')]]}],v=>{const list=v.list.split(/[,，]/).map(x=>x.trim()).filter(Boolean);if(!list.length)return this.toast($t('请填写排序序列'));this.sort([{c:E.colIdx(v.col),by:'list',list,asc:v.order!=='desc'}]);});
+  }
+  advancedFilterSetup() {
+    const E=this.E,old=this.sh.advancedFilter||{},R=this.region();
+    this.prompt($t('高级筛选'),[{key:'range',label:$t('列表区域（含标题）'),value:old.range||(R?this.rangeStr(R):'')},{key:'criteria',label:$t('条件区域（含标题）'),value:old.criteria||''},{key:'mode',label:$t('操作'),value:'filter',options:[['filter',$t('在原区域筛选')],['copy',$t('复制到其他位置')]]},{key:'target',label:$t('复制到'),value:''},{key:'unique',label:$t('仅保留不重复的记录'),value:old.unique?'yes':'no',options:[['no',$t('否')],['yes',$t('是')]]}],v=>this.applyAdvancedFilter({...v,unique:v.unique==='yes'}));
+  }
+  applyAdvancedFilter(spec) {
+    const E=this.E,si=this.si;
+    try{const result=E.advancedFilter(this.doc,si,spec);
+      if(spec.mode==='copy'){const output=E.copyAdvancedFilter(this.doc,si,spec,result);this.commit(sh=>{for(const [ref,cell]of output.cells)sh.cells[ref]=cell;});}
+      else {const range=E.A(result.source.r1,result.source.c1)+':'+E.A(result.source.r2,result.source.c2);this.commit(sh=>{sh.filter=null;sh.filters={};sh.frows=result.hidden;sh.advancedFilter={range,criteria:result.criteriaRange,unique:!!spec.unique,hidden:result.hidden,manualHidden:[...(sh.hiddenRows||[])]};});}
+    }catch(e){this.toast(e.message||$t('筛选条件无效'));}
+  }
+  reapplyFilters(){if(this.sh.advancedFilter)this.applyAdvancedFilter(this.sh.advancedFilter);else this.setFilters(this.sh.filters||{});}
   // sh.filter is the autofilter range ("A1:D20"), sh.filters its criteria by column letter ({ values: [shown texts] } or { operator, value, value2 }) and
   // sh.frows the rows they hid when they were applied: as in Excel, later edits move no row in or out until the filter is applied again
   fltRectOf(sh) { const f = sh.filter; if (!f) return null; const [a, b] = String(f).split(':'), p = this.E.parseA(a), q = this.E.parseA(b || a); if (!p || !q) return null; return { r: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) }; }
@@ -791,14 +1008,21 @@ class Component extends DCLogic {
   }
   /** The rows of sheet `si` in `d` that its filter criteria hide. */
   frowsOf(d, si) { const E = this.E, sh = d.sheets[si], flt = this.fltRectOf(sh), crit = Object.entries(sh.filters || {}).map(([k, f]) => [E.colIdx(k), f]); if (!flt || !crit.length) return []; const calc = new E.Calc(d), out = []; for (let r = flt.r + 1; r <= flt.r2; r++) if (!crit.every(([c, f]) => this.passes(f, calc.value(si, r, c), (sh.cells[E.A(r, c)] || {}).s))) out.push(r); return out; }
-  setFilters(filters) { const si = this.si; this.commit((sh, d) => { sh.filters = filters; sh.frows = this.frowsOf(d, si); }); }
+  setFilters(filters) { const si = this.si; this.commit((sh, d) => { sh.advancedFilter=null; sh.filters = filters; sh.frows = this.frowsOf(d, si); }); }
   toggleFilter() {
     const E = this.E;
-    if (this.sh.filter) return this.commit(sh => { sh.filter = null; sh.filters = {}; sh.frows = []; });
+    if (this.sh.filter) return this.commit(sh => { sh.advancedFilter=null; sh.filter = null; sh.filters = {}; sh.frows = []; });
     const R = this.region(); if (!R) return this.toast($t('先输入一些数据'));
     this.commit(sh => { sh.filter = E.A(R.r1, R.c1) + ':' + E.A(R.r2, R.c2); });
   }
-  freeze(kind) { const s0 = this.act(); this.commit(s => { s.frR = kind === 'row' ? 1 : kind === 'here' ? s0.r : 0; s.frC = kind === 'col' ? 1 : kind === 'here' ? s0.c : 0; }, true); }
+  freeze(kind) { const s0 = this.act(); this.commit(s => { s.frR = kind === 'row' ? 1 : kind === 'here' ? s0.r : 0; s.split=null; s.frC = kind === 'col' ? 1 : kind === 'here' ? s0.c : 0; }, true); }
+  splitPanes(kind='here') {
+    if(this.anim){cancelAnimationFrame(this.anim);this.anim=null;}this.scrollReq=false;
+    const p=this.act(),w=this.wrapRef.current,z=this.state.zoom;
+    const x=kind==='rows'||kind==='none'?0:kind==='cols'||!p.c?Math.round((w?.clientWidth||800)/2):Math.max(80,Math.min((w?.clientWidth||800)-80,(this.xs?.[p.c]||p.c*100)*z-(w?.scrollLeft||0)+RHW));
+    const y=kind==='cols'||kind==='none'?0:kind==='rows'||!p.r?Math.round((w?.clientHeight||500)/2):Math.max(60,Math.min((w?.clientHeight||500)-60,(this.ys?.[p.r]||p.r*24)*z-(w?.scrollTop||0)+CHH));
+    this.commit(sh=>{sh.frR=sh.frC=0;sh.split=kind==='none'?null:{x:x*15,y:y*15,topLeft:this.E.A(p.r,p.c),activePane:x&&y?'bottomRight':x?'topRight':'bottomLeft'};},true);
+  }
   /** Excel's 排序 dialog: up to three keys, columns named by their header when the region has one. */
   sortCustom() {
     const E = this.E, R = this.region(); if (!R) return this.toast($t('先输入一些数据')); const calc = new E.Calc(this.doc), hdr = this.hasHeader(R, calc);
@@ -822,11 +1046,86 @@ class Component extends DCLogic {
       this.commit(sh => { if (axis === 'r') { sh.rowH = Object.assign({}, sh.rowH); for (let r = R.r1; r <= R.r2; r++) sh.rowH[r + 1] = n; } else { sh.colW = Object.assign({}, sh.colW); for (let c = R.c1; c <= R.c2; c++) sh.colW[E.colName(c)] = n; } });
     });
   }
-  splitCols() {
-    const E = this.E, R = this.rng();
-    this.prompt($t('分列'), [{ key: 'd', label: $t('分隔符（逗号、分号、空格…）'), value: ',', first: true }], v => {
-      const d = v.d === '空格' /* i18n-ok: recognizes a typed-in word for space */ || v.d.toLowerCase() === 'space' ? ' ' : v.d || ',';
-      this.commit(sh => { for (let r = R.r1; r <= R.r2; r++) { const x = sh.cells[E.A(r, R.c1)]; if (!x || x.v == null || String(x.v)[0] === '=') continue; String(x.v).split(d).forEach((part, j) => { if (R.c1 + j < this.nCols) this.setCellRaw(sh, r, R.c1 + j, part.trim(), null); }); } });
+  async splitCols() {
+    const E=this.E,R=this.rng(),base=this.doc,si=this.si;if(this.sh.protected)return this.toast($t('工作表已保护，请先取消保护'));
+    if(R.c1!==R.c2||R.r2-R.r1>100000)return this.toast($t('请选择一列，且最多 10 万行'));
+    try {
+      const calc=new E.Calc(this.doc),values=Array.from({length:R.r2-R.r1+1},(_,i)=>{const value=calc.value(si,R.r1+i,R.c1);if(value?.err)throw Error(value.err);return String(value??'');});
+      const UI=await import('./sheet-text-columns.js'),answer=await UI.editTextColumns(values,{target:E.A(R.r1,R.c1),date1904:this.doc.date1904});if(!answer||this.doc!==base)return;
+      const start=E.parseA(answer.target),width=Math.max(0,...answer.cells.map(r=>r.length));if(!start||start.r+answer.cells.length>this.nRows||start.c+width>this.nCols)throw Error($t('分列结果超出工作表边界'));
+      if((this.sh.merges||[]).some(m=>m.r<start.r+answer.cells.length&&m.r+m.rs>start.r&&m.c<start.c+width&&m.c+m.cs>start.c))throw Error($t('分列结果不能覆盖合并单元格'));
+      for(let r=0;r<answer.cells.length;r++)for(let c=0;c<answer.cells[r].length;c++){const rr=start.r+r,cc=start.c+c,ref=E.A(rr,cc),old=this.sh.cells[ref];if(!answer.overwrite&&!(cc===R.c1&&rr>=R.r1&&rr<=R.r2)&&old?.v!=null&&old.v!=='')throw Error($t('目标单元格已有数据')+': '+ref);const bad=this.dvBad(rr,cc,String(answer.cells[r][c].v));if(bad)throw Error(bad);}
+      this.commit(sh=>{answer.cells.forEach((row,r)=>row.forEach((value,c)=>{const ref=E.A(start.r+r,start.c+c),old=sh.cells[ref];sh.cells[ref]={...old,...value,s:{...old?.s,...value.s}};if(!value.literal)delete sh.cells[ref].literal;delete sh.cells[ref].spill;}));});this.setSel(start.r,start.c);
+    }catch(e){this.toast(e.message);}
+  }
+  flashFill() {
+    const E=this.E,R=this.region(),base=this.doc,si=this.si;if(!R)return this.toast($t('先输入一些数据'));
+    const calc=new E.Calc(base),target=this.act().c;
+    this.prompt($t('快速填充'),[{key:'source',label:$t('源数据区域'),value:this.rangeStr(R),first:true},{key:'target',label:$t('结果列（先填写示例）'),value:E.colName(target)},{key:'header',label:$t('首行为标题'),value:this.hasHeader(R,calc)?'yes':'no',options:[['yes',$t('是')],['no',$t('否')]]}],async v=>{
+      try{
+        if(this.doc!==base)return this.toast($t('工作簿已变化，请重新操作'));
+        const [a,b=a]=v.source.toUpperCase().replace(/\$/g,'').split(':').map(E.parseA),column=E.parseA(v.target.trim().toUpperCase()+'1')?.c;
+        if(!a||!b||a.r>b.r||a.c>b.c||b.r>=E.MAX_ROWS||b.c>=E.MAX_COLS||column==null||column>=E.MAX_COLS)throw Error($t('请输入有效的数据区域和结果列'));
+        const first=a.r+(v.header==='yes'?1:0),cols=[];for(let c=a.c;c<=b.c;c++)if(c!==column)cols.push(c);
+        if(!cols.length||cols.length>16||b.r-first+1>20000||first>b.r)throw Error($t('快速填充支持最多 20000 行、16 个源列'));
+        const rows=[],examples={};for(let r=first;r<=b.r;r++){rows.push(cols.map(c=>this.fmtV(calc.value(si,r,c),E.effectiveCellStyle(this.sh,E.A(r,c)))));const cell=this.sh.cells[E.A(r,column)];if(cell&&cell.v!=='')examples[r-first]=this.fmtV(calc.value(si,r,column),cell.s);}
+        const worker=new Worker(new URL('./sheet-flash-fill-worker.js',location.href),{type:'module'});
+        const results=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{worker.terminate();reject(Error($t('快速填充计算超时，请缩小范围')));},10000);worker.onmessage=({data})=>{clearTimeout(timer);worker.terminate();data.error?reject(Error($t(data.error))):resolve(data.results);};worker.onerror=()=>{clearTimeout(timer);worker.terminate();reject(Error($t('快速填充计算失败')));};worker.postMessage({rows,examples});});
+        if(this.doc!==base)return this.toast($t('工作簿已变化，请重新操作'));
+        const candidates=results.map(result=>result.values.map((value,i)=>({r:first+i,value})).filter(x=>x.value!=null&&x.value!==''&&!Object.hasOwn(examples,x.r-first)));
+        if(!candidates.some(c=>c.length))return this.toast($t('没有需要填充的空白单元格'));
+        const preview=i=>candidates[i].slice(0,12).map(x=>E.A(x.r,column)+' → '+x.value).join('\n');
+        const fields=[{key:'choice',label:$t('选择填充方案'),value:'0',options:results.map((_,i)=>[String(i),$t('方案 {n}',{n:i+1})+' · '+preview(i).split('\n').slice(0,2).join('；')])},...results.map((_,i)=>({key:'preview'+i,label:$t('方案 {n}',{n:i+1}),value:preview(i),multi:true,readonly:true}))];
+        this.prompt($t('快速填充预览'),fields,chosen=>{
+          if(this.doc!==base)return this.toast($t('工作簿已变化，请重新操作'));
+          const output=candidates[+chosen.choice];if(!output)return;
+          calc.ensureSpills(si);
+          for(const {r,value} of output){const invalid=this.dvBad(r,column,value,true);if(invalid)return this.toast(invalid);if(calc.spills.has(`${si}:${r}:${column}`))return this.toast($t('请在动态数组的起始单元格修改公式'));if((this.sh.merges||[]).some(m=>r>=m.r&&r<m.r+m.rs&&column>=m.c&&column<m.c+m.cs))return this.toast($t('请先取消目标区域的合并单元格'));}
+          this.commit(sh=>{for(const {r,value} of output){const ref=E.A(r,column);sh.cells[ref]={...sh.cells[ref],v:value,literal:true};}},false,false,true);
+        });
+      }catch(e){this.toast(e.message);}
+    });
+  }
+  async dataTableSetup() {
+    const E=this.E,at=this.act(),current=(this.sh.dataTables||[]).find(t=>{const [a,b]=t.range.split(':').map(E.parseA);return at.r>=a.r&&at.r<=b.r&&at.c>=a.c&&at.c<=b.c;});
+    const Q=await import('./sheet-whatif.js');this.prompt($t('模拟运算表'),[{key:'range',label:$t('区域（包含标题行和标题列）'),value:current?.range||this.rangeStr(this.rng()),first:true},{key:'row',label:$t('行输入单元格（可留空）'),value:current?.rowInput||''},{key:'col',label:$t('列输入单元格（可留空）'),value:current?.colInput||''},{key:'action',label:$t('操作'),value:'set',options:[['set',$t('创建或更新')],['remove',$t('转换为数值')]]}],v=>{try{
+      if(v.action==='remove'){if(!current)return;const b=Q.whatIfBox(current),calc=new E.Calc(this.doc),values=[];for(let r=b.r1+1;r<=b.r2;r++)for(let c=b.c1+1;c<=b.c2;c++)values.push([E.A(r,c),calc.value(this.si,r,c)]);this.commit(sh=>{sh.dataTables=sh.dataTables.filter(t=>t.range!==current.range);for(const [ref,value]of values)sh.cells[ref]={...sh.cells[ref],v:value?.err||value};});return;}
+      const table={range:v.range.replace(/\$/g,'').toUpperCase(),...(v.row.trim()?{rowInput:v.row.trim().replace(/\$/g,'').toUpperCase()}:{}),...(v.col.trim()?{colInput:v.col.trim().replace(/\$/g,'').toUpperCase()}:{})};const b=Q.validateDataTable(this.doc,this.si,table);
+      this.commit((sh,d)=>{sh.dataTables=(sh.dataTables||[]).filter(t=>t.range!==current?.range&&t.range!==table.range).concat([table]);const calc=new E.Calc(d);for(let r=b.r1+1;r<=b.r2;r++)for(let c=b.c1+1;c<=b.c2;c++){const ref=E.A(r,c),value=calc.value(this.si,r,c);sh.cells[ref]={...sh.cells[ref],v:value?.err||value};delete sh.cells[ref].spill;delete sh.cells[ref].literal;}},false,false,false,true);
+    }catch(e){this.toast(e.message);}});
+  }
+  async solver() {
+    if(this.sh.protected)return this.toast($t('工作表已保护，请先取消保护'));
+    const base=this.doc,si=this.si;try{const ui=await import('./sheet-solver-editor.js'),answer=await ui.editSolver(this.E.cloneValue(this.doc),si,this.sh.solver||{target:this.E.A(this.act().r,this.act().c)});if(!answer||this.doc!==base)return;
+      for(const [ref,v]of Object.entries(answer.result.values)){const p=this.E.parseA(ref),bad=this.dvBad(p.r,p.c,String(v));if(bad)throw Error(bad);}
+      this.commit(sh=>{sh.solver=answer.spec;for(const [ref,v]of Object.entries(answer.result.values)){const p=this.E.parseA(ref);this.setCellRaw(sh,p.r,p.c,v);}});
+    }catch(e){this.toast(e.message);}
+  }
+  async scenarioSave() {
+    try{const {variableRefs}=await import('./sheet-solver.js'),selection=this.selectionRanges().map(b=>this.rangeStr(b)).join(',');this.prompt($t('保存方案'),[{key:'name',label:$t('方案名称'),value:'',first:true},{key:'cells',label:$t('可变单元格（最多 32 个）'),value:selection},{key:'comment',label:$t('备注'),value:''}],v=>{try{const refs=variableRefs(v.cells);if(refs.length>32||!v.name.trim())throw Error($t('请输入方案名称，并选择最多 32 个输入单元格'));const calc=new this.E.Calc(this.doc),cells={};for(const ref of refs){const p=this.E.parseA(ref),cell=this.sh.cells[ref];if(cell?.spill||!cell?.literal&&String(cell?.v||'').startsWith('='))throw Error($t('方案输入不能包含公式'));const value=calc.value(this.si,p.r,p.c);if(value?.err)throw Error(value.err);cells[ref]=String(value);}this.commit(sh=>{sh.scenarios=(sh.scenarios||[]).filter(s=>s.name.toLowerCase()!==v.name.trim().toLowerCase()).concat([{name:v.name.trim(),comment:v.comment,user:'',locked:false,hidden:false,cells}]);});}catch(e){this.toast(e.message);}});}catch(e){this.toast(e.message);}
+  }
+  scenarioManage() {
+    const scenarios=this.sh.scenarios||[];if(!scenarios.length)return this.scenarioSave();this.prompt($t('方案管理'),[{key:'name',label:$t('方案'),value:scenarios[0].name,options:scenarios.map(s=>[s.name,s.name])},{key:'action',label:$t('操作'),value:'apply',options:[['apply',$t('应用方案')],['remove',$t('删除方案')],['summary',$t('生成方案摘要')]]},{key:'results',label:$t('摘要结果单元格（例如 D1,D2）'),value:this.E.A(this.act().r,this.act().c)}],v=>{
+      try{const selected=scenarios.find(s=>s.name===v.name);if(!selected)return;if(v.action==='remove')return this.commit(sh=>{sh.scenarios=sh.scenarios.filter(s=>s.name!==v.name);});
+        if(v.action==='apply'){for(const [ref,value]of Object.entries(selected.cells)){const p=this.E.parseA(ref),bad=this.dvBad(p.r,p.c,value);if(bad)throw Error(bad);}return this.commit(sh=>{for(const [ref,value]of Object.entries(selected.cells)){const p=this.E.parseA(ref);this.setCellRaw(sh,p.r,p.c,value);if(String(value).startsWith('='))sh.cells[ref].literal=true;}});}
+        const resultRefs=v.results.split(/[,;\s]+/).filter(Boolean).map(r=>this.E.parseA(r));if(!resultRefs.length||resultRefs.some(r=>!r))throw Error($t('结果单元格地址无效'));const inputs=[...new Set(scenarios.flatMap(s=>Object.keys(s.cells)))],cells={A1:{v:$t('方案')}};
+        [...inputs,...resultRefs.map(p=>this.E.A(p.r,p.c))].forEach((ref,j)=>cells[this.E.A(0,j+1)]={v:ref});const si=this.si;
+        for(let i=0;i<scenarios.length;i++){const scenario=scenarios[i],work=this.E.editWorkbook(this.doc,(sh,d)=>{for(const [ref,value]of Object.entries(scenario.cells))d.sheets[si].cells[ref]={v:value,literal:String(value).startsWith('=')};}),calc=new this.E.Calc(work);cells[this.E.A(i+1,0)]={v:scenario.name};inputs.forEach((ref,j)=>{const p=this.E.parseA(ref);cells[this.E.A(i+1,j+1)]={v:calc.value(si,p.r,p.c)};});resultRefs.forEach((p,j)=>{const value=calc.value(si,p.r,p.c);cells[this.E.A(i+1,j+inputs.length+1)]={v:value?.err||value};});}
+        for(const cell of Object.values(cells))if(typeof cell.v==='string'&&cell.v.startsWith('='))cell.literal=true;
+        this.commit((sh,d)=>{let name=$t('方案摘要'),n=2;while(d.sheets.some(s=>s.name===name))name=$t('方案摘要')+n++;d.sheets.push({name,cells});d.active=d.sheets.length-1;});this.setSel(0,0);
+      }catch(e){this.toast(e.message);}
+    });
+  }
+  goalSeek() {
+    const E=this.E, current=E.A(this.act().r,this.act().c);
+    this.prompt($t('单变量求解'),[{key:'target',label:$t('目标公式单元格'),value:current,first:true},{key:'value',label:$t('目标值'),value:'0'},{key:'changing',label:$t('可变单元格'),value:''}],v=>{
+      const target=E.parseA(v.target.trim()),changing=E.parseA(v.changing.trim()),desired=Number(v.value);
+      if(!target||!changing||!v.value.trim()||!Number.isFinite(desired))return this.toast($t('请输入有效的单元格地址和目标值'));
+      if(this.sh.protected)return this.toast($t('工作表已保护，请先取消保护'));
+      const result=E.goalSeek(this.doc,this.si,E.A(target.r,target.c),E.A(changing.r,changing.c),desired);
+      if(!result.ok)return this.toast(result.error==='formula'?$t('目标格必须是公式，可变格必须是数值'):$t('未找到满足目标的数值，原数据未更改'));
+      const value=Number(result.value.toPrecision(15)),bad=this.dvBad(changing.r,changing.c,String(value));if(bad)return this.toast(bad);
+      this.commit(sh=>this.setCellRaw(sh,changing.r,changing.c,value));this.toast($t('求解完成：{cell} = {value}',{cell:E.A(changing.r,changing.c),value}));
     });
   }
   // sh.dv holds the sheet's data validation rules as the file does: { range, type, operator, value, value2 | values | source, error }
@@ -845,6 +1144,7 @@ class Component extends DCLogic {
       { key: 'o', label: $t('数据'), value: cur.operator || 'between', options: Object.entries(CF_OPS) },
       { key: 'v', label: $t('来源（序列：项目用逗号分隔，或一个区域如 H2:H5）/ 最小值'), value: cur.values ? cur.values.join(',') : cur.source || cur.value || '', first: true },
       { key: 'v2', label: $t('最大值'), value: cur.value2 || '' },
+      { key: 'blank', label: $t('允许空白'), value: cur.allowBlank === false ? 'no' : 'yes', options: [['yes', $t('是')], ['no', $t('否')]] },
       { key: 'pt', label: $t('输入提示标题'), value: cur.promptTitle || '' },
       { key: 'pr', label: $t('输入提示'), value: cur.prompt || '' },
       { key: 'e', label: $t('出错警告（留空用默认提示）'), value: cur.error || '', ai: 'the message a spreadsheet shows when a value typed in a cell is not allowed' }],
@@ -855,25 +1155,38 @@ class Component extends DCLogic {
         if (v.t === 'list') {
           if (/^=?(?:(?:'[^']+'|[\w一-龥]+)!)?\$?[A-Za-z]{1,3}\$?\d+:\$?[A-Za-z]{1,3}\$?\d+$/.test(src)) rule.source = src.replace(/^=/, '').replace(/\$/g, '');
           else { rule.values = src.split(/[,，]/).map(x => x.trim()).filter(Boolean); if (!rule.values.length) return this.toast($t('请输入列表项')); }
+        } else if (v.t === 'custom') {
+          if (!src) return this.toast($t('请输入验证公式')); rule.value = src.replace(/^=/, '');
         } else {
-          const num = x => { const t = x.trim(); if (t === '') return null; const n = v.t === 'date' ? E.dateSerial(t) ?? Number(t) : Number(t); return isNaN(n) ? null : n; }, a = num(v.v), b = num(v.v2), two = v.o === 'between' || v.o === 'notBetween';
+          const num = x => { const t = x.trim(); if (t === '') return null; if (t[0] === '=') return t.slice(1); const n = /^(date|time)$/.test(v.t) ? E.dateSerial(t, this.doc.date1904) ?? Number(t) : Number(t); return isNaN(n) ? null : n; }, a = num(v.v), b = num(v.v2), two = v.o === 'between' || v.o === 'notBetween';
           if (a == null || (two && b == null)) return this.toast(v.t === 'date' ? $t('请输入有效的日期') : $t('请输入有效的数值'));
           rule.operator = v.o; rule.value = String(a); if (two) rule.value2 = String(b);
         }
+        if (v.blank === 'no') rule.allowBlank = false;
         if (v.e.trim()) rule.error = v.e.trim(); if (v.pt?.trim()) rule.promptTitle = v.pt.trim(); if (v.pr?.trim()) rule.prompt = v.pr.trim();
         this.commit(sh => { sh.dv = keep(sh).concat([rule]); });
       });
   }
   /** Why `val` may not go into the cell under its validation rule, or null; the rule's own error text wins when it has one. */
-  dvBad(r, c, val) {
-    const E = this.E, rule = this.dvAt(r, c); if (!rule || val === '' || val[0] === '=') return null;
+  dvBad(r, c, val, literal = false) {
+    const E = this.E, rule = this.dvAt(r, c); if (!rule) return null;
     const bad = msg => rule.error || msg;
-    if (rule.type === 'list') { const list = this.dvList(rule); return list.includes(val) ? null : bad($t('只能输入：{list}', { list: list.join($lang() === 'en' ? ', ' : '、' /* i18n-ok: CJK enumeration comma */) })); }
-    if (rule.type !== 'whole' && rule.type !== 'decimal' && rule.type !== 'date' && rule.type !== 'textLength') return null; // time and custom rules are kept, not checked
-    let n; if (rule.type === 'textLength') n = val.length; else if (rule.type === 'date') n = E.dateSerial(val) ?? Number(val); else n = Number(val.replace(/,/g, ''));
-    const what = rule.type === 'textLength' ? $t('文本长度') : rule.type === 'date' ? $t('日期') : rule.type === 'whole' ? $t('整数') : $t('数字');
-    if (n == null || isNaN(n) || (rule.type === 'whole' && !Number.isInteger(n))) return bad($t('只能输入{what}', { what }));
-    const lim = x => { if (x == null) return NaN; const t = String(x); return rule.type === 'date' && isNaN(Number(t)) ? (E.dateSerial(t) ?? NaN) : Number(t); }, a = lim(rule.value), b = lim(rule.value2), show = x => rule.type === 'date' ? E.fmt(x, { fmt: 'date' }) : String(x);
+    if (val === '' && rule.allowBlank !== false) return null;
+    // Evaluate the proposed value in an isolated snapshot, including references from the rule back to this cell.
+    const doc = E.editWorkbook(this.doc, sh => { const a=E.A(r,c); sh.cells[a]={...sh.cells[a],v:val,...(literal?{literal:true}:{})}; }), calc = new E.Calc(doc);
+    const value = calc.value(this.si,r,c);
+    if (E.isErr(value)) return bad($t('输入值不符合数据验证规则'));
+    if (val === '' && rule.allowBlank === false) return bad($t('此单元格不能为空'));
+    if (rule.type === 'list') { const list = this.dvList(rule, calc); return list.some(x=>String(x)===String(value)) ? null : bad($t('只能输入：{list}', { list: list.join($lang() === 'en' ? ', ' : '、' /* i18n-ok: CJK enumeration comma */) })); }
+    const first = this.boxes(rule.range)[0] || {r1:r,c1:c}, evaluate = f => calc.evaluate(E.shiftF(String(f).replace(/^=/,''),r-first.r1,c-first.c1),this.si,r,c);
+    if (rule.type === 'custom') { const answer=evaluate(rule.value || 'FALSE'); return !E.isErr(answer) && (answer===true || typeof answer==='number' && answer!==0) ? null : bad($t('输入值不符合数据验证规则')); }
+    if (!['whole','decimal','date','time','textLength'].includes(rule.type)) return null;
+    const numeric = x => { if (typeof x==='number') return x; const t=String(x ?? ''); return /^(date|time)$/.test(rule.type) && isNaN(Number(t)) ? E.dateSerial(t,this.doc.date1904) ?? NaN : Number(t.replace(/,/g,'')); };
+    const n = rule.type === 'textLength' ? String(value).length : numeric(value);
+    const what = rule.type === 'textLength' ? $t('文本长度') : rule.type === 'date' ? $t('日期') : rule.type === 'time' ? $t('时间') : rule.type === 'whole' ? $t('整数') : $t('数字');
+    if (!Number.isFinite(n) || (rule.type === 'whole' && !Number.isInteger(n))) return bad($t('只能输入{what}', { what }));
+    const lim = x => { if (x == null) return NaN; const literal=numeric(x); return Number.isFinite(literal) ? literal : numeric(evaluate(x)); }, a=lim(rule.value), b=lim(rule.value2);
+    const show=x=>/^(date|time)$/.test(rule.type) ? E.fmt(x,{fmt:rule.type,date1904:this.doc.date1904}) : String(x);
     const op = rule.operator || 'between', ok = { between: n >= a && n <= b, notBetween: n < a || n > b, equal: n === a, notEqual: n !== a, greaterThan: n > a, lessThan: n < a, greaterThanOrEqual: n >= a, lessThanOrEqual: n <= a }[op];
     if (ok) return null;
     return bad(op === 'between' ? $t('只能输入 {min} 到 {max} 之间的{what}', { min: show(a), max: show(b), what }) : $t('{what}须{op} {v}', { what, op: CF_OPS[op] || op, v: show(a) + (b === b ? ' ~ ' + show(b) : '') }));
@@ -905,6 +1218,7 @@ class Component extends DCLogic {
   }
   /** Cell text through the sheet engine's formatter, plus the kinds it does not know (usd / acct / time). */
   fmtV(v, s) {
+    s = { ...s, date1904: this.doc.date1904 };
     const E = this.E; if (typeof v !== 'number' || !s || !s.fmt) return E.fmt(v, s);
     if (s.code) return E.fmt(v, s); // the file's own code, rendered as Excel would
     const grp = n => E.fmt(Math.abs(n), { fmt: 'number', dec: s.dec ?? 2 });
@@ -932,7 +1246,7 @@ class Component extends DCLogic {
     this.toast(removed ? $t('已删除 {n} 行重复数据', { n: removed }) : $t('没有发现重复行'));
   }
   autoFn(fn) {
-    const E = this.E, R = this.rng(), num = (r, c) => { const x = this.sh.cells[E.A(r, c)]; return x && x.v !== '' && !isNaN(Number(x.v)) || (x && String(x.v).startsWith('=')); };
+    const E = this.E, R = this.rng(), num = (r, c) => { const x = this.sh.cells[E.A(r, c)]; return x && x.v !== '' && !isNaN(Number(x.v)) || (x && (!x.literal&&String(x.v).startsWith('='))); };
     if (R.r1 !== R.r2 || R.c1 !== R.c2) {
       const r = R.r2 + 1; if (r >= this.nRows) return;
       this.commit(sh => { for (let c = R.c1; c <= R.c2; c++) sh.cells[E.A(r, c)] = Object.assign({}, sh.cells[E.A(r, c)], { v: `=${fn}(${E.A(R.r1, c)}:${E.A(R.r2, c)})` }); });
@@ -992,6 +1306,18 @@ class Component extends DCLogic {
       v => { const i = +v.i, r = rules[i]; if (!r) return; if (v.a === 'del') return this.commit(sh => { sh.cf.splice(i, 1); }); if (v.a === 'up') return void (i > 0 && this.commit(sh => { [sh.cf[i - 1], sh.cf[i]] = [sh.cf[i], sh.cf[i - 1]]; })); const k = this.cfKind(r); if (k) this.cfPrompt(k, i); else this.toast($t('这类规则可以删除，但不能在这里编辑')); });
   }
   /** Header row → series names, a text first column → categories; the chart keeps ranges, values come through the calc engine when it renders. */
+  sparklineSetup() {
+    const E=this.E,at=this.act(),cell=E.A(at.r,at.c),found=E.sparklineMap(this.sh).get(cell),g=found?.group||{},box=this.rng(),quote="'"+this.sh.name.replace(/'/g,"''")+"'!";
+    this.prompt('迷你图',[{key:'source',label:'数据区域',value:found?.line.source||quote+this.rangeStr(box),first:true},{key:'target',label:'目标单元格或区域',value:found?cell:E.A(box.r1,Math.min(E.MAX_COLS-1,box.c2+1))+':'+E.A(box.r2,Math.min(E.MAX_COLS-1,box.c2+1))},{key:'type',label:'类型',value:g.type||'line',options:[['line','折线'],['column','柱形'],['stacked','盈亏']]},{key:'color',label:'线条颜色',value:g.colorSeries||'#4472C4'},{key:'negative',label:'负数颜色',value:g.colorNegative||'#C00000'},{key:'markers',label:'显示数据标记',value:g.markers?'yes':'no',options:[['yes','是'],['no','否']]},{key:'empty',label:'空值',value:g.empty||'gap',options:[['gap','留空'],['zero','零值'],['span','连接两端']]},{key:'action',label:'操作',value:'save',options:[['save','应用'],['remove','删除选中迷你图']]}],v=>{try{
+      const b=(new E.Calc(this.doc)).rangeBounds(v.source,this.si),parts=v.target.replace(/\$/g,'').split(':').map(E.parseA),a=parts[0],z=parts[1]||a;if(!a||!z||a.r>z.r||a.c>z.c||z.r>=E.MAX_ROWS||z.c>=E.MAX_COLS)throw Error('目标地址无效');
+      const targets=[];for(let r=a.r;r<=z.r;r++)for(let c=a.c;c<=z.c;c++){if(targets.length>=10000)throw Error('一次最多创建 10000 个迷你图');targets.push(E.A(r,c));}
+      if(v.action==='remove')return this.commit(sh=>{sh.sparklines=(sh.sparklines||[]).map(g=>({...g,sparklines:g.sparklines.filter(s=>!targets.includes(s.cell))})).filter(g=>g.sparklines.length);});
+      if(!b||b.err||b.si==null||!/^#[0-9a-f]{6}$/i.test(v.color)||!/^#[0-9a-f]{6}$/i.test(v.negative))throw Error('请输入有效的数据区域和颜色');
+      const rows=b.r2-b.r1+1,cols=b.c2-b.c1+1,n=targets.length;if(n!==rows&&n!==cols&&!(n===1&&(rows===1||cols===1)))throw Error('目标数量应与数据行数或列数一致');if(rows*cols>100000)throw Error('一次最多处理 100000 个数据点');const source="'"+this.doc.sheets[b.si].name.replace(/'/g,"''")+"'!";
+      const lines=targets.map((cell,i)=>({cell,source:source+(n===rows?E.A(b.r1+i,b.c1)+':'+E.A(b.r1+i,b.c2):E.A(b.r1,b.c1+i)+':'+E.A(b.r2,b.c1+i))}));
+      this.commit(sh=>{sh.sparklines=(sh.sparklines||[]).map(old=>({...old,sparklines:old.sparklines.filter(s=>!targets.includes(s.cell))})).filter(g=>g.sparklines.length).concat([{...g,type:v.type,colorSeries:v.color,colorNegative:v.negative,negative:true,markers:v.markers==='yes',empty:v.empty,sparklines:lines}]);});
+    }catch(e){this.toast(e.message);}});
+  }
   insertChart(type, stacked) {
     const E = this.E, R = this.region(); if (!R) return this.toast($t('先选择要绘图的数据'));
     const calc = new E.Calc(this.doc), hdr = this.hasHeader(R, calc);
@@ -1010,7 +1336,7 @@ class Component extends DCLogic {
   finder() { const o = this.state.fopt || {}, q = this.state.fq; if (!q) return null; const re = new RegExp((o.whole ? '^' : '') + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (o.whole ? '$' : ''), o.mc ? '' : 'i'), n = this.doc.sheets.length; return { re, order: o.book ? Array.from({ length: n }, (_, i) => (this.si + i) % n) : [this.si] }; }
   findNext() {
     const E = this.E, f = this.finder(); if (!f) return; const calc = new E.Calc(this.doc), hits = [];
-    f.order.forEach(si => { const sh = this.doc.sheets[si], found = []; for (const a of Object.keys(sh.cells)) { const x = sh.cells[a], p = E.parseA(a); if (!p || !x || x.v === '') continue; if (f.re.test(this.fmtV(calc.value(si, p.r, p.c), x.s)) || f.re.test(String(x.v))) found.push([si, p.r, p.c]); } found.sort((a, b) => a[1] - b[1] || a[2] - b[2]); hits.push(...found); });
+    f.order.forEach(si => { const sh = this.doc.sheets[si], found = []; for (const a of Object.keys(sh.cells)) { const x = sh.cells[a], p = E.parseA(a); if (!p || !x || x.v === '') continue; if (f.re.test(this.fmtV(calc.value(si, p.r, p.c), x.s)) || !E.formulaHidden(sh,a)&&f.re.test(String(x.v))) found.push([si, p.r, p.c]); } found.sort((a, b) => a[1] - b[1] || a[2] - b[2]); hits.push(...found); });
     this.setState({ fcount: hits.length }); if (!hits.length) return;
     const { r, c } = this.act(); const nx = hits.find(([si, a, b]) => si !== this.si || a > r || (a === r && b > c)) || hits[0];
     if (nx[0] !== this.si) this.props.onChange(Object.assign({}, this.doc, { active: nx[0] }), { silent: true });
@@ -1018,7 +1344,7 @@ class Component extends DCLogic {
   }
   replace(all) {
     const E = this.E, f = this.finder(); if (!f) return; let n = 0; const re = new RegExp(f.re.source, f.re.flags + 'g'), act = this.act(), si0 = this.si;
-    this.commit((sh0, d) => f.order.forEach(si => Object.entries(d.sheets[si].cells).forEach(([a, x]) => { if (typeof x.v !== 'string' || x.v[0] === '=') return; const p = E.parseA(a); if (!all && (si !== si0 || p.r !== act.r || p.c !== act.c)) return; re.lastIndex = 0; if (re.test(x.v)) { re.lastIndex = 0; x.v = x.v.replace(re, this.state.fr); n++; } })));
+    this.commit((sh0, d) => f.order.forEach(si => Object.entries(d.sheets[si].cells).forEach(([a, x]) => { if (typeof x.v !== 'string' || (!x.literal && x.v[0] === '=')) return; const p = E.parseA(a); if (!all && (si !== si0 || p.r !== act.r || p.c !== act.c)) return; re.lastIndex = 0; if (re.test(x.v)) { re.lastIndex = 0; x.v = x.v.replace(re, this.state.fr); n++; } })));
     if (all) this.toast($t('已替换 {n} 处', { n })); else this.findNext();
   }
   onWM = e => {
@@ -1145,11 +1471,11 @@ class Component extends DCLogic {
     const tabs = FP.tabs(tabsDef.map(([key, l]) => [key, l, key === 'picture']), tab, key => this.setState({ tab: key, pop: null }));
     const tb = key => this.style(null, key), fs = cs.fs || 11, al = cs.align || '', va = cs.va || 'middle';
     const step = dir => { const n = dir > 0 ? SIZES.find(x => x > fs) : SIZES.slice().reverse().find(x => x < fs); if (n) this.style({ fs: n }); };
-    const rows = rg.r2 - rg.r1 + 1, cols = rg.c2 - rg.c1 + 1, noFilters = !Object.keys(sh.filters || {}).length;
+    const rows = rg.r2 - rg.r1 + 1, cols = rg.c2 - rg.c1 + 1, noFilters = !sh.advancedFilter&&!Object.keys(sh.filters || {}).length;
     const showF = () => this.commit(s => { s.showF = !s.showF; }, true);
     if (tab === 'picture' && pic) return { tabs, groups: this.P.picturePanel(k, (l, fn, o = {}) => I($t(l), fn, Object.assign({}, o, { hint: o.hint ? $t(o.hint) : '' })), this.picTools(), picLook, st.picBusy) };
     if (tab === 'insert') return { tabs, groups: [
-      G('图表', grid(3, card('柱形图', 'chart', () => this.insertChart('column')), card('折线图', 'lineChart', () => this.insertChart('line')), card('饼图', 'pieChart', () => this.insertChart('pie')),
+      G('图表',R(btn('迷你图',null,()=>this.sparklineSetup())), grid(3, card('柱形图', 'chart', () => this.insertChart('column')), card('折线图', 'lineChart', () => this.insertChart('line')), card('饼图', 'pieChart', () => this.insertChart('pie')),
         card('条形图', 'barChart', () => this.insertChart('bar')), card('面积图', 'areaChart', () => this.insertChart('area')), menuCard('chart', '更多图表', 'plus', null, { title: '全部图表类型，堆积图' }))),
       G('表格', R(btn('套用表格格式', null, () => this.tableSetup()),btn('数据透视表',null,()=>this.pivotSetup()))),
       G('常用', grid(3, card('超链接', 'link', () => this.setLink(), { title: '超链接（Ctrl+点击打开）' }), card('批注', 'comment', () => this.setNote()), card('图片', 'picture', () => this.insertImage()))),
@@ -1159,21 +1485,27 @@ class Component extends DCLogic {
       G('函数', R(menuBtn('sum', '自动求和', 'sigma', null, { title: '自动求和、平均值、计数…' }), menuBtn('fns', '函数库', 'fx', null, { title: '按类别插入函数' }))),
       G('常用函数', grid(3, ['SUM', 'AVERAGE', 'IF', 'VLOOKUP', 'COUNTIF', 'SUMIF', 'ROUND', 'CONCAT', 'TODAY'].map(f => btn(f, null, () => this.insertFn(f), { title: $t('插入 {f}', { f }) })))),
       G('名称', R(btn('名称管理器', null, () => this.nameManager()))),
+      G('计算', R(btn('迭代计算', null, () => this.iterationSettings()))),
+      G('公式审核',R(btn('追踪引用单元格',null,()=>this.traceCells('precedents')),btn('追踪从属单元格',null,()=>this.traceCells('dependents'))),R(btn('清除追踪',null,()=>this.setState({trace:null})),btn('定位条件',null,()=>this.goSpecial()),btn('公式求值',null,()=>this.evaluateFormula()))),
+      ...(st.trace?(()=>{const result=this.traceResult();if(!result)return [];const page=Math.min(st.tracePage||0,Math.max(0,Math.ceil(result.ranges.length/25)-1));return [G('引用追踪',R(k.empty(this.doc.sheets[result.source.si].name+'!'+this.rangeStr(result.source))),...result.ranges.slice(page*25,page*25+25).map(b=>R(btn(this.doc.sheets[b.si].name+'!'+this.rangeStr(b),null,()=>this.goRange(b)))),!result.ranges.length&&R(k.empty($t('没有关联单元格'))),result.unresolved.length>0&&R(k.empty($t('部分引用无法解析'))),result.ranges.length>25&&R(btn('上一页',null,()=>this.setState({tracePage:page-1}),{dis:!page}),btn('下一页',null,()=>this.setState({tracePage:page+1}),{dis:(page+1)*25>=result.ranges.length})))];})():[]),
       G('显示', R(chk('显示公式', !!sh.showF, showF, { title: '单元格里显示公式，而不是结果' })))] };
     if (tab === 'data') return { tabs, groups: [
-      G('排序和筛选', grid(3, btn('升序', 'up', () => this.sort([{ c: s0.c, asc: true }])), btn('降序', 'down', () => this.sort([{ c: s0.c, asc: false }])), btn('自定义', 'sort', () => this.sortCustom(), { title: '自定义排序…' }),
-        btn('筛选', 'filter', () => this.toggleFilter(), { on: !!sh.filter, title: '筛选 Ctrl+Shift+L' }), btn('清除筛选', null, () => this.setFilters({}), { dis: noFilters }), btn('重新应用', 'refresh', () => this.setFilters(sh.filters || {}), { dis: noFilters, title: '按当前数据重新筛选' }))),
+      G('查询',R(btn('新建查询',null,()=>this.querySetup()),btn('查询管理',null,()=>this.queryManage()),btn('刷新全部查询',null,()=>this.refreshQueries(),{dis:!(this.doc.queries||[]).length}))),
+      G('排序和筛选', grid(3, btn('升序', 'up', () => this.sort([{ c: s0.c, asc: true }])), btn('降序', 'down', () => this.sort([{ c: s0.c, asc: false }])), btn('自定义', 'sort', () => this.sortCustom(), { title: '自定义排序…' }),btn('按颜色或图标排序',null,()=>this.sortVisual()),btn('按自定义序列排序',null,()=>this.sortList()),btn('高级筛选',null,()=>this.advancedFilterSetup()),
+        btn('筛选', 'filter', () => this.toggleFilter(), { on: !!sh.filter, title: '筛选 Ctrl+Shift+L' }), btn('清除筛选', null, () => this.setFilters({}), { dis: noFilters }), btn('重新应用', 'refresh', () => this.reapplyFilters(), { dis: noFilters, title: '按当前数据重新筛选' }))),
       G('数据透视表', R(btn('数据透视表',null,()=>this.pivotSetup()),btn('刷新透视表',null,()=>this.refreshPivots(),{dis:!(sh.pivots||[]).length}),btn('透视表设置',null,()=>this.pivotManage(),{dis:!(sh.pivots||[]).length}))),
       G('分组与汇总', R(btn('行分组', null, () => this.groupRows()), btn('列分组', null, () => this.groupRows('c')), btn('取消行分组', null, () => this.groupRows('r',true)), btn('取消列分组', null, () => this.groupRows('c',true))), R(btn('折叠全部',null,()=>this.outlineLevel(1)),btn('展开全部',null,()=>this.outlineLevel(8)),btn('分类汇总',null,()=>this.subtotalSetup()))),
       G('数据工具', grid(2, btn('删除重复项', null, () => this.dedupe()), btn('分列', null, () => this.splitCols(), { title: '按分隔符把所选列拆到右侧各列' }),
         btn('数据验证', null, () => this.dvSet(), { on: !!cs.dv }), menuBtn('cf', '条件格式', null, null))),
-      G('填充', R(btn('向下填充', 'down', () => this.fillDir('down'), { title: '向下填充 Ctrl+D' }), btn('向右填充', null, () => this.fillDir('right'), { title: '向右填充 Ctrl+R' })))] };
+      G('模拟分析', R(btn('单变量求解', null, () => this.goalSeek()),btn('规划求解',null,()=>this.solver()),btn('保存方案',null,()=>this.scenarioSave()),btn('方案管理',null,()=>this.scenarioManage()),btn('模拟运算表',null,()=>this.dataTableSetup()))),
+      G('填充', R(btn('快速填充', null, () => this.flashFill()), btn('向下填充', 'down', () => this.fillDir('down'), { title: '向下填充 Ctrl+D' }), btn('向右填充', null, () => this.fillDir('right'), { title: '向右填充 Ctrl+R' })))] };
     if (tab === 'view') {
       const frz = sh.frR === 1 && !sh.frC ? '冻结首行' : sh.frC === 1 && !sh.frR ? '冻结首列' : sh.frR || sh.frC ? '冻结至当前单元格' : '不冻结';
       const zooms = [0.5, 0.75, 1, 1.25, 1.5, 2].map(z => I(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 }));
       return { tabs, groups: [
-        G('页面', R(btn('页面设置', null, () => this.pageSetup()), btn(sh.protected ? '取消保护工作表' : '保护工作表', null, () => this.protectSheet()))),
+        G('页面', R(btn('页面设置', null, () => this.pageSetup()), btn('插入水平分页符', null, () => this.pageBreak('row')), btn('插入垂直分页符', null, () => this.pageBreak('col'))), R(btn('删除当前位置分页符', null, () => this.pageBreak('remove')), btn('重置分页符', null, () => this.pageBreak('reset')), btn(sh.protected ? '取消保护工作表' : '保护工作表', null, () => this.protectSheet()), btn('单元格保护', null, () => this.cellProtection()), btn(this.doc.workbookProtection?.structure ? '取消保护工作簿' : '保护工作簿结构', null, () => this.protectWorkbook()))),
         G('冻结窗格', R(sel('frz', $t(frz), null, { title: '冻结窗格' }))),
+        G('拆分窗格', grid(2,btn('水平拆分',null,()=>this.splitPanes('rows')),btn('垂直拆分',null,()=>this.splitPanes('cols')),btn('四窗格',null,()=>this.splitPanes('here')),btn('取消拆分',null,()=>this.splitPanes('none')))),
         G('显示', R(chk('网格线', !this.noGrid(sh), () => this.commit(s => { s.noGrid = !this.noGrid(s); }, true)), sp(), chk('显示公式', !!sh.showF, showF))),
         G('缩放', R(size(Math.round(st.zoom * 100) + '%', () => this.setZoom(this.state.zoom - 0.1), () => this.setZoom(this.state.zoom + 0.1), 'zoom-p', zooms, { w: 124, minW: 44, title: '缩放', decTitle: '缩小', incTitle: '放大' })))] };
     }
@@ -1227,7 +1559,7 @@ class Component extends DCLogic {
     const fnMenu = M('fns', $t('函数库'), E.FUNC_GROUPS.flatMap(([g, fs]) => [HD($t(g))].concat(fs.map(([f, d]) => I(f, () => this.insertFn(f), { hint: $t(d) })))));
     const tb = e => this.style(null, e);
     const fmtKey = cs.fmt === 'number' && cs.dec === 0 ? 'thousands' : (cs.fmt || 'general'), fmtLabel = (FMTS.find(([k]) => k === fmtKey) || ['', $t('自定义')])[1];
-    const sortMenu = M('sort', $t('排序@@btn'), [I($t('升序 A→Z'), () => this.sort([{ c: s0.c, asc: true }])), I($t('降序 Z→A'), () => this.sort([{ c: s0.c, asc: false }])), IS, I($t('自定义排序…'), () => this.sortCustom())]);
+    const sortMenu = M('sort', $t('排序@@btn'), [I($t('升序 A→Z'), () => this.sort([{ c: s0.c, asc: true }])), I($t('降序 Z→A'), () => this.sort([{ c: s0.c, asc: false }])), IS, I($t('自定义排序…'), () => this.sortCustom()),I($t('按颜色或图标排序'),()=>this.sortVisual()),I($t('按自定义序列排序'),()=>this.sortList())]);
     const sample = 45292.5; // 2024/1/1 12:00, the date the format menu shows each code with
     const fmtItems = FMTS.map(([k, l]) => I(l, () => this.style(k === 'general' ? { fmt: null, dec: null } : k === 'thousands' ? { fmt: 'number', dec: 0 } : { fmt: k, dec: null }), { on: fmtKey === k }))
       .concat([IS, HD($t('日期与时间'))], DATE_CODES.map(([k, code]) => I(E.fmtCode(sample, code), () => this.style({ fmt: k, code }), { on: cs.code === code, hint: code })),
@@ -1257,7 +1589,7 @@ class Component extends DCLogic {
       M('del', $t('删除'), [I($t('删除行'), () => this.insDel('r', R.r1, -(R.r2 - R.r1 + 1))), I($t('删除列'), () => this.insDel('c', R.c1, -(R.c2 - R.c1 + 1)))]), SEP,
       sumMenu,
       sortMenu,
-      B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter }),
+      B($t('高级筛选'),()=>this.advancedFilterSetup()),B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter }),
       M('clr', $t('清除'), [I($t('清除内容'), () => this.clear('v'), { hint: 'Delete' }), I($t('清除格式'), () => this.clear('s')), I($t('清除批注'), () => this.clear('note')), I($t('清除超链接'), () => this.clear('link')), I($t('全部清除'), () => this.clear('all'))]),
       B($t('查找'), () => { this.focusFind = true; this.setState({ showFind: true }); }, { title: 'Ctrl+F' })
     ];
@@ -1271,20 +1603,23 @@ class Component extends DCLogic {
       B($t('新工作表'), () => this.addSheet())
     ];
     if (tab === 'formula') ribbon = [
-      sumMenu, fnMenu, B($t('名称管理器'), () => this.nameManager()), SEP,
+      sumMenu, fnMenu, B($t('名称管理器'), () => this.nameManager()), B($t('迭代计算'), () => this.iterationSettings()), SEP,
+      B($t('追踪引用单元格'),()=>this.traceCells('precedents')),B($t('追踪从属单元格'),()=>this.traceCells('dependents')),B($t('定位条件'),()=>this.goSpecial()),B($t('公式求值'),()=>this.evaluateFormula()),SEP,
       ...['SUM', 'AVERAGE', 'IF', 'VLOOKUP', 'COUNTIF', 'SUMIF', 'ROUND', 'CONCAT', 'TODAY'].map(f => B(f, () => this.insertFn(f))), SEP,
       B($t('显示公式'), () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF })
     ];
     if (tab === 'data') ribbon = [
+      B($t('新建查询'),()=>this.querySetup()),B($t('查询管理'),()=>this.queryManage()),B($t('刷新全部查询'),()=>this.refreshQueries(),{dis:!(this.doc.queries||[]).length}),SEP,
       B($t('数据透视表'),()=>this.pivotSetup()),B($t('刷新透视表'),()=>this.refreshPivots(),{dis:!(sh.pivots||[]).length}),B($t('透视表设置'),()=>this.pivotManage(),{dis:!(sh.pivots||[]).length}),M('outline',$t('分组'),[I($t('行分组'),()=>this.groupRows()),I($t('列分组'),()=>this.groupRows('c')),I($t('取消行分组'),()=>this.groupRows('r',true)),I($t('取消列分组'),()=>this.groupRows('c',true)),I($t('折叠全部'),()=>this.outlineLevel(1)),I($t('展开全部'),()=>this.outlineLevel(8)),...Array.from({length:7},(_,i)=>I(String(i+1),()=>this.outlineLevel(i+1)))]),B($t('分类汇总'),()=>this.subtotalSetup()), SEP,
       B($t('升序'), () => this.sort([{ c: s0.c, asc: true }])), B($t('降序'), () => this.sort([{ c: s0.c, asc: false }])), sortMenu, SEP,
-      B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter, title: $t('筛选 Ctrl+Shift+L') }), B($t('清除筛选'), () => this.setFilters({}), { dis: !Object.keys(sh.filters || {}).length }), B($t('重新应用'), () => this.setFilters(sh.filters || {}), { dis: !Object.keys(sh.filters || {}).length, title: $t('按当前数据重新筛选') }), SEP,
-      B($t('删除重复项'), () => this.dedupe()), B($t('分列'), () => this.splitCols(), { title: $t('按分隔符把所选列拆到右侧各列') }), B($t('数据验证'), () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
+      B($t('高级筛选'),()=>this.advancedFilterSetup()),B($t('筛选'), () => this.toggleFilter(), { on: !!sh.filter, title: $t('筛选 Ctrl+Shift+L') }), B($t('清除筛选'), () => this.setFilters({}), { dis: !sh.advancedFilter&&!Object.keys(sh.filters || {}).length }), B($t('重新应用'), () => this.reapplyFilters(), { dis: !sh.advancedFilter&&!Object.keys(sh.filters || {}).length, title: $t('按当前数据重新筛选') }), SEP,
+      B($t('快速填充'), () => this.flashFill()), B($t('删除重复项'), () => this.dedupe()), B($t('分列'), () => this.splitCols(), { title: $t('按分隔符把所选列拆到右侧各列') }), B($t('数据验证'), () => this.dvSet(), { on: !!cs.dv }), cfMenu, SEP,
       B($t('向下填充'), () => this.fillDir('down'), { title: 'Ctrl+D' }), B($t('向右填充'), () => this.fillDir('right'), { title: 'Ctrl+R' })
     ];
     if (tab === 'view') ribbon = [
-      B($t('页面设置'), () => this.pageSetup()), B(sh.protected ? $t('取消保护工作表') : $t('保护工作表'), () => this.protectSheet()), SEP,
+      B($t('页面设置'), () => this.pageSetup()), B(sh.protected ? $t('取消保护工作表') : $t('保护工作表'), () => this.protectSheet()), B($t('单元格保护'), () => this.cellProtection()), B(d.workbookProtection?.structure ? $t('取消保护工作簿') : $t('保护工作簿结构'), () => this.protectWorkbook()), SEP,
       M('frz', $t('冻结'), [I($t('冻结首行'), () => this.freeze('row'), { on: sh.frR === 1 && !sh.frC }), I($t('冻结首列'), () => this.freeze('col'), { on: sh.frC === 1 && !sh.frR }), I($t('冻结至当前单元格'), () => this.freeze('here'), { hint: s0.r || s0.c ? $t('{r} 行 {c} 列', { r: s0.r, c: s0.c }) : '' }), IS, I($t('取消冻结'), () => this.freeze('none'), { on: !sh.frR && !sh.frC })], $t('冻结窗格')), SEP,
+      M('split-panes', $t('拆分窗格'), [I($t('水平拆分'), () => this.splitPanes('rows')), I($t('垂直拆分'), () => this.splitPanes('cols')), I($t('四窗格'), () => this.splitPanes('here')), I($t('取消拆分'), () => this.splitPanes('none'))]), SEP,
       B($t('网格线'), () => this.commit(s => { s.noGrid = !this.noGrid(s); }, true), { on: !this.noGrid(sh) }), B($t('显示公式'), () => this.commit(s => { s.showF = !s.showF; }, true), { on: !!sh.showF }), SEP,
       ...[0.75, 1, 1.25, 1.5].map(z => B(Math.round(z * 100) + '%', () => this.setZoom(z), { on: Math.abs(st.zoom - z) < 0.005 }))
     ];
@@ -1306,31 +1641,13 @@ class Component extends DCLogic {
     const viewport = this.wrapRef.current, z = st.zoom;
     const view = E.gridWindow(xs, ys, { x: (viewport?.scrollLeft || 0) / z, y: (viewport?.scrollTop || 0) / z, width: (viewport?.clientWidth || 1000) / z, height: (viewport?.clientHeight || 700) / z, frR: fzR, frC: fzC }, sh.merges || []);
     const gtc = RHW + 'px ' + view.cols.css, gtr = CHH + 'px ' + view.rows.css;
-    // conditional formats: each rule's boxes and what it needs of its range (numbers for bars, scales, top/bottom and averages; counts for duplicates)
-    const cfs = (sh.cf || []).map(rule => {
-      const o = { rule, boxes: this.boxes(rule.range).map(b => ({ r1: b.r1, c1: b.c1, r2: Math.min(b.r2, this.nRows - 1), c2: Math.min(b.c2, this.nCols - 1) })) }, t = rule.type;
-      const each = fn => o.boxes.forEach(b => { for (let r = b.r1; r <= b.r2; r++) for (let c = b.c1; c <= b.c2; c++) fn(calc.value(this.si, r, c)); });
-      if (t === 'iconSet' || t === 'dataBar' || t === 'colorScale' || t === 'top10' || t === 'aboveAverage') { const ns = []; each(v => { if (typeof v === 'number') ns.push(v); }); o.mn = ns.reduce((a, b) => Math.min(a, b), Infinity); o.mx = ns.reduce((a, b) => Math.max(a, b), -Infinity); o.n = ns.length; o.values = ns;
-        if (t === 'top10') { const k = Math.max(1, Math.round(rule.percent ? ns.length * (rule.rank || 10) / 100 : (rule.rank || 10))); const sorted = ns.slice().sort((a, b) => rule.bottom ? a - b : b - a); o.edge = sorted.length ? sorted[Math.min(k, sorted.length) - 1] : NaN; }
-        if (t === 'aboveAverage') { const avg = ns.reduce((a, b) => a + b, 0) / (ns.length || 1), sd = Math.sqrt(ns.reduce((a, b) => a + (b - avg) ** 2, 0) / (ns.length || 1)); o.avg = avg + (rule.stdDev || 0) * sd * (rule.above === false ? -1 : 1); } }
-      if (t === 'duplicateValues' || t === 'uniqueValues') { const cnt = {}; each(v => { const k = String(v); if (k !== '') cnt[k] = (cnt[k] || 0) + 1; }); o.cnt = cnt; }
-      return o;
-    }).reverse(); // applied last to first, so the first rule that holds wins a clash, as in Excel
-    const cfHolds = (o, v, row, col) => {
-      if (o.rule.type === 'expression') { const first = o.boxes[0], f = E.shiftF(o.rule.value || '', row - first.r1, col - first.c1), answer = calc.evaluate(f, this.si, row, col); return !E.isErr(answer) && !!answer; }
-      const r = o.rule, t = r.type, num = typeof v === 'number', str = String(v), lo = str.toLowerCase(), a = +r.value, b = +r.value2, txt = String(r.text || '').toLowerCase(), raw = x => String(x == null ? '' : x).replace(/^"|"$/g, '').toLowerCase();
-      if (t === 'cellIs') { switch (r.operator) { case 'greaterThan': return num && v > a; case 'lessThan': return num && v < a; case 'greaterThanOrEqual': return num && v >= a; case 'lessThanOrEqual': return num && v <= a; case 'between': return num && v >= Math.min(a, b) && v <= Math.max(a, b); case 'notBetween': return num && (v < Math.min(a, b) || v > Math.max(a, b)); case 'notEqual': return num ? v !== a : lo !== raw(r.value); default: return num ? v === a : lo === raw(r.value); } }
-      if (t === 'containsText') return lo.includes(txt); if (t === 'notContainsText') return !lo.includes(txt); if (t === 'beginsWith') return lo.startsWith(txt); if (t === 'endsWith') return lo.endsWith(txt);
-      if (t === 'duplicateValues') return o.cnt[str] > 1; if (t === 'uniqueValues') return o.cnt[str] === 1;
-      if (t === 'top10') return num && (r.bottom ? v <= o.edge : v >= o.edge); if (t === 'aboveAverage') return num && (r.above === false ? v < o.avg : v > o.avg);
-      return false; // bars and scales colour by value; icon sets, formulas and time periods are kept for the file, not drawn
-    };
+    const conditional = E.conditionalFormats(sh, calc, this.si, E),sparkMap=E.sparklineMap(sh);
     const inR = (r, c) => r >= R.r1 && r <= R.r2 && c >= R.c1 && c <= R.c2;
     const colHeads = [], rowHeads = []; let cells = [];
     // a right-click on a header opens its menu for the whole line, selecting it first unless it is already inside the selection
-    const headCtx = (axis, i) => e => { e.preventDefault(); const inSel = axis === 'c' ? i >= R.c1 && i <= R.c2 && R.r1 === 0 && R.r2 === this.nRows - 1 : i >= R.r1 && i <= R.r2 && R.c1 === 0 && R.c2 === this.nCols - 1; if (!inSel) this.setState(axis === 'c' ? { anc: { r: 0, c: i }, sel: { r: this.nRows - 1, c: i } } : { anc: { r: i, c: 0 }, sel: { r: i, c: this.nCols - 1 } }); this.setState({ pop: { id: axis === 'c' ? 'colctx' : 'rowctx', x: e.clientX, y: e.clientY } }); };
+    const headCtx = (axis, i) => e => { e.preventDefault(); this.setState({special:null}); const inSel = axis === 'c' ? i >= R.c1 && i <= R.c2 && R.r1 === 0 && R.r2 === this.nRows - 1 : i >= R.r1 && i <= R.r2 && R.c1 === 0 && R.c2 === this.nCols - 1; if (!inSel) this.setState(axis === 'c' ? { anc: { r: 0, c: i }, sel: { r: this.nRows - 1, c: i } } : { anc: { r: i, c: 0 }, sel: { r: i, c: this.nCols - 1 } }); this.setState({ pop: { id: axis === 'c' ? 'colctx' : 'rowctx', x: e.clientX, y: e.clientY } }); };
     for (const c of view.cols.indices) { if (hiddenC.has(c)) continue; const on = c >= R.c1 && c <= R.c2; colHeads.push({ l: E.colName(c), outline:(sh.outline||[]).some(g=>g.axis==='c'&&g.end+1===c)?((sh.outline||[]).some(g=>g.axis==='c'&&g.end+1===c&&g.collapsed)?'+':'−'):'', onOutline:e=>{e.preventDefault();e.stopPropagation();this.toggleOutline('c',c);}, gc: view.cols.line(c), left: c < (sh.frC || 0) ? RHW + xs[c] + 'px' : 'auto', z: c < (sh.frC || 0) ? Z.frozenColHead : Z.colHead, bg: on ? HEAD_ON : 'var(--k48, #F5F5F7)', color: on ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: on ? 600 : 400,
-      onMD: e => { if (e.button === 2) return; e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r: this.nRows - 1, c } }); else this.setState({ anc: { r: 0, c }, sel: { r: this.nRows - 1, c } }); this.op = { kind: 'colsel' }; this.wantFocus = true; },
+      onMD: e => { if (e.button === 2) return; e.preventDefault(); this.setState({special:null}); if (e.shiftKey) this.setState({ sel: { r: this.nRows - 1, c } }); else this.setState({ anc: { r: 0, c }, sel: { r: this.nRows - 1, c } }); this.op = { kind: 'colsel' }; this.wantFocus = true; },
       onME: () => { if (this.op && this.op.kind === 'colsel') this.setState({ sel: { r: this.nRows - 1, c } }); },
       onCtx: headCtx('c', c),
       onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'colw', c, x0: e.clientX, w0: this.colW(c) }; },
@@ -1352,7 +1669,7 @@ class Component extends DCLogic {
       if (hidden.has(r)) continue;
       const onR = r >= R.r1 && r <= R.r2;
       rowHeads.push({ n: r + 1, outline:(sh.outline||[]).some(g=>g.axis==='r'&&g.end+1===r)?((sh.outline||[]).some(g=>g.axis==='r'&&g.end+1===r&&g.collapsed)?'+':'−'):'', onOutline:e=>{e.preventDefault();e.stopPropagation();this.toggleOutline('r',r);}, gr: view.rows.line(r), top: r < (sh.frR || 0) ? CHH + ys[r] + 'px' : 'auto', z: r < (sh.frR || 0) ? Z.frozenRowHead : Z.rowHead, bg: onR ? HEAD_ON : 'var(--k48, #F5F5F7)', color: onR ? 'var(--k1, #1D1D1F)' : '#8E8E93', fw: onR ? 600 : 400,
-        onMD: e => { if (e.button === 2) return; e.preventDefault(); if (e.shiftKey) this.setState({ sel: { r, c: this.nCols - 1 } }); else this.setState({ anc: { r, c: 0 }, sel: { r, c: this.nCols - 1 } }); this.op = { kind: 'rowsel' }; this.wantFocus = true; },
+        onMD: e => { if (e.button === 2) return; e.preventDefault(); this.setState({special:null}); if (e.shiftKey) this.setState({ sel: { r, c: this.nCols - 1 } }); else this.setState({ anc: { r, c: 0 }, sel: { r, c: this.nCols - 1 } }); this.op = { kind: 'rowsel' }; this.wantFocus = true; },
         onME: () => { if (this.op && this.op.kind === 'rowsel') this.setState({ sel: { r, c: this.nCols - 1 } }); },
         onCtx: headCtx('r', r),
         onResize: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'rowh', r, y0: e.clientY, h0: this.rowH(r) }; } });
@@ -1360,27 +1677,11 @@ class Component extends DCLogic {
       for (const c of view.cols.indices) {
         if (covered.has(r + ':' + c) || hiddenC.has(c)) continue;
         const a = E.A(r, c), m = merges.find(mm => mm.r === r && mm.c === c);
-        let x = sh.cells[a], s = {...E.tableStyle(sh,r,c),...((x && x.s) || {})}, v = calc.value(this.si, r, c);
-        let text = sh.showF && x && String(x.v).startsWith('=') ? String(x.v) : this.fmtV(v, s);
+        let x = sh.cells[a], s = {...E.tableStyle(sh,r,c),...E.effectiveCellStyle(sh,a)}, v = calc.value(this.si, r, c);
+        let text = sh.showF && !E.formulaHidden(sh,a) && x && (!x.literal&&String(x.v).startsWith('=')) ? String(x.v) : this.fmtV(v, s);
         // the file's colours (fill, font, border) are drawn as they are in both themes; only the automatic ones follow the theme
         let bg = s.fill || '', color = E.fmtColor(v, s.code) || s.color || (s.fill === '#1D1D1F' ? '#FFFFFF' : E.isErr(v) ? '#B5563A' : ''), cfB = null, cfI = null, icon = '', iconColor = '';
-        cfs.forEach(o => {
-          if (v === '' && o.rule.type !== 'expression' || !o.boxes.some(b => r >= b.r1 && r <= b.r2 && c >= b.c1 && c <= b.c2)) return;
-          const rule = o.rule, t = rule.type;
-          if (t === 'iconSet' && typeof v === 'number' && o.n) {
-            const n = +String(rule.iconSet || '3Arrows')[0] || 3, limits = rule.thresholds || Array.from({ length: n }, (_, i) => ({ type: 'percent', value: i * 100 / n }));
-            let rank = 0;
-            for (let i = 1; i < limits.length; i++) { const t = limits[i], threshold = t.type === 'num' ? +t.value : t.type === 'formula' ? calc.evaluate(t.value, this.si, r, c) : t.type === 'min' ? o.mn : t.type === 'max' ? o.mx : t.type === 'percentile' ? o.values.slice().sort((a, b) => a - b)[Math.min(o.n - 1, Math.floor((o.n - 1) * +t.value / 100))] : o.mn + (o.mx - o.mn) * +t.value / 100; if (t.gte === false ? v > threshold : v >= threshold) rank = i; }
-            if (rule.reverse) rank = n - rank - 1;
-            icon = /Traffic|Light/.test(rule.iconSet) ? '●' : /Rating/.test(rule.iconSet) ? ['▁', '▃', '▅', '▆', '█'][Math.round(rank * 4 / (n - 1))] : ['↓', '↘', '→', '↗', '↑'][Math.round(rank * 4 / (n - 1))]; iconColor = rank === 0 ? '#C43D3D' : rank === n - 1 ? '#368251' : '#B88A16'; if (rule.showValue === false) text = ''; return;
-          }
-          if (t === 'dataBar' && typeof v === 'number' && o.n) { const lo = Math.min(0, o.mn), k = o.mx === lo ? 1 : Math.max(0, (v - lo) / (o.mx - lo)); bg = `linear-gradient(90deg,${rule.color || '#638EC6'}66 ${Math.round(k * 100)}%,${s.fill || 'transparent'} ${Math.round(k * 100)}%)`; return; }
-          if (t === 'colorScale' && typeof v === 'number' && o.n) { const cols = rule.colors && rule.colors.length >= 2 ? rule.colors : ['#F8696B', '#FFEB84', '#63BE7B'], k = o.mx === o.mn ? 0.5 : (v - o.mn) / (o.mx - o.mn), seg = (cols.length - 1) * k, i = Math.min(cols.length - 2, Math.floor(seg)); bg = mix(cols[i], cols[i + 1], seg - i); return; }
-          if (!cfHolds(o, v, r, c)) return;
-          // Excel's default look when a rule names none: 浅红填充色深红色文本
-          const noLook = !rule.fill && !rule.color && !rule.bold && !rule.italic;
-          if (rule.fill || noLook) bg = rule.fill || '#FFC7CE'; if (rule.color || noLook) color = rule.color || '#9C0006'; if (rule.bold) cfB = true; if (rule.italic) cfI = true;
-        });
+        const cf = conditional(r, c, v, s); bg = cf.bg; color = cf.color || color; cfB = cf.bold; cfI = cf.italic; icon = cf.icon; iconColor = cf.iconColor; if (cf.hideValue) text = '';
         if (x && x.ai) bg = 'var(--k46, #DCEBDF)';
         const own = !bg || (x && x.ai); // the sheet's own background; on a colour from the file (or a rule) automatic text keeps its light value
         if (!color) color = s.link ? (own ? 'var(--k2, #2F5D8A)' : '#2F5D8A') : own ? 'var(--k7, #1D1D1F)' : '#1D1D1F'; // theme: keep — see own
@@ -1388,12 +1689,12 @@ class Component extends DCLogic {
         let op = 1;
         if (ghost && ghost.has(a)) {
           x = ghost.get(a); s = (x && x.s) || {}; v = x ? calc2.value(this.si, r, c) : '';
-          text = sh.showF && x && String(x.v).startsWith('=') ? String(x.v) : this.fmtV(v, s);
+          text = sh.showF && !E.formulaHidden(sh,a) && x && (!x.literal&&String(x.v).startsWith('=')) ? String(x.v) : this.fmtV(v, s);
           op = 0.55;
         }
         const bdo = s.bd && typeof s.bd === 'object' ? s.bd : s.bd ? { top: s.bd, right: s.bd, bottom: s.bd, left: s.bd } : {};
         const side = (k, dflt) => BORDER_CSS[bdo[k]] ? BORDER_CSS[bdo[k]] + ' ' + (s.bdc || 'var(--k13, #3A3A3C)') : dflt;
-        const isNum = typeof v === 'number' && !(sh.showF && x && String(x.v).startsWith('='));
+        const isNum = typeof v === 'number' && !(sh.showF && !E.formulaHidden(sh,a) && x && (!x.literal&&String(x.v).startsWith('=')));
         const al = s.align || (isNum ? 'right' : E.isErr(v) || typeof v === 'boolean' ? 'center' : 'left');
         const frozenR = r < (sh.frR || 0), frozenC = c < (sh.frC || 0), ind = (s.indent || 0) * 10;
         const isF = flt && r === flt.r && c >= flt.c1 && c <= flt.c2, dvRule = !isF && !ed && r === s0.r && c === s0.c ? this.dvAt(r, c) : null, isDv = !!dvRule && dvRule.type === 'list'; // Excel shows a list's arrow on the active cell only
@@ -1412,7 +1713,7 @@ class Component extends DCLogic {
           overflow: textW ? 'visible' : 'hidden', textW: textW ? textW + 'px' : 'none',
           gr: m ? `${view.rows.line(r)} / ${view.rows.line(r + m.rs)}` : String(view.rows.line(r)), gc: m ? `${view.cols.line(c)} / ${view.cols.line(c + m.cs)}` : String(view.cols.line(c)),
           pos: frozenR || frozenC ? 'sticky' : 'relative', top: frozenR ? CHH + ys[r] + 'px' : 'auto', left: frozenC ? RHW + xs[c] + 'px' : 'auto', z: Z.cell[(frozenR ? 1 : 0) + (frozenC ? 1 : 0)] + (textW ? 1 : 0),
-          text, icon, iconColor, bg, color, fw: s.b || cfB ? 700 : 400, fst: s.i || cfI ? 'italic' : 'normal', td: [s.u || s.link ? 'underline' : '', s.st ? 'line-through' : ''].join(' ').trim() || 'none', fs: (s.fs || d.fs || 11) * 1.2 + 'px', ff: s.font || d.font ? `'${s.font || d.font}','IBM Plex Sans','Noto Sans SC',sans-serif` : 'inherit', tr: s.rotate ? `rotate(${-s.rotate}deg)` : 'none',
+          spark:E.sparklineSvg(sparkMap.get(a),calc,this.si,this.colW(c),this.rowH(r)), text, icon, iconColor, bg, color, fw: s.b || cfB ? 700 : 400, fst: s.i || cfI ? 'italic' : 'normal', td: [s.u || s.link ? 'underline' : '', s.st ? 'line-through' : ''].join(' ').trim() || 'none', fs: (s.fs || d.fs || 11) * 1.2 + 'px', ff: s.font || d.font ? `'${s.font || d.font}','IBM Plex Sans','Noto Sans SC',sans-serif` : 'inherit', tr: s.rotate ? `rotate(${-s.rotate}deg)` : 'none',
           justify: al === 'right' ? 'flex-end' : al === 'center' ? 'center' : 'flex-start', ta: al, ai: s.va === 'top' ? 'flex-start' : s.va === 'bottom' ? 'flex-end' : 'center', ws: s.wrap ? 'pre-wrap' : 'nowrap', flex: textW ? '0 0 auto' : isF || isDv ? '1' : '0 1 auto',
           bt: side('top', 'none'), bl: side('left', 'none'), br: side('right', '1px solid ' + gl), bb: side('bottom', '1px solid ' + gl), pad: `0 ${6 + (al === 'right' ? ind : 0)}px 0 ${6 + (al === 'right' ? 0 : ind)}px`,
           tip: s.link ? s.link + $t('（Ctrl+点击打开）') : '', link: s.link || '', hasN: !!s.note, cursor: s.link ? 'pointer' : 'cell',
@@ -1421,6 +1722,7 @@ class Component extends DCLogic {
         const was = this.cellsWere && this.cellsWere.get(a);
         if (was && sameCell(was, o)) { cells.push(was); cellsNow.set(a, was); continue; }
         cells.push(Object.assign(o, {
+          sparkHtml:{__html:o.spark},
           onML: () => { const n = this.state.noteAt; if (n && n.r === r && n.c === c) this.setState({ noteAt: null }); },
           onF: e => { e.preventDefault(); e.stopPropagation(); const rc = e.currentTarget.getBoundingClientRect(); this.setState({ pop: { id: isF ? 'flt' + c : 'dv', x: rc.left, y: rc.bottom + 4 } }); },
           onMD: e => {
@@ -1430,12 +1732,13 @@ class Component extends DCLogic {
             const cur = this.state.edit;
             if (cur && this.pointTo(r, c, e.ctrlKey || e.metaKey)) { this.op = { kind: 'point' }; return; } // reference mode: click inserts, drag extends to a range
             if (cur) this.commitEdit(0, 0);
+            if(e.ctrlKey||e.metaKey){const base=this.selectionRanges(),box={r1:r,c1:c,r2:r+(m?.rs||1)-1,c2:c+(m?.cs||1)-1};this.selectAreas(base.concat(box),box);this.op={kind:'selarea',base,anchor:{r,c}};this.setState({chartSel:null,picSel:null,pop:null});return;}
             if (e.shiftKey) this.setState({ sel: { r, c } }); else this.setState({ anc: { r, c }, sel: m ? { r: m.r + m.rs - 1, c: m.c + m.cs - 1 } : { r, c } });
             if (m && !e.shiftKey) this.setState({ anc: { r, c } });
-            this.op = { kind: 'sel' }; this.wantFocus = true; this.setState({ chartSel: null, picSel: null, pop: null });
+            this.op = { kind: 'sel' }; this.wantFocus = true; this.setState({ chartSel: null, picSel: null, pop: null, special:null });
           },
-          onME: e => { if (!this.op) { if (s.note) this.setState({ noteAt: { r, c } }); return; } if (this.op.kind === 'sel') this.setState({ sel: { r, c } }); if (this.op.kind === 'fill') this.setState({ fillTo: { r, c, copy: e.ctrlKey || e.metaKey } }); if (this.op.kind === 'point') this.dragPt(r, c); },
-          onDbl: () => { this.setState({ sel: { r, c }, anc: { r, c } }, () => this.startEdit(null, 'edit')); },
+          onME: e => { if (!this.op) { if (s.note) this.setState({ noteAt: { r, c } }); return; } if(this.op.kind==='selarea'){const a=this.op.anchor,b={r1:Math.min(a.r,r),c1:Math.min(a.c,c),r2:Math.max(a.r,r),c2:Math.max(a.c,c)};this.selectAreas(this.op.base.concat(b),b);} if (this.op.kind === 'sel') this.setState({ sel: { r, c } }); if (this.op.kind === 'fill') this.setState({ fillTo: { r, c, copy: e.ctrlKey || e.metaKey } }); if (this.op.kind === 'point') this.dragPt(r, c); },
+          onDbl: () => { this.setState({ sel: { r, c }, anc: { r, c }, special:null }, () => this.startEdit(null, 'edit')); },
           onCtx: e => this.cellCtx(e, r, c)
         }));
         cellsNow.set(a, o);
@@ -1465,19 +1768,24 @@ class Component extends DCLogic {
     const tip = ti && ti.cell ? E.fmt(calc2.value(this.si, ti.r, ti.c), ti.cell.s) : '';
     // range-finder boxes for the formula being edited (current sheet only); the live pointed one is a dashed marquee
     const fx = ed && ed.val[0] === '=', pt = ed && ed.pt;
-    const refBoxes = fx ? this.refsOf(ed.val).filter(f => (f.sh == null || f.sh === sh.name) && f.r1 < this.nRows && f.c1 < this.nCols).map((f, i) => { const b = mark(f.r1, f.c1, Math.min(f.r2, this.nRows - 1), Math.min(f.c2, this.nCols - 1)); return { k: i, L: b.L + 'px', T: b.T + 'px', W: b.W + 1 + 'px', H: b.H + 1 + 'px', st: b.st, sl: b.sl, z: Z.mark[b.p], bd: `2px ${pt && f.s === pt.s ? 'dashed' : 'solid'} ${f.col}`, bg: f.col + '14' }; }) : [];
+    const refs=fx?this.refsOf(ed.val).filter(f=>f.sh==null||f.sh===sh.name):[...(this.traceResult()?.ranges||[]).filter(b=>b.si===this.si).map(b=>({...b,col:'#0A5BD7'})),...(this.selectionRanges().length>1?this.selectionRanges().map(b=>({...b,col:'#3F7D5C'})):[])];
+    const refBoxes = refs.filter(f=>f.r1<this.nRows&&f.c1<this.nCols&&view.rows.indices.some(r=>r>=f.r1&&r<=f.r2)&&view.cols.indices.some(c=>c>=f.c1&&c<=f.c2)).map((f,i)=>{const b=mark(f.r1,f.c1,Math.min(f.r2,this.nRows-1),Math.min(f.c2,this.nCols-1));return {k:i,L:b.L+'px',T:b.T+'px',W:b.W+1+'px',H:b.H+1+'px',st:b.st,sl:b.sl,z:Z.mark[b.p],bd:`2px ${pt&&f.s===pt.s?'dashed':'solid'} ${f.col}`,bg:f.col+'14'};});
+    const trace=fx?null:this.traceResult(),traceWidth=(viewport?.clientWidth||1000)/z,traceHeight=(viewport?.clientHeight||700)/z;
+    const arrows=E.traceGeometry(trace,this.si,{xs,ys},{width:traceWidth,height:traceHeight,scrollX:(viewport?.scrollLeft||0)/z,scrollY:(viewport?.scrollTop||0)/z,headerX:RHW,headerY:CHH,freezeRows:fzR,freezeCols:fzC,merges:sh.merges||[]});
+    const arrowSvg=E.traceSvg(arrows,traceWidth,traceHeight,$t('公式依赖关系'),b=>d.sheets[b.si].name+'!'+this.rangeStr(b));
+    const traceClick=e=>{const item=e.target.closest?.('[data-trace-range]'),b=item&&trace?.ranges[+item.getAttribute('data-trace-range')];if(b){e.preventDefault();e.stopPropagation();this.goRange(b);}};
     const cl = this.clip && this.clip.si === this.si ? mark(this.clip.r1, this.clip.c1, this.clip.r2, this.clip.c2) : null;
     // stats
     let cnt = 0, ncnt = 0, sum = 0;
-    const statsKey=[R.r1,R.c1,R.r2,R.c2].join(':'), priorStats=this.selectionStats;
-    if(priorStats && priorStats.cells===sh.cells && priorStats.range===statsKey && priorStats.hiddenRows===sh.hiddenRows && priorStats.frows===sh.frows && priorStats.outline===sh.outline) ({cnt,ncnt,sum}=priorStats);
+    const statRanges=this.selectionRanges(),statsKey=JSON.stringify(statRanges),statMulti=multi||statRanges.length>1,priorStats=this.selectionStats;
+    if(priorStats && priorStats.doc===d && priorStats.cells===sh.cells && priorStats.range===statsKey && priorStats.hiddenRows===sh.hiddenRows && priorStats.frows===sh.frows && priorStats.outline===sh.outline) ({cnt,ncnt,sum}=priorStats);
     else {
       const add=(r,c)=>{if(hidden.has(r))return;const v=calc.value(this.si,r,c);if(v!==''&&v!=null)cnt++;if(typeof v==='number'){ncnt++;sum+=v;}};
-      if((R.r2-R.r1+1)*(R.c2-R.c1+1)<=4000){for(let r=R.r1;r<=R.r2;r++)for(let c=R.c1;c<=R.c2;c++)if(sh.cells[E.A(r,c)])add(r,c);}
-      else for(const key of Object.keys(sh.cells)){const p=E.parseA(key);if(p&&p.r>=R.r1&&p.r<=R.r2&&p.c>=R.c1&&p.c<=R.c2)add(p.r,p.c);}
-      this.selectionStats={cells:sh.cells,range:statsKey,hiddenRows:sh.hiddenRows,frows:sh.frows,outline:sh.outline,cnt,ncnt,sum};
+      for(const box of statRanges){if((box.r2-box.r1+1)*(box.c2-box.c1+1)<=4000){for(let r=box.r1;r<=box.r2;r++)for(let c=box.c1;c<=box.c2;c++)if(sh.cells[E.A(r,c)])add(r,c);}
+      else for(const key of Object.keys(sh.cells)){const p=E.parseA(key);if(p&&p.r>=box.r1&&p.r<=box.r2&&p.c>=box.c1&&p.c<=box.c2)add(p.r,p.c);}}
+      this.selectionStats={doc:d,cells:sh.cells,range:statsKey,hiddenRows:sh.hiddenRows,frows:sh.frows,outline:sh.outline,cnt,ncnt,sum};
     }
-    const statText = (st.painter ? $t('格式刷：选择目标区域 · ') : '') + (multi && ncnt ? $t('平均值 {avg}　计数 {cnt}　求和 {sum}', { avg: E.fmt(sum / ncnt, { dec: ncnt && !Number.isInteger(sum / ncnt) ? 2 : null }), cnt, sum: E.fmt(sum, {}) }) : multi ? $t('计数 {cnt}', { cnt }) : ed ? $t('编辑') : $t('就绪'));
+    const statText = (calc.iterationStatus && !calc.iterationStatus.converged ? $t('已达最大迭代次数（未收敛）') + ' · ' : '') + (st.painter ? $t('格式刷：选择目标区域 · ') : '') + (statMulti && ncnt ? $t('平均值 {avg}　计数 {cnt}　求和 {sum}', { avg: E.fmt(sum / ncnt, { dec: ncnt && !Number.isInteger(sum / ncnt) ? 2 : null }), cnt, sum: E.fmt(sum, {}) }) : statMulti ? $t('计数 {cnt}', { cnt }) : ed ? $t('编辑') : $t('就绪'));
     // charts (their menus are registered here, before the popover reads them)
     const charts = (sh.charts || []).map(ch => {
       const set = patch => this.commit(s => Object.assign(s.charts.find(x => x.id === ch.id), patch));
@@ -1493,8 +1801,8 @@ class Component extends DCLogic {
       return { id: im.id, alt: im.alt || '', x: RHW + gx + 'px', y: CHH + gy + 'px', w: im.w + 'px', h: im.h + 'px', ...objPane(gx, gy),
         tf: `rotate(${Number(look.rotation) || 0}deg)`, op: st.picBusy && sel ? 0.5 : 1, line: sel ? '2px solid var(--k59, #3F7D5C)' : 'none',
         frame: v ? v.frame : '', image: v ? v.image : 'width:100%;height:100%', src: this.P ? this.P.picSrc(im.src) : im.src,
-        onResize: e => { e.preventDefault(); e.stopPropagation(); if (!sh.protected) this.op = { kind: 'picsz', id: im.id, x0: e.clientX, y0: e.clientY, w0: im.w, h0: im.h }; }, selected: sel,
-        onSel: e => { e.preventDefault(); e.stopPropagation(); this.wantFocus = true; if (!sh.protected) this.op = { kind: 'pic', id: im.id, x0: e.clientX, y0: e.clientY, cx: gx, cy: gy }; if (st.picSel !== im.id) this.setState({ picSel: im.id, chartSel: null, pop: null }); } };
+        onResize: e => { e.preventDefault(); e.stopPropagation(); if (E.protectionAllows(sh,'objects')) this.op = { kind: 'picsz', id: im.id, x0: e.clientX, y0: e.clientY, w0: im.w, h0: im.h }; }, selected: sel,
+        onSel: e => { e.preventDefault(); e.stopPropagation(); this.wantFocus = true; if (E.protectionAllows(sh,'objects')) this.op = { kind: 'pic', id: im.id, x0: e.clientX, y0: e.clientY, cx: gx, cy: gy }; if (st.picSel !== im.id) this.setState({ picSel: im.id, chartSel: null, pop: null }); } };
     });
     // popover
     const formatOpen = !!this.props.formatOpen, panelOpen = formatOpen || !!this.props.panelOpen, panel = this.panelVals({ st, sh, cs, s0, R, tab, tabsDef, pic, picLook, fmtLabel, I, formatOpen });
@@ -1532,14 +1840,23 @@ class Component extends DCLogic {
             I(cs && cs.note ? $t('编辑批注…') : $t('插入批注…'), () => this.setNote()), I($t('超链接…'), () => this.setLink())]);
       } else if (st.pop.id === 'tabctx') {
         const i = st.pop.i, s = d.sheets[i];
-        popItems = [I($t('隐藏工作表'), () => this.hideSheet(i)), I($t('取消隐藏工作表'), () => this.showSheet()), I($t('重命名'), () => this.renameSheet(i)), I($t('复制工作表'), () => this.copySheet(i)), I($t('左移'), () => this.moveSheet(i, i - 1)), I($t('右移'), () => this.moveSheet(i, i + 1)), IS, HD($t('工作表标签颜色'))]
+        popItems = [I($t('选择所有工作表'),()=>this.groupAllSheets()),I($t('取消工作表组合'),()=>this.selectSheet(this.si)),IS,I($t('隐藏工作表'), () => this.hideSheet(i)), I($t('取消隐藏工作表'), () => this.showSheet()), I($t('重命名'), () => this.renameSheet(i)), I($t('复制工作表'), () => this.copySheet(i)), I($t('左移'), () => this.moveSheet(i, i - 1)), I($t('右移'), () => this.moveSheet(i, i + 1)), IS, HD($t('工作表标签颜色'))]
           .concat(TAB_COLORS.map(([c, n]) => I(n, () => this.props.onChange(Object.assign({}, d, { sheets: d.sheets.map((x, j) => j === i ? Object.assign({}, x, { color: c }) : x) })), { on: (s.color || null) === c, hint: c ? '●' : '' })),
-            [IS, I($t('删除工作表'), () => { if (d.sheets.filter(s => !s.visibility || s.visibility === 'visible').length < 2) return this.toast($t('至少保留一个可见工作表')); this.prompt($t('删除工作表「{name}」？', { name: s.name }), [], () => this.props.onChange(Object.assign({}, this.doc, { sheets: this.doc.sheets.filter((_, j) => j !== i), active: Math.max(0, Math.min(this.doc.active || 0, this.doc.sheets.length - 2)) }))); })]);
+            [IS, I($t('删除工作表'), () => this.deleteSheet(i))]);
       } else popItems = this.menus[st.pop.id] || [];
     }
     const lv = st.live;
     const dlg = st.dlg;
+    const split=this.props.paneOnly?null:sh.split,sx=split?.x||0,sy=split?.y||0,origin=E.parseA(split?.topLeft||'A1')||{r:0,c:0};
+    const extraPanes=[];
+    if(sx)extraPanes.push({key:'topRight',start:E.A(0,origin.c)});
+    if(sy)extraPanes.push({key:'bottomLeft',start:E.A(origin.r,0)});
+    if(sx&&sy)extraPanes.push({key:'bottomRight',start:E.A(origin.r,origin.c)});
     return {
+      formulaDisplay:this.props.paneOnly?'none':'grid',footerDisplay:this.props.paneOnly?'none':'flex',
+      paneColumns:sx?`clamp(100px,${sx/15}px,75%) minmax(0,1fr)`:'minmax(0,1fr)',paneRows:sy?`clamp(80px,${sy/15}px,75%) minmax(0,1fr)`:'minmax(0,1fr)',panePadding:this.props.paneOnly?'0':'0 24px',
+      extraPanes,paneDoc:d,paneGrid:this.props.grid,paneChange:(next,options)=>this.props.onChange?.(next,options),paneUndo:this.props.onUndo,paneRedo:this.props.onRedo,paneToast:this.props.toast,
+      paneSelection:selection=>{if(document.activeElement===this.inRef.current)document.activeElement.blur();this.wantFocus=false;this.scrollReq=false;this.setState({...selection,edit:null});},
       md, loading: false, neverThumbs: false, sheetTopPad: this.props.pure ? (this.props.pureTools ? '58px' : '0px') : '2px', /* the formula bar's top lines up with the format panel's */ showBar: !!this.props.pure && !!this.props.pureTools, fxML: '12px', tabs, ribbon, bubbleOpen: !!this.props.pure && !!st.bubble,
       formatOpen, panelTabs: panel.tabs, panelGroups: panel.groups, panelPad: panelOpen ? '312px' : '0px', panelEnter: this.props.panelEnter || 'open', /* the format panel (the Word 定稿 style): the grid gives it its width */
       dvPrompt: this.dvAt(s0.r, s0.c)?.prompt || '', dvPromptTitle: this.dvAt(s0.r, s0.c)?.promptTitle || $t('输入提示'),
@@ -1553,9 +1870,9 @@ class Component extends DCLogic {
       onNameBox: e => this.setState({ nameEdit: e.target.value }),
       onNameKey: e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) { e.preventDefault(); this.goName(e.target.value); } },
       openFx: e => this.openPop('fns', e), fxRef: this.fxRef,
-      fxValue: ed ? ed.val : this.raw(s0.r, s0.c),
+      fxValue: this.E.formulaHidden(sh,a0)?'':ed ? ed.val : this.raw(s0.r, s0.c),
       onFxFocus: () => { if (!this.state.edit) this.startEdit(null, 'bar'); },
-      onFx: e => { this.setState({ edit: Object.assign(Object.assign({ mode: 'bar' }, this.act()), this.state.edit, { val: e.target.value, pt: null }) }); },
+      onFx: e => { if(this.E.cellLocked(sh,a0))return;this.setState({ edit: Object.assign(Object.assign({ mode: 'bar' }, this.act()), this.state.edit, { val: e.target.value, pt: null }) }); },
       onFxKey: e => { if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return; const e2 = this.state.edit; if (e2 && ARROWS[e.key] && this.ptArrow(e, e2)) return; if (e.key === 'Enter') { e.preventDefault(); this.commitEdit(1, 0); } if (e.key === 'Escape') { this.setState({ edit: null }); this.wantFocus = true; } },
       showFind: st.showFind, findRef: this.findRef, fq: st.fq, fr: st.fr, fcountText: st.fcount == null ? '' : st.fcount ? $t('共 {n} 个单元格', { n: st.fcount }) : $t('未找到'),
       findOpts: [['mc', 'Aa', $t('区分大小写')], ['whole', $t('单元格匹配'), $t('只匹配整个单元格的内容')], ['book', $t('工作簿'), $t('在整个工作簿中查找')]].map(([k, label, title]) => ({ label, title, bg: (st.fopt || {})[k] ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent', onClick: () => this.setState(s => ({ fopt: Object.assign({}, s.fopt, { [k]: !(s.fopt || {})[k] }), fcount: null })) })),
@@ -1563,7 +1880,7 @@ class Component extends DCLogic {
       onFindKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) this.findNext(); if (e.key === 'Escape') this.setState({ showFind: false }); },
       findNext: () => this.findNext(), replaceOne: () => this.replace(false), replaceAll: () => this.replace(true), closeFind: () => { this.setState({ showFind: false }); this.wantFocus = true; },
       wrapRef: this.wrapRef, zoom: st.zoom, z: Z, gridW: RHW + xs[this.nCols] + 'px', gtc, gtr, colHeads, rowHeads, cells,
-      selAll: e => { e.preventDefault(); this.setState({ anc: { r: 0, c: 0 }, sel: { r: this.nRows - 1, c: this.nCols - 1 } }); this.wantFocus = true; },
+      selAll: e => { e.preventDefault(); this.setState({ special:null, anc: { r: 0, c: 0 }, sel: { r: this.nRows - 1, c: this.nCols - 1 } }); this.wantFocus = true; },
       selL: sb.L + 'px', selT: sb.T + 'px', selW: sb.W + 1 + 'px', selH: sb.H + 1 + 'px', selST: sb.st, selSL: sb.sl, selZ: Z.mark[sb.p], fhZ: Z.handle[sb.p], selBg: multi ? 'color-mix(in srgb, var(--k59, #3F7D5C) 8%, transparent)' : 'transparent',
       fhL: sb.L + sb.W - 4 + 'px', fhT: sb.T + sb.H - 4 + 'px', onFillDown: e => { e.preventDefault(); e.stopPropagation(); this.op = { kind: 'fill' }; },
       onFillDbl: () => { // Excel: double-click fills down as far as the neighbouring column (left, else right) has data
@@ -1579,7 +1896,7 @@ class Component extends DCLogic {
       inMirRef: this.inMirRef, inMirD: editing && fx ? 'flex' : 'none', inMirror: editing && fx ? this.spans(ed.val) : '', inColor: editing && fx ? 'transparent' : 'var(--k1, #1D1D1F)', inBg: editing && fx ? 'transparent' : 'var(--k0, #FFFFFF)',
       fxMirRef: this.fxMirRef, fxMirror: fx ? this.spans(ed.val) : '', fxColor: fx ? 'transparent' : 'var(--k1, #1D1D1F)', syncMirror: () => this.syncMirror(),
       onCompS: () => { this.ime = true; }, onCompE: () => { this.ime = false; }, onInMD: () => { const c2 = this.state.edit; if (c2 && c2.pt) this.setState({ edit: Object.assign({}, c2, { pt: null }) }); },
-      refBoxes, hasTip: !!(fpv && tip), tipRef: this.tipRef, tipText: tip, tipL: (this.fillXY ? this.fillXY[0] : 0) + 'px', tipT: (this.fillXY ? this.fillXY[1] : 0) + 'px',
+      refBoxes,hasTraceSvg:!!arrowSvg,traceSvg:{__html:arrowSvg},traceClick,traceKey:e=>{if(e.key==='Enter'||e.key===' ')traceClick(e);}, hasTip: !!(fpv && tip), tipRef: this.tipRef, tipText: tip, tipL: (this.fillXY ? this.fillXY[0] : 0) + 'px', tipT: (this.fillXY ? this.fillXY[1] : 0) + 'px',
       ...this.noteCard(st.noteAt, box),
       onInChange: e => { if (this.state.edit && this.state.edit.mode !== 'bar') this.setState({ edit: Object.assign({}, this.state.edit, { val: e.target.value, pt: null }) }); else { const a = this.act(); this.setState({ edit: { r: a.r, c: a.c, val: e.target.value, mode: 'type' } }); } },
       onInBlur: () => { },
@@ -1612,6 +1929,7 @@ class Component extends DCLogic {
           else if (lk === 'z') { e.preventDefault(); e.shiftKey ? this.props.onRedo && this.props.onRedo() : this.props.onUndo && this.props.onUndo(); }
           else if (lk === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); }
           else if (lk === 'b' || lk === 'i' || lk === 'u') { e.preventDefault(); tb(lk); }
+          else if (lk === 'e') { e.preventDefault(); this.flashFill(); }
           else if (lk === 'd') { e.preventDefault(); this.fillDir('down'); }
           else if (lk === 'r') { e.preventDefault(); this.fillDir('right'); }
           else if (lk === 'a') { e.preventDefault(); this.setState({ anc: { r: 0, c: 0 }, sel: { r: this.nRows - 1, c: this.nCols - 1 } }); }
@@ -1641,17 +1959,19 @@ class Component extends DCLogic {
       onPaste: e => { if (this.state.edit) return; e.preventDefault(); this.paste(e.clipboardData.getData('text/plain'), { html: e.clipboardData.getData('text/html') }); },
       charts, pics,
       // a tab's colour is a stripe under its name; dragging a tab over its neighbours moves the sheet
-      sheetTabs: d.sheets.map((s, i) => ({ s, i })).filter(({ s }) => !s.visibility || s.visibility === 'visible').map(({ s, i }) => ({ name: s.name, bg: i === this.si ? 'var(--tab-bg, rgba(255,255,255,0.92))' : 'transparent', color: i === this.si ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: i === this.si ? 500 : 400, line: [i === this.si ? 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))' : '', s.color ? `inset 0 -3px 0 ${s.color}` : ''].filter(Boolean).join(', ') || 'none',
-        onClick: () => { if (i !== this.si) { this.props.onChange(Object.assign({}, d, { active: i }), { silent: true }); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 }, edit: null }); this.wantFocus = true; } },
-        onMD: e => { if (e.button === 0) this.op = { kind: 'tab', i }; }, onME: () => { const op = this.op; if (op && op.kind === 'tab' && op.i !== i) { this.moveSheet(op.i, i); op.i = i; } },
+      sheetTabs: d.sheets.map((s, i) => ({ s, i })).filter(({ s }) => !s.visibility || s.visibility === 'visible').map(({ s, i }) => ({ name: s.name, bg: this.groupedSheets().includes(i) ? 'var(--tab-bg, rgba(255,255,255,0.92))' : 'transparent', color: i === this.si ? 'var(--ink, #1D1D1F)' : 'var(--ink-2, rgba(29,29,31,0.62))', fw: i === this.si ? 500 : 400, line: [i === this.si ? 'var(--tab-sh, 0 1px 3px rgba(0,0,0,0.08))' : '', s.color ? `inset 0 -3px 0 ${s.color}` : ''].filter(Boolean).join(', ') || 'none',
+        onClick: e => this.selectSheet(i,e),
+        onMD: e => { if (e.button === 0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&this.groupedSheets().length===1) this.op = { kind: 'tab', i }; }, onME: () => { const op = this.op; if (op && op.kind === 'tab' && op.i !== i) { this.moveSheet(op.i, i); op.i = i; } },
         onDbl: () => this.renameSheet(i), onCtx: e => { e.preventDefault(); this.setState({ pop: { id: 'tabctx', i, x: e.clientX, y: e.clientY - 330 } }); } })),
       addSheet: () => this.addSheet(),
-      statText, zoomPct: String(Math.round(st.zoom * 100)), onZoom: e => this.setZoom(+e.target.value / 100),
+      statText:(this.groupedSheets().length>1?$t('工作表组合')+' · ':'')+statText, zoomPct: String(Math.round(st.zoom * 100)), onZoom: e => this.setZoom(+e.target.value / 100),
       zoomIn: () => this.setZoom(this.state.zoom + 0.1), zoomOut: () => this.setZoom(this.state.zoom - 0.1),
       zoomText: st.zoomEdit != null ? st.zoomEdit : Math.round(st.zoom * 100) + '%',
       onZoomText: e => this.setState({ zoomEdit: e.target.value }), onZoomFocus: e => { const el = e.target; this.setState({ zoomEdit: String(Math.round(this.state.zoom * 100)) }, () => el.select()); }, onZoomBlur: () => this.applyZoomText(),
       onZoomKey: e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); this.wantFocus = true; } else if (e.key === 'Escape') { const el = e.target; this.setState({ zoomEdit: null }, () => el.blur()); } },
-      onRootKey: e => {
+      onRootKey: e => { if(this.props.paneOnly)e.stopPropagation();
+        if(e.key==='Escape'&&this.state.special){this.setState({special:null});return;}
+        if(e.key==='F5'||(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='g'){e.preventDefault();this.goSpecial();return;}
         if (!(e.ctrlKey || e.metaKey)) return; const k = e.key;
         if (k === '=' || k === '+' || k === 'Add') { e.preventDefault(); this.setZoom(this.state.zoom + 0.1); }
         else if (k === '-' || k === 'Subtract') { e.preventDefault(); this.setZoom(this.state.zoom - 0.1); }
@@ -1659,7 +1979,7 @@ class Component extends DCLogic {
       },
       hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) 0px` : 'none', popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popMaxH: Math.max(160, Math.min(440, (globalThis.innerHeight || 900) - Math.max(8, st.pop ? st.pop.y : 0) - 12)) + 'px', /* a menu never runs off the bottom of the window */ popItems, closePop: () => { this.setState({ pop: null }); this.wantFocus = true; },
       hasDlg: !!dlg, dlgTitle: dlg ? dlg.title : '',
-      dlgFields: dlg ? dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, ai: fl.ai, first: !!fl.first, multi: !!fl.multi, isSel: !!fl.options, single: !fl.multi && !fl.options, options: (fl.options || []).map(([v, l]) => ({ v, l })), onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } })) : [],
+      dlgFields: dlg ? dlg.fields.map((fl, i) => ({ label: fl.label, value: fl.value, type: fl.type || 'text', readonly:!!fl.readonly, ai: fl.ai, first: !!fl.first, multi: !!fl.multi, isSel: !!fl.options, single: !fl.multi && !fl.options, options: (fl.options || []).map(([v, l]) => ({ v, l })), onChange: e => { const fs = dlg.fields.slice(); fs[i] = Object.assign({}, fl, { value: e.target.value }); this.setState({ dlg: Object.assign({}, dlg, { fields: fs }) }); } })) : [],
       dlgKey: e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.dlgOk(); } if (e.key === 'Escape') this.setState({ dlg: null }); },
       dlgCancel: () => { this.setState({ dlg: null }); this.wantFocus = true; }, dlgOk: () => this.dlgOk()
     };
@@ -1667,28 +1987,33 @@ class Component extends DCLogic {
   dlgOk() { const dd = this.state.dlg; this.setState({ dlg: null }); this.wantFocus = true; if (dd && dd.ok) { const v = {}; dd.fields.forEach(x => v[x.key] = x.value); dd.ok(v); } }
   sortCol(asc, c, flt) { this.setState({ anc: { r: flt.r, c: flt.c1 }, sel: { r: flt.r2, c: flt.c2 } }, () => { this.sort([{ c, asc }]); this.setState({ sel: { r: flt.r + 1, c }, anc: { r: flt.r + 1, c } }); }); }
   /** Moves sheet `from` to position `to`, keeping it active. */
-  moveSheet(from, to) { const d = this.doc; if (from === to || to < 0 || to >= d.sheets.length) return; const ss = d.sheets.slice(); const [s] = ss.splice(from, 1); ss.splice(to, 0, s); this.props.onChange(Object.assign({}, d, { sheets: ss, active: to })); }
+  moveSheet(from, to) { if(this.structureBlocked())return; const d = this.doc; if (from === to || to < 0 || to >= d.sheets.length) return; const ss = d.sheets.slice(); const [s] = ss.splice(from, 1); ss.splice(to, 0, s); this.props.onChange(Object.assign({}, d, { sheets: ss, active: to })); }
   /** A copy is a new sheet with a name of its own (the file refuses a second one), and its charts and pictures are new objects: no
    *  engine path or id ties them to the original's, so the next save writes them with the copy and the picture tools leave the original alone. */
   copySheet(i) {
+    if(this.structureBlocked())return;
     const d = this.doc, n = this.E.cloneWorkbook({ sheets: [d.sheets[i]] }).sheets[0], k = Date.now().toString(36); let m = 2;
     while (d.sheets.some(s => s.name === `${d.sheets[i].name} (${m})`)) m++;
     n.name = `${d.sheets[i].name} (${m})`; delete n.path;
+    for(const group of n.sparklines||[]){if(group.dateSource)group.dateSource=this.E.renameSheetRefs(group.dateSource,d.sheets[i].name,n.name);for(const line of group.sparklines)line.source=this.E.renameSheetRefs(line.source,d.sheets[i].name,n.name);}
     (n.charts || []).forEach((ch, j) => { ch.id = 'ch' + k + j; delete ch.eid; delete ch.path; });
-    (n.tables || []).forEach(t => { const old=t.name; let name=old+'Copy',j=2;while(d.sheets.some(s=>(s.tables||[]).some(x=>x.name.toLowerCase()===name.toLowerCase())))name=old+'Copy'+j++;t.name=name;delete t.id;n.cells=this.E.shareCells(Object.fromEntries(Object.entries(n.cells).map(([a,x])=>[a,String(x.v).startsWith('=')?{...x,v:this.E.renameTableRefs(x.v,old,name)}:x]))); });
+    (n.tables || []).forEach(t => { const old=t.name; let name=old+'Copy',j=2;while(d.sheets.some(s=>(s.tables||[]).some(x=>x.name.toLowerCase()===name.toLowerCase())))name=old+'Copy'+j++;t.name=name;delete t.id;n.cells=this.E.shareCells(Object.fromEntries(Object.entries(n.cells).map(([a,x])=>[a,(!x.literal&&String(x.v).startsWith('='))?{...x,v:this.E.renameTableRefs(x.v,old,name)}:x]))); });
     (n.pivots||[]).forEach(p=>{let name=p.name+'Copy',j=2;while(d.sheets.some(s=>(s.pivots||[]).some(x=>x.name.toLowerCase()===name.toLowerCase())))name=p.name+'Copy'+j++;p.name=name;delete p.id;});
     (n.images || []).forEach((im, j) => { im.id = 'im' + k + j; delete im.path; });
     this.props.onChange(Object.assign({}, d, { sheets: d.sheets.slice(0, i + 1).concat([n], d.sheets.slice(i + 1)), active: i + 1 }));
   }
-  addSheet() { const d = this.doc; let n = d.sheets.length + 1; while (d.sheets.some(s => s.name === 'Sheet' + n)) n++; this.props.onChange(Object.assign({}, d, { sheets: d.sheets.concat([{ name: 'Sheet' + n, cells: {} }]), active: d.sheets.length })); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 } }); }
+  addSheet() { if(this.structureBlocked())return; const d = this.doc; let n = d.sheets.length + 1; while (d.sheets.some(s => s.name === 'Sheet' + n)) n++; this.props.onChange(Object.assign({}, d, { sheets: d.sheets.concat([{ name: 'Sheet' + n, cells: {} }]), active: d.sheets.length })); this.setState({ sel: { r: 0, c: 0 }, anc: { r: 0, c: 0 } }); }
   renameSheet(i) {
+    if(this.structureBlocked())return;
     const d = this.doc, old = d.sheets[i].name;
     this.prompt($t('重命名工作表'), [{ key: 'n', label: $t('名称'), value: old, first: true, ai: 'the name of a sheet in a spreadsheet' }], v => {
-      const nn = (v.n || '').trim(); if (!nn || nn === old) return; if (nn.length > 31 || /[\[\]:*?\/\\]/.test(nn)) return this.toast($t('名称无效')); if (d.sheets.some((s, j) => j !== i && s.name.toLowerCase() === nn.toLowerCase())) return this.toast($t('名称已存在'));
+      if(this.doc!==d||this.structureBlocked())return; const nn = (v.n || '').trim(); if (!nn || nn === old) return; if (nn.length > 31 || /[\[\]:*?\/\\]/.test(nn)) return this.toast($t('名称无效')); if (d.sheets.some((s, j) => j !== i && s.name.toLowerCase() === nn.toLowerCase())) return this.toast($t('名称已存在'));
       const E = this.E; const nd = E.editWorkbook(d, (sh, nd) => { nd.sheets[i].name = nn;
         const rename = f => f ? E.renameSheetRefs(f, old, nn) : f;
-        for (const key of Object.keys(nd.names || {})) nd.names[key] = rename(nd.names[key]);
-        nd.sheets.forEach(s => { Object.values(s.cells).forEach(x => { if (typeof x.v === 'string' && x.v[0] === '=') x.v = rename(x.v); });
+        for(const q of nd.queries||[]){if(q.source.sheet===old)q.source.sheet=nn;if(q.targetSheet===old)q.targetSheet=nn;for(const step of q.steps)if(step.source?.sheet===old)step.source.sheet=nn;}
+        for (const owner of [nd,...nd.sheets]) for (const key of Object.keys(owner.names || {})) owner.names[key] = rename(owner.names[key]);
+        nd.sheets.forEach(s => { Object.values(s.cells).forEach(x => { if (!x.literal && typeof x.v === 'string' && x.v[0] === '=') x.v = rename(x.v); });
+          for(const group of s.sparklines||[]){if(group.dateSource)group.dateSource=rename(group.dateSource);for(const line of group.sparklines)line.source=rename(line.source);}
           if (s.print) for (const key of ['area', 'titles']) s.print[key] = rename(s.print[key]);
           for(const p of s.pivots||[])if(p.sourceSheet?.toLowerCase()===old.toLowerCase())p.sourceSheet=nn;
           (s.charts || []).forEach(ch => { ch.cat = rename(ch.cat); (ch.ser || []).forEach(ser => { for (const key of ['values', 'name', 'x']) ser[key] = rename(ser[key]); }); });

@@ -235,6 +235,23 @@ public sealed class Serve : IDisposable
                 case "/pptx/copy" when request.HttpMethod == "POST":
                     await Json(response, 200, await CopyPptx(request, file));
                     break;
+                case "/xlsx/password" when request.HttpMethod == "POST":
+                {
+                    // Authenticated, local-only calculation. Never pass plaintext through
+                    // command arguments, document properties, file writes or history logs.
+                    if (request.ContentLength64 > 8192) throw new WriterException(ErrorCode.Validation, "Password request is too large", "Use a worksheet password and its verifier.");
+                    using var passwordReader = new StreamReader(request.InputStream, Encoding.UTF8);
+                    var passwordBuffer = new char[8193];
+                    var passwordLength = await passwordReader.ReadBlockAsync(passwordBuffer);
+                    if (passwordLength > 8192) throw new WriterException(ErrorCode.Validation, "Password request is too large", "Use a worksheet password and its verifier.");
+                    var passwordRequest = System.Text.Json.Nodes.JsonNode.Parse(new string(passwordBuffer,0,passwordLength)) as System.Text.Json.Nodes.JsonObject;
+                    if (passwordRequest is null || passwordRequest["password"] is not System.Text.Json.Nodes.JsonValue passwordValue || !passwordValue.TryGetValue<string>(out var password) || passwordRequest["verifier"] is { } pv && pv is not System.Text.Json.Nodes.JsonObject)
+                        throw new WriterException(ErrorCode.Validation,"Invalid password request","Use a password string and optional verifier object.");
+                    await Json(response, 200, (passwordRequest["verifier"] is System.Text.Json.Nodes.JsonObject verifier
+                        ? new System.Text.Json.Nodes.JsonObject { ["valid"] = Writer.Formats.Xlsx.XlsxPassword.Verify(password, verifier) }
+                        : Writer.Formats.Xlsx.XlsxPassword.Create(password)).ToJsonString());
+                    break;
+                }
                 case "/files":
                     await Json(response, 200, ListFiles(request.QueryString["drafts"] == "1"));
                     break;
@@ -259,7 +276,7 @@ public sealed class Serve : IDisposable
                     await Json(response, 200, DeleteFile(file));
                     break;
                 case "/binary":
-                    await Binary(response, file, request.QueryString["path"]);
+                    await Binary(request, response, file, request.QueryString["path"]);
                     break;
                 case "/html":
                     await Text(response, 200, "text/html; charset=utf-8", WithDoc(file, doc => HtmlWriter.Render(doc)));
@@ -621,12 +638,27 @@ public sealed class Serve : IDisposable
         return NodeJson.Serialize(copy, 1);
     }
 
-    static async Task Binary(HttpListenerResponse response, string? file, string? nodePath)
+    static async Task Binary(HttpListenerRequest request, HttpListenerResponse response, string? file, string? nodePath)
     {
         if (file is null || nodePath is null) throw new WriterException(ErrorCode.Usage, "file and path are required", "GET /binary?file=<path>&path=/body/image[1]");
         using var doc = Files.Open(file);
         var node = PathResolver.Single(doc.Root, nodePath);
         var binary = node.GetBinary() ?? throw new WriterException(ErrorCode.Validation, $"{nodePath} has no binary content", "Ask for an image node.");
+        if (binary.ContentType.StartsWith("audio/", StringComparison.Ordinal) || binary.ContentType.StartsWith("video/", StringComparison.Ordinal))
+        {
+            response.Headers["Accept-Ranges"] = "bytes"; response.Headers["X-Content-Type-Options"] = "nosniff";
+            response.Headers["Content-Security-Policy"] = "sandbox; default-src 'none'";
+            var bytes = binary.Data; long start = 0, end = bytes.LongLength - 1; var status = 200;
+            if (System.Net.Http.Headers.RangeHeaderValue.TryParse(request.Headers["Range"], out var range) && range.Unit == "bytes" && range.Ranges.Count == 1) {
+                var r = range.Ranges.Single();
+                if (r.From is { } first) { start = first; end = Math.Min(r.To ?? end, end); }
+                else if (r.To is { } suffix) start = Math.Max(0, bytes.LongLength - suffix);
+                if (start > end || start >= bytes.LongLength) { response.Headers["Content-Range"] = $"bytes */{bytes.Length}"; await Bytes(response, 416, binary.ContentType, []); return; }
+                status = 206; response.Headers["Content-Range"] = $"bytes {start}-{end}/{bytes.Length}";
+            }
+            response.StatusCode = status; response.ContentType = binary.ContentType; response.ContentLength64 = Math.Max(0, end - start + 1);
+            await response.OutputStream.WriteAsync(bytes.AsMemory((int)start, (int)Math.Max(0, end - start + 1))); return;
+        }
         await Download(response, Path.GetFileName(node.GetProps().GetValueOrDefault("src") ?? "image"), binary.ContentType, binary.Data);
     }
 

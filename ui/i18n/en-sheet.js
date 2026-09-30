@@ -1,5 +1,30 @@
 // English UI text, keyed by the Chinese source string (rules in ui/i18n.js). Loaded only when the UI is in English.
 Object.assign(window.I18N_EN = window.I18N_EN || {}, {
+  '选择所有工作表':'Select All Sheets','取消工作表组合':'Ungroup Sheets','请先取消工作表组合，再执行此操作':'Ungroup the worksheets before this operation','工作表组合':'Grouped Sheets',
+  '使用透视表':'Use PivotTables','工作表不允许操作透视表':'PivotTable operations are not allowed on this sheet',
+  '保护工作簿结构':'Protect Workbook Structure','取消保护工作簿':'Unprotect Workbook','工作簿结构已保护，请先取消保护':'Unprotect the workbook structure first','工作簿已变化，请重新操作':'The workbook has changed. Try again.','密码不正确，工作簿保持保护':'Incorrect password. The workbook remains protected.',
+  '拆分窗格':'Split Panes','水平拆分':'Split Horizontally','垂直拆分':'Split Vertically','四窗格':'Four Panes','取消拆分':'Remove Split',
+  '快速填充':'Flash Fill','快速填充预览':'Flash Fill Preview','选择填充方案':'Choose a fill pattern','方案 {n}':'Pattern {n}','源数据区域':'Source range','结果列（先填写示例）':'Output column (enter examples first)',
+  '请输入有效的数据区域和结果列':'Enter a valid source range and output column','快速填充支持最多 20000 行、16 个源列':'Flash Fill supports up to 20,000 rows and 16 source columns','请先在结果列填写至少一个示例':'Enter at least one example in the output column','快速填充示例或源文本过长':'The examples or source text are too long','无法从示例识别一致规律，请补充或修改示例':'No consistent pattern was found. Add or revise examples.',
+  '快速填充计算超时，请缩小范围':'Flash Fill timed out. Select a smaller range.','快速填充计算失败':'Flash Fill failed','没有需要填充的空白单元格':'There are no empty output cells to fill','请先取消目标区域的合并单元格':'Unmerge the output cells first',
+  '要删除的行列包含锁定单元格':'The rows or columns contain locked cells','请先取消保护，再修改表格结构':'Unprotect the sheet before changing table structure',
+  '选择锁定单元格':'Select locked cells','选择未锁定单元格':'Select unlocked cells',
+  '密码（可留空）':'Password (optional)','确认密码':'Confirm password','密码':'Password','两次输入的密码不一致':'The passwords do not match','密码不正确，工作表保持保护':'Incorrect password. The sheet remains protected.','工作表已变化，请重新操作':'The sheet has changed. Try again.','此密码格式暂不支持':'This password format is not supported yet',
+  '公式依赖关系':'Formula Dependencies',
+  '公式求值':'Evaluate Formula','受保护的隐藏公式不能求值查看':'A hidden protected formula cannot be inspected','请选择含公式的单元格':'Select a cell containing a formula',
+  '单元格保护':'Cell Protection','锁定单元格':'Locked','保护后隐藏公式':'Hide formulas when protected',
+  '设置单元格格式':'Format cells','设置行格式':'Format rows','设置列格式':'Format columns','使用自动筛选':'Use AutoFilter','插入超链接':'Insert hyperlinks','编辑对象和批注':'Edit objects and notes','编辑方案':'Edit scenarios',
+  '允许':'Allow','不允许':'Disallow','工作表已保护，当前操作不被允许':'This action is not permitted on the protected sheet',
+  '此单元格已锁定':'This cell is locked','请先取消保护，再修改单元格保护设置':'Unprotect the sheet before changing cell protection',
+  '此工作表有密码保护，请先在原应用中解锁':'This sheet requires a password. Unlock it in the source application first.',
+  '工作表不允许排序':'Sorting is not allowed on this sheet','排序区域包含锁定单元格':'The sort range contains locked cells','工作表不允许编辑对象':'Editing objects is not allowed on this sheet',
+
+  '多区域平铺过大，请缩小目标范围':'Too many disjoint pasted areas. Select a smaller destination.',
+  '请选择完整的动态数组区域':'Select the entire spilled array before cutting.',
+  '插入水平分页符':'Insert Row Page Break','插入垂直分页符':'Insert Column Page Break','删除当前位置分页符':'Remove Page Breaks Here','重置分页符':'Reset Page Breaks','复制区域过大，请缩小选择范围':'The copied area is too large. Select a smaller area.','请选择完整的合并单元格':'Select whole merged cells.','剪切内容请粘贴到一个目标区域':'Paste cut cells into a single destination area.','剪切来源工作表已删除':'The cut source sheet was deleted.','粘贴超出工作表范围':'Paste exceeds the worksheet bounds.','粘贴不能覆盖合并单元格的一部分':'Cannot paste over part of a merged cell.',
+  '定位条件':'Go To Special','常量':'Constants','空白':'Blanks','错误值':'Errors','没有符合条件的单元格':'No matching cells found.','此操作需要单一区域，请先重新选择':'Select a single area for this operation.','追踪引用单元格':'Trace Precedents','追踪从属单元格':'Trace Dependents','清除追踪':'Clear Traces','公式审核':'Formula Auditing','引用追踪':'Formula References','没有关联单元格':'No related cells.','部分引用无法解析':'Some references could not be resolved.','上一页':'Previous','下一页':'Next',
+  '模拟分析': 'What-if Analysis', '单变量求解': 'Goal Seek', '目标公式单元格': 'Formula cell', '目标值': 'Target value', '可变单元格': 'Changing cell', '请输入有效的单元格地址和目标值': 'Enter valid cell addresses and a target value.', '目标格必须是公式，可变格必须是数值': 'The target must be a formula and the changing cell must be a number.', '未找到满足目标的数值，原数据未更改': 'No solution found. The original values are unchanged.', '求解完成：{cell} = {value}': 'Goal reached: {cell} = {value}',
+  '自定义公式': 'Custom formula', '允许空白': 'Allow blank', '请输入验证公式': 'Enter a validation formula', '输入值不符合数据验证规则': 'This value does not satisfy the validation rule', '此单元格不能为空': 'This cell cannot be blank', '作用域': 'Scope', '工作簿': 'Workbook',
   '套用表格格式': 'Format as Table',
   '创建或更新表格': 'Create or update table',
   '转换为普通区域': 'Convert to range',
@@ -467,10 +492,12 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '在上方插入 {n} 行': 'Insert {n} Rows Above', '在上方插入行': 'Insert Row Above', '在左侧插入 {n} 列': 'Insert {n} Columns Left', '在左侧插入列': 'Insert Column Left',
   '删除 {n} 行': 'Delete {n} Rows', '删除 {n} 列': 'Delete {n} Columns', '升序排序': 'Sort Ascending', '降序排序': 'Sort Descending', '取消筛选': 'Turn Off Filter',
   '编辑批注…': 'Edit Note…', '插入批注…': 'Insert Note…', '超链接…': 'Link…',
+  '按颜色或图标排序':'Sort by color or icon', '按自定义序列排序':'Sort by custom list', '高级筛选':'Advanced filter', '颜色或图标':'Color or icon', '填充颜色':'Fill color', '字体颜色':'Font color', '条件格式图标':'Conditional format icon', '置于顶端':'On top', '置于底端':'On bottom', '序列（逗号分隔）':'Custom order (comma separated)', '请填写排序序列':'Enter the custom order', '列表区域（含标题）':'List range (including headers)', '条件区域（含标题）':'Criteria range (including headers)', '在原区域筛选':'Filter in place', '复制到其他位置':'Copy to another location', '复制到':'Copy to', '仅保留不重复的记录':'Unique records only', '筛选条件无效':'Invalid filter criteria', '请先取消排序区域中的合并单元格':'Unmerge cells in the sort range first', '请先将数组公式转换为数值，再排序':'Convert array formulas to values before sorting',
 });
 
 // Office 0.1.7 controls.
 Object.assign(window.I18N_EN = window.I18N_EN || {}, {
+  '自定义公式': 'Custom formula', '允许空白': 'Allow blank', '请输入验证公式': 'Enter a validation formula', '输入值不符合数据验证规则': 'This value does not satisfy the validation rule', '此单元格不能为空': 'This cell cannot be blank', '作用域': 'Scope', '工作簿': 'Workbook',
   "选择性粘贴": "Paste Special",
   "值": "Values",
   "格式": "Formats",
@@ -510,5 +537,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   "五级评级": "Five ratings",
   "反向顺序": "Reverse order",
   "图片无法读取": "Cannot read image.",
-  "请先保存图片，再调整图片格式": "Save the image before changing its format."
+  "请先保存图片，再调整图片格式": "Save the image before changing its format.",
+  '已达最大迭代次数（未收敛）':'Iteration limit reached (not converged)', '启用':'Enabled', '禁用':'Disabled',
+  '迭代计算':'Iterative calculation', '最大迭代次数':'Maximum iterations', '最大变化值':'Maximum change', '循环引用':'Circular references', '迭代次数须为 1–10000，最大变化值须为非负数':'Iterations must be 1–10000 and maximum change must be nonnegative',
 });

@@ -55,7 +55,7 @@ static class PptxAnim
     static readonly Dictionary<string, string> Classes = new() { ["entr"] = "entrance", ["emph"] = "emphasis", ["exit"] = "exit", ["path"] = "path" };
     static readonly Dictionary<string, string> Starts = new() { ["clickEffect"] = "click", ["withEffect"] = "with", ["afterEffect"] = "after" };
 
-    sealed record Fx(string? Shape, string Effect, string Start, int Duration, int Delay, P.ParallelTimeNode? Other, string? Path = null);
+    sealed record Fx(string? Shape, string Effect, string Start, int Duration, int Delay, P.ParallelTimeNode? Other, string? Path = null, double Repeat = 1, bool AutoReverse = false);
 
     static P.SequenceTimeNode? MainSeq(P.Timing? timing) =>
         timing?.Descendants<P.SequenceTimeNode>().FirstOrDefault(s => s.CommonTimeNode?.NodeType?.InnerText == "mainSeq");
@@ -84,6 +84,7 @@ static class PptxAnim
                 var whole = shape is not null && targets.All(t => !t.HasChildren);
                 var cls = c.PresetClass?.InnerText;
                 var name = whole ? Presets.FirstOrDefault(p => p.Value.Class == cls && p.Value.Id == (c.PresetId?.Value ?? -1) && p.Value.Subtype == (c.PresetSubtype?.Value ?? 0)).Key : null;
+                if (c.RepeatCount?.Value == "indefinite") name = null;
                 if (name == "motion" && c.Descendants<P.AnimateMotion>().Count() != 1) name = null;
                 w.WriteStartObject();
                 if (name == "motion") w.WriteString("path", c.Descendants<P.AnimateMotion>().First().Path?.Value ?? "M 0 0 L 0.25 0 E");
@@ -92,6 +93,8 @@ static class PptxAnim
                 if (name is null) w.WriteString("class", cls is not null && Classes.TryGetValue(cls, out var cl) ? cl : "other");
                 w.WriteString("start", Starts[c.NodeType!.InnerText!]);
                 w.WriteNumber("duration", Math.Max(1, Span(c)));
+                if (double.TryParse(c.RepeatCount?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var repeat) && repeat != 1000) w.WriteNumber("repeat", repeat / 1000);
+                if (c.AutoReverse?.Value == true) w.WriteBoolean("autoReverse", true);
                 w.WriteNumber("delay", Ms(c.StartConditionList?.GetFirstChild<P.Condition>()?.Delay?.Value));
                 if (name is null) w.WriteString("xml", c.Parent!.OuterXml);
                 w.WriteEndObject();
@@ -118,10 +121,13 @@ static class PptxAnim
                 var start = Get("start") ?? "click";
                 if (start is not ("click" or "with" or "after")) throw Invalid($"start '{start}': use click, with or after");
                 var delay = Ms(Get("delay"));
+                var repeat = Get("repeat") is { } rep && double.TryParse(rep, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number : 1;
+                if (!double.IsFinite(repeat) || repeat < 1 || repeat > 100) throw Invalid("Repeat count must be 1 through 100");
+                var autoReverse = Get("autoReverse") == "true";
                 if (effect == "other")
                 {
                     var xml = Get("xml") ?? throw Invalid("an effect other keeps its xml as read");
-                    list.Add(new(Get("shape"), effect, start, 0, delay, new P.ParallelTimeNode(xml)));
+                    list.Add(new(Get("shape"), effect, start, 0, delay, new P.ParallelTimeNode(xml), null, repeat, autoReverse));
                     continue;
                 }
                 if (!Presets.TryGetValue(effect, out var preset)) throw Invalid($"No effect called '{effect}'");
@@ -129,7 +135,9 @@ static class PptxAnim
                 if (shape is null || !ids.Contains(shape)) throw Invalid($"No shape with id '{shape}' on this slide");
                 var path = effect == "motion" ? Get("path") ?? "M 0 0 L 0.25 0 E" : null;
                 if (path is not null && (path.Length > 20000 || !System.Text.RegularExpressions.Regex.IsMatch(path, @"^M\s+[-+\d.eE,\s]+(?:[LCZlc z][-+\d.eE,\s]*)+E?$"))) throw Invalid("A motion path uses M, L and C commands with relative slide coordinates.");
-                list.Add(new(shape, effect, start, Get("duration") is { } d ? Math.Max(1, Ms(d)) : preset.Duration, delay, null, path));
+                var duration = Get("duration") is { } d ? Math.Max(1, Ms(d)) : preset.Duration;
+                if ((long)duration * repeat * (autoReverse ? 2 : 1) + delay > int.MaxValue) throw Invalid("Animation timing is too long");
+                list.Add(new(shape, effect, start, duration, delay, null, path, repeat, autoReverse));
             }
             return list;
         }
@@ -198,7 +206,9 @@ static class PptxAnim
                 ctn.NodeType = f.Start switch { "click" => P.TimeNodeValues.ClickEffect, "with" => P.TimeNodeValues.WithEffect, _ => P.TimeNodeValues.AfterEffect };
                 var conds = ctn.StartConditionList ??= new P.StartConditionList();
                 (conds.GetFirstChild<P.Condition>() ?? conds.AppendChild(new P.Condition())).Delay = f.Delay.ToString(CultureInfo.InvariantCulture);
-                end = Math.Max(end, at + f.Delay + Span(ctn));
+                if (ctn.RepeatCount?.Value != "indefinite") ctn.RepeatCount = f.Repeat == 1 ? null : Math.Round(f.Repeat * 1000).ToString(CultureInfo.InvariantCulture);
+                ctn.AutoReverse = f.AutoReverse ? true : null;
+                end = Math.Max(end, at + f.Delay + (int)Math.Min(int.MaxValue / 2, Span(ctn) * f.Repeat * (f.AutoReverse ? 2 : 1)));
             }
             else
             {
@@ -208,7 +218,9 @@ static class PptxAnim
                 while (!used.Add((f.Shape, grp))) grp++;
                 par = new P.ParallelTimeNode($"<p:par {Ns}><p:cTn id=\"0\" presetID=\"{p.Id}\" presetClass=\"{p.Class}\" presetSubtype=\"{p.Subtype}\" fill=\"hold\" grpId=\"{grp}\" nodeType=\"{f.Start}Effect\">" +
                     $"<p:stCondLst><p:cond delay=\"{f.Delay}\"/></p:stCondLst><p:childTnLst>{body}</p:childTnLst></p:cTn></p:par>");
-                end = Math.Max(end, at + f.Delay + f.Duration);
+                if (f.Repeat != 1) par.CommonTimeNode!.RepeatCount = Math.Round(f.Repeat * 1000).ToString(CultureInfo.InvariantCulture);
+                if (f.AutoReverse) par.CommonTimeNode!.AutoReverse = true;
+                end = Math.Max(end, at + f.Delay + (int)Math.Ceiling(f.Duration * f.Repeat * (f.AutoReverse ? 2 : 1)));
             }
             step!.Append(par);
         }
@@ -248,7 +260,8 @@ static class PptxAnim
         if (gone.Count == 0 && timing.BuildList is null) return;
         foreach (var t in gone)
         {
-            OpenXmlElement? owner = t.Ancestors<P.ParallelTimeNode>().FirstOrDefault(p => p.CommonTimeNode is { } c && IsEffect(c));
+            OpenXmlElement? owner = t.Ancestors<P.CommonMediaNode>().FirstOrDefault()?.Parent;
+            owner ??= t.Ancestors<P.ParallelTimeNode>().FirstOrDefault(p => p.CommonTimeNode is { } c && IsEffect(c));
             owner ??= t.Ancestors<P.SequenceTimeNode>().FirstOrDefault(); // an interactive sequence its shape triggered
             if (owner?.Parent is not null) owner.Remove(); // else it went with an effect removed already
         }

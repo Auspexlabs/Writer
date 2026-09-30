@@ -1,10 +1,10 @@
 // PDF open / render / text layer / search / annotations / saving: an incremental update appended to the file, or a rewrite
 // when the pages themselves changed.
-const V = '4.4.168', CDN = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${V}/`;
+const PDF_ASSETS = new URL('./vendor/pdfjs/', import.meta.url).href;
 let lib = null, pdflib = null;
-export async function pdfjs() { if (!lib) { lib = await import(CDN + 'build/pdf.min.mjs'); lib.GlobalWorkerOptions.workerSrc = CDN + 'build/pdf.worker.min.mjs'; } return lib; }
-async function pl() { if (!pdflib) pdflib = await import('https://esm.sh/pdf-lib@1.17.1'); return pdflib; }
-/** Tests and scripts hand in the libraries themselves (node has no CDN). */
+export async function pdfjs() { if (!lib) { lib = await import('./vendor/pdfjs/build/pdf.min.mjs'); lib.GlobalWorkerOptions.workerSrc = PDF_ASSETS + 'build/pdf.worker.min.mjs'; } return lib; }
+async function pl() { if (!pdflib) pdflib = await import('./vendor/pdf-lib/dist/pdf-lib.esm.min.js'); return pdflib; }
+/** Tests and scripts hand in the libraries themselves (without loading the bundled browser modules). */
 export function useLibs(js, lb) { if (js) lib = js; if (lb) pdflib = lb; }
 
 // ----- bytes -----
@@ -26,7 +26,7 @@ export async function openPdf(key) {
   if (cache[key]) return cache[key];
   const L = await pdfjs(), bytes = store[key] || (key.includes('@') && store[key.slice(0, key.lastIndexOf('@'))]);
   if (!bytes) throw new Error('no bytes for ' + key);
-  cache[key] = L.getDocument({ data: bytes.slice(), cMapUrl: CDN + 'cmaps/', cMapPacked: true, standardFontDataUrl: CDN + 'standard_fonts/' }).promise;
+  cache[key] = L.getDocument({ data: bytes.slice(), cMapUrl: PDF_ASSETS + 'cmaps/', cMapPacked: true, standardFontDataUrl: PDF_ASSETS + 'standard_fonts/' }).promise;
   return cache[key];
 }
 export async function importPdf(file, id) {

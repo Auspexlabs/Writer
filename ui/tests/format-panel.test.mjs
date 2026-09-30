@@ -46,12 +46,12 @@ test('the Word panel has the seven tabs and, on each, its groups in order; 表�
   }
   const v = at(c, 'table', { inTable: true, tbl: { style: 'GridTable4Accent1', header: 'true' }, row: {}, cell: {} });
   assert.deepEqual(plain(v.panelTabs.slice(-1).map(t => [t.label, t.on, t.ctx])), [['表格', true, true]]);
-  assert.deepEqual(titles(v), ['表格样式', '行和列', '单元格', '更多']);
+  assert.deepEqual(titles(v), ['表格样式', '行和列', '单元格', '计算', '更多']);
   assert.deepEqual(plain(items(group(v, '表格样式')).filter(x => x.t === 'tsty').map(x => [x.title, x.on])), [['网格表 4（彩色标题行）', true], ['简明表格（隔行底纹）', false], ['网格表 4（橙色标题行）', false]], 'the design\'s three');
   assert.deepEqual(plain(c.menus['cbd-p'].slice(-4).map(m => m.label)), ['整个表格', '网格', '三线表', '无框线'], 'the other styles are in 边框');
   assert.deepEqual(plain(c.menus.tprops.map(m => m.label)), ['表格属性…', '删除表格']);
   assert.deepEqual(plain(items(group(v, '更多')).map(x => x.label)), ['排序', '转文本', '属性'], 'no extra link under the group');
-  assert.deepEqual(plain(items(group(at(c, 'review'), '查找与替换')).filter(x => x.t === 'btn').map(x => x.label)), ['下一个', '全部替换'], 'Return in 替换为 replaces one');
+  assert.deepEqual(plain(items(group(at(c, 'review'), '查找与替换')).filter(x => x.t === 'btn').map(x => x.label)), ['下一个', '全部替换', '替换格式', '清除替换格式', '高级查找', '清除查找条件'], 'Return in 替换为 replaces one');
   assert.equal(find(at(c, 'view'), '缩放', x => x.t === 'size').value, '100%', '100% is the design\'s page, A4 680px wide');
   assert.equal(c.state.zoom, H.Z100);
   const closed = word({}, { formatOpen: false }).renderVals();

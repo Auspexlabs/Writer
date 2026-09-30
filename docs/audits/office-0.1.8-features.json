@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-09-28T03:54:16.563416+00:00",
+  "sourceHead": "f44087cdfa8fbcd6399eba286b1b43a562f4b10f",
+  "workingTree": "uncommitted",
+  "native": {
+    "passed": 939,
+    "failed": 0,
+    "skipped": 0
+  },
+  "ui": {
+    "passed": 1114,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "word": {
+      "script": "ui/tools/verify-word-017.mjs",
+      "passed": [
+        "cross-paragraph formatted comment: text, anchors, save and reopen",
+        "Office objects: display, no-op save, text edit, inline and block deletion",
+        "Office object history: saved deletion undo, movement, copy, ordering and block/inline conversion",
+        "Objects inside table cells: later paragraphs, text edits, deletion and saved undo",
+        "chapter captions, native REF, figure directory and separate mail merge outputs",
+        "Word table formulas: insertion, field save/reopen, saved undo/redo, dependency refresh and stable no-op",
+        "Native chart preview/no-op save, theme/style set/page borders, edit protection and document comparison",
+        "MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing",
+        "WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving",
+        "WordEditor table commands: insert row, save, undo, save/reopen and redo",
+        "Word shortcuts: justify, line spacing, subscript without zoom, Heading 2",
+        "Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op",
+        "Section numbering, independent odd/even headers, paginated print and stable save",
+        "Native numbering start values and heading numbering; individual text and formatting revision resolution",
+        "incremental page boundaries match full layout [{\"paragraph\":850,\"pages\":371,\"incrementalMs\":34,\"fullMs\":104},{\"paragraph\":400,\"pages\":371,\"incrementalMs\":106,\"fullMs\":102},{\"paragraph\":0,\"pages\":372,\"incrementalMs\":129,\"fullMs\":102},{\"paragraph\":700,\"pages\":371,\"incrementalMs\":53,\"fullMs\":100}]"
+      ]
+    },
+    "sheet": {
+      "script": "ui/tools/verify-sheet-017.mjs",
+      "passed": [
+        "Formula auditing and Go To Special: disjoint formatting/clear, native save/reopen and saved undo",
+        "native pivot creation, row/column aggregation, refresh and save/reopen",
+        "percentage and combination charts, value labels and axis titles",
+        "native tables, calculated columns, header rename and structural edits",
+        "outline collapse/expand save and reopen",
+        "virtual grid navigation to AAA10001",
+        "Office HTML multiline, style and merge import",
+        "far cell, names, dynamic arrays and print settings save/reopen",
+        "image insert, move, resize, delete and undo round trips"
+      ]
+    },
+    "slide": {
+      "script": "ui/tools/verify-slide-017.mjs",
+      "passed": [
+        "Selection pane: persistent names/hide/lock, stage hiding, unlocking and native reopen",
+        "native audio/video playback, comments, persistent ink, shared master editing, motion paths and reference guides",
+        "fill opacity, gradient and image backgrounds, auto-advance and rehearsal, image paste, rich text and footer fields",
+        "copied group member ids and z-order",
+        "cross-deck chart relationships and inherited background reset",
+        "cross-format find/replace and whole-word matching",
+        "24pt scale and rich text size stability",
+        "paragraph alignment and immediate whole-box format changes",
+        "safe link clicks, paste selection and delete",
+        "nested groups and table render/save",
+        "aspect ratio save/reopen",
+        "dynamic page numbers after reopen and reorder",
+        "presentation keyboard isolation"
+      ]
+    }
+  },
+  "scope": [
+    "Excel formula reference auditing and Go To Special",
+    "Word table formula fields, refresh and saved undo",
+    "PPT hierarchical object names, hidden and locked state"
+  ],
+  "delivery": "Source verified; existing DMG does not contain this batch. No upload or installed-app replacement."
+}

@@ -2,7 +2,7 @@ using System.Text.Json;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using Writer.Core;
-using Writer.Formats.Xlsx;
+using Writer.Formats.Common;
 using A = DocumentFormat.OpenXml.Drawing;
 using C = DocumentFormat.OpenXml.Drawing.Charts;
 using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
@@ -15,11 +15,6 @@ static class DocxCharts
     public static void Write(DocxDocument doc, string json)
     {
         using var data = JsonDocument.Parse(json); var o = data.RootElement;
-        var type = o.TryGetProperty("type", out var t) ? t.GetString() ?? "column" : "column";
-        if (type is not ("column" or "bar" or "line" or "area" or "pie" or "doughnut")) throw new WriterException(ErrorCode.Validation, "Unsupported chart type", "Use column, bar, line, area, pie or doughnut.");
-        var categories = o.GetProperty("labels").EnumerateArray().Select(v => v.ToString()).ToArray();
-        var values = o.GetProperty("values").EnumerateArray().Select(v => v.GetDouble()).ToArray();
-        if (categories.Length == 0 || categories.Length != values.Length || values.Any(v => !double.IsFinite(v))) throw new WriterException(ErrorCode.Validation, "Chart labels and values must have the same nonzero length", "Provide one numeric value per label.");
         var title = o.TryGetProperty("title", out var tt) ? tt.GetString() ?? "" : "";
         W.Drawing? existing = null;
         if (o.TryGetProperty("path", out var path) && path.GetString() is { Length: > 0 } target)
@@ -29,17 +24,13 @@ static class DocxCharts
             var anchor = (OpenXmlElement)node.Anchor;
             existing = anchor as W.Drawing ?? anchor.Descendants<W.Drawing>().FirstOrDefault();
         }
-        using var workbook = (XlsxDocument)new XlsxAdapter().Create();
-        var sheet = (XlsxSheet)workbook.Root.Children[0];
-        var rows = NodeJson.Compact(w => { w.WriteStartArray(); w.WriteStartArray(); w.WriteStringValue("Category"); w.WriteStringValue(title.Length == 0 ? "Value" : title); w.WriteEndArray(); for (var i = 0; i < categories.Length; i++) { w.WriteStartArray(); w.WriteStringValue(categories[i]); w.WriteNumberValue(values[i]); w.WriteEndArray(); } w.WriteEndArray(); });
-        Mutations.Set(PathResolver.Single(workbook.Root, $"/sheet[1]/range[A1:B{categories.Length + 1}]"), new Dictionary<string, string> { ["values"] = rows });
-        var spec = new ChartSpec(type, title, $"A2:A{categories.Length + 1}", [new ChartSeries("B1", $"B2:B{categories.Length + 1}", null)], "bottom", false);
-        var space = XlsxChartXml.ChartSpace(workbook, sheet, spec);
-        var part = doc.Main.AddNewPart<ChartPart>(); part.ChartSpace = space;
-        var embedded = part.AddNewPart<EmbeddedPackagePart>("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        using (var stream = new MemoryStream()) { workbook.Save(stream); stream.Position = 0; embedded.FeedData(stream); }
-        space.AddChild(new C.ExternalData(new C.AutoUpdate { Val = false }) { Id = part.GetIdOfPart(embedded) });
-        space.Save();
+        if (existing?.Descendants<C.ChartReference>().FirstOrDefault()?.Id?.Value is { } chartId && doc.Main.TryGetPartById(chartId, out var oldPart) && oldPart is ChartPart oldChart)
+        {
+            OfficeChartData.Write(oldChart, o);
+            return;
+        }
+        var part = doc.Main.AddNewPart<ChartPart>();
+        OfficeChartData.Write(part, o);
         var id = doc.Main.Document!.Descendants<DW.DocProperties>().Select(p => p.Id?.Value ?? 0u).DefaultIfEmpty().Max() + 1;
         var drawing = new W.Drawing(new DW.Inline(
             new DW.Extent { Cx = 5486400L, Cy = 3086100L },

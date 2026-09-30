@@ -1,0 +1,171 @@
+{
+  "sourceCommit": "f44087cdfa8fbcd6399eba286b1b43a562f4b10f",
+  "workingTreeModified": true,
+  "generatedAt": "2026-09-28T03:02:05.598Z",
+  "runtime": "v20.20.0",
+  "scope": "Node logic probes; no Microsoft Office or desktop GUI comparison",
+  "registeredFunctions": 289,
+  "formulaSupport": {
+    "LET": true,
+    "LAMBDA": true,
+    "MAP": true,
+    "REDUCE": true,
+    "SCAN": true,
+    "BYROW": true,
+    "BYCOL": true,
+    "MAKEARRAY": true,
+    "FILTER": true,
+    "SORT": true,
+    "UNIQUE": true,
+    "HSTACK": true,
+    "VSTACK": true,
+    "TAKE": true,
+    "DROP": true,
+    "TOCOL": true,
+    "TOROW": true,
+    "WRAPROWS": true,
+    "CHOOSECOLS": true,
+    "TEXTSPLIT": true,
+    "REGEXTEST": true,
+    "REGEXEXTRACT": true,
+    "REGEXREPLACE": true,
+    "LINEST": false,
+    "LOGEST": false,
+    "T.TEST": false,
+    "CHISQ.TEST": false,
+    "FORECAST.ETS": false,
+    "PRICE": false,
+    "YIELD": false,
+    "GETPIVOTDATA": false,
+    "CUBEVALUE": false,
+    "STOCKHISTORY": false,
+    "IMAGE": false,
+    "PY": false
+  },
+  "formulaResults": [
+    {
+      "formula": "=SUM(A1:A10)",
+      "result": 1
+    },
+    {
+      "formula": "=SUM(A1:A1048576)",
+      "result": 1
+    },
+    {
+      "formula": "=LET(x,2,x+1)",
+      "result": 3
+    },
+    {
+      "formula": "=LAMBDA(x,x+1)(2)",
+      "result": 3
+    },
+    {
+      "formula": "=MAP({1,2},LAMBDA(x,x*2))",
+      "result": 2
+    },
+    {
+      "formula": "=SUM(Sheet1:Sheet3!A1)",
+      "result": 6
+    },
+    {
+      "formula": "='[Other.xlsx]Sheet1'!A1",
+      "result": {
+        "err": "#REF!"
+      }
+    },
+    {
+      "formula": "=IF(TRUE,B1,9)",
+      "result": ""
+    },
+    {
+      "formula": "=COUNTBLANK(A:A)",
+      "result": 1048575
+    },
+    {
+      "formula": "=ROWS(A:A)",
+      "result": 1048576
+    }
+  ],
+  "validation": [
+    {
+      "rule": {
+        "type": "whole",
+        "operator": "between",
+        "value": "0",
+        "value2": "10"
+      },
+      "value": "11",
+      "rejection": "只能输入 0 到 10 之间的整数"
+    },
+    {
+      "rule": {
+        "type": "time",
+        "operator": "between",
+        "value": "0.375",
+        "value2": "0.7083333333"
+      },
+      "value": "08:00",
+      "rejection": "只能输入 09:00:00 到 17:00:00 之间的时间"
+    },
+    {
+      "rule": {
+        "type": "custom",
+        "value": "A1>0"
+      },
+      "value": "-3",
+      "rejection": "输入值不符合数据验证规则"
+    }
+  ],
+  "wordPagination": [
+    {
+      "columns": 1,
+      "paginated": true
+    },
+    {
+      "columns": 2,
+      "paginated": false
+    },
+    {
+      "columns": 3,
+      "paginated": false
+    }
+  ],
+  "lastCellAddress": {
+    "r": 1048575,
+    "c": 16383
+  },
+  "multiFieldPivot": "Choose one row field, an optional column field and one value field",
+  "conditionalFormatting": {
+    "editorContainsRuleColor": true,
+    "printedHtmlContainsRuleColor": true
+  },
+  "powerPoint": {
+    "authoredEffectCount": 15,
+    "transitionNames": [
+      "none",
+      "fade",
+      "push",
+      "wipe",
+      "split",
+      "cover",
+      "zoom",
+      "cut",
+      "dissolve",
+      "morph"
+    ],
+    "unsupportedEntranceFallsBackToFade": true,
+    "dissolveUsesFadeFrames": true,
+    "morphFramesForRotationOnly": [
+      {
+        "translate": "0px 0px",
+        "scale": "1 1",
+        "rotate": "-90deg"
+      },
+      {
+        "translate": "0 0",
+        "scale": "1 1",
+        "rotate": "0deg"
+      }
+    ]
+  }
+}

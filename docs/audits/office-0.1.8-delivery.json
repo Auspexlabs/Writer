@@ -1,0 +1,50 @@
+{
+  "version": "0.1.8",
+  "baseCommit": "f44087cdfa8fbcd6399eba286b1b43a562f4b10f",
+  "workingTreeModified": true,
+  "createdAt": "2026-09-28T03:05:08.521684+00:00",
+  "completeOfficeScope": false,
+  "published": false,
+  "installed": false,
+  "nativeTests": {
+    "passed": 935,
+    "failed": 0,
+    "skipped": 0
+  },
+  "uiTests": {
+    "passed": 1096,
+    "failed": 0,
+    "skipped": 0
+  },
+  "versionTests": {
+    "passed": 9,
+    "failed": 0
+  },
+  "bundleResourceFilesCompared": 282,
+  "bundleResourceMismatches": [],
+  "dmg": {
+    "path": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/dist/Writer-0.1.8-mac.dmg",
+    "bytes": 75327345,
+    "sha256": "65dbd261de6e86ce08a59c4aec75e28030428253d1ae2a9bca150af6aec2b3d1",
+    "notarizationId": "e6467be4-9b16-431b-8d4c-e1edb71b872e",
+    "status": "Accepted",
+    "stapled": true,
+    "gatekeeper": "Notarized Developer ID"
+  },
+  "app": {
+    "path": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Writer.app",
+    "fileBytes": 163309519,
+    "notarizationId": "1d1d0243-e3b0-4665-830d-1eee3149ebff",
+    "status": "Accepted",
+    "stapled": true,
+    "gatekeeper": "Notarized Developer ID"
+  },
+  "browserEvidence": [
+    "pdf-offline-bundle.json",
+    "pdf-offline-browser.json"
+  ],
+  "additionalBrowserChecks": [
+    "Slide outline DOM editing and saved rich text",
+    "Deck font replacement, save, undo and redo"
+  ]
+}

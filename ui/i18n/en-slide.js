@@ -1,5 +1,10 @@
 // English UI text, keyed by the Chinese source string (rules in ui/i18n.js). Loaded only when the UI is in English.
 Object.assign(window.I18N_EN = window.I18N_EN || {}, {
+  '顶点':'Vertex','线段':'Segment','二次曲线':'Quadratic Curve','三次曲线':'Cubic Curve',
+  '编辑组合':'Edit Group','组合编辑':'Group Editing','返回上一级':'Back to Parent',
+  '打印':'Print','讲义':'Handouts','整页幻灯片':'Full Page Slides','每页 {n} 张':'{n} slides per page','包含隐藏幻灯片':'Include hidden slides','打印 / 保存为 PDF':'Print / Save as PDF',
+  '选择窗格':'Selection Pane','对象名称':'Object name','隐藏对象':'Hide object','锁定对象':'Lock object','对象已锁定，请先在选择窗格中解锁':'Object is locked. Unlock it in the Selection Pane first.',
+  '选择对象': 'Select objects', '替换文字字体': 'Replace text font', '原字体': 'Original font', '替换全部幻灯片': 'Replace throughout presentation', '选择对象 / 替换字体': 'Objects / Replace font', '对象 {n}': 'Object {n}', '已替换全部幻灯片字体': 'Replaced the font throughout the presentation',
   '查找替换': 'Find & Replace', '查找': 'Find', '替换为': 'Replace with', '替换': 'Replace', '全部替换': 'Replace All', '下一个': 'Next', '区分大小写': 'Match case', '全字匹配': 'Whole words',
   '图片背景': 'Picture background', '单击换片': 'Advance on click', '自动换片': 'Advance automatically', '自动换片，0 为关闭': 'Advance automatically; 0 disables it', '排练计时': 'Rehearse timings', '起始编号': 'Start numbering at', '无法读取图片': 'Could not read the image',
   // top bar, thumbnails, zoom bar
@@ -178,4 +183,5 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '起点': 'Start',
   '隐藏本页': 'Hide This Slide',
   '复制一份': 'Duplicate', // the slide's right-click menu
+  '编辑顶点':'Edit points', '路径':'Path', '闭合路径':'Closed path', '新路径':'New path', '删除路径':'Delete path', '拖动顶点调整形状':'Drag points to reshape', '增加顶点':'Add point', '删除顶点':'Delete point', '路径或顶点过多':'Too many paths or points', '自由形状':'Freeform shape',
 });

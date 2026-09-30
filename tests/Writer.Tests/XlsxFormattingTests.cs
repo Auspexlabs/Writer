@@ -40,6 +40,33 @@ public class XlsxFormattingTests
         return (code, stdout.ToString(), stderr.ToString());
     }
 
+    [Theory]
+    [InlineData("/sheet[1]/cell[A1]")]
+    [InlineData("/sheet[1]/range[A1:H1]")]
+    public void Undo_alignment_and_other_cell_formats_round_trips_through_validation(string target)
+    {
+        using var doc = new XlsxAdapter().Create();
+        Set(doc, "/sheet[1]/cell[A1]", ("value", "123"));
+        Set(doc, "/sheet[1]/cell[B1]", ("value", "text"));
+        Set(doc, target, ("align", "center"), ("valign", "middle"), ("bold", "true"), ("italic", "true"),
+            ("underline", "true"), ("strike", "true"), ("wrap", "true"), ("indent", "2"), ("rotate", "45"),
+            ("fill", "FFFF00"), ("color", "FF0000"), ("border", "thin"), ("borderColor", "FF0000"), ("format", "0.00"));
+        // Values emitted by engine.js cellProps when undo restores an unformatted snapshot.
+        Set(doc, target, ("align", "general"), ("valign", "bottom"), ("bold", "false"), ("italic", "false"),
+            ("underline", "false"), ("strike", "false"), ("wrap", "false"), ("indent", "0"), ("rotate", "0"),
+            ("fill", "none"), ("color", "none"), ("border", "none"), ("borderColor", "none"), ("format", "General"));
+        using var reopened = Reopen(doc);
+        var numeric = Get(reopened, "/sheet[1]/cell[A1]");
+        Assert.Equal("123", numeric["value"]);
+        Assert.Equal("text", Get(reopened, "/sheet[1]/cell[B1]")["value"]);
+        Assert.False(numeric.ContainsKey("align"));
+        foreach (var flag in new[] { "bold", "italic", "underline", "strike", "wrap", "indent", "rotate", "fill", "color", "border", "borderColor", "valign" })
+            Assert.False(numeric.ContainsKey(flag), flag);
+        Set(reopened, target, ("align", "center"));
+        using var redone = Reopen(reopened);
+        Assert.Equal("center", Get(redone, "/sheet[1]/cell[A1]")["align"]);
+    }
+
     [Fact]
     public void Every_formatting_prop_round_trips_on_a_blank_workbook()
     {

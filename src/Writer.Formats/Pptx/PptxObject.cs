@@ -40,14 +40,15 @@ sealed class PptxObject(PptxDocument doc, SlidePart slide, P.GraphicFrame frame)
         {
             var rels = data?.Descendants().FirstOrDefault(e => e.LocalName == "relIds");
             var dm = Part(Attr(rels, "dm"));
-            var drawingId = dm is null ? null : OfficeGraphics.SmartArtDrawingId(dm);
-            var drawing = drawingId is not null && dm!.TryGetPartById(drawingId, out var d) ? d : null;
+            var drawing = dm is null ? null : OfficeSmartArt.Drawing(slide,dm);
             if (OfficeGraphics.SmartArtJson(drawing, dm, scheme) is { } json) props["smartart"] = json;
         }
+        PptxObjectState.Read(frame, props);
         return props;
     }
     public override void SetProp(string name, string value)
     {
+        if (PptxObjectState.Set(frame, name, value)) return;
         if (name is not ("x" or "y" or "w" or "h")) return;
         var x = frame.Transform ??= new P.Transform(new A.Offset { X = 0, Y = 0 }, new A.Extents { Cx = 0, Cy = 0 });
         PptxOutline.SetBox(x.Offset!, x.Extents!, name, value, T);

@@ -260,9 +260,12 @@ public class DocxSectionTests
         using (var png = new MemoryStream(FakePng(100, 50))) part.AddImagePart(ImagePartType.Png, "rIdLogo").FeedData(png);
         part.Header = new W.Header(LogoHeader);
         var html = doc.Root.GetProps()["header"];
-        Assert.StartsWith("<img data-keep=\"0\" width=\"100\" height=\"50\" src=\"data:image/png;base64,", html);
-        Assert.EndsWith("\"> Acme <span data-keep=\"1\">2026-09-23</span>", html);
+        Assert.Contains("<img data-keep=\"0\" width=\"100\" height=\"50\" src=\"data:image/png;base64,", html);
+        Assert.Contains("\"> Acme <span data-keep=\"1\">2026-09-23</span>", html);
 
+        Assert.Contains("data-w-hf-table=\"1\"", html);
+        Assert.Contains("<table", html);
+        Assert.Contains(">T</", html);
         var edited = html.Replace(" Acme ", " <b>Acme Inc</b> ");
         Mutations.Set(doc.Root, Props(("header", edited)));
         using var reopened = Reopen(doc);
@@ -270,6 +273,30 @@ public class DocxSectionTests
         var xml = ((DocxDocument)reopened).Main.HeaderParts.Single().Header!.OuterXml;
         foreach (var kept in new[] { "w:pStyle w:val=\"Header\"", "<w:pBdr>", "r:embed=\"rIdLogo\"", "w:instr=\" DATE \"", "<w:tbl>" }) Assert.Contains(kept, xml);
         AssertValidSection(reopened);
+    }
+
+    [Fact]
+    public void Header_table_cells_edit_format_save_and_restore_without_duplicate_body_text()
+    {
+        using var doc = new DocxAdapter().Create();
+        Mutations.Set(doc.Root, Props(("header", "x")));
+        var part = ((DocxDocument)doc).Main.HeaderParts.Single();
+        using (var png = new MemoryStream(FakePng(100, 50))) part.AddImagePart(ImagePartType.Png, "rIdLogo").FeedData(png);
+        part.Header = new W.Header(LogoHeader);
+        var before = doc.Root.GetProps()["header"];
+        Assert.Contains("data-w-hf-cell=\"0\"", before);
+        var after = before.Replace("data-w-hf-html=\"T\"", "data-w-hf-html=\"&lt;b&gt;New&lt;/b&gt;&lt;br&gt;Line\"").Replace(">T</td>", "><b>New</b><div>Line</div></td>");
+        Mutations.Set(doc.Root, Props(("header", after)));
+        using var reopened = Reopen(doc);
+        var header = ((DocxDocument)reopened).Main.HeaderParts.Single().Header!;
+        Assert.Equal("NewLine", header.GetFirstChild<W.Table>()!.InnerText);
+        Assert.NotEmpty(header.GetFirstChild<W.Table>()!.Descendants<W.Bold>());
+        Assert.DoesNotContain("New", string.Concat(header.Elements<W.Paragraph>().Select(p => p.InnerText)));
+        Assert.Contains("r:embed=\"rIdLogo\"", header.OuterXml);
+        Mutations.Set(reopened.Root, Props(("header", before)));
+        using var undone = Reopen(reopened);
+        Assert.Equal("T", ((DocxDocument)undone).Main.HeaderParts.Single().Header!.GetFirstChild<W.Table>()!.InnerText);
+        AssertValidSection(undone);
     }
 
     [Fact]

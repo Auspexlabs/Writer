@@ -6,6 +6,20 @@ using Writer.Formats.Xlsx;
 namespace Writer.Tests;
 public class XlsxBookFeaturesTests
 {
+    [Fact] public void Manual_page_breaks_round_trip_and_reset_without_removing_print_options()
+    {
+        using var d = new XlsxAdapter().Create();
+        d.Root.Children[0].SetProp("print", "{\"rowBreaks\":[10,20,10],\"colBreaks\":[3],\"header\":\"Report\"}");
+        using var ms = new MemoryStream(); d.Save(ms);
+        using (var package = SpreadsheetDocument.Open(new MemoryStream(ms.ToArray()), false))
+            Assert.Empty(new OpenXmlValidator().Validate(package).Select(e => e.Description));
+        using var reopened = new XlsxAdapter().Open(new MemoryStream(ms.ToArray()));
+        var sheet = reopened.Root.Children[0]; var p = JsonNode.Parse(sheet.GetProps()["print"])!;
+        Assert.Equal("[10,20]", p["rowBreaks"]!.ToJsonString()); Assert.Equal("[3]", p["colBreaks"]!.ToJsonString());
+        sheet.SetProp("print", "{\"rowBreaks\":[],\"colBreaks\":[]}");
+        p = JsonNode.Parse(sheet.GetProps()["print"])!; Assert.Equal("[]", p["rowBreaks"]!.ToJsonString()); Assert.Equal("Report", p["header"]!.GetValue<string>());
+        Assert.Throws<WriterException>(() => sheet.SetProp("print", "{\"rowBreaks\":[0]}"));
+    }
     [Fact] public void Names_print_settings_visibility_and_protection_round_trip_in_valid_workbook()
     {
         using var d = new XlsxAdapter().Create();

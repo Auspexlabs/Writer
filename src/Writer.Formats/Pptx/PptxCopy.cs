@@ -40,6 +40,7 @@ static class PptxCopy
         foreach (var creation in copy.Descendants().Where(e => e.LocalName == "creationId" && e.NamespaceUri == A16Ns))
             creation.SetAttribute(new OpenXmlAttribute("", "id", "", "{" + Guid.NewGuid().ToString().ToUpperInvariant() + "}"));
         if (!ReferenceEquals(from, to)) Relink(copy, from, to);
+        PptxMedia.CopyPlayback(element, copy, from, to);
         return copy;
     }
 

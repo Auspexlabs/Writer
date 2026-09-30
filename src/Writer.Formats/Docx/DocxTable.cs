@@ -12,6 +12,7 @@ sealed class DocxTable(DocxDocument doc, W.Table table) : Node, IDocxContainer
     internal const int Twip = 635; // EMU per twentieth of a point
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+    public override string Format => "docx";
     public override string Kind => "table";
     public override object Anchor => table;
     public OpenXmlElement Container => table;
@@ -132,7 +133,7 @@ sealed class DocxTable(DocxDocument doc, W.Table table) : Node, IDocxContainer
             case "rows": SetRowCount(doc, table, int.Parse(value, Inv)); break;
             case "cols": SetColumnCount(table, int.Parse(value, Inv)); break;
             case "data": Fill(doc, table, ParseRows(value)); break;
-            case "style": pr.TableStyle = value.Length == 0 ? null : new W.TableStyle { Val = doc.Styles.ResolveStyle(value, "table") }; break;
+            case "style": pr.TableStyle = value is "" or "none" ? null : new W.TableStyle { Val = doc.Styles.ResolveStyle(value, "table") }; break;
             case "borders":
                 pr.TableBorders = value == "style" ? null : MakeBorders<W.TableBorders>(value, pr.TableBorders is { } old ? BorderColorOf(old) : null);
                 break;

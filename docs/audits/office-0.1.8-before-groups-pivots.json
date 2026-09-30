@@ -1,0 +1,316 @@
+{
+  "generatedAt": "2026-09-28T18:56:04.783195+00:00",
+  "sourceHead": "a49030ef05267af88fb266b148c998b2bd383f9b",
+  "workingTree": "uncommitted",
+  "native": {
+    "passed": 989,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/writer-office-continuation-native.log"
+  },
+  "ui": {
+    "passed": 1192,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/writer-office-continue-final-ui.log"
+  },
+  "browser": {
+    "word": {
+      "log": "/tmp/writer-binding-word-browser.log",
+      "passed": [
+        "cross-paragraph formatted comment: text, anchors, save and reopen",
+        "Office objects: display, no-op save, text edit, inline and block deletion",
+        "Office object history: saved deletion undo, movement, copy, ordering and block/inline conversion",
+        "Objects inside table cells: later paragraphs, text edits, deletion and saved undo",
+        "chapter captions, native REF, figure directory and separate mail merge outputs",
+        "Bound Word controls: XML-backed mirrored fields, real edit dialog, no-op save and saved undo/redo",
+        "Mixed paper sizes, orientation, margins, headers, native reopen and per-page print geometry",
+        "Native Word controls: insert, edit, copy, delete, save/reopen and saved undo",
+        "Repeated table headers, visual line numbers and print; English automatic hyphenation",
+        "Mail merge recipient wizard, editable labels and custom-size envelopes: native save/reopen and pagination",
+        "Exact selected-range bookmarks: cross-paragraph endpoints, reference target, native save/reopen, deletion and saved undo",
+        "Native chart and SmartArt dialogs: multi-series data, node text, save/reopen and saved undo",
+        "Multi-page table rows preserve content and table structure",
+        "Header table cell editing, rich text, native save/reopen and saved undo",
+        "Wildcard and format search, capture replacement and saved undo",
+        "Word table formulas: insertion, field save/reopen, saved undo/redo, dependency refresh and stable no-op",
+        "Native chart preview/no-op save, theme/style set/page borders, edit protection and document comparison",
+        "MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing",
+        "WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving",
+        "WordEditor table commands: insert row, save, undo, save/reopen and redo",
+        "Word shortcuts: justify, line spacing, subscript without zoom, Heading 2",
+        "Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op",
+        "Section numbering, independent odd/even headers, paginated print and stable save",
+        "Native numbering start values and heading numbering; individual text and formatting revision resolution",
+        "incremental page boundaries match full layout [{\"paragraph\":850,\"pages\":371,\"incrementalMs\":32,\"fullMs\":102},{\"paragraph\":400,\"pages\":371,\"incrementalMs\":100,\"fullMs\":101},{\"paragraph\":0,\"pages\":372,\"incrementalMs\":121,\"fullMs\":99},{\"paragraph\":700,\"pages\":371,\"incrementalMs\":47,\"fullMs\":100}]"
+      ]
+    },
+    "excel": {
+      "log": "/tmp/writer-trace-browser-final.log",
+      "passed": [
+        "Dependency arrows: actual grid geometry, frozen panes, scrolling, cross-sheet portal and viewport-sized SVG",
+        "Formula evaluation: worker, cross-sheet conditional formula, actual steps, final result and close",
+        "Protected cells: permissions dialog, native flags, formula hiding, safe paste, saved undo and unprotect history",
+        "Password protection: masked dialog, wrong/correct passwords, native hashes, whole-column defaults at row 1000000, permitted structural edits and saved undo",
+        "Advanced filter: criteria dialog, native visibility, manual hidden rows, clear, saved undo, safe extraction and color sorting",
+        "Circular iteration: settings dialog, convergence, native cached results, disable, saved undo and no-op",
+        "Native sparklines: grid, print, row insertion, no-op save and deletion",
+        "Text-to-columns wizard: quoted fields, text identifiers, date types and native round trip",
+        "Solver worker dialog, native scenarios and one-variable data table save/reopen",
+        "Query editor preview, native persistence and reload",
+        "Manual multi-area clipboard preserves holes and formulas; row/column page breaks save and reopen",
+        "Formula auditing and Go To Special: disjoint formatting/clear, native save/reopen and saved undo",
+        "native pivot creation, row/column aggregation, refresh and save/reopen",
+        "percentage and combination charts, value labels and axis titles",
+        "native tables, calculated columns, header rename and structural edits",
+        "outline collapse/expand save and reopen",
+        "virtual grid navigation to AAA10001",
+        "Office HTML multiline, style and merge import",
+        "far cell, names, dynamic arrays and print settings save/reopen",
+        "image insert, move, resize, delete and undo round trips",
+        "Cross-sheet dependency arrow click opens referenced sheet"
+      ]
+    },
+    "ppt": {
+      "log": "/tmp/writer-captions-browser-latest.log",
+      "passed": [
+        "Native WebVTT captions: editing dialog, embedded tracks, real audio/video playback, no-op and saved undo/redo",
+        "Editable vector ink: native freeform paths, point dialog, save/reopen, no-op and saved undo/redo",
+        "Custom shows: native routes, repeated slides, playback, delete and saved undo",
+        "Native chart and SmartArt dialogs: insert, edit, save/reopen and saved undo",
+        "Nested group canvas editing: members, geometry, transforms and native save/reopen; notes print DOM",
+        "Selection pane: persistent names/hide/lock, stage hiding, unlocking and native reopen",
+        "native audio/video playback, comments, persistent ink, shared master editing, motion paths and reference guides",
+        "fill opacity, gradient and image backgrounds, auto-advance and rehearsal, image paste, rich text and footer fields",
+        "copied group member ids and z-order",
+        "cross-deck chart relationships and inherited background reset",
+        "cross-format find/replace and whole-word matching",
+        "24pt scale and rich text size stability",
+        "paragraph alignment and immediate whole-box format changes",
+        "safe link clicks, paste selection and delete",
+        "nested groups and table render/save",
+        "aspect ratio save/reopen",
+        "dynamic page numbers after reopen and reorder",
+        "presentation keyboard isolation"
+      ]
+    }
+  },
+  "performance": {
+    "browserMillionCells": {
+      "formulas": 990000,
+      "mountedCells": 620,
+      "editMsRange": [
+        32.8,
+        33.8
+      ],
+      "log": "/tmp/writer-million-formulas-browser.log"
+    },
+    "nativeMillionCells": {
+      "formulas": 990000,
+      "saveWallSeconds": 7.39,
+      "peakRssBytes": 1671184384,
+      "verifiedValues": {
+        "A5000": 12346,
+        "B5000": 12346,
+        "CV5000": 1222254,
+        "B4999": 4999,
+        "CV4999": 494901
+      },
+      "log": "/tmp/writer-million-native-save-span.log",
+      "scope": "Cached scalar formulas with provable dependencies; general complex workbooks use full calculation. Memory remains high."
+    },
+    "nativeMillionCellsAot": {
+      "saveWallSeconds": 6.22,
+      "peakRssBytes": 1145110528,
+      "verifiedValues": {
+        "B4999": "4999",
+        "CV4999": "494901",
+        "A5000": "12347",
+        "B5000": "12347",
+        "CV5000": "1222353"
+      },
+      "log": "/tmp/writer-million-native-aot.log",
+      "concurrency": "Measured while desktop release build was running; not a controlled comparison"
+    },
+    "measurementNote": "Historical measurements before the password/protection/trace continuation; not remeasured for this bundle."
+  },
+  "delivery": {
+    "status": "signed, Apple Accepted, stapled, Gatekeeper accepted; local artifacts complete",
+    "log": "/tmp/writer-office-continued-release.log",
+    "published": false,
+    "installed": false,
+    "notarizationLog": "/tmp/writer-office-continued-release.log",
+    "appVersion": "0.1.8",
+    "appBuild": "0.1.8",
+    "dmgBytes": 77140599,
+    "dmgSha256": "2a3fbf0970ff3fd92aeff0cb6dfca2a871b39e2a02f5b29c6c2b3c68c72792d3",
+    "appBytes": 165967125,
+    "appNotary": {
+      "status": "Accepted",
+      "id": "52a4e06c-5977-4385-9f4a-ae4bc1a160f8"
+    },
+    "dmgNotary": {
+      "status": "Accepted",
+      "id": "9d8a1f94-cab2-4565-bb30-38875af3c61c"
+    },
+    "matchedUiFiles": 637,
+    "updaterArchiveBytes": 67953707,
+    "updaterSignatureAndFeedVerified": true,
+    "archiveContentVerified": true,
+    "matchedUiScope": "All bundled UI files, including tools and tests"
+  },
+  "completeOfficeParity": false,
+  "bundledBrowser": {
+    "word": {
+      "log": "/tmp/writer-continued-bundle-word.log",
+      "passed": [
+        "cross-paragraph formatted comment: text, anchors, save and reopen",
+        "Office objects: display, no-op save, text edit, inline and block deletion",
+        "Office object history: saved deletion undo, movement, copy, ordering and block/inline conversion",
+        "Objects inside table cells: later paragraphs, text edits, deletion and saved undo",
+        "chapter captions, native REF, figure directory and separate mail merge outputs",
+        "Bound Word controls: XML-backed mirrored fields, real edit dialog, no-op save and saved undo/redo",
+        "Mixed paper sizes, orientation, margins, headers, native reopen and per-page print geometry",
+        "Native Word controls: insert, edit, copy, delete, save/reopen and saved undo",
+        "Repeated table headers, visual line numbers and print; English automatic hyphenation",
+        "Mail merge recipient wizard, editable labels and custom-size envelopes: native save/reopen and pagination",
+        "Exact selected-range bookmarks: cross-paragraph endpoints, reference target, native save/reopen, deletion and saved undo",
+        "Native chart and SmartArt dialogs: multi-series data, node text, save/reopen and saved undo",
+        "Multi-page table rows preserve content and table structure",
+        "Header table cell editing, rich text, native save/reopen and saved undo",
+        "Wildcard and format search, capture replacement and saved undo",
+        "Word table formulas: insertion, field save/reopen, saved undo/redo, dependency refresh and stable no-op",
+        "Native chart preview/no-op save, theme/style set/page borders, edit protection and document comparison",
+        "MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing",
+        "WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving",
+        "WordEditor table commands: insert row, save, undo, save/reopen and redo",
+        "Word shortcuts: justify, line spacing, subscript without zoom, Heading 2",
+        "Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op",
+        "Section numbering, independent odd/even headers, paginated print and stable save",
+        "Native numbering start values and heading numbering; individual text and formatting revision resolution",
+        "incremental page boundaries match full layout [{\"paragraph\":850,\"pages\":371,\"incrementalMs\":36,\"fullMs\":112},{\"paragraph\":400,\"pages\":371,\"incrementalMs\":104,\"fullMs\":105},{\"paragraph\":0,\"pages\":372,\"incrementalMs\":126,\"fullMs\":107},{\"paragraph\":700,\"pages\":371,\"incrementalMs\":52,\"fullMs\":104}]"
+      ]
+    },
+    "excel": {
+      "log": "/tmp/writer-continued-bundle-sheet.log",
+      "passed": [
+        "Dependency arrows: actual grid geometry, frozen panes, scrolling, cross-sheet portal and viewport-sized SVG",
+        "Formula evaluation: worker, cross-sheet conditional formula, actual steps, final result and close",
+        "Protected cells: permissions dialog, native flags, formula hiding, safe paste, saved undo and unprotect history",
+        "Password protection: masked dialog, wrong/correct passwords, native hashes, whole-column defaults at row 1000000, permitted structural edits and saved undo",
+        "Advanced filter: criteria dialog, native visibility, manual hidden rows, clear, saved undo, safe extraction and color sorting",
+        "Circular iteration: settings dialog, convergence, native cached results, disable, saved undo and no-op",
+        "Native sparklines: grid, print, row insertion, no-op save and deletion",
+        "Text-to-columns wizard: quoted fields, text identifiers, date types and native round trip",
+        "Solver worker dialog, native scenarios and one-variable data table save/reopen",
+        "Query editor preview, native persistence and reload",
+        "Manual multi-area clipboard preserves holes and formulas; row/column page breaks save and reopen",
+        "Formula auditing and Go To Special: disjoint formatting/clear, native save/reopen and saved undo",
+        "native pivot creation, row/column aggregation, refresh and save/reopen",
+        "percentage and combination charts, value labels and axis titles",
+        "native tables, calculated columns, header rename and structural edits",
+        "outline collapse/expand save and reopen",
+        "virtual grid navigation to AAA10001",
+        "Office HTML multiline, style and merge import",
+        "far cell, names, dynamic arrays and print settings save/reopen",
+        "image insert, move, resize, delete and undo round trips",
+        "Cross-sheet dependency arrow click opens referenced sheet"
+      ]
+    },
+    "ppt": {
+      "log": "/tmp/writer-continued-bundle-slide.log",
+      "passed": [
+        "Native WebVTT captions: editing dialog, embedded tracks, real audio/video playback, no-op and saved undo/redo",
+        "Editable vector ink: native freeform paths, point dialog, save/reopen, no-op and saved undo/redo",
+        "Custom shows: native routes, repeated slides, playback, delete and saved undo",
+        "Native chart and SmartArt dialogs: insert, edit, save/reopen and saved undo",
+        "Nested group canvas editing: members, geometry, transforms and native save/reopen; notes print DOM",
+        "Selection pane: persistent names/hide/lock, stage hiding, unlocking and native reopen",
+        "native audio/video playback, comments, persistent ink, shared master editing, motion paths and reference guides",
+        "fill opacity, gradient and image backgrounds, auto-advance and rehearsal, image paste, rich text and footer fields",
+        "copied group member ids and z-order",
+        "cross-deck chart relationships and inherited background reset",
+        "cross-format find/replace and whole-word matching",
+        "24pt scale and rich text size stability",
+        "paragraph alignment and immediate whole-box format changes",
+        "safe link clicks, paste selection and delete",
+        "nested groups and table render/save",
+        "aspect ratio save/reopen",
+        "dynamic page numbers after reopen and reorder",
+        "presentation keyboard isolation"
+      ]
+    },
+    "pdf": {
+      "uiRoot": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Writer.app/Contents/Resources/ui",
+      "generatedAt": "2026-09-28T18:53:33.788Z",
+      "result": {
+        "ink": 1009,
+        "annotationContents": [
+          "离线批注",
+          "中文离线文字"
+        ],
+        "form": "after",
+        "pages": 2,
+        "rotation": 90,
+        "chineseText": "中文",
+        "positions": [
+          {
+            "kind": "left",
+            "x": 151.171875
+          },
+          {
+            "kind": "center",
+            "x": 151.1796875
+          },
+          {
+            "kind": "right",
+            "x": 151.171875
+          },
+          {
+            "kind": "decimal",
+            "x": 151.171875
+          }
+        ],
+        "grayPixel": [
+          182,
+          182,
+          182,
+          255
+        ],
+        "redPixels": 2747
+      },
+      "externalRequests": [],
+      "worker": [
+        "/vendor/pdfjs/build/pdf.worker.min.mjs",
+        "/vendor/pdfjs/build/pdf.worker.min.mjs"
+      ],
+      "fonts": [
+        "/vendor/pdfjs/standard_fonts/LiberationSans-Regular.ttf"
+      ],
+      "cmaps": [
+        "/vendor/pdfjs/cmaps/UniGB-UCS2-H.bcmap",
+        "/vendor/pdfjs/cmaps/Adobe-GB1-UCS2.bcmap"
+      ]
+    }
+  },
+  "continuation": {
+    "features": [
+      "Native worksheet password creation and verification; masked dialog; wrong-password rejection; saved undo",
+      "Sparse row and column styles, inheritance, permitted structural edits and whole-line deletion checks",
+      "Selection permissions across mouse/headers/keyboard/names/multiple areas; hidden cells skipped",
+      "Viewport dependency arrows with frozen panes, scrolling and clickable cross-sheet links",
+      "Hidden protected formula references are not exposed by auditing"
+    ],
+    "scopeLimits": [
+      "Worksheet editing protection is not file encryption",
+      "SHA-1/256/384/512 and legacy verifiers supported; other hash algorithms preserved but cannot be unlocked here",
+      "Pivot protection permissions, editable protected ranges and workbook structure protection remain",
+      "At most 64 arrows are drawn; full reference list remains available"
+    ],
+    "sources": [
+      "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/1357ea58-646e-4483-92ef-95d718079d6f",
+      "https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/15197a02-26f7-4a37-ab9c-7de4d4894ea5"
+    ],
+    "screenshot": "/tmp/writer-formula-arrows.png"
+  }
+}

@@ -1,9 +1,13 @@
+import {controlHtml} from './word-controls.js';
+export { layoutTabs } from './word-tabs.js';
 // engine.js — the bridge between the editors and the writer engine serving this page.
 // Open: the engine's JSON tree becomes an editor model, every block remembering its path.
 // Save: the model is diffed against what was opened and the difference becomes writer commands.
 // The file on disk is the only source of truth; the engine keeps everything the editor does not model.
+import { customPaperCm } from './word-pages.js';
+export { customPaperCm } from './word-pages.js';
 import { slideHtmlUnits, listMarker } from './slide-format.js';
-export { findTextRanges, replaceTextRanges } from './text-find.js';
+export { findTextRanges, replaceTextRanges, replacementText } from './text-find.js';
 import { txt, shape as mkShape, line as mkLine, SW, slideH, THEMES, phFamily, resolveColor, POLY, union, flatObjs } from './office-io.js';
 import { lookFrom, pictureView, picSrc, placeStyle, PLACE } from './picture.js';
 import { objectInner, objectLabel } from './office-draw.js';
@@ -65,6 +69,11 @@ export async function run(argv) {
   if (r.code !== 0) throw new EngineError(r.error.message || 'command failed', r.error.code, r.error.hint);
   const out = r.output || '';
   try { return out.trim().startsWith('{') || out.trim().startsWith('[') ? JSON.parse(out) : out; } catch (e) { return out; }
+}
+
+/** Local worksheet password calculation: only the verifier enters model/history. */
+export async function sheetPassword(password, verifier) {
+  return (await http('/xlsx/password', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password,verifier})})).json();
 }
 
 /** The documents in the workspace, newest first, as lazy docs (loaded on open). */
@@ -814,10 +823,10 @@ export function blocksToHtml(blocks) {
 // ----- docx: page setup, header and footer (document props) -----
 const PAPERS = ['A4', 'Letter', 'A5', 'B5', 'A3', 'Legal'], MARGINS = ['narrow', 'normal', 'moderate', 'wide'];
 /** The editor's page model from the document props: margins are a preset (DocxSection.Margins) or the four lengths the engine
- *  prints (2.54cm 3.18cm 2.54cm 3.18cm); a paper size the editor cannot show falls back to A4 but stays in `raw`. */
+ *  prints (2.54cm 3.18cm 2.54cm 3.18cm); custom paper sizes keep their dimensions and the original spelling stays in `raw`. */
 export function pageOf(p) {
   p = p || {};
-  return { size: PAPERS.includes(p.page) ? p.page : 'A4', orient: p.orientation === 'landscape' ? 'landscape' : 'portrait', margin: MARGINS.includes(p.margin) || /\d/.test(p.margin || '') ? p.margin : 'normal', cols: Math.max(1, +p.columns || 1), color: p.pageColor && p.pageColor !== 'none' ? '#' + p.pageColor : '', wm: p.watermark || '', raw: { size: p.page || '', margin: p.margin || '' } };
+  return { size: PAPERS.includes(p.page) || customPaperCm(p.page) ? p.page : 'A4', orient: p.orientation === 'landscape' ? 'landscape' : 'portrait', margin: MARGINS.includes(p.margin) || /\d/.test(p.margin || '') ? p.margin : 'normal', cols: Math.max(1, +p.columns || 1), color: p.pageColor && p.pageColor !== 'none' ? '#' + p.pageColor : '', wm: p.watermark || '', raw: { size: p.page || '', margin: p.margin || '' } };
 }
 /** Header or footer text for the editor: inline html → plain lines, {page}/{pages} kept. */
 export function plainOf(html) {
@@ -853,13 +862,15 @@ async function openDocx(doc) {
   const page = Object.assign({ hf: true }, doc.page || {}, pageOf(p));
   const comments = commentsOf(body.children, p.author || 'Writer'), track = p.track === 'true'; // the engine writes comments as the document's author, else Writer
   const officeObjects = officeObjectsOf(body.children, doc.path);
+  const rangeBookmarks = sourcesOf(p.rangeBookmarks);
+  const controls=controlsOf(body.children);
   const notes = notesOf(body.children), eqs = eqsOf(body.children), shapes = shapesOf(body.children), cites = citesOf(body.children);
-  const html = wrapTabs(inkFills(parseHtml(anchorCites(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes, officeObjects), cites)))).innerHTML;
+  const html = wrapTabs(inkFills(parseHtml(anchorBookmarks(anchorControls(anchorCites(anchorObjects(anchorNotes(anchorComments(trackHtml(blocksToHtml(blocks)), comments), notes, p.noteFormat), eqs, shapes, officeObjects), cites),controls), rangeBookmarks)))).innerHTML;
   const flags = { lineNumbers: p.lineNumbers === 'true', hyphenation: p.hyphenation === 'true', noteFormat: p.noteFormat || '' };
   return { html, rev: (doc.rev || 0) + 1, track, comments: comments.map(c => ({ id: c.cid, author: c.author, initials: c.initials, mine: c.mine, time: c.time, text: c.text, quote: c.quote, path: c.path, resolved: c.resolved, parent: c.parent })),
     notes: notes.map(noteOf), styles: stylesOf(p.styles), base: t.computed || {}, styleEdits: [], page, ...hfOf(p), ...flags,
     protected: p.protected === 'true', theme: p.theme || '', pageBorder: jsonOr(p.pageBorder, null), formatRevisions: sourcesOf(p.formatRevisions), sources: sourcesOf(p.sources), citeStyle: p.citationStyle || '',
-    _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns, pageColor: p.pageColor, watermark: p.watermark }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes, cites, officeObjects } };
+    _orig: { blocks, ids: uniquePictureIds(body.children), page: { page: p.page, orientation: p.orientation, margin: p.margin, columns: p.columns, pageColor: p.pageColor, watermark: p.watermark }, ...hfOf(p), ...flags, track, comments, notes, eqs, shapes, cites, controls,officeObjects, rangeBookmarks } };
 }
 
 // ----- docx: footnotes and endnotes -----
@@ -879,7 +890,7 @@ const noteOf = x => Object.assign({ id: x.nid, kind: x.kind, text: x.text }, x.h
 /** A note's mark in the text: a superscript number the caret steps over; numbered by order of its kind. */
 const NOTE_MARK = 'sup[data-fn]';
 /** What sits in a paragraph beside its text: deleted text, notes' marks, equations and shapes. Character offsets leave them out. */
-export const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape],span[data-cite],[data-office-object]';
+export const MARKS = 'del,sup[data-fn],span[data-eq],span[data-shape],span[data-cite],[data-office-object],[data-bookmark-start],[data-bookmark-end],span[data-control]';
 /** The character offset of `node` in block `el`: the visible text before it (a br and a page break one character each). */
 export function offsetIn(el, node) {
   let at = 0; const w = el.ownerDocument.createTreeWalker(el, 5); let n;
@@ -900,6 +911,36 @@ function placeAt(el, at, mark) {
     pos += len;
   }
   el.appendChild(mark);
+}
+/** Bookmark boundaries are empty markers, never wrappers spanning block elements. */
+export function bookmarkMark(d, name, end = false) {
+  const s = d.createElement('span'); s.setAttribute(end ? 'data-bookmark-end' : 'data-bookmark-start', name);
+  s.setAttribute('contenteditable', 'false'); s.setAttribute('aria-hidden', 'true');
+  s.style.cssText = 'display:inline;font-size:0;line-height:0'; return s;
+}
+export function anchorBookmarks(html, bookmarks) {
+  if (!bookmarks.length) return html;
+  const root = parseHtml(html);
+  for (const b of bookmarks) {
+    const start = root.querySelector(`[data-path="${b.start}"]`), end = root.querySelector(`[data-path="${b.end}"]`);
+    if (!start || !end) continue;
+    const a = bookmarkMark(root.ownerDocument, b.name), z = bookmarkMark(root.ownerDocument, b.name, true);
+    placeAt(start, b.startOffset, a);
+    if (start === end && b.startOffset === b.endOffset) a.after(z); else placeAt(end, b.endOffset, z);
+  }
+  return root.innerHTML;
+}
+export function rangeBookmarksIn(root, blocks) {
+  const owners = blocks.flatMap(b => b.rows ? b.rows.flatMap(r => r.cells) : [b]).filter(b => b.el);
+  const locate = mark => { const b = owners.find(b => b.el.contains(mark)); return b && { path: b.path, at: offsetIn(b.el, mark) }; };
+  const ends = new Map(Array.from(root.querySelectorAll('[data-bookmark-end]'), el => [el.getAttribute('data-bookmark-end'), el]));
+  const out = [], seen = new Set();
+  for (const mark of root.querySelectorAll('[data-bookmark-start]')) {
+    const name = mark.getAttribute('data-bookmark-start'), end = ends.get(name); if (!end || seen.has(name)) continue;
+    const startPos = locate(mark), endPos = locate(end); if (!startPos || !endPos) continue;
+    out.push({ name, start: startPos.path, startOffset: startPos.at, end: endPos.path, endOffset: endPos.at }); seen.add(name);
+  }
+  return out;
 }
 const noteMark = (d, x) => { const s = d.createElement('sup'); s.setAttribute('data-fn', x.nid); s.setAttribute('data-kind', x.kind); s.setAttribute('contenteditable', 'false'); s.textContent = '?'; return s; };
 /** Puts each note's mark at its character offset in its paragraph (deleted text and other marks not counted, a br one character). */
@@ -1172,6 +1213,28 @@ async function restoreOfficeObjects(file, root, kept, exec = run) {
     objects.forEach((o, i) => { o.path = `${parent}/object[${i + 1}]`; o.el.setAttribute('data-path', o.path); o.el.setAttribute('data-office-props', JSON.stringify(o.props)); });
   }
   return { count, list };
+}
+
+// Native content controls are atoms beside ordinary paragraph text, like equations.
+export function controlsOf(nodes){const out=[];const walk=(nodes,cell=null,base=0,cellBlocks=false)=>{for(const n of nodes||[]){if(n.kind==='control')out.push({id:String(n.props.id),path:n.path.replace(/\/control\[[^\]]*\]$/,''),at:+n.props.at||0,data:jsonOr(n.props.data,{}),...(cell?{visualParent:cell,visualAt:base+(+n.props.at||0)}:{})});if(n.kind==='cell')walk(n.children,n.path,0,true);else walk(n.children,cell,base);if(cellBlocks&&/^(paragraph|heading|code)$/.test(n.kind))base+=String(n.props?.text||'').length+1;}};walk(nodes);return out;}
+export function anchorControls(html,controls){if(!controls.length)return html;const root=parseHtml(html),box=root.ownerDocument.createElement('div');for(const x of controls){const host=root.querySelector(`[data-path="${x.visualParent||x.path}"]`);if(host){box.innerHTML=controlHtml(x.data,x.id);placeAt(host,x.visualAt??x.at,box.firstChild);}}return root.innerHTML;}
+async function planControls(file,before,root,dirty,exec=run){
+ const elements=[...root.querySelectorAll('span[data-control]')],snapshot=elements.map(el=>({el,id:el.dataset.controlId||'',data:jsonOr(el.dataset.control,{})}));
+ if(!dirty&&before.length===snapshot.length&&snapshot.every((x,i)=>x.id===before[i].id&&same(x.data,before[i].data)&&pathOf(officeHost(x.el))===(before[i].visualParent||before[i].path)&&offsetIn(officeHost(x.el),x.el)===(before[i].visualAt??before[i].at)))return {count:0,list:before};
+ if(!before.length&&!snapshot.length)return {count:0,list:[]};
+ const actual=await exec(['query',file,'//control','--props']),native=new Map(actual.map(n=>[String(n.props.id),n])),used=new Set(),list=[];let count=0;
+ const reordered=before.map(x=>x.id).join(',')!==snapshot.map(x=>x.id).join(',');
+ for(const x of snapshot){const host=officeHost(x.el);if(!host)continue;let parent=pathOf(host),at=offsetIn(host,x.el),visual={};if(/^(TD|TH)$/.test(host.tagName)){visual={visualParent:parent,visualAt:at};const cell=await exec(['get',file,parent,'--depth','2']),paras=(cell.children||[]).filter(n=>/^(paragraph|heading|code)$/.test(n.kind));let para=paras.at(-1);for(const p of paras){para=p;const length=String(p.props.text||'').length;if(at<=length)break;at-=length+1;}if(!para){para=await exec(['add',file,parent,'--type','paragraph','--prop','text=']);count++;}parent=para.path;at=Math.max(0,at);}
+  let node=x.id&&!used.has(x.id)?native.get(x.id):null;if(node)used.add(x.id);
+  if(node&&node.path.replace(/\/control\[[^\]]*\]$/,'')!==parent){await exec(['remove',file,'//control[@id='+x.id+']']);count++;node=null;}
+  if(!node){node=await exec(['add',file,parent,'--type','control','--prop','data='+JSON.stringify(x.data),'--prop','at='+at]);count++;}
+  else {const props={};if(!same(jsonOr(node.props.data,{}),x.data))props.data=JSON.stringify(x.data);if(+node.props.at!==at||reordered)props.at=String(at);if(Object.keys(props).length){await exec(['set',file,'//control[@id='+x.id+']',...propsArgs(props)]);node=await exec(['get',file,'//control[@id='+x.id+']','--depth','0']);count++;}}
+  const p=node.props||{};x.el.dataset.controlId=String(p.id||x.id);x.el.dataset.control=JSON.stringify(jsonOr(p.data,x.data));x.el.textContent=p.text??x.el.textContent;
+  list.push({id:x.el.dataset.controlId,path:parent,at,data:jsonOr(x.el.dataset.control,{}),...visual});
+ }
+ for(const [id,node]of native)if(!used.has(id)){await exec(['remove',file,'//control[@id='+id+']']);count++;}
+ if(count&&snapshot.some(x=>x.data.bound)){const updated=await exec(['query',file,'//control','--props']),byId=new Map(updated.map(n=>[String(n.props.id),n.props]));for(const item of list){const props=byId.get(item.id),element=elements.find(el=>el.dataset.controlId===item.id);if(props&&element){item.data=jsonOr(props.data,item.data);element.dataset.control=JSON.stringify(item.data);element.textContent=props.text;}}}
+ return {count,list};
 }
 
 // ----- docx: equations and shapes in paragraphs -----
@@ -1590,7 +1653,7 @@ export function pasteHtml(html) {
     if (v !== t.nodeValue) t.nodeValue = v;
   }
   root.querySelectorAll('sup[data-fn]').forEach(x => x.remove());
-  root.querySelectorAll('[data-path],[data-citeid],[data-cid],[data-ghost-root]').forEach(el => ['data-path', 'data-citeid', 'data-cid', 'data-ghost-root'].forEach(a => el.removeAttribute(a)));
+  root.querySelectorAll('[data-path],[data-citeid],[data-cid],[data-ghost-root],[data-control-id]').forEach(el => ['data-path', 'data-citeid', 'data-cid', 'data-ghost-root','data-control-id'].forEach(a => el.removeAttribute(a)));
   return root.innerHTML;
 }
 /** After a paste: the browser wraps what it put in to look as it did where it was copied, in the page's own terms — the app's
@@ -1618,7 +1681,7 @@ function inlineHtml(el) {
   Array.from(c.querySelectorAll('img,figure[data-pic]')).forEach(x => x.remove());
   Array.from(c.querySelectorAll('[data-ai]')).forEach(x => x.removeAttribute('data-ai'));
   Array.from(c.querySelectorAll('[data-cid]')).forEach(x => { while (x.firstChild) x.parentNode.insertBefore(x.firstChild, x); x.remove(); });
-  Array.from(c.querySelectorAll('sup[data-fn],span[data-eq],span[data-shape],span[data-cite],[data-office-object]')).forEach(x => x.remove());
+  Array.from(c.querySelectorAll('sup[data-fn],span[data-eq],span[data-shape],span[data-cite],[data-office-object],[data-bookmark-start],[data-bookmark-end],span[data-control]')).forEach(x => x.remove());
   return pbOut(c.innerHTML.replace(/\u200B/g, ''));
 }
 
@@ -1659,9 +1722,11 @@ export function runsOf(html) {
       if (BLOCK.test(tag) && out.length && !out[out.length - 1].t.endsWith('\n')) add('\n', key(f));
       const g = Object.assign({}, f);
       if (tag === 'B' || tag === 'STRONG' || st.fontWeight === 'bold' || st.fontWeight === 'bolder' || +st.fontWeight >= 600) g.b = 1;
-      if (st.fontWeight === 'normal') g.b = 0;
+      if (st.fontWeight === 'normal' || +st.fontWeight>0&&+st.fontWeight<600) g.b = 0;
       if (tag === 'I' || tag === 'EM' || st.fontStyle === 'italic') g.i = 1;
+      if (st.fontStyle === 'normal') g.i = 0;
       if (tag === 'U' || (st.textDecoration || '').includes('underline')) g.u = /^(double|dotted|dashed|wavy)$/.test(st.textDecorationStyle) ? st.textDecorationStyle : 1; // a slide's double, dotted, dashed or wavy underline
+      if (st.textDecoration === 'none') g.u = 0;
       if (tag === 'INS') g.ins = 1;
       if (tag === 'DEL') g.del = 1;
       if (tag === 'S' || tag === 'STRIKE' || (st.textDecoration || '').includes('line-through')) g.s = 1;
@@ -2037,13 +2102,18 @@ async function saveDocx(doc, root, log) {
   doc.notes = notes.list.map(noteOf);
   const cites = await planCites(doc.path, orig.cites || [], citesIn(el, blocks), log);
   n += cites.count;
+  const controls=await planControls(doc.path,orig.controls||[],el,n>0);n+=controls.count;
+  const rangeBookmarks = rangeBookmarksIn(el, blocks), oldBookmarks = orig.rangeBookmarks || [];
+  const bookmarkPatch = { set: rangeBookmarks.filter(b => n || !oldBookmarks.some(o => JSON.stringify(o) === JSON.stringify(b))), remove: oldBookmarks.filter(o => !rangeBookmarks.some(b => b.name === o.name)).map(b => b.name) };
+  if (bookmarkPatch.set.length || bookmarkPatch.remove.length) { await run(['set', doc.path, '/', '--prop', 'rangeBookmarks=' + JSON.stringify(bookmarkPatch)]); n++; }
   if (n && el.querySelector('[data-field]')) {
     await run(['set', doc.path, '/', '--prop', 'fields=all']); n++;
     const current = await tree(doc.path), body = current.children?.find(c => c.kind === 'body');
-    const native = blocksOf(body?.children || [], doc.path);
-    for (const b of blocks) {
+    const flatten = list => list.flatMap(b => [b, ...flatten(b.rows || b.cells || [])]);
+    const native = new Map(flatten(blocksOf(body?.children || [], doc.path)).map(b=>[b.path,b]));
+    for (const b of flatten(blocks)) {
       if (!b.el || !b.el.querySelector('[data-field]')) continue;
-      const raw = native.find(x => x.path === b.path); if (!raw?.props.html) continue;
+      const raw = native.get(b.path); if (!raw?.props.html) continue;
       const fields = Array.from(parseHtml(raw.props.html).querySelectorAll('[data-field]')), local = Array.from(b.el.querySelectorAll('[data-field]'));
       local.forEach((f, i) => { if (fields[i]?.getAttribute('data-field') === f.getAttribute('data-field')) f.innerHTML = fields[i].innerHTML; });
       b.props.html = inlineHtml(b.el);
@@ -2051,7 +2121,7 @@ async function saveDocx(doc, root, log) {
   }
   const pageProps = Object.fromEntries(['page', 'orientation', 'margin', 'columns', 'pageColor', 'watermark'].filter(k => k in pp).map(k => [k, pp[k]]));
   const now = Object.assign({}, orig, { titlePg: String(!!orig.titlePg), evenAndOdd: String(!!orig.evenAndOdd) }, pp); // headers and footers as the file has them now
-  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list, cites: cites.list, officeObjects: officeObjects.list.map(({ el, ...o }) => o) });
+  doc._orig = Object.assign({ blocks: strip(blocks), page: Object.assign({}, orig.page, pageProps) }, hfOf(now), { track: !!doc.track, lineNumbers: !!doc.lineNumbers, hyphenation: !!doc.hyphenation, noteFormat: doc.noteFormat || '', comments: comments.list, notes: notes.list, eqs: eqs.list, shapes: shapes.list, cites: cites.list, controls:controls.list,officeObjects: officeObjects.list.map(({ el, ...o }) => o), rangeBookmarks });
   // a citation, a note that cites or a works-cited list saved: the engine drew them all again (a source's first note in full, APA's
   // 2015a and 2015b…): show what it drew
   const bibs = blocks.filter(b => b.kind === 'bibliography');
@@ -2111,6 +2181,9 @@ export function cellModel(p) {
   const v = p.formula != null ? '=' + p.formula : (p.value != null ? String(p.value) : '');
   const s = {};
   for (const k in BOOLS) if (p[k] === 'true') s[BOOLS[k]] = true;
+  if(p.locked==='false'||p.locked===false)s.locked=false;
+  if(p.formulaHidden==='true'||p.formulaHidden===true)s.formulaHidden=true;
+  if(p.protectionExplicit==='true'||p.protectionExplicit===true){s.locked=p.locked!=='false'&&p.locked!==false;s.formulaHidden=p.formulaHidden==='true'||p.formulaHidden===true;}
   if (p.color) s.color = hex(p.color);
   if (p.fill && p.fill !== 'none') s.fill = hex(p.fill);
   if (ptOfSize(p.size)) s.fs = ptOfSize(p.size);
@@ -2128,7 +2201,7 @@ export function cellModel(p) {
   Object.assign(s, fmtOf(p.format));
   if (p.type === 'date' && s.fmt !== 'date' && s.fmt !== 'time') s.fmt = 'date'; // the engine knows a date by its format; the formatter then reads the code
   if (p.type === 'string' && p.formula == null && v.trim() !== '' && !isNaN(Number(v.replace(/,/g, ''))) && !s.fmt) s.fmt = 'text'; // "007" stays text, not 7
-  return Object.assign(Object.keys(s).length ? { v, s } : { v }, p.spill ? { spill: p.spill } : {});
+  return Object.assign(Object.keys(s).length ? { v, s } : { v }, p.spill ? { spill: p.spill } : {}, p.type === 'string' && p.formula == null && v.startsWith('=') ? {literal:true} : {}, p.protectionExplicit==='true'||p.protectionExplicit===true?{styleExplicit:true}:{});
 }
 const pxOfCm = v => Math.round(cmOf(v) * CM_PX), cmOfPx = px => cmStr(px / CM_PX);
 /** A chart on a sheet: `eid` is the engine's id, which every sheet numbers anew, so the editor's id adds the sheet. */
@@ -2160,33 +2233,41 @@ export function sheetModel(s, file) {
   // the sheet's rules keep the file's shape (ranges as text, see the engine's sheet props); colours get their # like a cell's
   const cf = jsonOr(p.cf, []).map(r => ruleColors(r, hex)), dv = jsonOr(p.validations, []);
   // rows the file hides inside a filtered range are the filter's doing (frows), which the editor recomputes; the rest were hidden by hand
+  const advancedFilter=jsonOr(p.advancedFilter,null), advancedHidden=new Set(advancedFilter?.hidden||[]);
   const hid = jsonOr(p.hidden, {}), fb = filter && Object.keys(filters).length ? filter.split(':').map(xParse) : null, hiddenRows = [], frows = [];
-  (hid.rows || []).forEach(n => { const r = +n - 1; if (r < 0) return; (fb && fb[0] && r > fb[0].r && r <= (fb[1] || fb[0]).r ? frows : hiddenRows).push(r); });
+  (hid.rows || []).forEach(n => { const r=+n-1;if(r<0)return;const filtered=advancedHidden.has(r)||fb&&fb[0]&&r>fb[0].r&&r<=(fb[1]||fb[0]).r;if(filtered)frows.push(r);if(!filtered||advancedFilter?.manualHidden?.includes(r))hiddenRows.push(r); });
   const hiddenCols = (hid.cols || []).map(k => xParse(String(k) + '1')).filter(Boolean).map(a => a.c);
   const autoH = Object.fromEntries(Object.entries(jsonOr(p.autoHeights, {})).map(([r, h]) => [r, Math.round(+h * PT_PX)]));
-  const m = { name: p.name, path: sheetPath, cells: shareCells(cells), colW, rowH, autoH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, print: jsonOr(p.print, {}), visibility: p.visibility || 'visible', protected: p.protected === 'true' || p.protected === true, tables: jsonOr(p.tables, []), pivots: jsonOr(p.pivots, []), outline: jsonOr(p.outline, []), charts, images };
+  const m = { name: p.name, names: jsonOr(p.names, {}), path: sheetPath, cells: shareCells(cells), colW, rowH, autoH, merges, frR: fz ? fz.r : 0, frC: fz ? fz.c : 0, filter, filters, frows, ...(advancedFilter?{advancedFilter}:{}), cf, dv, hiddenRows, hiddenCols, color: p.color && p.color !== 'none' ? hex(p.color) : null, print: jsonOr(p.print, {}), visibility: p.visibility || 'visible', protected: p.protected === 'true' || p.protected === true, tables: jsonOr(p.tables, []), pivots: jsonOr(p.pivots, []), sparklines:jsonOr(p.sparklines,[]), ...(p.solver&&p.solver!=='null'?{solver:jsonOr(p.solver,null)}:{}), ...(p.scenarios?{scenarios:jsonOr(p.scenarios,[])}:{}), ...(p.dataTables?{dataTables:jsonOr(p.dataTables,[])}:{}), outline: jsonOr(p.outline, []), charts, images };
   for(const group of m.outline.filter(g=>g.collapsed)) { const key=group.axis==='r'?'hiddenRows':'hiddenCols';m[key]=m[key].filter(i=>i<group.start||i>group.end); }
   if (p.gridlines === 'false' || p.gridlines === false) m.noGrid = true; // the file hides them; otherwise the settings decide
+  m.protection=jsonOr(p.protection,{});
+  if(p.tabSelected==='true'||p.tabSelected===true)m.tabSelected=true;
+  if(p.split&&p.split!=='null')m.split=jsonOr(p.split,null);
+  if(p.rowColumnStyles)m.rowColumnStyles=jsonOr(p.rowColumnStyles,null);
+  if(m.rowColumnStyles)for(const style of [...Object.values(m.rowColumnStyles.styles||{}),m.rowColumnStyles.base].filter(Boolean))style.ui=cellModel(style.props||{}).s||{};
   return m;
 }
 /** A conditional format's colours (fill, color, colors) through `f`: hex adds the #, unhex takes it away. */
 const ruleColors = (r, f) => { const o = Object.assign({}, r); if (o.fill) o.fill = f(o.fill); if (o.color) o.color = f(o.color); if (Array.isArray(o.colors)) o.colors = o.colors.map(f); return o; };
 /** The snapshot a later save is diffed against. */
-const origOf = (sheets, names = {}) => ({ names: { ...names }, sheets: sheets.map(s => ({ ...JSON.parse(JSON.stringify({ path: s.path, name: s.name, colW: s.colW || {}, rowH: s.rowH || {}, autoH: s.autoH || {}, merges: s.merges || [], frR: s.frR || 0, frC: s.frC || 0, filter: s.filter || null,
-  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, print: s.print || {}, visibility: s.visibility || 'visible', protected: !!s.protected, noGrid: !!s.noGrid, tables: s.tables || [], pivots: s.pivots || [], outline: s.outline || [], charts: s.charts || [], images: s.images || [] })), cells: shareCells(s.cells) })) });
+const origOf = (sheets, names = {}, queries = [], iteration = null, workbookProtection = {}, active = 0) => ({ active, workbookProtection: JSON.parse(JSON.stringify(workbookProtection)), iteration: iteration ? {...iteration} : null, queries: JSON.parse(JSON.stringify(queries)), names: { ...names }, sheets: sheets.map(s => ({ ...JSON.parse(JSON.stringify({ path: s.path, name: s.name, names: s.names || {}, colW: s.colW || {}, rowH: s.rowH || {}, autoH: s.autoH || {}, merges: s.merges || [], frR: s.frR || 0, frC: s.frC || 0, split:s.split||null, tabSelected:!!s.tabSelected, filter: s.filter || null,
+  filters: s.filters || {}, frows: s.frows || [], cf: s.cf || [], dv: s.dv || [], hiddenRows: s.hiddenRows || [], hiddenCols: s.hiddenCols || [], color: s.color || null, print: s.print || {}, visibility: s.visibility || 'visible', protected: !!s.protected, protection:s.protection||{}, rowColumnStyles:s.rowColumnStyles||null, noGrid: !!s.noGrid, tables: s.tables || [], pivots: s.pivots || [], sparklines:s.sparklines||[], scenarios:s.scenarios||[], solver:s.solver||null, advancedFilter:s.advancedFilter||null, dataTables:s.dataTables||[], outline: s.outline || [], charts: s.charts || [], images: s.images || [] })), cells: shareCells(s.cells) })) });
 async function openXlsx(doc) {
   const t = await tree(doc.path);
   const sheets = (t.children || []).filter(s => s.kind === 'sheet').map(s => sheetModel(s, doc.path)), tp = t.props || {};
   // the workbook's default font: cells without their own show it, as in Excel
-  const names = jsonOr(tp.names, {}), preferred = Math.min(doc.active || 0, sheets.length - 1);
-  return { active: sheets[preferred]?.visibility === 'visible' ? preferred : Math.max(0, sheets.findIndex(s => s.visibility === 'visible')), sheets, names, font: tp.font || null, fs: ptOfSize(tp.size) || null, _orig: origOf(sheets, names) };
+  const names = jsonOr(tp.names, {}), queries = jsonOr(tp.queries, []), iteration = jsonOr(tp.iteration, null), workbookProtection = jsonOr(tp.workbookProtection, {}), preferred = Math.min((doc.active ?? +tp.activeSheet) || 0, sheets.length - 1);
+  return { active: sheets[preferred]?.visibility === 'visible' ? preferred : Math.max(0, sheets.findIndex(s => s.visibility === 'visible')), sheets, names, queries, iteration, workbookProtection, date1904: tp.date1904 === 'true' || tp.date1904 === true, font: tp.font || null, fs: ptOfSize(tp.size) || null, _orig: origOf(sheets, names, queries, iteration, workbookProtection, preferred) };
 }
 const same = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
 export function cellProps(o, c) {
   const p = {}, os = (o && o.s) || {}, ns = (c && c.s) || {};
   const ov = o ? o.v : '', nv = c ? (c.v == null ? '' : String(c.v)) : '';
-  if (ov !== nv) { if (nv[0] === '=') p.formula = nv.slice(1); else { p.value = nv; if (ns.fmt === 'text' && nv !== '') p.type = 'string'; } }
+  if (ov !== nv || !!o?.literal !== !!c?.literal) { if (nv[0] === '=' && !c?.literal) p.formula = nv.slice(1); else { p.value = nv; if ((ns.fmt === 'text' || c?.literal) && nv !== '') p.type = 'string'; } }
   for (const k in BOOLS) if (!!os[BOOLS[k]] !== !!ns[BOOLS[k]]) p[k] = ns[BOOLS[k]] ? 'true' : 'false';
+  if((os.locked!==false)!==(ns.locked!==false)||ns.locked!==undefined&&os.locked===undefined)p.locked=String(ns.locked!==false);
+  if(!!os.formulaHidden!==!!ns.formulaHidden||ns.formulaHidden!==undefined&&os.formulaHidden===undefined)p.formulaHidden=String(!!ns.formulaHidden);
   if ((os.color || null) !== (ns.color || null)) p.color = unhex(ns.color);
   if ((os.fill || null) !== (ns.fill || null)) p.fill = unhex(ns.fill);
   if ((os.fs || null) !== (ns.fs || null)) p.size = String(ns.fs || 11);
@@ -2211,12 +2292,20 @@ const RANGE_MIN = 8;
 /** Sheet-level props that differ between the saved snapshot and the model. */
 export function sheetProps(o, s) {
   const p = {};
+  if(!same(o.rowColumnStyles||null,s.rowColumnStyles||null))p.rowColumnStyles=JSON.stringify(s.rowColumnStyles||{rows:{},cols:{},styles:{}});
+  if (!same(o.names || {}, s.names || {})) p.names = JSON.stringify(s.names || {});
   if (!same(o.outline || [], s.outline || [])) p.outline = JSON.stringify(s.outline || []);
   if (!same(o.pivots || [], s.pivots || [])) p.pivots = JSON.stringify(s.pivots || []);
   if (!same(o.tables || [], s.tables || [])) p.tables = JSON.stringify(s.tables || []);
+  if (!same(o.dataTables||[],s.dataTables||[])) p.dataTables=JSON.stringify(s.dataTables||[]);
+  if (!same(o.advancedFilter||null,s.advancedFilter||null)) p.advancedFilter=JSON.stringify(s.advancedFilter||null);
+  if (!same(o.solver||null,s.solver||null)) p.solver=JSON.stringify(s.solver||null);
+  if (!same(o.sparklines||[],s.sparklines||[])) p.sparklines=JSON.stringify(s.sparklines||[]);
+  if (!same(o.scenarios||[],s.scenarios||[])) p.scenarios=JSON.stringify(s.scenarios||[]);
   if (!same(o.print || {}, s.print || {})) p.print = JSON.stringify(s.print || {});
   if ((o.visibility || 'visible') !== (s.visibility || 'visible')) p.visibility = s.visibility || 'visible';
   if (!!o.protected !== !!s.protected) p.protected = String(!!s.protected);
+  if(!same(o.protection||{},s.protection||{})||p.protected==='true')p.protection=JSON.stringify(s.protection||{});
   const mg = x => JSON.stringify((x.merges || []).map(m => xRef(m.r, m.c) + ':' + xRef(m.r + m.rs - 1, m.c + m.cs - 1)));
   const wd = x => Object.fromEntries(Object.entries(x.colW || {}).filter(([, px]) => px > 0).map(([k, px]) => [k, +((px - CHAR_PAD) / CHAR_PX).toFixed(2)]));
   const ht = x => Object.fromEntries(Object.entries(x.rowH || {}).filter(([, px]) => px > 0).map(([k, px]) => [k, +(px / PT_PX).toFixed(2)]));
@@ -2229,6 +2318,8 @@ export function sheetProps(o, s) {
   if (h) p.heights = h;
   const ah = sizes(ht({ rowH: o.autoH }), ht({ rowH: s.autoH })); if (ah) p.autoHeights = ah;
   if (fz(o) !== fz(s)) p.freeze = fz(s);
+  if (!same(o.split,s.split)) p.split=JSON.stringify(s.split||null);
+  if (!!o.tabSelected!==!!s.tabSelected) p.tabSelected=String(!!s.tabSelected);
   if ((o.filter || 'none') !== (s.filter || 'none')) p.filter = s.filter || 'none';
   // the rules: whole sets, sent when they differ (filters only while there is a filter range to hold them; the range goes first in the same set)
   const js = x => JSON.stringify(x || null);
@@ -2346,7 +2437,11 @@ async function saveXlsx(doc, log) {
   const calc = new SheetCalc(doc);
   doc.sheets.forEach((s, i) => { const old = doc._orig?.sheets.find(o => o.path === s.path); if (!old || old.cells !== s.cells || !same(old.colW, s.colW) || !same(old.merges, s.merges)) s.autoH = Object.fromEntries(Object.entries(autoRowHeights(s, sheetParseA, sheetColName, (r, c) => calc.value(i, r, c), doc.fs || 11, doc)).filter(([r]) => !s.rowH?.[r])); });
   let n = await planXlsx(doc.path, doc._orig ? doc._orig.sheets : [], doc.sheets, run, log);
+  if ((doc._orig?.active||0)!==(doc.active||0)) { const props={activeSheet:String(doc.active||0)};await run(['set',doc.path,'/',...propsArgs(props)]);if(log)log('set','/',props);n++; }
+  if (!same(doc._orig?.workbookProtection || {}, doc.workbookProtection || {})) { const props = { workbookProtection: JSON.stringify({structure:false,verifier:null,...doc.workbookProtection}) }; await run(['set',doc.path,'/',...propsArgs(props)]); if(log)log('set','/',props); n++; }
   if (!same(doc._orig?.names || {}, doc.names || {})) { const props = { names: JSON.stringify(doc.names || {}) }; await run(['set', doc.path, '/', ...propsArgs(props)]); if (log) log('set', '/', props); n++; }
+  if (!same(doc._orig?.queries || [], doc.queries || [])) { const props = { queries: JSON.stringify(doc.queries || []) }; await run(['set', doc.path, '/', ...propsArgs(props)]); if (log) log('set', '/', props); n++; }
+  if (!same(doc._orig?.iteration, doc.iteration)) { const props = { iteration: JSON.stringify(doc.iteration || {enabled:false,count:100,delta:.001}) }; await run(['set',doc.path,'/',...propsArgs(props)]); if(log)log('set','/',props); n++; }
   return n;
 }
 
@@ -2396,9 +2491,9 @@ function pptxObject(file, sp, geo, n) {
   const path = decor || !p.id ? n.path : sp + '/' + n.kind + '[@id=' + p.id + ']';
   // an id names one object in the whole deck, and a cNvPr id does not: every slide numbers its shapes anew, and master and layout shapes may share one
   const id = (decor ? 'd' : 'e') + path;
-  const look = { rot: Number(p.rotation) || 0, shadow: p.shadow === 'true' };
+  const look = { name: p.name || '', hidden: p.hidden === 'true', locked: p.locked === 'true', rot: Number(p.rotation) || 0, shadow: p.shadow === 'true' };
   if (kind === 'object') return { id, path, kind, t: 'object', data: p, html: '', ...box, ...look };
-  if (kind === 'image') { const lk = lookFrom(p); delete lk.rotation; return txt(Object.assign({ id, path, kind, t: 'image', mediaType: p.mediaType || '', src: binaryUrl(file, path), background: p.background === 'true' || p.background === true, source: p.source, html: '', look: lk, rot: look.rot }, box)); }
+  if (kind === 'image') { const lk = lookFrom(p); delete lk.rotation; return txt(Object.assign({ id, path, kind, t: 'image', mediaType: p.mediaType || '', ...(p.playback?{playback:jsonOr(p.playback,{})}:{}), ...(p.captions?{captions:jsonOr(p.captions,{})}:{}), src: binaryUrl(file, path), background: p.background === 'true' || p.background === true, source: p.source, html: '', look: lk, ...look }, box)); }
   if (n.kind === 'table') {
     const merges = [], cells = {};
     (n.children || []).forEach((r, ri) => (r.children || []).forEach((c, ci) => { const cp = c.props || {}; if (+cp.colspan > 1 || +cp.rowspan > 1) merges.push({ r: ri, c: ci, rs: +cp.rowspan || 1, cs: +cp.colspan || 1 }); const own = {}; if (cp.html && cp.html !== esc(cp.text || '').replace(/\n/g,'<br>')) own.html = slideHtmlUnits(cp.html, ptPx); if (cp.valign && cp.valign !== 'middle') own.valign = cp.valign; if (cp.fill) own.fill = hex(cp.fill); if (cp.line) own.line = cp.line === 'none' ? 'none' : hex(cp.line); if (cp.align && cp.align !== 'left') own.align = cp.align; if (Object.keys(own).length) cells[ri + ':' + ci] = own; }));
@@ -2417,7 +2512,7 @@ function pptxObject(file, sp, geo, n) {
   const html = p.field ? '<p>' + esc(p.text || '') + '</p>' : decor ? slideHtmlUnits(p.html || (p.text ? '<p>' + esc(p.text) + '</p>' : ''), ptPx) : ph && !String(p.text || '').trim() ? '' : paraHtml((n.children || []).filter(c => c.kind === 'paragraph'), ptPx);
   const base = Object.assign({ id, path, kind: 'shape', html, fs: p.size ? Math.round(cmOf(p.size) / UNIT.pt * ptPx) : (isTitle ? Math.round(40 * ptPx) : Math.round(20 * ptPx)), color: hex(p.color), font: p.font || null, ph: p.field === 'slideNumber' ? 'num' : ph, field: p.field || null, fillOpacity: p.fillOpacity == null ? 1 : +p.fillOpacity / 100, align: p.align || 'left', va: p.verticalAlign || 'top', italic: p.italic === 'true', underline: p.underline === 'true', bold: p.bold != null ? p.bold === 'true' : isTitle, lockAspect: p.lockAspect === 'true' }, box, from, look, decor ? {} : textBox(p, ptPx));
   const outline = { stroke: p.line && p.line !== 'none' ? hex(p.line) : '', sw: swOf(p, ptPx), dash: p.dash || 'solid' };
-  if (filled || (p.geometry && p.geometry !== 'rect' && p.geometry !== 'textbox' && p.geometry !== 'custom')) return mkShape(Object.assign(base, outline, { fill: p.gradient ? 'grad:' + p.gradient.split(',').map((v, i) => i < 2 ? '#' + v : v).join(',') : filled ? hex(p.fill) : null, shape: geomOf(p.geometry) }));
+  if (p.pathData || filled || (p.geometry && p.geometry !== 'rect' && p.geometry !== 'textbox' && p.geometry !== 'custom')) return mkShape(Object.assign(base, outline, { fill: p.gradient ? 'grad:' + p.gradient.split(',').map((v, i) => i < 2 ? '#' + v : v).join(',') : p.fill === 'none' ? '' : filled ? hex(p.fill) : null, shape: p.pathData ? 'custom' : geomOf(p.geometry), ...(p.pathData?{pathData:jsonOr(p.pathData,null)}:{}) }));
   return txt(Object.assign(base, outline));
 }
 /** A connector's ends name shapes by their drawing id; the editor's lines hold the object's id. */
@@ -2439,9 +2534,10 @@ async function openPptx(doc) {
   });
   // the palette the deck wears (its theme, written by 设计 or the assistant) is the editor's theme; a deck without one keeps the editor's
   const palette = THEMES[t.props.palette] ? t.props.palette : null;
-  const orig = { geo, ratio, palette, slides: pptxSnapshot(slides) };
+  const customShows=jsonOr(t.props.customShows,[]).map(show=>({...show,slides:show.slides.map(id=>'s'+id)}));
+  const orig = { geo, ratio, palette, customShows:JSON.parse(JSON.stringify(customShows)),slides: pptxSnapshot(slides) };
   const layouts = (Array.isArray(t.props.layouts) ? t.props.layouts : JSON.parse(t.props.layouts || '[]')).map(l => ({ name:l.name, layout:l.name, id:'layout-'+l.name, bg:l.background && l.background !== 'none' ? p2bg(l.background) : null, decor:slides.find(s=>s.layout===l.name)?.decor || [], objs:l.placeholders.map((props,i) => pptxObject(doc.path,'',geo,{kind:'shape',path:'layout-'+l.name+'-'+i,props:{...props,text:''},children:[]})) }));
-  return { theme: palette || doc.theme || 'paper', ratio, slides, layouts, _orig: orig };
+  return { theme: palette || doc.theme || 'paper', ratio, slides, layouts,customShows,_orig: orig };
 }
 const p2bg = c => c ? '#' + c : '#FFFFFF';
 const pptxSnapshot = slides => JSON.parse(JSON.stringify(slides.map(s => ({ id: s.id, path: s.path, bg: s.bg, bgGradient: s.bgGradient || null, bgImage: s.bgImage || null, advanceAfter: s.advanceAfter || 0, advanceOnClick: s.advanceOnClick !== false, layout: s.layout, sec: s.sec || '', notes: s.notes || '', comments: s.comments || [], trans: s.trans || 'none', transitionDirection: s.transitionDirection || '', duration: s.duration ?? null, hidden: !!s.hidden, objs: s.objs.map(objKey), anims: animJson(s) }))));
@@ -2453,7 +2549,7 @@ function animsFrom(json, objs) {
   let list; try { list = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { list = null; } // the tree gives JSON props as values, a get as text
   if (!Array.isArray(list)) return [];
   const byCnv = new Map(flatObjs(objs).map(o => [cnvId(o), o.id]));
-  return list.map(e => Object.assign({ fx: e.effect, start: e.start || 'click', dur: +e.duration || 500, delay: +e.delay || 0, ...(e.path ? { path: e.path } : {}) },
+  return list.map(e => Object.assign({ fx: e.effect, start: e.start || 'click', dur: +e.duration || 500, delay: +e.delay || 0, ...(e.path ? { path: e.path } : {}), ...(e.repeat!=null?{repeat:+e.repeat}:{}), ...(e.autoReverse?{autoReverse:true}:{}) },
     byCnv.has(String(e.shape)) ? { id: byCnv.get(String(e.shape)) } : { sp: e.shape == null ? null : String(e.shape) }, e.effect === 'other' ? { cls: e.class, xml: e.xml } : {}));
 }
 /** And back: the prop as the slide is now, each object by its drawing id; the effects of objects that are gone are left out. */
@@ -2463,6 +2559,7 @@ function animJson(s) {
     const shape = a.id ? cnvId(all.find(o => o.id === a.id)) : a.sp;
     if (shape == null && (a.id || a.fx !== 'other')) continue;
     const e = { effect: a.fx, start: a.start || 'click', duration: a.dur, delay: a.delay || 0 };
+    if(a.repeat!=null&&a.repeat!==1)e.repeat=a.repeat;if(a.autoReverse)e.autoReverse=true;
     if (a.fx === 'motion') e.path = a.path || 'M 0 0 L 0.25 0 E';
     if (shape != null) e.shape = shape;
     if (a.fx === 'other') Object.assign(e, { class: a.cls, xml: a.xml });
@@ -2484,10 +2581,11 @@ export function slideProps(o, s) {
   return p;
 }
 function objKey(o) {
-  return Object.assign({ id: o.id, path: o.path, kind: o.kind, t: o.t, x: o.x, y: o.y, w: o.w, h: o.h, html: o.html, fill: o.fill, color: o.color, font: o.font, fs: o.fs, shape: o.shape, rows: o.rows, src: o.src && o.src.startsWith('data:') ? 'data' : o.src, rot: o.rot || 0, field: o.field || null, bold: !!o.bold, italic: !!o.italic, underline: !!o.underline, align: o.align || 'left', va: o.va || 'top',
+  return Object.assign({ id: o.id, path: o.path, kind: o.kind, t: o.t, name:o.name||'', hidden:!!o.hidden, locked:!!o.locked, x: o.x, y: o.y, w: o.w, h: o.h, html: o.html, fill: o.fill, color: o.color, font: o.font, fs: o.fs, shape: o.shape, rows: o.rows, src: o.src && o.src.startsWith('data:') ? 'data' : o.src, rot: o.rot || 0, field: o.field || null, bold: !!o.bold, italic: !!o.italic, underline: !!o.underline, align: o.align || 'left', va: o.va || 'top',
     fillOpacity: o.fillOpacity ?? 1, stroke: o.stroke, sw: o.sw, dash: o.dash, shadow: !!o.shadow, lockAspect: !!o.lockAspect,
     lh: o.lh, sb: o.sb || 0, sa: o.sa || 0, cs: o.cs || 0, cols: o.cols || 1, vert: o.vert || 'horz', autofit: o.autofit || 'none', fit: o.fit || 1, tOutline: o.tOutline || '', tShadow: !!o.tShadow, tGrad: o.tGrad || '' },
-    o.t === 'image' ? { look: o.look || {}, mediaType: o.mediaType || '', media: o.media || '' } : {}, o.t === 'line' ? { head: o.head, tail: o.tail, flipH: !!o.flipH, flipV: !!o.flipV, bent: !!o.bent, start: o.start || null, end: o.end || null } : {},
+    o.t === 'shape' ? {pathData:o.pathData||null} : {},
+    o.t === 'image' ? { look: o.look || {}, mediaType: o.mediaType || '', media: o.media || '', playback:o.playback||null, captions:o.captions||null } : {}, o.t === 'line' ? { head: o.head, tail: o.tail, flipH: !!o.flipH, flipV: !!o.flipV, bent: !!o.bent, start: o.start || null, end: o.end || null } : {},
     o.t === 'table' ? { colW: o.colW || null, rowH: o.rowH || null, merges: o.merges || [], cells: o.cells || {}, tstyle: o.tstyle || 'MediumStyle2Accent1', header: o.header !== false, banded: o.banded !== false, firstCol: !!o.firstCol } : {},
     o.t === 'group' ? { kids: (o.kids || []).map(objKey) } : {});
 }
@@ -2500,6 +2598,8 @@ function objProps(o, g, orig, slide) {
   for (const k of ['x', 'y', 'w', 'h']) if (g.resized || nb[k] !== ob[k]) p[k] = nb[k];
   const hexOf = c => unhex(g.th && c[0] !== '#' ? resolveColor(c, g.th, c) : c); // acc, card, sub, fg: the editor's theme colours, as hex for the file
   const was = k => orig ? orig[k] : undefined;
+  if ((was('name') || '') !== (o.name || '')) p.name = o.name || '';
+  for (const key of ['hidden','locked']) if (!!was(key) !== !!o[key]) p[key] = String(!!o[key]);
   if (o.t === 'text' || o.t === 'shape') {
     if ((!o.field || o.field === 'footer') && (!orig || !sameRuns(orig.html, o.html))) p.html = slideHtmlUnits(o.html, g.ptPx, false);
     if (o.field && was('field') !== o.field) p.field = o.field;
@@ -2510,7 +2610,8 @@ function objProps(o, g, orig, slide) {
     if (was('color') !== o.color && o.color) p.color = hexOf(o.color);
     if (was('font') !== o.font && o.font) p.font = o.font;
     if (was('fs') !== o.fs && o.fs) p.size = (Math.round(o.fs / g.ptPx * 2) / 2) + 'pt';
-    if (o.t === 'shape' && (!orig || was('shape') !== o.shape)) p.geometry = geomBack(o.shape);
+    if (o.t === 'shape' && (!orig || was('shape') !== o.shape)) p.geometry = o.pathData ? 'rect' : geomBack(o.shape);
+    if(o.pathData&&!same(was('pathData'),o.pathData))p.pathData=JSON.stringify(o.pathData);
     for (const key of ['bold', 'italic', 'underline']) if (!!was(key) !== !!o[key]) p[key] = o[key] ? 'true' : 'false';
     if ((was('align') || 'left') !== (o.align || 'left')) p.align = o.align || 'left';
     if ((was('va') || 'top') !== (o.va || 'top')) p.verticalAlign = o.va || 'top';
@@ -2551,7 +2652,7 @@ function objProps(o, g, orig, slide) {
     for (const [k, f] of [['header', 'header'], ['banded', 'banded'], ['firstCol', 'firstCol']]) { const now = k === 'firstCol' ? !!o[k] : o[k] !== false, before = orig ? (k === 'firstCol' ? !!orig[k] : orig[k] !== false) : (k !== 'firstCol'); if (now !== before) p[f] = now ? 'true' : 'false'; }
   }
   if (o.t === 'image' && !orig) { p.src = o.mediaType && o.media ? 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a33sAAAAASUVORK5CYII=' : o.src; if (o.media) p.media = o.media; }
-  if (o.t === 'image') Object.assign(p, lookDiff(orig && orig.look, o.look));
+  if (o.t === 'image') { Object.assign(p, lookDiff(orig && orig.look, o.look)); if(o.mediaType&&!same(orig?.captions,o.captions)&&o.captions)p.captions=JSON.stringify(o.captions); if(o.mediaType&&!same(orig?.playback,o.playback)&&o.playback)p.playback=JSON.stringify(o.playback); }
   if (Math.round((orig && orig.rot) || 0) !== Math.round(o.rot || 0)) p.rotation = String(Math.round(o.rot || 0));
   return p;
 }
@@ -2742,6 +2843,7 @@ async function savePptx(doc, log) {
     const anims = animJson(s);
     if (!same(anims, o.anims || [])) { await run(['set', doc.path, s.path, '--prop', 'animations=' + JSON.stringify(anims)]); n++; o.anims = anims; log && log('set', s.path, { animations: anims.length }); }
   }
+  if(!same(doc.customShows||[],orig.customShows||[])||n&&(doc.customShows||[]).length){const byId=new Map(doc.slides.map(s=>[s.id,/\[@id=(\d+)\]/.exec(s.path||'')?.[1]])),shows=(doc.customShows||[]).map(s=>({name:s.name,slides:s.slides.map(id=>byId.get(id)).filter(Boolean)})).filter(s=>s.slides.length);await run(['set',doc.path,'/','--prop','customShows='+JSON.stringify(shows)]);orig.customShows=JSON.parse(JSON.stringify(doc.customShows||[]));n++;}
   if (g.resized) { const { th, resized, ...geo } = g; orig.geo = geo; orig.ratio = doc.ratio; }
   return n;
 }
@@ -2806,7 +2908,8 @@ async function saveGroup(doc, g, s, o, x, log) {
     const r = await run(['add', doc.path, s.path, '--type', 'group', '--prop', 'members=' + members.join(',')]); n++;
     x.path = s.path + '/group[@id=' + r.props.id + ']'; x.kind = 'group'; log && log('add', x.path, 'group');
     for (const k of x.kids) if (k.path) { const old = k.path, path = x.path + old.slice(old.lastIndexOf('/')); adoptCopy(doc, k, path, p => path + p.slice(old.length)); }
-    if (x.rot) { await run(['set', doc.path, x.path, '--prop', 'rotation=' + Math.round(x.rot)]); n++; }
+    const metadata = {}; if(x.rot) metadata.rotation=String(Math.round(x.rot)); if(x.name) metadata.name=x.name; for(const k of ['hidden','locked']) if(x[k]) metadata[k]='true';
+    if (Object.keys(metadata).length) { await run(['set', doc.path, x.path, ...propsArgs(metadata)]); n++; }
     o.objs.push(objKey(x));
     return n;
   }
@@ -2815,7 +2918,7 @@ async function saveGroup(doc, g, s, o, x, log) {
     await run(['set', doc.path, x.path, ...propsArgs(bp)]); n++; log && log('set', x.path, bp);
     const sx = oo.w ? box.w / oo.w : 1, sy = oo.h ? box.h / oo.h : 1; // the engine moved the members with the group: so does their snapshot
     for (const k of flatObjs(oo.kids || [])) Object.assign(k, { x: Math.round(box.x + (k.x - oo.x) * sx), y: Math.round(box.y + (k.y - oo.y) * sy), w: Math.round(k.w * sx), h: Math.round(k.h * sy) });
-    Object.assign(oo, box, { rot: x.rot || 0 });
+    Object.assign(oo, box, { rot: x.rot || 0, name:x.name||'', hidden:!!x.hidden, locked:!!x.locked });
   }
   for (const k of x.kids) n += k.t === 'group' ? await saveGroup(doc, g, s, {objs:oo.kids || []}, k, log) : await saveObj(doc, g, s, o, k, k.path ? (oo.kids || []).find(y => y.path === k.path) : null, log, x.path);
   oo.kids = x.kids.map(objKey);
@@ -2917,7 +3020,7 @@ async function saveNow(doc, opts) {
   let n = 0;
   if (doc.type === 'mm') n = await saveMm(doc, log);
   else if (doc.type === 'docx') n = await saveDocx(doc, root, log);
-  else if (doc.type === 'xlsx') { n = await saveXlsx(doc, log); if (n) doc._orig = origOf(doc.sheets, doc.names); }
+  else if (doc.type === 'xlsx') { n = await saveXlsx(doc, log); if (n) doc._orig = origOf(doc.sheets, doc.names, doc.queries, doc.iteration, doc.workbookProtection, doc.active); }
   else if (doc.type === 'pptx') { n = await savePptx(doc, log); if (n) doc._orig = Object.assign({}, doc._orig, { slides: pptxSnapshot(doc.slides) }); }
   // these save through many small engine commands, not one PUT, so there is no ifMtime guard for them (see checkExternal
   // in the shell, which catches a conflict before scheduling a save rather than mid-flight): just remember the mtime our

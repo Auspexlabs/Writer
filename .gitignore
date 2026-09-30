@@ -23,3 +23,12 @@ tools/fidelity/out/
 # the engine compiled to WebAssembly, published for the embedded editor (./build.sh embed puts it in dist/embed/writer)
 ui/_framework/
 .claude/worktrees/
+node_modules/
+**/Library/
+**/Temp/
+.godot/
+.tools/
+*.blend1
+.venv/
+__pycache__/
+.env

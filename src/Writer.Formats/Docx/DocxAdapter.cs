@@ -37,7 +37,7 @@ public sealed class DocxAdapter : IFormatAdapter
             package.Dispose();
             throw new WriterException(ErrorCode.FormatError, "The .docx has no document body", "Check that the file opens in Word.");
         }
-        return new DocxDocument(package);
+        var doc=new DocxDocument(package);DocxControls.EnsureIds(doc);return doc;
     }
 }
 

@@ -19,6 +19,11 @@ sealed class XlsxRoot(XlsxDocument doc) : Node
     {
         var props = new Dictionary<string, string> { ["format"] = "xlsx", ["sheets"] = doc.Sheets.Count.ToString(CultureInfo.InvariantCulture) };
         props["names"] = XlsxBookFeatures.Names(doc);
+        props["queries"] = XlsxQueries.Read(doc);
+        props["iteration"] = XlsxCalculationSettings.Read(doc).ToJsonString();
+        props["workbookProtection"] = XlsxWorkbookProtection.Read(doc.Workbook.Workbook!);
+        props["activeSheet"] = (doc.Workbook.Workbook!.GetFirstChild<BookViews>()?.GetFirstChild<WorkbookView>()?.ActiveTab?.Value??0).ToString(CultureInfo.InvariantCulture);
+        props["date1904"] = doc.Date1904 ? "true" : "false";
         if (doc.Package.PackageProperties.Title is { Length: > 0 } title) props["title"] = title;
         var (font, size) = doc.Styles.Normal;
         if (font is not null) props["font"] = font;
@@ -29,6 +34,15 @@ sealed class XlsxRoot(XlsxDocument doc) : Node
     public override void SetProp(string name, string value)
     {
         if (name == "names") { XlsxBookFeatures.SetNames(doc, value); return; }
+        if (name == "queries") { XlsxQueries.Write(doc, value); return; }
+        if (name == "iteration") { XlsxCalculationSettings.Write(doc, value); return; }
+        if (name == "workbookProtection") { XlsxWorkbookProtection.Write(doc.Workbook.Workbook!, value); return; }
+        if (name == "activeSheet")
+        {
+            if(!uint.TryParse(value,out var active)||active>=doc.Sheets.Count)throw new WriterException(ErrorCode.Validation,"Invalid active worksheet","Choose an existing worksheet index.");
+            var book=doc.Workbook.Workbook!;var views=book.GetFirstChild<BookViews>();if(views is null)book.AddChild(views=new BookViews(),true);
+            var view=views.GetFirstChild<WorkbookView>()??views.AppendChild(new WorkbookView());view.ActiveTab=active;return;
+        }
         if (name == "title") doc.Package.PackageProperties.Title = value.Length > 0 ? value : null;
     }
 
@@ -99,9 +113,14 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
             .Select(XlsxCells.Position).ToList();
         if (cells.Count > 0)
             props["range"] = XlsxCells.Reference(cells.Min(c => c.Col), cells.Min(c => c.Row)) + ":" + XlsxCells.Reference(cells.Max(c => c.Col), cells.Max(c => c.Row));
+        props["names"] = XlsxBookFeatures.Names(doc, (uint)doc.Sheets.FindIndex(s => ReferenceEquals(s.Part, Part)));
         props["print"] = XlsxBookFeatures.Print(doc, this);
         props["tables"] = XlsxTables.Read(this);
         props["pivots"] = XlsxPivots.Read(this).ToJsonString();
+        props["scenarios"] = XlsxScenarios.Read(this);
+        props["solver"] = XlsxSolverSettings.Read(this);
+        props["advancedFilter"] = XlsxAdvancedFilter.Read(this);
+        props["dataTables"] = XlsxDataTables.Read(this).ToJsonString();
         props["outline"] = XlsxOutline.Groups(this).ToJsonString();
         if (sheet.SheetId?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
         if (XlsxLayout.Merges(Ws) is { } merges) props["merges"] = merges;
@@ -109,6 +128,8 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
         if (XlsxLayout.Heights(Data, true) is { } autoHeights) props["autoHeights"] = autoHeights;
         if (XlsxLayout.Heights(Data) is { } heights) props["heights"] = heights;
         if (XlsxLayout.Freeze(Ws) is { } freeze) props["freeze"] = freeze;
+        props["split"] = XlsxSplitPanes.Read(Ws);
+        if(Ws.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.TabSelected?.Value==true) props["tabSelected"]="true";
         if (XlsxLayout.Gridlines(Ws) is { } gridlines) props["gridlines"] = gridlines;
         if (XlsxLayout.Filter(Ws) is { } filter) props["filter"] = filter;
         if (XlsxRules.Filters(Ws) is { } filters) props["filters"] = filters;
@@ -117,7 +138,10 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
         if (XlsxRules.Hidden(Ws) is { } hidden) props["hidden"] = hidden;
         if (XlsxRules.TabColor(Ws, doc.Styles) is { } color) props["color"] = color;
         props["visibility"] = sheet.State?.InnerText ?? "visible";
+        props["sparklines"] = XlsxSparklines.Read(Ws);
         props["protected"] = (Ws.GetFirstChild<SheetProtection>()?.Sheet?.Value == true).ToString().ToLowerInvariant();
+        props["protection"] = XlsxProtection.Read(Ws);
+        props["rowColumnStyles"] = XlsxInheritedStyles.Read(doc,this);
         return props;
     }
 
@@ -137,6 +161,7 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
 
     public override void SetProp(string name, string value)
     {
+        if (name == "names") { XlsxBookFeatures.SetNames(doc, value, (uint)doc.Sheets.FindIndex(s => ReferenceEquals(s.Part, Part))); return; }
         switch (name)
         {
             case "name":
@@ -147,8 +172,15 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
             case "print": XlsxBookFeatures.SetPrint(doc, this, value); break;
             case "tables": XlsxTables.Write(doc, this, value); break;
             case "pivots": XlsxPivots.Write(doc, this, value); break;
+            case "solver": XlsxSolverSettings.Write(this, value); break;
+            case "advancedFilter": XlsxAdvancedFilter.Write(this, value); break;
+            case "scenarios": XlsxScenarios.Write(this, value); break;
+            case "dataTables": XlsxDataTables.Write(doc, this, value); break;
             case "outline": XlsxOutline.Write(this, value); break;
+            case "sparklines": XlsxSparklines.Write(Ws,value); break;
             case "protected": XlsxBookFeatures.SetProtection(Ws, value); break;
+            case "protection": XlsxProtection.Write(Ws, value); break;
+            case "rowColumnStyles": XlsxInheritedStyles.Write(doc,this,value); break;
             case "visibility":
                 if (value != "visible" && doc.Sheets.Count(s => s.Sheet.State is null || s.Sheet.State.Value == SheetStateValues.Visible) <= 1 && (sheet.State is null || sheet.State.Value == SheetStateValues.Visible)) throw new WriterException(ErrorCode.Validation, "At least one worksheet must stay visible", "Unhide another worksheet first.");
                 sheet.State = value == "hidden" ? SheetStateValues.Hidden : value == "veryHidden" ? SheetStateValues.VeryHidden : SheetStateValues.Visible;
@@ -158,6 +190,10 @@ sealed class XlsxSheet(XlsxDocument doc, Sheet sheet, WorksheetPart part) : Node
             case "autoHeights": XlsxLayout.SetHeights(Data, value, true); break;
             case "heights": XlsxLayout.SetHeights(Data, value); break;
             case "freeze": XlsxLayout.SetFreeze(Ws, value); break;
+            case "split": XlsxSplitPanes.Write(Ws, value); break;
+            case "tabSelected":
+                var views=Ws.GetFirstChild<SheetViews>();if(views is null)Ws.AddChild(views=new SheetViews(),true);
+                var view=views.GetFirstChild<SheetView>()??views.AppendChild(new SheetView{WorkbookViewId=0U});view.TabSelected=value=="true";break;
             case "gridlines": XlsxLayout.SetGridlines(Ws, value); break;
             case "filter": XlsxLayout.SetFilter(doc, sheet, Ws, value); break;
             case "filters": XlsxRules.SetFilters(Ws, value); break;
@@ -314,6 +350,7 @@ sealed class XlsxCell(XlsxDocument doc, XlsxSheet sheet, int col, int row, Cell?
             if (XlsxCells.Formula(sheet, cell) is { Length: > 0 } formula) props["formula"] = formula;
             else if (sheet.ArrayOwner(col, row) is { } owner) props["spill"] = owner;
             doc.Styles.Read(cell, props);
+            if (doc.Styles.NeedsExplicitProtection(cell)) props["protectionExplicit"] = "true";
         }
         if (XlsxNotes.Link(Part, Key) is { } link) props["link"] = link;
         if (XlsxNotes.Note(Part, Key) is { } note) props["note"] = note;

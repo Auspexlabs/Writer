@@ -1,0 +1,175 @@
+{
+  "generatedAt": "2026-09-28T04:52:34.530654+00:00",
+  "sourceHead": "f44087cdfa8fbcd6399eba286b1b43a562f4b10f",
+  "workingTree": "uncommitted",
+  "native": {
+    "passed": 941,
+    "failed": 0,
+    "skipped": 0
+  },
+  "ui": {
+    "passed": 1126,
+    "failed": 0,
+    "skipped": 0,
+    "runtime": "Node 24.19.0"
+  },
+  "browser": {
+    "word": {
+      "script": "ui/tools/verify-word-017.mjs",
+      "passed": [
+        "cross-paragraph formatted comment: text, anchors, save and reopen",
+        "Office objects: display, no-op save, text edit, inline and block deletion",
+        "Office object history: saved deletion undo, movement, copy, ordering and block/inline conversion",
+        "Objects inside table cells: later paragraphs, text edits, deletion and saved undo",
+        "chapter captions, native REF, figure directory and separate mail merge outputs",
+        "Header table cell editing, rich text, native save/reopen and saved undo",
+        "Wildcard and format search, capture replacement and saved undo",
+        "Word table formulas: insertion, field save/reopen, saved undo/redo, dependency refresh and stable no-op",
+        "Native chart preview/no-op save, theme/style set/page borders, edit protection and document comparison",
+        "MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing",
+        "WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving",
+        "WordEditor table commands: insert row, save, undo, save/reopen and redo",
+        "Word shortcuts: justify, line spacing, subscript without zoom, Heading 2",
+        "Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op",
+        "Section numbering, independent odd/even headers, paginated print and stable save",
+        "Native numbering start values and heading numbering; individual text and formatting revision resolution",
+        "incremental page boundaries match full layout [{\"paragraph\":850,\"pages\":371,\"incrementalMs\":34,\"fullMs\":102},{\"paragraph\":400,\"pages\":371,\"incrementalMs\":103,\"fullMs\":100},{\"paragraph\":0,\"pages\":372,\"incrementalMs\":125,\"fullMs\":99},{\"paragraph\":700,\"pages\":371,\"incrementalMs\":51,\"fullMs\":98}]"
+      ]
+    },
+    "sheet": {
+      "script": "ui/tools/verify-sheet-017.mjs",
+      "passed": [
+        "Manual multi-area clipboard preserves holes and formulas; row/column page breaks save and reopen",
+        "Formula auditing and Go To Special: disjoint formatting/clear, native save/reopen and saved undo",
+        "native pivot creation, row/column aggregation, refresh and save/reopen",
+        "percentage and combination charts, value labels and axis titles",
+        "native tables, calculated columns, header rename and structural edits",
+        "outline collapse/expand save and reopen",
+        "virtual grid navigation to AAA10001",
+        "Office HTML multiline, style and merge import",
+        "far cell, names, dynamic arrays and print settings save/reopen",
+        "image insert, move, resize, delete and undo round trips"
+      ]
+    },
+    "slide": {
+      "script": "ui/tools/verify-slide-017.mjs",
+      "passed": [
+        "Nested group canvas editing: members, geometry, transforms and native save/reopen; notes print DOM",
+        "Selection pane: persistent names/hide/lock, stage hiding, unlocking and native reopen",
+        "native audio/video playback, comments, persistent ink, shared master editing, motion paths and reference guides",
+        "fill opacity, gradient and image backgrounds, auto-advance and rehearsal, image paste, rich text and footer fields",
+        "copied group member ids and z-order",
+        "cross-deck chart relationships and inherited background reset",
+        "cross-format find/replace and whole-word matching",
+        "24pt scale and rich text size stability",
+        "paragraph alignment and immediate whole-box format changes",
+        "safe link clicks, paste selection and delete",
+        "nested groups and table render/save",
+        "aspect ratio save/reopen",
+        "dynamic page numbers after reopen and reorder",
+        "presentation keyboard isolation"
+      ]
+    }
+  },
+  "release": {
+    "status": "signed_notarized_stapled_verified",
+    "version": "0.1.8",
+    "completedAt": "2026-09-28T04:56:09.687924+00:00",
+    "uploaded": false,
+    "installed": false,
+    "app": {
+      "path": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Writer.app",
+      "fileBytes": 163521531,
+      "notarizationId": "18937c0f-1171-4bd5-bdaf-d6abe80d0ac2",
+      "stapled": true,
+      "gatekeeper": "Notarized Developer ID"
+    },
+    "dmg": {
+      "path": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/dist/Writer-0.1.8-mac.dmg",
+      "bytes": 75760208,
+      "sha256": "046bcd16bd5b170cc985e4048c472dc1a93bd81d9468f13745362dcc9f912248",
+      "notarizationId": "1e5da0b0-b2a8-44c4-b08c-b4e001528597",
+      "stapled": true,
+      "gatekeeper": "Notarized Developer ID"
+    },
+    "updaterArchive": {
+      "path": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/dist/Writer-0.1.8-mac.app.tar.gz",
+      "bytes": 66887809,
+      "signatureFile": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/dist/Writer-0.1.8-mac.app.tar.gz.sig"
+    }
+  },
+  "packagedBrowser": {
+    "word": {
+      "script": "ui/tools/verify-word-017.mjs",
+      "passed": [
+        "cross-paragraph formatted comment: text, anchors, save and reopen",
+        "Office objects: display, no-op save, text edit, inline and block deletion",
+        "Office object history: saved deletion undo, movement, copy, ordering and block/inline conversion",
+        "Objects inside table cells: later paragraphs, text edits, deletion and saved undo",
+        "chapter captions, native REF, figure directory and separate mail merge outputs",
+        "Header table cell editing, rich text, native save/reopen and saved undo",
+        "Wildcard and format search, capture replacement and saved undo",
+        "Word table formulas: insertion, field save/reopen, saved undo/redo, dependency refresh and stable no-op",
+        "Native chart preview/no-op save, theme/style set/page borders, edit protection and document comparison",
+        "MathType WMF: vector and Symbol glyph SVG preview, original object XML preserved after editing",
+        "WordEditor: cross-format find/replace, whole words, case sensitivity, undo and redo after saving",
+        "WordEditor table commands: insert row, save, undo, save/reopen and redo",
+        "Word shortcuts: justify, line spacing, subscript without zoom, Heading 2",
+        "Independent Chinese/Latin font controls: formatting, font sources, save/reopen and stable no-op",
+        "Section numbering, independent odd/even headers, paginated print and stable save",
+        "Native numbering start values and heading numbering; individual text and formatting revision resolution",
+        "incremental page boundaries match full layout [{\"paragraph\":850,\"pages\":371,\"incrementalMs\":33,\"fullMs\":105},{\"paragraph\":400,\"pages\":371,\"incrementalMs\":109,\"fullMs\":102},{\"paragraph\":0,\"pages\":372,\"incrementalMs\":121,\"fullMs\":101},{\"paragraph\":700,\"pages\":371,\"incrementalMs\":48,\"fullMs\":104}]"
+      ]
+    },
+    "sheet": {
+      "script": "ui/tools/verify-sheet-017.mjs",
+      "passed": [
+        "Manual multi-area clipboard preserves holes and formulas; row/column page breaks save and reopen",
+        "Formula auditing and Go To Special: disjoint formatting/clear, native save/reopen and saved undo",
+        "native pivot creation, row/column aggregation, refresh and save/reopen",
+        "percentage and combination charts, value labels and axis titles",
+        "native tables, calculated columns, header rename and structural edits",
+        "outline collapse/expand save and reopen",
+        "virtual grid navigation to AAA10001",
+        "Office HTML multiline, style and merge import",
+        "far cell, names, dynamic arrays and print settings save/reopen",
+        "image insert, move, resize, delete and undo round trips"
+      ]
+    },
+    "slide": {
+      "script": "ui/tools/verify-slide-017.mjs",
+      "passed": [
+        "Nested group canvas editing: members, geometry, transforms and native save/reopen; notes print DOM",
+        "Selection pane: persistent names/hide/lock, stage hiding, unlocking and native reopen",
+        "native audio/video playback, comments, persistent ink, shared master editing, motion paths and reference guides",
+        "fill opacity, gradient and image backgrounds, auto-advance and rehearsal, image paste, rich text and footer fields",
+        "copied group member ids and z-order",
+        "cross-deck chart relationships and inherited background reset",
+        "cross-format find/replace and whole-word matching",
+        "24pt scale and rich text size stability",
+        "paragraph alignment and immediate whole-box format changes",
+        "safe link clicks, paste selection and delete",
+        "nested groups and table render/save",
+        "aspect ratio save/reopen",
+        "dynamic page numbers after reopen and reorder",
+        "presentation keyboard isolation"
+      ]
+    },
+    "uiRoot": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Writer.app/Contents/Resources/ui",
+    "engine": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Writer.app/Contents/MacOS/writer"
+  },
+  "packagedSourceHashes": {
+    "WordEditor.dc.html": "6a03765e5ea6b6e5b4b5defb9c70a7b667b195bb86af22f3c665e95a5dca6cbe",
+    "SheetEditor.dc.html": "eb027054e40524abe226692667f13a4832cd000a4c4441fd9dfb70eadb2e96be",
+    "SlideEditor.dc.html": "4042654b58c958f1c48c71b49bd4fc230e0a209afecf500de024586a7db0ebfb",
+    "text-find.js": "273ff7d3659250c4a326f125e4fb620b4d744a670ed54ca4f3ad3af749c82eba",
+    "word-wildcards.js": "2f7352278fbe237b355475df40daa5807629e6c9085a05b5bff601242eebd877",
+    "sheet-selection.js": "a7d23e78aeb3cfc91a177d8dfc606b160d6271607451954fae4379470fd024f4",
+    "sheet-print.js": "753b4652cadcfb54ddfad58ba5e54e4118551539f5042fd08a07a653652a7b7d",
+    "office-io.js": "dbfd0f8bbd2e30031c11585a710be21b4150b3fd13ee7f9351dbbf61191808d9",
+    "engine.js": "09912b2ba5d563c2880168eb89449ba4f60c94f9d6467a6a582dbf50d732f042",
+    "sheet-engine.js": "a500f77cfc37a876863c765f25c336fca0b61f22a58db29c9ffa53893512738b"
+  },
+  "pdfOfflineEvidence": "docs/audits/pdf-offline-bundle-expansion.json",
+  "completeOfficeScope": false
+}

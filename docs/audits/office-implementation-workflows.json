@@ -1,0 +1,248 @@
+{
+  "sourceCommit": "f44087cdfa8fbcd6399eba286b1b43a562f4b10f",
+  "scope": "Native file and Node render/Canvas command probes; not desktop pixel or Microsoft Office acceptance",
+  "spreadsheetPrint": [
+    {
+      "name": "borderThin",
+      "style": {
+        "bd": "thin"
+      },
+      "editor": {
+        "textW": "none",
+        "text": "123",
+        "iconColor": "",
+        "color": "var(--k7, #1D1D1F)",
+        "td": "none",
+        "fs": "13.2px",
+        "ff": "inherit",
+        "tr": "none",
+        "bt": "1px solid var(--k13, #3A3A3C)",
+        "bl": "1px solid var(--k13, #3A3A3C)",
+        "br": "1px solid var(--k13, #3A3A3C)",
+        "bb": "1px solid var(--k13, #3A3A3C)"
+      },
+      "printedCellStyle": "font-family:Arial;font-size:11pt;font-weight:400;font-style:normal;text-decoration:none;text-align:right;vertical-align:bottom;white-space:pre;color:#000;background:transparent;border-top:1px solid #000;border-right:1px solid #000;border-bottom:1px solid #000;border-left:1px solid #000"
+    },
+    {
+      "name": "borderDouble",
+      "style": {
+        "bd": "double"
+      },
+      "editor": {
+        "textW": "none",
+        "text": "123",
+        "iconColor": "",
+        "color": "var(--k7, #1D1D1F)",
+        "td": "none",
+        "fs": "13.2px",
+        "ff": "inherit",
+        "tr": "none",
+        "bt": "3px double var(--k13, #3A3A3C)",
+        "bl": "3px double var(--k13, #3A3A3C)",
+        "br": "3px double var(--k13, #3A3A3C)",
+        "bb": "3px double var(--k13, #3A3A3C)"
+      },
+      "printedCellStyle": "font-family:Arial;font-size:11pt;font-weight:400;font-style:normal;text-decoration:none;text-align:right;vertical-align:bottom;white-space:pre;color:#000;background:transparent;border-top:3px double #000;border-right:3px double #000;border-bottom:3px double #000;border-left:3px double #000"
+    },
+    {
+      "name": "perSideBorderControl",
+      "style": {
+        "bd": {
+          "bottom": "double"
+        }
+      },
+      "editor": {
+        "textW": "none",
+        "text": "123",
+        "iconColor": "",
+        "color": "var(--k7, #1D1D1F)",
+        "td": "none",
+        "fs": "13.2px",
+        "ff": "inherit",
+        "tr": "none",
+        "bt": "none",
+        "bl": "none",
+        "br": "1px solid var(--k75, #E3E3E8)",
+        "bb": "3px double var(--k13, #3A3A3C)"
+      },
+      "printedCellStyle": "font-family:Arial;font-size:11pt;font-weight:400;font-style:normal;text-decoration:none;text-align:right;vertical-align:bottom;white-space:pre;color:#000;background:transparent;border-top:none;border-right:none;border-bottom:3px double #000;border-left:none"
+    },
+    {
+      "name": "strike",
+      "style": {
+        "st": true
+      },
+      "editor": {
+        "textW": "none",
+        "text": "123",
+        "iconColor": "",
+        "color": "var(--k7, #1D1D1F)",
+        "td": "line-through",
+        "fs": "13.2px",
+        "ff": "inherit",
+        "tr": "none",
+        "bt": "none",
+        "bl": "none",
+        "br": "1px solid var(--k75, #E3E3E8)",
+        "bb": "1px solid var(--k75, #E3E3E8)"
+      },
+      "printedCellStyle": "font-family:Arial;font-size:11pt;font-weight:400;font-style:normal;text-decoration:line-through;text-align:right;vertical-align:bottom;white-space:pre;color:#000;background:transparent;border-top:none;border-right:none;border-bottom:none;border-left:none"
+    },
+    {
+      "name": "rotatedText",
+      "style": {
+        "rotate": 45
+      },
+      "editor": {
+        "textW": "none",
+        "text": "123",
+        "iconColor": "",
+        "color": "var(--k7, #1D1D1F)",
+        "td": "none",
+        "fs": "13.2px",
+        "ff": "inherit",
+        "tr": "rotate(-45deg)",
+        "bt": "none",
+        "bl": "none",
+        "br": "1px solid var(--k75, #E3E3E8)",
+        "bb": "1px solid var(--k75, #E3E3E8)"
+      },
+      "printedCellStyle": "font-family:Arial;font-size:11pt;font-weight:400;font-style:normal;text-decoration:none;text-align:right;vertical-align:bottom;white-space:pre;color:#000;background:transparent;border-top:none;border-right:none;border-bottom:none;border-left:none"
+    },
+    {
+      "name": "numberFormatColor",
+      "style": {
+        "code": "[Red]0.00"
+      },
+      "editor": {
+        "textW": "none",
+        "text": "123.00",
+        "iconColor": "",
+        "color": "#FF0000",
+        "td": "none",
+        "fs": "13.2px",
+        "ff": "inherit",
+        "tr": "none",
+        "bt": "none",
+        "bl": "none",
+        "br": "1px solid var(--k75, #E3E3E8)",
+        "bb": "1px solid var(--k75, #E3E3E8)"
+      },
+      "printedCellStyle": "font-family:Arial;font-size:11pt;font-weight:400;font-style:normal;text-decoration:none;text-align:right;vertical-align:bottom;white-space:pre;color:#FF0000;background:transparent;border-top:none;border-right:none;border-bottom:none;border-left:none"
+    },
+    {
+      "name": "workbookDefaultFont",
+      "style": {},
+      "editor": {
+        "textW": "none",
+        "text": "123",
+        "iconColor": "",
+        "color": "var(--k7, #1D1D1F)",
+        "td": "none",
+        "fs": "21.599999999999998px",
+        "ff": "'Georgia','IBM Plex Sans','Noto Sans SC',sans-serif",
+        "tr": "none",
+        "bt": "none",
+        "bl": "none",
+        "br": "1px solid var(--k75, #E3E3E8)",
+        "bb": "1px solid var(--k75, #E3E3E8)"
+      },
+      "printedCellStyle": "font-family:Georgia;font-size:18pt;font-weight:400;font-style:normal;text-decoration:none;text-align:right;vertical-align:bottom;white-space:pre;color:#000;background:transparent;border-top:none;border-right:none;border-bottom:none;border-left:none"
+    }
+  ],
+  "dateSystems": [
+    {
+      "date1904": false,
+      "input": "2024-03-05",
+      "formula": "A1+1",
+      "expected": "2024-03-06",
+      "savedAndReopened": "2024-03-06"
+    },
+    {
+      "date1904": true,
+      "input": "2024-03-05",
+      "formula": "A1+1",
+      "expected": "2024-03-06",
+      "savedAndReopened": "2024-03-06"
+    }
+  ],
+  "wordHeader": {
+    "editorHtml": "<p style=\"text-align:left\">Visible paragraph</p><div data-w-hf-table=\"1\" contenteditable=\"false\"><table style=\"table-layout:fixed;\">\n<colgroup><col style=\"width:8.82cm\"></colgroup>\n<tr><td style=\"width:333.4px\">HEADER_TABLE_SENTINEL</td></tr>\n</table>\n</div>",
+    "tableVisibleToEditor": true,
+    "tableRetainedAfterHeaderTextEdit": true
+  },
+  "slidePng": {
+    "richText": {
+      "inputHtml": "<p>Normal <span style=\"font-size:64px;color:#ff0000;font-weight:700\">RED</span></p>",
+      "canvasTextDraws": [
+        {
+          "text": "Normal ",
+          "font": "400 32px 'Noto Sans SC','Noto Sans SC',sans-serif",
+          "color": "#1D1D1F"
+        },
+        {
+          "text": "RED",
+          "font": "700 64px 'Noto Sans SC','Noto Sans SC',sans-serif",
+          "color": "#ff0000"
+        }
+      ]
+    },
+    "backgroundImage": {
+      "input": "background-probe",
+      "canvasImageDraws": [
+        {
+          "imageArgumentCount": 9
+        }
+      ]
+    },
+    "croppedPicture": {
+      "inputLook": {
+        "crop": "25,0,25,0",
+        "grayscale": "true"
+      },
+      "editorPictureStyle": "position:absolute;left:-50%;top:0%;width:200%;height:100%;max-width:none;max-height:none;margin:0;transform:none;transform-origin:50% 50%;filter:grayscale(1);opacity:1",
+      "canvasImageDraws": [
+        {
+          "imageArgumentCount": 9
+        }
+      ],
+      "canvasFilter": "grayscale(1)"
+    },
+    "scope": "Actual paintSlide invocation; fake Canvas records commands without drawing pixels"
+  },
+  "workingTreeModified": true,
+  "generatedAt": "2026-09-28T03:03:08.636Z",
+  "cliVersion": "0.1.8",
+  "commonFunctions": {
+    "SUM": true,
+    "SUMIF": true,
+    "SUMIFS": true,
+    "SUMPRODUCT": true,
+    "COUNTIF": true,
+    "COUNTIFS": true,
+    "AVERAGEIFS": true,
+    "XLOOKUP": true,
+    "XMATCH": true,
+    "VLOOKUP": true,
+    "INDEX": true,
+    "MATCH": true,
+    "IFERROR": true,
+    "IFS": true,
+    "SWITCH": true,
+    "TEXTJOIN": true,
+    "FILTER": true,
+    "SORT": true,
+    "UNIQUE": true,
+    "LET": true,
+    "SEQUENCE": true,
+    "XIRR": true,
+    "XNPV": true,
+    "NETWORKDAYS": true,
+    "WORKDAY": true,
+    "DATEDIF": true,
+    "SUBTOTAL": true,
+    "AGGREGATE": true,
+    "LAMBDA": true,
+    "GETPIVOTDATA": false
+  }
+}

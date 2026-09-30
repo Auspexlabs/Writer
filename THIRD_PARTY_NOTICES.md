@@ -687,6 +687,10 @@ targets" are used only when building for Windows, Linux, Android or wasm.
 
 </details>
 
+## Offline PDF resources added in 0.1.8
+
+PDF.js 4.4.168 (Apache-2.0) and pdf-lib 1.17.1 (MIT) are redistributed locally rather than loaded from a CDN. PDF.js includes its standard font files and CMaps with their individual licenses. Full notices accompany the assets in `ui/vendor/pdfjs/` and `ui/vendor/pdf-lib/`; see `ui/vendor/PDF-LICENSES.md` for the file inventory and license locations.
+
 ## Office support added in 0.1.7
 
 - Jint 4.16.3 — Copyright Sebastien Ros, BSD-2-Clause. https://github.com/sebastienros/jint

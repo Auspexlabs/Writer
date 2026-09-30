@@ -14,15 +14,22 @@ static partial class DocxMarks
 
     // ---- bookmarks: hidden ones (_Toc, _GoBack) are Word's own and stay out of sight; _Ref ones are cross-reference targets ----
 
-    static bool Shown(string? name) => name is { Length: > 0 } && (!name.StartsWith('_') || name.StartsWith("_Ref", StringComparison.Ordinal));
+    internal static bool Shown(string? name) => name is { Length: > 0 } && (!name.StartsWith('_') || name.StartsWith("_Ref", StringComparison.Ordinal));
 
-    public static string? Bookmark(W.Paragraph p) => p.Elements<W.BookmarkStart>().Select(b => b.Name?.Value).FirstOrDefault(Shown);
+    internal static bool WholeParagraph(W.BookmarkStart start)
+    {
+        var p = start.Parent as W.Paragraph;
+        if (p is null || DocxFootnotes.OffsetOf(p, start) != 0) return false;
+        var end = p.Elements<W.BookmarkEnd>().FirstOrDefault(e => e.Id?.Value == start.Id?.Value);
+        return end is not null && DocxFootnotes.OffsetOf(p, end) == DocxRuns.ParagraphText(p).Length;
+    }
+    public static string? Bookmark(W.Paragraph p) => p.Elements<W.BookmarkStart>().Where(WholeParagraph).Select(b => b.Name?.Value).FirstOrDefault(Shown);
 
     /// <summary>A bookmark around the whole paragraph (none removes the paragraph's own); a name the document has elsewhere moves here.</summary>
     public static void SetBookmark(DocxDocument doc, W.Paragraph p, string name)
     {
         var body = doc.Main.Document!.Body!;
-        var gone = p.Elements<W.BookmarkStart>().Where(b => Shown(b.Name?.Value)).ToList();
+        var gone = p.Elements<W.BookmarkStart>().Where(b => Shown(b.Name?.Value) && WholeParagraph(b)).ToList();
         if (name is not ("none" or ""))
         {
             if (!BookmarkName().IsMatch(name))
@@ -43,7 +50,7 @@ static partial class DocxMarks
     }
 
     [GeneratedRegex(@"^\p{L}[\p{L}\p{N}_]{0,39}$|^_Ref\d{1,20}$")]
-    private static partial Regex BookmarkName();
+    internal static partial Regex BookmarkName();
 
     // ---- captions: the label, then a SEQ field counting the captions with that label ----
 

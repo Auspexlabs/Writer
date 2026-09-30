@@ -1,0 +1,52 @@
+{
+  "uiRoot": "/Users/hongjiazhao/Desktop/Projects/Writer/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Writer.app/Contents/Resources/ui",
+  "generatedAt": "2026-09-28T03:03:09.510Z",
+  "result": {
+    "ink": 1009,
+    "annotationContents": [
+      "离线批注",
+      "中文离线文字"
+    ],
+    "form": "after",
+    "pages": 2,
+    "rotation": 90,
+    "chineseText": "中文",
+    "positions": [
+      {
+        "kind": "left",
+        "x": 151.171875
+      },
+      {
+        "kind": "center",
+        "x": 151.1796875
+      },
+      {
+        "kind": "right",
+        "x": 151.171875
+      },
+      {
+        "kind": "decimal",
+        "x": 151.171875
+      }
+    ],
+    "grayPixel": [
+      182,
+      182,
+      182,
+      255
+    ],
+    "redPixels": 2747
+  },
+  "externalRequests": [],
+  "worker": [
+    "/vendor/pdfjs/build/pdf.worker.min.mjs",
+    "/vendor/pdfjs/build/pdf.worker.min.mjs"
+  ],
+  "fonts": [
+    "/vendor/pdfjs/standard_fonts/LiberationSans-Regular.ttf"
+  ],
+  "cmaps": [
+    "/vendor/pdfjs/cmaps/UniGB-UCS2-H.bcmap",
+    "/vendor/pdfjs/cmaps/Adobe-GB1-UCS2.bcmap"
+  ]
+}

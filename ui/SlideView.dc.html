@@ -14,7 +14,7 @@
 .sv-t:empty::before{content:attr(data-hint);opacity:.45}
 </style>
 </helmet>
-<div onClick="{{ onLink }}" style="width:{{ w }};height:{{ h }};overflow:hidden;position:relative;background:{{ bg }}">
+<div ref="{{ mediaRoot }}" onClick="{{ onLink }}" style="width:{{ w }};height:{{ h }};overflow:hidden;position:relative;background:{{ bg }}">
   <div style="position:absolute;left:0;top:0;width:1600px;height:{{ H }};transform:{{ scale }};transform-origin:0 0">
     <sc-for list="{{ objs }}" as="o" hint-placeholder-count="0">
       <div data-oid="{{ o.id }}" style="position:absolute;left:{{ o.left }};top:{{ o.top }};width:{{ o.width }};height:{{ o.height }};transform:{{ o.tf }};opacity:{{ o.op }};visibility:{{ o.vis }};filter:{{ o.flt }}">
@@ -23,6 +23,8 @@
         <sc-if value="{{ o.isImg }}" hint-placeholder-val="{{ false }}">
           <div style="position:absolute;inset:0;{{ o.picFrame }}"><img src="{{ o.src }}" alt="" style="{{ o.picImage }}"></div>
         </sc-if>
+        <sc-if value="{{ o.isVideo }}" hint-placeholder-val="{{ false }}"><video data-media-id="{{ o.id }}" src="{{ o.src }}" controls preload="metadata" onClick="{{ mediaStop }}" onMouseDown="{{ mediaStop }}" onKeyDown="{{ mediaStop }}" style="position:absolute;inset:0;width:100%;height:100%;background:#151515"></video></sc-if>
+        <sc-if value="{{ o.isAudio }}" hint-placeholder-val="{{ false }}"><audio data-media-id="{{ o.id }}" src="{{ o.src }}" controls preload="metadata" onClick="{{ mediaStop }}" onMouseDown="{{ mediaStop }}" onKeyDown="{{ mediaStop }}" style="position:absolute;inset:0;width:100%;height:100%"></audio></sc-if>
         <sc-if value="{{ o.hasText }}" hint-placeholder-val="{{ false }}">
           <div style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:visible;word-break:break-word;outline:{{ o.phOut }};{{ o.tx }}">
             <div class="sv-t" data-hint="{{ o.hint }}" dangerouslySetInnerHTML="{{ o.inner }}"></div>
@@ -40,17 +42,20 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:180},&quot;slide&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ink&quot;,&quot;paper&quot;,&quot;sea&quot;,&quot;clay&quot;,&quot;mist&quot;,&quot;sand&quot;,&quot;rose&quot;,&quot;night&quot;],&quot;default&quot;:&quot;paper&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;ratio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;16:9&quot;,&quot;4:3&quot;],&quot;default&quot;:&quot;16:9&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:320,&quot;tsType&quot;:&quot;number&quot;},&quot;hidden&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;},&quot;hints&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;boolean&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:180},&quot;slide&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ink&quot;,&quot;paper&quot;,&quot;sea&quot;,&quot;clay&quot;,&quot;mist&quot;,&quot;sand&quot;,&quot;rose&quot;,&quot;night&quot;],&quot;default&quot;:&quot;paper&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;ratio&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;16:9&quot;,&quot;4:3&quot;],&quot;default&quot;:&quot;16:9&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;width&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:320,&quot;tsType&quot;:&quot;number&quot;},&quot;hidden&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;},&quot;playToken&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;hints&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
+  mediaRoot=React.createRef();
+  componentDidUpdate(){this.K?.bindSlideMedia(this.mediaRoot.current,this.props.slide?.objs,this.props.hints===false,this.props.playToken);}
+  componentWillUnmount(){this.K?.disposeSlideMedia(this.mediaRoot.current);}
   componentDidMount() { import('./office-io.js').then(m => { this.K = m; this.forceUpdate(); }); }
   renderVals() {
     const K = this.K, s = this.props.slide, W = this.props.width || 160;
     const H = this.props.ratio === '4:3' ? 1200 : 900, k = W / 1600;
-    if (!K || !s) return { onLink: K?.slideLinkClick, w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: '#EEE', scale: `scale(${k})`, objs: [] };
+    if (!K || !s) return { mediaRoot:this.mediaRoot,mediaStop:e=>e.stopPropagation(),onLink: K?.slideLinkClick, w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: '#EEE', scale: `scale(${k})`, objs: [] };
     const th = K.THEMES[this.props.theme] || K.THEMES.paper, hid = this.props.hidden || [], hints = this.props.hints !== false; // 放映 shows no placeholder prompts
     return {
-      onLink: K?.slideLinkClick, w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: s.bg || s.inheritedBg || th.bg, scale: `scale(${k})`,
-      objs: (s.decor || []).concat(s.objs).map(o => { const v = K.objView(o, th, 1600 / (this.props.ratio === '4:3' ? 720 : 960)); if (!hints) v.hint = ''; return Object.assign(v, { id: o.id, vis: hid.includes(o.id) ? 'hidden' : 'visible', phOut: v.hint ? '2px dashed rgba(128,128,128,0.45)' : 'none' }); })
+      mediaRoot:this.mediaRoot,mediaStop:e=>e.stopPropagation(),onLink: K?.slideLinkClick, w: W + 'px', h: W * H / 1600 + 'px', H: H + 'px', bg: s.bg || s.inheritedBg || th.bg, scale: `scale(${k})`,
+      objs: (s.decor || []).concat(s.objs).filter(o=>!o.hidden).map(o => { const v = K.objView(o, th, 1600 / (this.props.ratio === '4:3' ? 720 : 960)); if (!hints) v.hint = ''; return Object.assign(v, { id: o.id, vis: hid.includes(o.id) ? 'hidden' : 'visible', phOut: v.hint ? '2px dashed rgba(128,128,128,0.45)' : 'none' }); })
     };
   }
 }

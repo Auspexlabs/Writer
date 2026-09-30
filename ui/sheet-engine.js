@@ -1,3 +1,15 @@
+import {pivotDisplayed,pivotDisplays,pivotItemMatches} from './sheet-pivot-values.js';
+import {pivotFormulaSource,pivotGroupValue,validatePivotGroups} from './sheet-pivot-fields.js';
+export { protectionOptions, cellProtection, cellLocked, formulaHidden, inheritedStyle, effectiveCellStyle, areaHasLocked, selectionAllowed, nextSelectable, setAxisProtection, shiftStyleDefaults, protectionAllows, workbookStructureViolation, protectionViolation, protectedPaste } from './sheet-protection.js';
+export {sparklineSvg,sparklineMap} from './sheet-sparklines.js';
+export { advancedFilter, copyAdvancedFilter, sortRowOrder, sortAppearance } from './sheet-data-tools.js';
+import { dataTableValue } from './sheet-whatif.js';
+import { statLinest, statTTest, statChiTest, statFTest, statBeta, statGammaQ, statLogGamma } from './sheet-statistics.js';
+export { conditionalFormats } from './sheet-conditional.js';
+export { goalSeek } from './sheet-analysis.js';
+export { traceReferences, specialRanges } from './sheet-audit.js';
+export { traceGeometry, traceSvg } from './sheet-trace.js';
+export { inArea, areaBounds, subtractArea, unionAreas, areaContains } from './sheet-selection.js';
 export { textWidth, autoRowHeights } from './sheet-layout.js';
 export { readTSV, writeTSV, readTableHTML } from './sheet-clipboard.js';
 import { cellStats, isSpillFormula } from './sheet-model.js';
@@ -15,19 +27,23 @@ class FErr { constructor(e) { this.e = e; } }
 const fail = e => { throw new FErr(e); };
 const E = { DIV0: '#DIV/0!', VALUE: '#VALUE!', REF: '#REF!', NAME: '#NAME?', NA: '#N/A', NUM: '#NUM!', NULL: '#NULL!', SPILL: '#SPILL!', CALC: '#CALC!', CIRC: '#CIRC!' };
 const ERRS = Object.values(E);
-const MAXCELLS = 1e6; // ponytail: hard cap on range size, sparse ranges if someone needs bigger grids
+const MAXCELLS = 1e6; // Array materialization limit; scalar reducers traverse sparse ranges without this cap.
 
 // ---- tokenizer / parser ----
 // A reference: optional sheet prefix, then A1 / A1:B2 / A:C (whole columns) / 3:5 (whole rows), $ allowed.
-const SHEET = "(?:(?:'(?:[^']|'')+'|[A-Za-z_\\u4e00-\\u9fa5][\\w\\u4e00-\\u9fa5]*)!)?";
+const SHEET_NAME = "(?:'(?:[^']|'')+'|[A-Za-z_\\u4e00-\\u9fa5][\\w\\u4e00-\\u9fa5]*)";
+const SHEET = '(?:' + SHEET_NAME + '(?::' + SHEET_NAME + ')?!)?';
 const REFSRC = SHEET + '(?:\\$?[A-Za-z]{1,3}\\$?\\d+(?::\\$?[A-Za-z]{1,3}\\$?\\d+)?|\\$?[A-Za-z]{1,3}:\\$?[A-Za-z]{1,3}|\\$?\\d+:\\$?\\d+)';
 const REFSTR = new RegExp('^' + REFSRC + '$', 'i');
+const QUALIFIED_NAME = new RegExp('^\\s*(' + SHEET_NAME + ')!([A-Za-z_一-龥][\\w.一-龥]*)(?![\\w.])', 'i');
 const TK = new RegExp('\\s*(?:(' + REFSRC + ')(?![\\w(])|(\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?|\\.\\d+(?:[eE][+-]?\\d+)?)|("(?:[^"]|"")*")|(#N\\/A|#DIV\\/0!|#VALUE!|#REF!|#NAME\\?|#NUM!|#NULL!|#SPILL!|#CALC!)|([A-Za-z_][\\w.]*)(?=\\s*\\()|(TRUE|FALSE)\\b|([A-Za-z_一-龥][\\w.一-龥]*)|(<=|>=|<>|[-+*/^&=<>%(),{};#]))', 'iy');
 function tokenize(s) {
   if (/[:!]\s*#REF!|#REF!\s*:/.test(s)) fail(E.REF);
   const out = []; let i = 0;
   while (i < s.length) {
     if (/^\s*$/.test(s.slice(i))) break;
+    const qualified = QUALIFIED_NAME.exec(s.slice(i));
+    if (qualified && !parseA(qualified[2]) && s[i+qualified[0].length] !== ':') { out.push({ t: 'name', v: qualified[1] + '!' + qualified[2] }); i += qualified[0].length; continue; }
     // Structured references have nested brackets and escaped punctuation; consume them before A1 tokens.
     const lead = /^\s*([A-Za-z_\\一-龥][\w.\\一-龥]*)?\[/.exec(s.slice(i));
     if (lead) {
@@ -50,7 +66,7 @@ function tokenize(s) {
 // Whole-column ranges carry r2 = null, whole-row ranges c2 = null; Calc resolves them against the used range.
 function refNode(s) {
   let sh = null; const i = s.lastIndexOf('!');
-  if (i >= 0) { sh = s.slice(0, i).replace(/^'|'$/g, '').replace(/''/g, "'"); s = s.slice(i + 1); }
+  if (i >= 0) { sh = s.slice(0, i).split(':').map(name=>name.replace(/^'|'$/g, '').replace(/''/g, "'")).join(':'); s = s.slice(i + 1); }
   const [a, b] = s.split(':');
   if (b === undefined) { const p = parseA(a); if (!p) fail(E.REF); return { t: 'ref', sh, r: p.r, c: p.c }; }
   let m;
@@ -68,7 +84,7 @@ function parse(src) {
   const add = () => { let a = mul(); while (isOp('+') || isOp('-')) { const op = next().v; a = { t: 'op', op, a, b: mul() }; } return a; };
   const mul = () => { let a = pw(); while (isOp('*') || isOp('/')) { const op = next().v; a = { t: 'op', op, a, b: pw() }; } return a; };
   const pw = () => { let a = un(); while (isOp('^')) { next(); a = { t: 'op', op: '^', a, b: un() }; } return a; };
-  const un = () => { if (isOp('-')) { next(); return { t: 'neg', a: un() }; } if (isOp('+')) { next(); return un(); } let a = prim(); while (isOp('%') || isOp('#')) { const op = next().v; a = { t: op === '%' ? 'pct' : 'spill', a }; } return a; };
+  const un = () => { if (isOp('-')) { next(); return { t: 'neg', a: un() }; } if (isOp('+')) { next(); return un(); } let a = prim(); while (isOp('%') || isOp('#') || isOp('(')) { const op = next().v; if(op==='('){const args=[];if(!isOp(')')){const arg=()=>args.push(isOp(',')||isOp(')')?{t:'empty'}:cmp());arg();while(isOp(',')){next();arg();}}if(!isOp(')'))fail(E.VALUE);next();a={t:'call',callee:a,args};}else a = { t: op === '%' ? 'pct' : 'spill', a }; } return a; };
   const prim = () => {
     const k = next(); if (!k) fail(E.VALUE);
     if (k.t === 'n' || k.t === 's' || k.t === 'b') return { t: k.t, v: k.v };
@@ -92,7 +108,20 @@ function parse(src) {
   const e = cmp(); if (p < T.length) fail(E.VALUE); return e;
 }
 const AST = new Map();
-function ast(f) { if (!AST.has(f)) { try { AST.set(f, parse(f)); } catch (e) { AST.set(f, { t: 'err', e: e instanceof FErr ? e.e : E.NAME }); } } return AST.get(f); }
+let astChars = 0;
+function ast(f) {
+  if (AST.has(f)) return AST.get(f);
+  let tree; try { tree = parse(f); } catch (e) { tree = { t: 'err', e: e instanceof FErr ? e.e : E.NAME }; }
+  // Workbooks can contain millions of distinct formulas. Keep a bounded working
+  // set, including errors, instead of retaining every workbook's syntax trees.
+  if (f.length <= 16384) {
+    while (AST.size >= 8192 || astChars + f.length > 524288) {
+      const oldest = AST.keys().next().value; astChars -= oldest.length; AST.delete(oldest);
+    }
+    AST.set(f, tree); astChars += f.length;
+  }
+  return tree;
+}
 
 // ---- value coercion ----
 const isRng = v => !!v && typeof v === 'object' && 'range' in v;
@@ -178,19 +207,22 @@ function ifsValues(a, ev) {
 }
 // ---- dates: Excel 1900 serial system (serial 60 = the fictitious 1900-02-29, serials 1..59 sit one day early) ----
 const EPOCH = Date.UTC(1899, 11, 30);
+// All calculation is synchronous. Restore the workbook context even on errors and nested calls.
+let dateOffset = 0;
+function withDateSystem(date1904, fn) { const before = dateOffset; dateOffset = date1904 ? 1462 : 0; try { return fn(); } finally { dateOffset = before; } }
 const leap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 const daysIn = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate(); // m is 1-based
 function ymd(v) {
-  const s = Math.floor(v); if (s < 0 || s > 2958465) fail(E.NUM);
+  const s = Math.floor(v) + dateOffset; if (s < 0 || s > 2958465) fail(E.NUM);
   if (s === 0) return { y: 1900, m: 1, d: 0 }; if (s === 60) return { y: 1900, m: 2, d: 29 };
   const dt = new Date(EPOCH + (s < 60 ? s + 1 : s) * 864e5); return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate() };
 }
 function serial(y, m, d) { // DATE() semantics: month/day overflow rolls over, years 0..1899 are offset by 1900
   y = Math.trunc(y); m = Math.trunc(m); d = Math.trunc(d); if (y >= 0 && y < 1900) y += 1900; if (y < 1900 || y > 9999) fail(E.NUM);
   if (y === 1900 && m === 2 && d === 29) return 60;
-  let s = Math.round((Date.UTC(y, m - 1, d) - EPOCH) / 864e5); if (s < 61) s -= 1; if (s < 0 || s > 2958465) fail(E.NUM); return s;
+  let s = Math.round((Date.UTC(y, m - 1, d) - EPOCH) / 864e5); if (s < 61) s -= 1; if (s < 0 || s > 2958465) fail(E.NUM); return s - dateOffset;
 }
-const wday = v => ((Math.floor(v) - 1) % 7 + 7) % 7; // 0 = Sunday, follows Excel's serials (so 1900-01-01 is a "Sunday")
+const wday = v => ((Math.floor(v) + dateOffset - 1) % 7 + 7) % 7; // 0 = Sunday, follows Excel's serials (so 1900-01-01 is a "Sunday")
 function hms(v) { let t = Math.min(86399, Math.round((v - Math.floor(v)) * 86400)); const h = Math.floor(t / 3600); t -= h * 3600; return { h, mi: Math.floor(t / 60), s: t % 60 }; }
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], CWD = '日一二三四五六'; // i18n-ok: date-format output, not UI
@@ -314,9 +346,11 @@ export function fmtColor(v, code) {
   const m = /\[(black|blue|cyan|green|magenta|red|white|yellow)\]/i.exec(sec);
   return m ? FMT_COLORS[m[1].toLowerCase()] : null;
 }
-export { fmtCode, parseDate as dateSerial };
+export { fmtCode };
+export function dateSerial(value, date1904 = false) { return withDateSystem(date1904, () => parseDate(value)); }
 export function decimalsOf(v) { if (typeof v !== 'number' || Number.isInteger(v)) return 0; const s = String(+v.toPrecision(10)); return (s.split('.')[1] || '').length; }
-export function fmt(v, s) {
+export function fmt(v, s) { return withDateSystem(s?.date1904, () => formatValue(v, s)); }
+function formatValue(v, s) {
   s = s || {};
   if (isErr(v)) return v.err;
   if (v === '' || v == null) return '';
@@ -338,6 +372,9 @@ export function fmt(v, s) {
 }
 // ---- functions ----
 // FN[name](argNodes, ev, calc) → value. Scalar functions are wrapped with S() and receive evaluated args.
+const statCall = (fn,...args) => { try { return fn(...args); } catch(e) { fail(/^#/.test(e.message)?e.message:E.VALUE); } };
+const statInput = (a,i,ev) => { const value=rngv(a,i,ev);for(const row of value)for(const v of row)if(isErr(v))fail(v.err);return value; };
+const statRegression = (a,ev,exponential=false) => ({range:statCall(statLinest,statInput(a,0,ev),has(a,1)?statInput(a,1,ev):null,has(a,2)?truthy(ev(a[2])):true,has(a,3)?truthy(ev(a[3])):false,exponential)});
 const FN = {};
 const sum = n => n.reduce((s, x) => s + x, 0);
 const avg = n => { if (!n.length) fail(E.DIV0); return sum(n) / n.length; };
@@ -399,7 +436,7 @@ Object.assign(FN, {
     const nested=node=>node&&typeof node==='object'&&(node.t==='fn'&&['SUBTOTAL','AGGREGATE'].includes(node.name)||Object.values(node).some(v=>Array.isArray(v)?v.some(nested):typeof v==='object'&&nested(v)));
     const values=[];
     for(const ref of a.slice(1)) {const b=calc.bounds(ref,si),sh=calc.doc.sheets[b.si],hidden=new Set(sh.frows||[]);if(k>100){for(const r of sh.hiddenRows||[])hidden.add(r);for(const g of sh.outline||[])if(g.axis==='r'&&g.collapsed)for(let r=g.start;r<=g.end;r++)hidden.add(r);}
-      for(let r=b.r1;r<=b.r2;r++)if(!hidden.has(r))for(let c=b.c1;c<=b.c2;c++){const raw=sh.cells[A(r,c)]?.v;if(typeof raw==='string'&&raw[0]==='='&&nested(ast(raw.slice(1))))continue;values.push(calc.value(b.si,r,c));}
+      for(let r=b.r1;r<=b.r2;r++)if(!hidden.has(r))for(let c=b.c1;c<=b.c2;c++){const raw=sh.cells[A(r,c)]?.v;if(!sh.cells[A(r,c)]?.literal&&typeof raw==='string'&&raw[0]==='='&&nested(ast(raw.slice(1))))continue;values.push(calc.value(b.si,r,c));}
     }
     return FN[f]([{t:'rng'}],()=>({range:values.map(v=>[v])}));
   },
@@ -461,6 +498,14 @@ Object.assign(FN, {
   PEARSON: (a, ev) => FN.CORREL(a, ev),
   SLOPE: (a, ev) => linreg(pairs(rngv(a, 0, ev).flat(), rngv(a, 1, ev).flat())).b,
   INTERCEPT: (a, ev) => linreg(pairs(rngv(a, 0, ev).flat(), rngv(a, 1, ev).flat())).a,
+  LINEST: (a,ev) => statRegression(a,ev),
+  LOGEST: (a,ev) => statRegression(a,ev,true),
+  'T.TEST': (a,ev) => statCall(statTTest,statInput(a,0,ev),statInput(a,1,ev),num(ev(a[2])),num(ev(a[3]))),
+  TTEST: (a,ev) => FN['T.TEST'](a,ev),
+  'CHISQ.TEST': (a,ev) => statCall(statChiTest,statInput(a,0,ev),statInput(a,1,ev)),
+  CHITEST: (a,ev) => FN['CHISQ.TEST'](a,ev),
+  'F.TEST': (a,ev) => statCall(statFTest,statInput(a,0,ev),statInput(a,1,ev)),
+  FTEST: (a,ev) => FN['F.TEST'](a,ev),
   FORECAST: (a, ev) => { const { a: c, b } = linreg(pairs(rngv(a, 1, ev).flat(), rngv(a, 2, ev).flat())); return c + b * num(ev(a[0])); },
   'FORECAST.LINEAR': (a, ev) => FN.FORECAST(a, ev),
   TREND: (a, ev) => { const { ys, xs, nx } = fitArgs(a, ev); const r = linreg(pairs(ys, xs)); return { range: nx.map(row => row.map(x => r.a + r.b * num(x))) }; },
@@ -633,7 +678,7 @@ Object.assign(FN, {
     const r1 = b.r1 + dr, c1 = b.c1 + dc; if (r1 < 0 || c1 < 0 || h < 1 || w < 1) fail(E.REF);
     return calc.ev({ t: 'rng', sh: calc.doc.sheets[b.si].name, r1, c1, r2: r1 + h - 1, c2: c1 + w - 1 }, si);
   },
-  INDIRECT: (a, ev, calc, si) => { const s = str(ev(a[0])).trim(); const n = calc.nameNode(s) || (REFSTR.test(s) ? refNode(s) : fail(E.REF)); return calc.ev(n, si); },
+  INDIRECT: (a, ev, calc, si) => { const s = str(ev(a[0])).trim(); const n = calc.nameNode(s,si) || (REFSTR.test(s) ? refNode(s) : fail(E.REF)); return calc.ev(n, si); },
   ROW: (a, ev, calc, si) => { if (!has(a, 0)) return calc.cur.r + 1; const b = calc.bounds(a[0], si); return b.r1 === b.r2 && b.c1 === b.c2 ? b.r1 + 1 : { range: grid(b.r2 - b.r1 + 1, 1, i => b.r1 + i + 1) }; },
   COLUMN: (a, ev, calc, si) => { if (!has(a, 0)) return calc.cur.c + 1; const b = calc.bounds(a[0], si); return b.r1 === b.r2 && b.c1 === b.c2 ? b.c1 + 1 : { range: grid(1, b.c2 - b.c1 + 1, (i, j) => b.c1 + j + 1) }; },
   ROWS: (a, ev, calc, si) => { if(['ref','rng','name','structured'].includes(a[0]?.t)){const b=calc.bounds(a[0],si,true);return b.r2-b.r1+1;}return rngv(a,0,ev).length; },
@@ -751,6 +796,48 @@ Object.assign(FN, {
   'WORKDAY.INTL': (a, ev) => workday(dser(ev(a[0])), num(ev(a[1])), wmask(evo(a, 2, ev)), holidaySet(a, 3, ev)),
   YEARFRAC: S((a, b, basis) => yearfrac(dser(a), dser(b), Math.trunc(oNum(basis, 0))), 2),
 });
+// ---- coupon securities ----
+function bondSetup(settlement,maturity,frequency,basis=0){
+  const s=dser(settlement),m=dser(maturity),f=Math.trunc(num(frequency)),b=Math.trunc(num(basis));if(s>=m||![1,2,4].includes(f)||b<0||b>4)fail(E.NUM);
+  const end=ymd(m),eom=lastDay(end.y,end.m,end.d),coupon=i=>{const d=addMonths(m,-i*12/f);return serial(d.y,d.m,eom?d.last:Math.min(d.d,d.last));};
+  let count=1,previous=coupon(count);while(previous>s){count++;previous=coupon(count);}const next=coupon(count-1),days=(a,z)=>b===0||b===4?days360(a,z,b===4):z-a;
+  const period=b===1?next-previous:(b===3?365:360)/f;
+  return {s,m,f,b,count,previous,next,period,accrued:days(previous,s),remaining:days(s,next)};
+}
+function bondPrice(b,rate,yieldRate,redemption){const coupon=100*rate/b.f,a=b.accrued/b.period,d=b.remaining/b.period,base=1+yieldRate/b.f;if(base<=0)return Infinity;if(b.count===1)return (redemption+coupon)/(1+yieldRate/b.f*d)-coupon*a;let price=redemption/Math.pow(base,b.count-1+d);for(let i=0;i<b.count;i++)price+=coupon/Math.pow(base,i+d);return price-coupon*a;}
+function bondArgs(s,m,r,y,red,f,b){const data=bondSetup(s,m,f,oNum(b,0));r=num(r);y=num(y);red=num(red);if(r<0||y<0||red<=0)fail(E.NUM);return {data,r,y,red};}
+Object.assign(FN,{
+  COUPDAYBS:S((s,m,f,b)=>bondSetup(s,m,f,oNum(b,0)).accrued,3),
+  COUPDAYS:S((s,m,f,b)=>bondSetup(s,m,f,oNum(b,0)).period,3),
+  COUPDAYSNC:S((s,m,f,b)=>bondSetup(s,m,f,oNum(b,0)).remaining,3),
+  COUPNCD:S((s,m,f,b)=>bondSetup(s,m,f,oNum(b,0)).next,3),
+  COUPPCD:S((s,m,f,b)=>bondSetup(s,m,f,oNum(b,0)).previous,3),
+  COUPNUM:S((s,m,f,b)=>bondSetup(s,m,f,oNum(b,0)).count,3),
+  PRICE:S((s,m,r,y,red,f,b)=>{const v=bondArgs(s,m,r,y,red,f,b);return bondPrice(v.data,v.r,v.y,v.red);},6),
+  YIELD:S((s,m,r,price,red,f,b)=>{const v=bondArgs(s,m,r,0,red,f,b);price=num(price);if(price<=0)fail(E.NUM);let lo=-v.data.f+.00000001,hi=1;while(bondPrice(v.data,v.r,hi,v.red)>price&&hi<1e12)hi*=2;for(let i=0;i<200;i++){const y=(lo+hi)/2,p=bondPrice(v.data,v.r,y,v.red);if(Math.abs(p-price)<1e-11*Math.max(1,price))return y;if(p>price)lo=y;else hi=y;}return (lo+hi)/2;},6),
+  DURATION:S((s,m,r,y,f,b)=>{const v=bondArgs(s,m,r,y,100,f,b),q=v.data,d=q.remaining/q.period,base=1+v.y/q.f,coupon=100*v.r/q.f;let price=0,weighted=0;for(let i=0;i<q.count;i++){const t=i+d,cash=(coupon+(i===q.count-1?100:0))/Math.pow(base,t);price+=cash;weighted+=t*cash;}return weighted/price/q.f;},5),
+  MDURATION:S((s,m,r,y,f,b)=>{const data=bondArgs(s,m,r,y,100,f,b),q=data.data,d=q.remaining/q.period,base=1+data.y/q.f,coupon=100*data.r/q.f;let price=0,weighted=0;for(let i=0;i<q.count;i++){const t=i+d,cash=(coupon+(i===q.count-1?100:0))/Math.pow(base,t);price+=cash;weighted+=t*cash;}return weighted/price/q.f/base;},5),
+});
+// ---- continuous statistical distributions ----
+const studentTail=(x,df)=>{df=Math.trunc(df);if(df<1)fail(E.NUM);return statCall(statBeta,df/(df+x*x),df/2,.5)/2;};
+const inverseCdf=(p,cdf,lo=0,hi=1)=>{if(p<=0||p>=1)fail(E.NUM);while(cdf(hi)<p&&hi<1e100)hi*=2;for(let i=0;i<200;i++){const mid=(lo+hi)/2;if(cdf(mid)<p)lo=mid;else hi=mid;if(Math.abs(hi-lo)<1e-12*Math.max(1,Math.abs(mid)))break;}return (lo+hi)/2;};
+Object.assign(FN,{
+  GAMMALN:S(x=>statCall(statLogGamma,num(x)),1),
+  'GAMMALN.PRECISE':S(x=>statCall(statLogGamma,num(x)),1),
+  'T.DIST':S((x,df,cumulative)=>{x=num(x);df=Math.trunc(num(df));if(df<1)fail(E.NUM);return truthy(cumulative)?x>=0?1-studentTail(x,df):studentTail(x,df):Math.exp(statCall(statLogGamma,(df+1)/2)-statCall(statLogGamma,df/2)) /Math.sqrt(df*Math.PI)*Math.pow(1+x*x/df,-(df+1)/2);},3),
+  'T.DIST.RT':S((x,df)=>{x=num(x);return x>=0?studentTail(x,num(df)):1-studentTail(x,num(df));},2),
+  'T.DIST.2T':S((x,df)=>{x=num(x);if(x<0)fail(E.NUM);return 2*studentTail(x,num(df));},2),
+  'T.INV':S((p,df)=>{p=num(p);df=num(df);if(p===.5){if(df<1)fail(E.NUM);return 0;}const sign=p<.5?-1:1;return sign*inverseCdf(p<.5?1-p:p,x=>1-studentTail(x,df));},2),
+  'T.INV.2T':S((p,df)=>{p=num(p);df=num(df);if(p===1){if(df<1)fail(E.NUM);return 0;}if(p<=0||p>1)fail(E.NUM);return inverseCdf(1-p/2,x=>1-studentTail(x,df));},2),
+  'CHISQ.DIST.RT':S((x,df)=>{x=num(x);df=Math.trunc(num(df));if(x<0||df<1)fail(E.NUM);return statCall(statGammaQ,df/2,x/2);},2),
+  'CHISQ.DIST':S((x,df,cumulative)=>{x=num(x);df=Math.trunc(num(df));if(x<0||df<1)fail(E.NUM);if(truthy(cumulative))return 1-statCall(statGammaQ,df/2,x/2);if(x===0)return df===2?.5:df>2?0:fail(E.DIV0);return Math.exp((df/2-1)*Math.log(x)-x/2-df/2*Math.log(2)-statCall(statLogGamma,df/2));},3),
+  'CHISQ.INV':S((p,df)=>{df=Math.trunc(num(df));if(df<1)fail(E.NUM);p=num(p);if(p===0)return 0;return inverseCdf(p,x=>1-statCall(statGammaQ,df/2,x/2));},2),
+  'CHISQ.INV.RT':S((p,df)=>{df=Math.trunc(num(df));if(df<1)fail(E.NUM);p=num(p);if(p===1)return 0;return inverseCdf(1-p,x=>1-statCall(statGammaQ,df/2,x/2));},2),
+  'F.DIST':S((x,a,b,cumulative)=>{x=num(x);a=Math.trunc(num(a));b=Math.trunc(num(b));if(x<0||a<1||b<1)fail(E.NUM);if(truthy(cumulative))return statCall(statBeta,a*x/(a*x+b),a/2,b/2);if(x===0)return a===2?1:a>2?0:fail(E.DIV0);return Math.exp(a/2*Math.log(a/b)+(a/2-1)*Math.log(x)-(a+b)/2*Math.log1p(a*x/b)+statCall(statLogGamma,(a+b)/2)-statCall(statLogGamma,a/2)-statCall(statLogGamma,b/2));},4),
+  'F.DIST.RT':S((x,a,b)=>{x=num(x);a=Math.trunc(num(a));b=Math.trunc(num(b));if(x<0||a<1||b<1)fail(E.NUM);return statCall(statBeta,b/(a*x+b),b/2,a/2);},3),
+  'F.INV':S((p,a,b)=>{a=Math.trunc(num(a));b=Math.trunc(num(b));if(a<1||b<1)fail(E.NUM);p=num(p);if(p===0)return 0;return inverseCdf(p,x=>statCall(statBeta,a*x/(a*x+b),a/2,b/2));},3),
+  'F.INV.RT':S((p,a,b)=>{a=Math.trunc(num(a));b=Math.trunc(num(b));if(a<1||b<1)fail(E.NUM);p=num(p);if(p===1)return 0;return inverseCdf(1-p,x=>statCall(statBeta,a*x/(a*x+b),a/2,b/2));},3),
+});
 // ---- information ----
 const ERRNO = { '#NULL!': 1, '#DIV/0!': 2, '#VALUE!': 3, '#REF!': 4, '#NAME?': 5, '#NUM!': 6, '#N/A': 7, '#SPILL!': 14, '#CALC!': 19, '#CIRC!': 19 };
 const tryVal = (a, ev) => { try { return sc(ev(a[0])); } catch (e) { if (e instanceof FErr) return { err: e.e }; throw e; } }; // first argument, errors as values
@@ -766,8 +853,8 @@ Object.assign(FN, {
   ISLOGICAL: (a, ev) => typeof tryVal(a, ev) === 'boolean',
   ISEVEN: S(x => Math.trunc(num(x)) % 2 === 0, 1),
   ISODD: S(x => Math.trunc(num(x)) % 2 !== 0, 1),
-  ISFORMULA: (a, ev, calc, si) => { const { cell } = cellAt(calc, a[0], si); return !!cell && String(cell.v)[0] === '=' && String(cell.v).length > 1; },
-  ISREF: (a, ev, calc) => !!a[0] && (a[0].t === 'ref' || a[0].t === 'rng' || (a[0].t === 'name' && !!calc.nameNode(a[0].v))),
+  ISFORMULA: (a, ev, calc, si) => { const { cell } = cellAt(calc, a[0], si); return !!cell && !cell.literal && String(cell.v)[0] === '=' && String(cell.v).length > 1; },
+  ISREF: (a, ev, calc, si) => !!a[0] && (a[0].t === 'ref' || a[0].t === 'rng' || (a[0].t === 'name' && !!calc.nameNode(a[0].v,si))),
   TYPE: (a, ev) => { let v; try { v = ev(a[0]); } catch (e) { return 16; } if (isRng(v)) return 64; if (isErr(v)) return 16; return typeof v === 'number' || blank(v) ? 1 : typeof v === 'string' ? 2 : 4; },
   NA: () => fail(E.NA),
   'ERROR.TYPE': (a, ev) => { const v = tryVal(a, ev); if (!isErr(v)) fail(E.NA); return ERRNO[v.err] || fail(E.NA); },
@@ -946,18 +1033,74 @@ for (const name of ['DSUM', 'DAVERAGE', 'DCOUNT', 'DCOUNTA', 'DMAX', 'DMIN', 'DP
   const variance = ns.reduce((s, n) => s + (n - sum / ns.length) ** 2, 0) / denominator; return name.startsWith('DSTDEV') ? Math.sqrt(variance) : variance;
 };
 
+// Reducers visit stored values and dynamic-array cells, never allocate a full-column matrix.
+for (const name of ['SUM','COUNT','COUNTA','AVERAGE','MIN','MAX','PRODUCT']) {
+  FN[name] = (args, ev, calc, si) => {
+    let count=0, total=0, product=1, min=Infinity, max=-Infinity, occupied=0;
+    const take=(v,ref,present=v!==''&&v!=null)=>{ if(present) occupied++; if(isErr(v)){if(name==='COUNT'||name==='COUNTA')return;fail(v.err);} if(name==='COUNTA')return;
+      if(ref && typeof v!=='number')return;
+      if(name==='COUNT' && typeof v!=='number' && typeof v!=='boolean' && !(typeof v==='string'&&v!==''&&!isNaN(Number(v))))return;
+      const n=num(v);count++;total+=n;product*=n;min=Math.min(min,n);max=Math.max(max,n);
+    };
+    for(const node of args){ if(node.t==='empty')continue;
+      if(calc && ['ref','rng','structured','name'].includes(node.t) && !(node.t==='name' && calc.scope.has(node.v))){
+        let b; try{b=calc.referenceBounds(node,si,true);}catch(e){if(node.t!=='name')throw e;}
+        if(b){for(const box of b)for(const v of calc.rangeValues(box))take(v,true,true);continue;}
+      }
+      const v=ev(node); if(isRng(v))for(const row of v.range)for(const x of row)take(x,true,node.t==='arr'||x!==''&&x!=null);else take(v,node.t==='ref',v!=null);
+    }
+    return name==='SUM'?total:name==='COUNT'?count:name==='COUNTA'?occupied:name==='AVERAGE'?(count?total/count:fail(E.DIV0)):name==='MIN'?(count?min:0):name==='MAX'?(count?max:0):count?product:0;
+  };
+}
+
+// Conditional sums/averages only need occupied value cells, even with a full-column range.
+// Keep the existing array-expression path for arguments that are not references.
+for (const name of ['SUMIFS', 'AVERAGEIFS']) {
+  const materialized = FN[name];
+  FN[name] = (a, ev, calc, si) => {
+    if (a.length < 3 || a.length % 2 !== 1) fail(E.VALUE);
+    const nodes = [a[0], ...a.filter((_, i) => i % 2 === 1)];
+    if (nodes.some(n => !['ref','rng','structured','name'].includes(n.t) || n.t === 'name' && calc.scope.has(n.v))) return materialized(a, ev, calc, si);
+    let boxes;
+    try { boxes = nodes.map(n => { const bs = calc.referenceBounds(n, si, true); if (bs.length !== 1) fail(E.VALUE); return bs[0]; }); }
+    catch (e) { if (nodes.some(n => n.t === 'name')) return materialized(a, ev, calc, si); throw e; }
+    const [values, ...ranges] = boxes;
+    if (ranges.some(b => b.r2-b.r1 !== values.r2-values.r1 || b.c2-b.c1 !== values.c2-values.c1)) fail(E.VALUE);
+    const checks = ranges.map((_, i) => crit(ev(a[i*2+2])));
+    let total = 0, count = 0;
+    for (const {r,c,value} of calc.rangeEntries(values)) {
+      if (!ranges.every((b,i) => checks[i](calc.value(b.si,b.r1+r-values.r1,b.c1+c-values.c1)))) continue;
+      if (isErr(value)) fail(value.err);
+      if (typeof value === 'number') { total += value; count++; }
+    }
+    return name === 'SUMIFS' ? total : count ? total/count : fail(E.DIV0);
+  };
+}
+
+// Lexically scoped formula lambdas; no JavaScript eval and no access to host objects.
+FN.LAMBDA=(a,ev,calc,si)=>{if(!a.length||a.length>254)fail(E.VALUE);const params=a.slice(0,-1).map(n=>{if(n.t!=='name'||n.v.includes('!'))fail(E.VALUE);return n.v;});if(new Set(params).size!==params.length)fail(E.VALUE);return {lambda:true,params,body:a.at(-1),scope:new Map(calc.scope),si};};
+FN.ISOMITTED=(a,ev)=>a.length===1?ev(a[0])===undefined:fail(E.VALUE);
+function lambdaOf(node,ev){const f=ev(node);if(!f?.lambda)fail(E.VALUE);return f;}
+FN.MAP=(a,ev,calc,si)=>{if(a.length<2)fail(E.VALUE);const f=lambdaOf(a.at(-1),ev),ms=a.slice(0,-1).map(n=>rng(ev(n))),[R,C]=dims(ms[0]);if(f.params.length!==ms.length||ms.some(m=>m.length!==R||m[0].length!==C))fail(E.VALUE);return {range:grid(R,C,(r,c)=>{let v;try{v=calc.invoke(f,ms.map(m=>m[r][c]),si);}catch(e){if(!(e instanceof FErr))throw e;return {err:e.e};}if(isRng(v)||v?.lambda)fail(E.CALC);return v;})};};
+for(const name of ['REDUCE','SCAN'])FN[name]=(a,ev,calc,si)=>{if(a.length!==3)fail(E.VALUE);let acc=has(a,0)?sc(ev(a[0])):0;const m=rng(ev(a[1])),f=lambdaOf(a[2],ev);const out=m.map(row=>row.map(v=>{acc=calc.invoke(f,[acc,v],si);if(isRng(acc)||acc?.lambda)fail(E.CALC);return acc;}));return name==='SCAN'?{range:out}:acc;};
+for(const name of ['BYROW','BYCOL'])FN[name]=(a,ev,calc,si)=>{if(a.length!==2)fail(E.VALUE);const m=rng(ev(a[0])),f=lambdaOf(a[1],ev),row=name==='BYROW',n=row?m.length:m[0].length;const values=Array.from({length:n},(_,i)=>{const part=row?[m[i]]:m.map(r=>[r[i]]),v=calc.invoke(f,[{range:part}],si);if(isRng(v)||v?.lambda)fail(E.CALC);return v;});return {range:row?values.map(v=>[v]):[values]};};
+FN.MAKEARRAY=(a,ev,calc,si)=>{if(a.length!==3)fail(E.VALUE);const r=Math.trunc(num(ev(a[0]))),c=Math.trunc(num(ev(a[1]))),f=lambdaOf(a[2],ev);if(r<1||c<1)fail(E.VALUE);return {range:grid(r,c,(i,j)=>{const v=calc.invoke(f,[i+1,j+1],si);if(isRng(v)||v?.lambda)fail(E.CALC);return v;})};};
+for(const name of ['TOCOL','TOROW'])FN[name]=(a,ev)=>{if(!a.length||a.length>3)fail(E.VALUE);const m=rng(ev(a[0])),ignore=oNum(evo(a,1,ev),0),byCol=oBool(evo(a,2,ev),false);if(!Number.isInteger(ignore)||ignore<0||ignore>3)fail(E.VALUE);const all=byCol?m[0].flatMap((_,c)=>m.map(row=>row[c])):m.flat(),vs=all.filter(v=>!(ignore&1&&(v===''||v==null))&&!(ignore&2&&isErr(v))).map(v=>v===''||v==null?0:v);if(!vs.length)fail(E.CALC);return {range:name==='TOCOL'?vs.map(v=>[v]):[vs]};};
+for(const name of ['WRAPROWS','WRAPCOLS'])FN[name]=(a,ev)=>{if(a.length<2||a.length>3)fail(E.VALUE);const m=rng(ev(a[0]));if(m.length>1&&m[0].length>1)fail(E.VALUE);const vs=m.flat(),n=Math.trunc(num(ev(a[1]))),pad=has(a,2)?sc(ev(a[2])):{err:E.NA};if(n<1)fail(E.NUM);const rows=name==='WRAPROWS',R=rows?Math.ceil(vs.length/n):Math.min(n,vs.length),C=rows?Math.min(n,vs.length):Math.ceil(vs.length/n);return {range:grid(R,C,(r,c)=>vs[rows?r*n+c:c*n+r]??pad)};};
+FN.EXPAND=(a,ev)=>{if(!a.length||a.length>4)fail(E.VALUE);const m=rng(ev(a[0])),R=has(a,1)?Math.trunc(num(ev(a[1]))):m.length,C=has(a,2)?Math.trunc(num(ev(a[2]))):m[0].length,pad=has(a,3)?sc(ev(a[3])):{err:E.NA};if(R<m.length||C<m[0].length)fail(E.VALUE);return {range:grid(R,C,(r,c)=>r<m.length&&c<m[0].length?m[r][c]:pad)};};
+
 export const FUNCS = Object.keys(FN);
 export const REF_SRC = REFSRC; // the reference grammar, for editors that colour or point at references
 // Groups for the function picker: [group, [[name, 中文说明], …]].
 export const FUNC_GROUPS = [
   ['数学', [['SUM', '求和'], ['SUMIF', '条件求和'], ['SUMIFS', '多条件求和'], ['SUMPRODUCT', '乘积之和'], ['PRODUCT', '乘积'], ['ABS', '绝对值'], ['ROUND', '四舍五入'], ['ROUNDUP', '向上舍入'], ['ROUNDDOWN', '向下舍入'], ['INT', '向下取整'], ['TRUNC', '截尾取整'], ['MOD', '求余数'], ['POWER', '乘幂'], ['SQRT', '平方根'], ['EXP', 'e 的乘幂'], ['LN', '自然对数'], ['LOG', '指定底数的对数'], ['LOG10', '常用对数'], ['CEILING', '向上舍入到倍数'], ['CEILING.MATH', '向上舍入到倍数'], ['FLOOR', '向下舍入到倍数'], ['FLOOR.MATH', '向下舍入到倍数'], ['MROUND', '舍入到最近倍数'], ['SIGN', '正负号'], ['RAND', '0–1 随机数'], ['RANDBETWEEN', '区间随机整数'], ['PI', '圆周率'], ['FACT', '阶乘'], ['COMBIN', '组合数'], ['GCD', '最大公约数'], ['LCM', '最小公倍数'], ['QUOTIENT', '整除的商'], ['EVEN', '舍入到偶数'], ['ODD', '舍入到奇数'], ['SUBTOTAL', '分类汇总'], ['AGGREGATE', '聚合（可忽略错误）']]],
-  ['统计', [['AVERAGE', '平均值'], ['AVERAGEA', '平均值（含文本和逻辑值）'], ['AVERAGEIF', '条件平均值'], ['AVERAGEIFS', '多条件平均值'], ['COUNT', '数值个数'], ['COUNTA', '非空个数'], ['COUNTBLANK', '空白个数'], ['COUNTIF', '条件计数'], ['COUNTIFS', '多条件计数'], ['MAX', '最大值'], ['MAXA', '最大值（含文本和逻辑值）'], ['MIN', '最小值'], ['MINA', '最小值（含文本和逻辑值）'], ['MAXIFS', '条件最大值'], ['MINIFS', '条件最小值'], ['MEDIAN', '中位数'], ['MODE', '众数'], ['MODE.SNGL', '众数'], ['STDEV', '样本标准差'], ['STDEV.S', '样本标准差'], ['STDEV.P', '总体标准差'], ['STDEVP', '总体标准差'], ['VAR', '样本方差'], ['VAR.S', '样本方差'], ['VAR.P', '总体方差'], ['VARP', '总体方差'], ['LARGE', '第 k 大的值'], ['SMALL', '第 k 小的值'], ['RANK', '排名'], ['RANK.EQ', '排名'], ['RANK.AVG', '平均排名'], ['PERCENTILE', '百分位数'], ['PERCENTILE.INC', '百分位数（含端点）'], ['PERCENTILE.EXC', '百分位数（不含端点）'], ['QUARTILE', '四分位数'], ['QUARTILE.INC', '四分位数（含端点）'], ['QUARTILE.EXC', '四分位数（不含端点）'], ['CORREL', '相关系数'], ['PEARSON', '皮尔逊相关系数'], ['SLOPE', '回归直线斜率'], ['INTERCEPT', '回归直线截距'], ['FORECAST', '线性预测'], ['FORECAST.LINEAR', '线性预测'], ['TREND', '线性趋势值'], ['GROWTH', '指数趋势值'], ['FREQUENCY', '频率分布'], ['GEOMEAN', '几何平均值'], ['HARMEAN', '调和平均值'], ['NORM.DIST', '正态分布'], ['NORM.INV', '正态分布反函数'], ['NORM.S.DIST', '标准正态分布'], ['NORM.S.INV', '标准正态分布反函数']]],
+  ['统计', [['AVERAGE', '平均值'], ['AVERAGEA', '平均值（含文本和逻辑值）'], ['AVERAGEIF', '条件平均值'], ['AVERAGEIFS', '多条件平均值'], ['COUNT', '数值个数'], ['COUNTA', '非空个数'], ['COUNTBLANK', '空白个数'], ['COUNTIF', '条件计数'], ['COUNTIFS', '多条件计数'], ['MAX', '最大值'], ['MAXA', '最大值（含文本和逻辑值）'], ['MIN', '最小值'], ['MINA', '最小值（含文本和逻辑值）'], ['MAXIFS', '条件最大值'], ['MINIFS', '条件最小值'], ['MEDIAN', '中位数'], ['MODE', '众数'], ['MODE.SNGL', '众数'], ['STDEV', '样本标准差'], ['STDEV.S', '样本标准差'], ['STDEV.P', '总体标准差'], ['STDEVP', '总体标准差'], ['VAR', '样本方差'], ['VAR.S', '样本方差'], ['VAR.P', '总体方差'], ['VARP', '总体方差'], ['LARGE', '第 k 大的值'], ['SMALL', '第 k 小的值'], ['RANK', '排名'], ['RANK.EQ', '排名'], ['RANK.AVG', '平均排名'], ['PERCENTILE', '百分位数'], ['PERCENTILE.INC', '百分位数（含端点）'], ['PERCENTILE.EXC', '百分位数（不含端点）'], ['QUARTILE', '四分位数'], ['QUARTILE.INC', '四分位数（含端点）'], ['QUARTILE.EXC', '四分位数（不含端点）'], ['CORREL', '相关系数'], ['PEARSON', '皮尔逊相关系数'], ['SLOPE', '回归直线斜率'], ['INTERCEPT', '回归直线截距'], ['LINEST', '多元线性回归'], ['LOGEST', '指数回归'], ['T.TEST', 't 检验'], ['CHISQ.TEST', '卡方检验'], ['F.TEST', '方差检验'], ['FORECAST', '线性预测'], ['FORECAST.LINEAR', '线性预测'], ['TREND', '线性趋势值'], ['GROWTH', '指数趋势值'], ['FREQUENCY', '频率分布'], ['GEOMEAN', '几何平均值'], ['HARMEAN', '调和平均值'], ['NORM.DIST', '正态分布'], ['NORM.INV', '正态分布反函数'], ['NORM.S.DIST', '标准正态分布'], ['NORM.S.INV', '标准正态分布反函数']]],
   ['文本', [['LEN', '字符数'], ['LENB', '字节数'], ['LEFT', '左侧字符'], ['LEFTB', '左侧字节'], ['RIGHT', '右侧字符'], ['RIGHTB', '右侧字节'], ['MID', '中间字符'], ['MIDB', '中间字节'], ['UPPER', '转大写'], ['LOWER', '转小写'], ['PROPER', '单词首字母大写'], ['TRIM', '删除多余空格'], ['CLEAN', '删除控制字符'], ['CONCAT', '连接文本'], ['CONCATENATE', '连接文本'], ['TEXTJOIN', '用分隔符连接'], ['TEXT', '按格式转为文本'], ['VALUE', '文本转数值'], ['NUMBERVALUE', '按分隔符转数值'], ['FIND', '查找位置（区分大小写）'], ['FINDB', '查找字节位置'], ['SEARCH', '查找位置（支持通配符）'], ['REPLACE', '按位置替换'], ['SUBSTITUTE', '替换指定文本'], ['REPT', '重复文本'], ['EXACT', '是否完全相同'], ['CHAR', '编码转字符'], ['CODE', '字符转编码'], ['UNICHAR', 'Unicode 转字符'], ['UNICODE', '字符转 Unicode'], ['T', '仅保留文本'], ['N', '转为数值'], ['FIXED', '固定小数位的文本'], ['DOLLAR', '美元格式文本'], ['RMB', '人民币格式文本'], ['TEXTBEFORE', '分隔符之前的文本'], ['TEXTAFTER', '分隔符之后的文本'], ['TEXTSPLIT', '拆分文本']]],
   ['逻辑', [['IF', '条件判断'], ['IFS', '多条件判断'], ['IFERROR', '出错时返回指定值'], ['IFNA', '#N/A 时返回指定值'], ['AND', '全部为真'], ['OR', '任一为真'], ['NOT', '取反'], ['XOR', '异或'], ['TRUE', '逻辑值 TRUE'], ['FALSE', '逻辑值 FALSE'], ['SWITCH', '按值匹配返回'], ['CHOOSE', '按序号选择'], ['LET', '定义变量']]],
   ['查找引用', [['VLOOKUP', '纵向查找'], ['HLOOKUP', '横向查找'], ['XLOOKUP', '查找（可指定未找到值）'], ['LOOKUP', '向量查找'], ['INDEX', '按行列取值'], ['MATCH', '查找位置'], ['XMATCH', '查找位置'], ['OFFSET', '偏移引用'], ['INDIRECT', '文本转引用'], ['ROW', '行号'], ['ROWS', '行数'], ['COLUMN', '列号'], ['COLUMNS', '列数'], ['ADDRESS', '单元格地址文本'], ['AREAS', '区域个数'], ['TRANSPOSE', '转置'], ['UNIQUE', '去重'], ['FILTER', '按条件筛选'], ['SORT', '排序'], ['SORTBY', '按指定列排序'], ['SEQUENCE', '生成序列']]],
   ['日期时间', [['TODAY', '今天的日期'], ['NOW', '当前日期时间'], ['DATE', '构造日期'], ['TIME', '构造时间'], ['YEAR', '年'], ['MONTH', '月'], ['DAY', '日'], ['HOUR', '时'], ['MINUTE', '分'], ['SECOND', '秒'], ['WEEKDAY', '星期几'], ['WEEKNUM', '第几周'], ['ISOWEEKNUM', 'ISO 周数'], ['DATEDIF', '两日期之差'], ['DATEVALUE', '文本转日期'], ['TIMEVALUE', '文本转时间'], ['EDATE', '若干月后的日期'], ['EOMONTH', '若干月后的月末'], ['DAYS', '相差天数'], ['DAYS360', '按 360 天计的天数'], ['NETWORKDAYS', '工作日天数'], ['NETWORKDAYS.INTL', '工作日天数（自定义周末）'], ['WORKDAY', '若干工作日后'], ['WORKDAY.INTL', '若干工作日后（自定义周末）'], ['YEARFRAC', '相差的年分数']]],
   ['信息', [['ISBLANK', '是否为空'], ['ISERROR', '是否为错误'], ['ISERR', '是否为 #N/A 以外的错误'], ['ISNA', '是否为 #N/A'], ['ISNUMBER', '是否为数值'], ['ISTEXT', '是否为文本'], ['ISNONTEXT', '是否非文本'], ['ISLOGICAL', '是否为逻辑值'], ['ISEVEN', '是否为偶数'], ['ISODD', '是否为奇数'], ['ISFORMULA', '是否含公式'], ['ISREF', '是否为引用'], ['TYPE', '值的类型'], ['NA', '返回 #N/A'], ['ERROR.TYPE', '错误类型编号'], ['CELL', '单元格信息'], ['INFO', '运行环境信息']]],
-  ['财务', [['PMT', '每期付款额'], ['PV', '现值'], ['FV', '终值'], ['NPER', '付款期数'], ['RATE', '每期利率'], ['IPMT', '某期的利息'], ['PPMT', '某期的本金'], ['NPV', '净现值'], ['IRR', '内部收益率'], ['XNPV', '不定期净现值'], ['XIRR', '不定期内部收益率'], ['SLN', '直线折旧'], ['DB', '固定余额递减折旧'], ['DDB', '双倍余额递减折旧'], ['SYD', '年数总和折旧'], ['EFFECT', '实际年利率'], ['NOMINAL', '名义年利率'], ['CUMIPMT', '累计利息'], ['CUMPRINC', '累计本金']]],
+  ['财务', [['PMT', '每期付款额'], ['PV', '现值'], ['PRICE', '债券价格'], ['YIELD', '债券收益率'], ['DURATION', '久期'], ['MDURATION', '修正久期'], ['COUPNUM', '剩余付息次数'], ['COUPNCD', '下一付息日'], ['COUPPCD', '上一付息日'], ['FV', '终值'], ['NPER', '付款期数'], ['RATE', '每期利率'], ['IPMT', '某期的利息'], ['PPMT', '某期的本金'], ['NPV', '净现值'], ['IRR', '内部收益率'], ['XNPV', '不定期净现值'], ['XIRR', '不定期内部收益率'], ['SLN', '直线折旧'], ['DB', '固定余额递减折旧'], ['DDB', '双倍余额递减折旧'], ['SYD', '年数总和折旧'], ['EFFECT', '实际年利率'], ['NOMINAL', '名义年利率'], ['CUMIPMT', '累计利息'], ['CUMPRINC', '累计本金']]],
   ['工程', [['DEC2BIN', '十进制转二进制'], ['BIN2DEC', '二进制转十进制'], ['DEC2HEX', '十进制转十六进制'], ['HEX2DEC', '十六进制转十进制'], ['DEC2OCT', '十进制转八进制'], ['OCT2DEC', '八进制转十进制'], ['CONVERT', '单位换算'], ['DELTA', '两值是否相等']]]
 ];
 
@@ -968,7 +1111,7 @@ export class Calc {
   ensureSpills(si) {
     if (this.spillSheets.has(si)) return;
     this.spillSheets.add(si);
-    const sh = this.doc.sheets[si], candidates = sh.formulas ? sh.formulas.filter(a => isSpillFormula(sh.cells[a]?.v)) : cellStats(sh.cells).spills;
+    const sh = this.doc.sheets[si], candidates = sh.formulas ? sh.formulas.filter(a => !sh.cells[a]?.literal && isSpillFormula(sh.cells[a]?.v)) : cellStats(sh.cells).spills;
     for (const a of candidates) { const p = parseA(a), key = `${si}:${p.r}:${p.c}`; if (!this.stack.has(key)) this.value(si, p.r, p.c); }
   }
   spill(si, r, c, matrix) {
@@ -987,8 +1130,14 @@ export class Calc {
     return matrix[0][0] ?? '';
   }
   sheetIdx(name, cur) { if (name == null) return cur; let i = this.doc.sheets.findIndex(s => s.name === name); if (i < 0) i = this.doc.sheets.findIndex(s => sameSheet(s.name, name)); if (i < 0) fail(E.REF); return i; }
-  nameNode(name) {
-    const raw = this.doc.names && (this.doc.names[name] ?? this.doc.names[Object.keys(this.doc.names).find(k => k.toUpperCase() === name.toUpperCase())]);
+  nameNode(name, si = 0) {
+    const qualified = QUALIFIED_NAME.exec(name);
+    if (qualified && qualified[0].length === name.length) {
+      const owner = this.sheetIdx(qualified[1].replace(/^'|'$/g, '').replace(/''/g, "'"), si), node = this.nameNode(qualified[2], owner);
+      return node ? { t: 'context', si: owner, node } : null;
+    }
+    const lookup = names => names && (names[name] ?? names[Object.keys(names).find(k=>k.toUpperCase()===name.toUpperCase())]);
+    const raw = lookup(this.doc.sheets[si]?.names) ?? lookup(this.doc.names);
     if (typeof raw !== 'string') return null;
     const ref = raw.replace(/^=/, ''); return REFSTR.test(ref) ? refNode(ref) : ast(ref);
   }
@@ -1013,9 +1162,17 @@ export class Calc {
     }
     return {t:'rng',sh:this.doc.sheets[owner].name,r1,r2,c1,c2};
   }
+  referenceBounds(n,si,full=false){
+    if(n.t==='context')return this.referenceBounds(n.node,n.si,full);
+    if(n.t==='name'&&!this.scope.has(n.v)){const named=this.nameNode(n.v,si);if(named)return this.referenceBounds(named,si,full);}
+    if(n.sh?.includes(':')){const [from,to]=n.sh.split(':'),a=this.sheetIdx(from,si),b=this.sheetIdx(to,si);return Array.from({length:Math.abs(a-b)+1},(_,i)=>this.bounds({...n,sh:this.doc.sheets[Math.min(a,b)+i].name},si,full));}
+    return [this.bounds(n,si,full)];
+  }
+  rangeBounds(source,si) { return this.bounds(ast(String(source).replace(/^=/,"")),si); }
   bounds(n, si, full = false) {
+    if (n.t === 'context') return this.bounds(n.node, n.si, full);
     if (n.t === 'structured') return this.bounds(this.tableRef(n, si), si, full);
-    if (n.t === 'name') { const named = this.nameNode(n.v) || this.tableRef({name:n.v}, si); return this.bounds(named, si, full); }
+    if (n.t === 'name') { const named = this.nameNode(n.v,si) || this.tableRef({name:n.v}, si); return this.bounds(named, si, full); }
     if (n.t !== 'ref' && n.t !== 'rng') fail(E.VALUE);
     const s2 = this.sheetIdx(n.sh, si), open = n.t === 'rng' && (n.r2 == null || n.c2 == null);
     const u = open ? (this.used || (this.used = new Map())).get(s2) ?? this.used.set(s2, usedRange(this.doc.sheets[s2])).get(s2) : null; // only whole rows/columns need the used range; one scan per sheet per Calc
@@ -1025,42 +1182,135 @@ export class Calc {
     if (r1 < 0 || c1 < 0 || r2 < r1 || c2 < c1 || (!full && (r2 - r1 + 1) * (c2 - c1 + 1) > MAXCELLS)) fail(E.REF);
     return { si: s2, r1, c1, r2, c2 };
   }
+  *rangeEntries(b) {
+    // A deleted/cleared cell is absent from the sparse dictionary but still invalidates its dependents.
+    for(const key of [...this.affected]){const [si,r,c]=key.split(':').map(Number);if(si===b.si&&r>=b.r1&&r<=b.r2&&c>=b.c1&&c<=b.c2)this.touch(key);}
+    const sh=this.doc.sheets[b.si];
+    const entry = (r,c) => { const cell=sh.cells[A(r,c)], value=this.value(b.si,r,c); return cell && !cell.spill && cell.v!=='' && cell.v!=null || (this.spills.has(`${b.si}:${r}:${c}`)||value!=='') ? {r,c,value} : null; };
+    if ((b.r2-b.r1+1)*(b.c2-b.c1+1)<=4096) { for(let r=b.r1;r<=b.r2;r++)for(let c=b.c1;c<=b.c2;c++){const e=entry(r,c);if(e)yield e;}return; }
+    this.ensureSpills(b.si);
+    for(const key of Object.keys(sh.cells)){const p=parseA(key);if(p&&p.r>=b.r1&&p.r<=b.r2&&p.c>=b.c1&&p.c<=b.c2){const e=entry(p.r,p.c);if(e)yield e;}}
+    for(const t of sh.dataTables||[]){const [a,z]=t.range.split(':').map(parseA);if(!a||!z)continue;for(let r=Math.max(b.r1,a.r+1);r<=Math.min(b.r2,z.r);r++)for(let c=Math.max(b.c1,a.c+1);c<=Math.min(b.c2,z.c);c++)if(!sh.cells[A(r,c)]){const e=entry(r,c);if(e)yield e;}}
+    for(const [key,spill] of this.spills){const [si,r,c]=key.split(':').map(Number);if(si===b.si&&r>=b.r1&&r<=b.r2&&c>=b.c1&&c<=b.c2&&!sh.cells[A(r,c)])yield {r,c,value:spill.value};}
+  }
+  *rangeValues(b) { for (const e of this.rangeEntries(b)) yield e.value; }
   touch(key) { if (this.affected.has(key) && this.stack.size) this.affected.add([...this.stack].at(-1)); }
   value(si, r, c) {
-    const key = `${si}:${r}:${c}`; this.touch(key); if (this.cache.has(key)) return this.cache.get(key);
+    return withDateSystem(this.doc.date1904, () => {
+      const outer = !this.stack.size && !this.iterating;
+      let value = this.cellValue(si, r, c);
+      if (!outer || !this.circular?.size) return value;
+      do { this.solveCircular(); value = this.cellValue(si, r, c); } while (this.circular.size);
+      return value;
+    });
+  }
+  solveCircular() {
+    const settings = this.doc.iteration || {}, count = Math.max(1, Math.min(10000, Math.trunc(+settings.count || 100))), tolerance = Math.max(0, Number(settings.delta ?? .001));
+    this.iterating = true; this.iterationResolved ||= new Map();
+    let previous = new Map([...this.circular].map(key => [key, 0])), iterations = 0, delta = Infinity, converged = false;
+    try {
+      for (; iterations < count; iterations++) {
+        this.iterationPrevious = previous;
+        const next = new Map(); delta = 0;
+        // All members read the preceding iteration, so opening a workbook or reading
+        // a different visible cell first cannot change the iteration's result.
+        for (const key of this.circular) {
+          this.cache.clear(); this.spills.clear(); this.arrays.clear(); this.spillSheets.clear();
+          const value = this.cellValue(...key.split(':').map(Number)), old = previous.get(key) ?? 0;
+          next.set(key, value);
+          delta = Math.max(delta, typeof value === 'number' && typeof old === 'number' ? Math.abs(value - old) : JSON.stringify(value) === JSON.stringify(old) ? 0 : Infinity);
+        }
+        previous = next;
+        if (delta <= tolerance) { converged = true; iterations++; break; }
+      }
+      for (const [key, value] of previous) this.iterationResolved.set(key, value);
+      const prior = this.iterationStatus;
+      this.iterationStatus = { converged: converged && (prior?.converged ?? true), iterations: Math.max(iterations,prior?.iterations || 0), delta: Math.max(delta,prior?.delta || 0), cells: [...new Set([...(prior?.cells || []),...previous.keys()])] };
+    } finally {
+      this.iterationPrevious = null; this.circular.clear(); this.iterating = false;
+      this.cache.clear(); this.spills.clear(); this.arrays.clear(); this.spillSheets.clear();
+    }
+  }
+  cellValue(si, r, c) {
+    const key = `${si}:${r}:${c}`; this.touch(key);
+    if (this.iterationPrevious?.has(key) && this.stack.size) return this.iterationPrevious.get(key);
+    if (this.iterationResolved?.has(key)) return this.iterationResolved.get(key);
+    if (this.cache.has(key)) return this.cache.get(key);
+    const whatIf=dataTableValue(this,si,r,c);if(whatIf!==undefined){this.cache.set(key,whatIf);return whatIf;}
     const sh = this.doc.sheets[si], cell = sh && sh.cells[A(r, c)]; let v = '';
     if (!cell || cell.spill || cell.v === '' || cell.v == null) { this.ensureSpills(si); const spill = this.spills.get(key); if (spill && this.affected.has(spill.owner)) this.affected.add(key); this.touch(key); return spill?.value ?? ''; }
     if (cell && cell.v !== '' && cell.v != null) {
       const raw = String(cell.v);
-      if (raw[0] === '=' && raw.length > 1) {
-        if (this.stack.has(key)) return { err: E.CIRC };
+      if (!cell.literal && raw[0] === '=' && raw.length > 1) {
+        if (this.stack.has(key)) {
+          if (!this.doc.iteration?.enabled) return { err: E.CIRC };
+          this.circular ||= new Set(); const path = [...this.stack];
+          for (const member of path.slice(path.indexOf(key))) this.circular.add(member);
+          return this.iterationPrevious?.get(key) ?? 0;
+        }
         this.stack.add(key); const prior = this.cur; this.cur = { r, c };
         // A formula whose result is a blank cell shows 0 (=A1 with A1 empty); a text result stays "" (=MID(...), =A1&"").
         // ponytail: IF/CHOOSE returning a blank reference show "" rather than Excel's 0, reference semantics would be needed.
-        try { const root = ast(raw.slice(1)); v = this.ev(root, si); if (isRng(v)) v = this.spill(si, r, c, v.range); if (v == null || (v === '' && (root.t === 'ref' || root.t === 'rng' || root.t === 'name'))) v = 0; if (typeof v === 'number' && !isFinite(v)) v = { err: E.NUM }; }
+        try { const root = ast(raw.slice(1)); v = this.ev(root, si); if (isRng(v)) v = this.spill(si, r, c, v.range); if(v?.lambda)v={err:E.CALC}; if (v == null || (v === '' && (root.t === 'ref' || root.t === 'rng' || root.t === 'name'))) v = 0; if (typeof v === 'number' && !isFinite(v)) v = { err: E.NUM }; }
         catch (e) { v = { err: e instanceof FErr ? e.e : E.VALUE }; }
         finally { this.cur = prior; this.stack.delete(key); }
-      } else if (cell.s && cell.s.fmt === 'text') v = raw;
+      } else if (cell.literal || cell.s && cell.s.fmt === 'text') v = raw;
       else if (cell.s && /^(date|time|datetime)$/.test(cell.s.fmt) && isNaN(Number(raw))) v = parseDate(raw) ?? raw; // "2024-01-01" typed as a date is its serial
       else { const n = Number(raw.replace(/,/g, '')); v = raw.trim() !== '' && !isNaN(n) ? n : /^(true|false)$/i.test(raw) ? raw.toUpperCase() === 'TRUE' : raw; }
     }
     this.cache.set(key, v); this.touch(key); return v;
   }
-  evaluate(formula, si = 0, r = 0, c = 0) { const was = this.cur; this.cur = { r, c }; try { return sc(this.ev(ast(String(formula).replace(/^=/, '')), si)); } catch (e) { return { err: e instanceof FErr ? e.e : E.VALUE }; } finally { this.cur = was; } }
+  evaluate(formula, si = 0, r = 0, c = 0) { return withDateSystem(this.doc.date1904, () => this.evaluateFormula(formula, si, r, c)); }
+  references(formula, si=0, r=0, c=0) {
+    const ranges=[],unresolved=[],seen=new Set(),names=new Set(),prior=this.cur;this.cur={r,c};
+    const add=b=>{const key=[b.si,b.r1,b.c1,b.r2,b.c2].join(':');if(!seen.has(key)){seen.add(key);ranges.push(b);}};
+    const visit=(n,s,depth=0)=>{
+      if(!n||depth>128)return;
+      try{
+        if(n.t==='context'){visit(n.node,n.si,depth+1);return;}
+        if(['ref','rng','structured'].includes(n.t)){this.referenceBounds(n,s,true).forEach(add);return;}
+        if(n.t==='name'){const key=s+':'+n.v;if(names.has(key))return;const value=this.nameNode(n.v,s);if(value){names.add(key);visit(value,s,depth+1);names.delete(key);}else if(this.doc.sheets.some(sh=>(sh.tables||[]).some(t=>t.name.toUpperCase()===n.v.toUpperCase())))visit({t:'structured',name:n.v},s,depth+1);return;}
+        if(n.t==='spill'){
+          visit(n.a,s,depth+1);if(n.a.t==='ref'){const b=this.bounds(n.a,s,true);this.value(b.si,b.r1,b.c1);const m=this.arrays.get(`${b.si}:${b.r1}:${b.c1}`);if(m)add({...b,r2:b.r1+m.length-1,c2:b.c1+m[0].length-1});}return;
+        }
+        if(n.t==='fn'){
+          for(const arg of n.args)visit(arg,s,depth+1);
+          if(n.name==='INDIRECT'){const text=str(this.ev(n.args[0],s)),target=REFSTR.test(text)?refNode(text):this.nameNode(text,s);if(target)visit(target,s,depth+1);else unresolved.push(E.REF);}
+          else if(n.name==='OFFSET'){
+            const b=this.bounds(n.args[0],s,true),r1=b.r1+Math.trunc(num(this.ev(n.args[1],s))),c1=b.c1+Math.trunc(num(this.ev(n.args[2],s))),h=has(n.args,3)?Math.trunc(num(this.ev(n.args[3],s))):b.r2-b.r1+1,w=has(n.args,4)?Math.trunc(num(this.ev(n.args[4],s))):b.c2-b.c1+1;
+            if(r1<0||c1<0||h<1||w<1||r1+h>1048576||c1+w>16384)fail(E.REF);add({...b,r1,c1,r2:r1+h-1,c2:c1+w-1});
+          }else if(!FN[n.name])visit(this.nameNode(n.name,s),s,depth+1);
+          return;
+        }
+        if(n.t==='err'){unresolved.push(n.e);return;}
+        if(n.a)visit(n.a,s,depth+1);if(n.b)visit(n.b,s,depth+1);if(n.callee)visit(n.callee,s,depth+1);
+        if(n.args)n.args.forEach(x=>visit(x,s,depth+1));if(n.t==='arr')n.v.flat().forEach(x=>visit(x,s,depth+1));
+      }catch(e){unresolved.push(e instanceof FErr?e.e:E.VALUE);}
+    };
+    try{if(typeof formula==='string'&&formula.startsWith('='))visit(ast(formula.slice(1)),si);}catch(e){unresolved.push(e instanceof FErr?e.e:E.VALUE);}finally{this.cur=prior;}return {ranges,unresolved:[...new Set(unresolved)]};
+  }
+  evaluateFormula(formula, si = 0, r = 0, c = 0) { const was = this.cur; this.cur = { r, c }; try { return sc(this.ev(ast(String(formula).replace(/^=/, '')), si)); } catch (e) { return { err: e instanceof FErr ? e.e : E.VALUE }; } finally { this.cur = was; } }
+  invoke(fn,args,si){
+    if(!fn?.lambda||args.length!==fn.params.length)fail(E.VALUE);
+    if((this.lambdaDepth||0)>=128)fail(E.NUM);
+    const before=this.scope;this.scope=new Map(fn.scope);fn.params.forEach((name,i)=>this.scope.set(name,args[i]));this.lambdaDepth=(this.lambdaDepth||0)+1;
+    try{return this.ev(fn.body,fn.si??si);}finally{this.scope=before;this.lambdaDepth--;}
+  }
   ev(n, si) {
     const ev = x => this.ev(x, si);
     switch (n.t) {
+      case 'context': return this.ev(n.node, n.si);
       case 'err': fail(n.e);
       case 'empty': return undefined;
       case 'n': case 's': case 'b': return n.v;
       case 'name': {
         if (this.scope.has(n.v)) return this.scope.get(n.v);
-        const named = this.nameNode(n.v) || this.tableRef({name:n.v}, si); return this.ev(named, si);
+        const named = this.nameNode(n.v,si) || this.tableRef({name:n.v}, si); return this.ev(named, si);
       }
       case 'structured': { const ref = this.tableRef(n, si); if (ref.r1 === ref.r2 && ref.c1 === ref.c2) return this.value(this.sheetIdx(ref.sh, si), ref.r1, ref.c1); return this.ev(ref, si); }
-      case 'ref': { const v = this.value(this.sheetIdx(n.sh, si), n.r, n.c); if (isErr(v)) fail(v.err); return v; }
+      case 'ref': { if(n.sh?.includes(':'))return {range:this.referenceBounds(n,si).map(b=>[this.value(b.si,b.r1,b.c1)])}; const v = this.value(this.sheetIdx(n.sh, si), n.r, n.c); if (isErr(v)) fail(v.err); return v; }
       case 'spill': { if (n.a.t !== 'ref') fail(E.REF); const s = this.sheetIdx(n.a.sh, si), key = `${s}:${n.a.r}:${n.a.c}`; this.value(s, n.a.r, n.a.c); const matrix = this.arrays.get(key); if (!matrix) fail(E.REF); return { range: matrix }; }
-      case 'rng': { const b = this.bounds(n, si); return { range: grid(b.r2 - b.r1 + 1, b.c2 - b.c1 + 1, (i, j) => this.value(b.si, b.r1 + i, b.c1 + j)) }; }
+      case 'rng': { return {range:this.referenceBounds(n,si).flatMap(b=>grid(b.r2-b.r1+1,b.c2-b.c1+1,(i,j)=>this.value(b.si,b.r1+i,b.c1+j)))}; }
       case 'arr': return { range: n.v.map(row => row.map(x => { try { return sc(ev(x)); } catch (e) { return { err: e instanceof FErr ? e.e : E.VALUE }; } })) };
       case 'neg': return lift2([ev(n.a)], x => -num(x));
       case 'pct': return lift2([ev(n.a)], x => num(x) / 100);
@@ -1076,16 +1326,17 @@ export class Calc {
           }
         });
       }
-      case 'fn': { const f = FN[n.name]; if (!f) fail(E.NAME); return f(n.args, ev, this, si); }
+      case 'call': return this.invoke(ev(n.callee),n.args.map(ev),si);
+      case 'fn': { const f = FN[n.name]; if(f)return f(n.args,ev,this,si);const named=this.scope.get(n.name)||this.nameNode(n.name,si);if(!named)fail(E.NAME);return this.invoke(named.lambda?named:ev(named),n.args.map(ev),si); }
     }
     fail(E.VALUE);
   }
 }
 
 // References inside string literals and function names must not be rewritten. Cells: A1 / $A$1; whole columns A:C and whole rows 3:5 in a second pass.
-const SHEETRE = "((?:'(?:[^']|'')+'|[A-Za-z_\\u4e00-\\u9fa5][\\w\\u4e00-\\u9fa5]*)!)?";
+const SHEETRE = '(' + SHEET_NAME + '(?::' + SHEET_NAME + ')?!)?';
 const REFRE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(\\$?)([A-Za-z]{1,3})(\\$?)(\\d+)(?![\\w(])', 'g');
-const WHOLERE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(?:(\\$?)([A-Za-z]{1,3}):(\\$?)([A-Za-z]{1,3})|(\\$?)(\\d+):(\\$?)(\\d+))(?![\\w(:])', 'g');
+const WHOLERE = new RegExp('("(?:[^"]|"")*")|' + SHEETRE + '(?:(\\$?)([A-Za-z]{1,3}):(\\$?)([A-Za-z]{1,3})|(\\$?)(\\d+):(\\$?)(\\d+))(?![\\w(:!\'])', 'g');
 const nameChar = ch => ch && /[A-Za-z0-9_.\u4e00-\u9fa5]/.test(ch);
 // Rewrites every reference: cells through `cell(sh, abs1, col, abs2, row)`, whole columns/rows through `whole(sh, axis, abs1, i1, abs2, i2)` (0-based indexes).
 function mapRefs(f, cell, whole) { return structuredChunks(f, (s, structured) => structured ? s : mapPlainRefs(s, cell, whole)); }
@@ -1098,8 +1349,13 @@ function mapPlainRefs(f, cell, whole) {
 }
 const wholeStr = (sh, axis, d1, i1, d2, i2) => sh + d1 + (axis === 'c' ? colName(i1) : i1 + 1) + ':' + d2 + (axis === 'c' ? colName(i2) : i2 + 1);
 export function renameSheetRefs(formula, from, to) {
-  const prefix = sh => sh && sameSheet(sh.slice(0, -1).replace(/^'|'$/g, '').replace(/''/g, "'"), from) ? "'" + to.replace(/'/g, "''") + "'!" : sh;
-  return mapRefs(formula, (sh, d1, c, d2, r) => prefix(sh) + d1 + colName(c) + d2 + (r + 1), (sh, axis, d1, i1, d2, i2) => wholeStr(prefix(sh), axis, d1, i1, d2, i2));
+  const prefix = sh => {
+    if(!sh)return sh;const names=sh.slice(0,-1).split(':').map(n=>n.replace(/^'|'$/g,'').replace(/''/g,"'"));
+    if(!names.some(n=>sameSheet(n,from)))return sh;
+    return "'"+names.map(n=>sameSheet(n,from)?to:n).join(':').replace(/'/g,"''")+"'!";
+  };
+  const cells = mapRefs(formula, (sh, d1, c, d2, r) => prefix(sh) + d1 + colName(c) + d2 + (r + 1), (sh, axis, d1, i1, d2, i2) => wholeStr(prefix(sh), axis, d1, i1, d2, i2));
+  return cells.replace(new RegExp('(\"(?:[^\"]|\"\")*\")|(' + SHEET_NAME + '!)' + '([A-Za-z_一-龥][\\w.一-龥]*)', 'g'), (m, literal, sh, name) => literal ? m : prefix(sh) + name);
 }
 export function shiftF(f, dr, dc) {
   return mapRefs(f,
@@ -1116,7 +1372,7 @@ export function adjF(f, curName, target, axis, at, n) {
 // Upper-cases function names and references as typed, leaving string literals and sheet names ('My Sheet'!, Other!) as written.
 export function upperF(f) { return f.split(/("(?:[^"]|"")*"|'[^']*'!|[A-Za-z_一-龥][\w.一-龥]*!)/).map((p, i) => i % 2 ? p : p.toUpperCase()).join(''); }
 const sameSheet = (a, b) => a === b || (a != null && b != null && a.toLowerCase() === b.toLowerCase()); // sheet names compare case-insensitively, as in Excel
-export function usedRange(sh) { return sh._used || cellStats(sh.cells).used; }
+export function usedRange(sh) { let u=sh._used || cellStats(sh.cells).used;for(const g of sh.sparklines||[])for(const line of g.sparklines||[]){const p=parseA(line.cell);if(p)u=u?{r1:Math.min(u.r1,p.r),c1:Math.min(u.c1,p.c),r2:Math.max(u.r2,p.r),c2:Math.max(u.c2,p.c)}:{r1:p.r,c1:p.c,r2:p.r,c2:p.c};}for(const t of sh.dataTables||[]){const [a,b]=t.range.split(':').map(parseA);if(a&&b)u=u?{r1:Math.min(u.r1,a.r),c1:Math.min(u.c1,a.c),r2:Math.max(u.r2,b.r),c2:Math.max(u.c2,b.c)}:{r1:a.r,c1:a.c,r2:b.r,c2:b.c};}return u; }
 
 /** The rectangular data island around a single-cell selection, bounded by empty rows/columns. */
 export function currentRegion(sh, r, c) {
@@ -1140,7 +1396,7 @@ export function moveRefs(formula, currentSheet, sourceSheet, targetSheet, box, d
     const bang = ref.lastIndexOf('!'), prefix = bang < 0 ? '' : ref.slice(0, bang + 1), name = prefix ? prefix.slice(0, -1).replace(/^'|'$/g, '').replace(/''/g, "'") : currentSheet;
     if (!sameSheet(name, sourceSheet)) return m;
     const parts = (prefix ? ref.slice(bang + 1) : ref).split(':'), ps = parts.map(parseA);
-    if (ps.some(p => !p || p.r < box.r1 || p.r > box.r2 || p.c < box.c1 || p.c > box.c2)) return !prefix && !sameSheet(currentSheet, formulaSheet) ? quote(currentSheet) + ref : m;
+    if (!(box.areas || [box]).some(area=>ps.every(p=>p&&p.r>=area.r1&&p.r<=area.r2&&p.c>=area.c1&&p.c<=area.c2))) return !prefix && !sameSheet(currentSheet, formulaSheet) ? quote(currentSheet) + ref : m;
     return (sameSheet(formulaSheet, targetSheet) ? (prefix ? quote(targetSheet) : '') : quote(targetSheet)) + parts.map((s, i) => { const p = ps[i]; return (s.startsWith('$') ? '$' : '') + colName(p.c + dc) + (/\$\d/.test(s) ? '$' : '') + (p.r + dr + 1); }).join(':');
   }));
 }
@@ -1190,7 +1446,7 @@ export function syncTableHeaders(doc) {
     next.forEach((col,i)=>{
       const old=t.columns?.[i]?.name;if(old===col.name)return;
       const address=A(a.r,a.c+i);sh.cells[address]={...sh.cells[address],v:col.name};
-      if(old)for(const owner of doc.sheets)for(const [ref,cell] of Object.entries(owner.cells))if(String(cell.v).startsWith('=')){const p=parseA(ref);const value=renameTableColumnRefs(cell.v,t.name,old,col.name,tableAt(owner,p.r,p.c)?.name===t.name);if(value!==cell.v)cell.v=value;}
+      if(old)for(const owner of doc.sheets)for(const [ref,cell] of Object.entries(owner.cells))if(!cell.literal&&String(cell.v).startsWith('=')){const p=parseA(ref);const value=renameTableColumnRefs(cell.v,t.name,old,col.name,tableAt(owner,p.r,p.c)?.name===t.name);if(value!==cell.v)cell.v=value;}
     });
     if(next.some((c,i)=>c.name!==t.columns?.[i]?.name))t.columns=next;
   }
@@ -1225,27 +1481,50 @@ export function pivotOutput(doc, spec) {
   if(spec.sourceTable)for(const s of doc.sheets){const t=(s.tables||[]).find(t=>sameSheet(t.name,spec.sourceTable));if(t){source=s;const [a,b]=t.range.split(':').map(parseA);range=A(a.r,a.c)+':'+A(b.r-(t.totals?1:0),b.c);break;}}
   if(!source)throw new Error('Pivot source worksheet is missing');const [a,b]=String(range).split(':').map(parseA),anchor=parseA(spec.target||'A1');
   if(!a||!b||!anchor||b.r<=a.r||b.c<a.c)throw new Error('Pivot source needs a header and data');
-  if(spec.rows?.length!==1||(spec.cols||[]).length>1||spec.values?.length!==1)throw new Error('Choose one row field, an optional column field and one value field');
-  const rf=spec.rows[0],cf=spec.cols?.[0]??-1,vf=spec.values[0].field,fn=spec.values[0].fn||'sum',width=b.c-a.c+1;
-  if(rf<0||rf>=width||cf>=width||vf<0||vf>=width||rf===cf||rf===vf||cf===vf)throw new Error('Choose distinct valid pivot fields');
+  const rf=spec.rows||[],cf=spec.cols||[],values=spec.values||[],width=b.c-a.c+1;
+  const valid=i=>Number.isInteger(i)&&i>=0&&i<width;
+  if(!rf.length||!values.length||!rf.every(valid)||!cf.every(valid)||new Set([...rf,...cf]).size!==rf.length+cf.length||values.some(v=>v.formula?!v.name||v.fn&&v.fn!=='sum':!valid(v.field)||!['sum','count','countNums','average','min','max','product','stdDev','stdDevP','var','varP'].includes(v.fn||'sum')))throw new Error('Choose valid row, column and value fields');
+  validatePivotGroups(spec.groups,[...rf,...cf]);
+  if(values.some(v=>!pivotDisplays.some(([mode])=>mode===(v.showAs||'normal'))||['runTotal','difference','percent','percentDiff'].includes(v.showAs)&&![...rf,...cf].includes(v.baseField))||(spec.filters||[]).some(f=>![...rf,...cf].includes(f.field)||!Array.isArray(f.items)))throw new Error('Choose a valid base field and row/column filters');
   const calc=new Calc(doc),si=doc.sheets.indexOf(source),fields=Array.from({length:width},(_,i)=>String(calc.value(si,a.r,a.c+i)));
   if(fields.some(s=>!s)||new Set(fields.map(s=>s.toLowerCase())).size!==fields.length)throw new Error('Pivot source headers must be nonempty and unique');
-  const rows=new Map(),cols=new Map(),groups=new Map(),key=v=>JSON.stringify(v),take=(map,v)=>{const k=key(v);if(!map.has(k))map.set(k,{index:map.size,value:v});return map.get(k).index;};
-  const update=(r,c,v)=>{const k=r+':'+c,stat=groups.get(k)||{count:0,n:0,sum:0,min:Infinity,max:-Infinity,error:null};if(v!==''&&v!=null)stat.count++;if(typeof v==='number'){stat.n++;stat.sum+=v;stat.min=Math.min(stat.min,v);stat.max=Math.max(stat.max,v);}if(isErr(v))stat.error=v.err;groups.set(k,stat);};
-  for(let r=a.r+1;r<=b.r;r++){const ri=take(rows,calc.value(si,r,a.c+rf)),ci=cf<0?0:take(cols,calc.value(si,r,a.c+cf)),v=calc.value(si,r,a.c+vf);update(ri,ci,v);update(ri,-1,v);update(-1,ci,v);update(-1,-1,v);}
-  if(cf<0)take(cols,'');const rr=[...rows.values()],cc=[...cols.values()],cells={},endR=anchor.r+rr.length+1,endC=anchor.c+cc.length+(cf<0?0:1);
+  const calculatedNames=new Set(fields.map(f=>f.toLocaleLowerCase()));for(const v of values)if(v.formula){if(calculatedNames.has(v.name.toLocaleLowerCase()))throw new Error('Calculated field names must be unique');calculatedNames.add(v.name.toLocaleLowerCase());}
+  const compiled=values.map(v=>v.formula?compilePivotFormula(v.formula,fields):null),dependencies=[...new Set(compiled.flatMap(c=>c?.fields||[]))];
+  const rows=new Map(),cols=new Map(),groups=new Map(),take=(map,v)=>{const k=JSON.stringify(v);if(!map.has(k))map.set(k,{index:map.size,value:v});return map.get(k).index;};
+  const update=(r,c,j,v)=>{const k=r+':'+c+':'+j,stat=groups.get(k)||{count:0,n:0,sum:0,mean:0,m2:0,product:1,min:Infinity,max:-Infinity,error:null};if(v!==''&&v!=null)stat.count++;if(typeof v==='number'){stat.n++;stat.sum+=v;const delta=v-stat.mean;stat.mean+=delta/stat.n;stat.m2+=delta*(v-stat.mean);stat.product*=v;stat.min=Math.min(stat.min,v);stat.max=Math.max(stat.max,v);}if(isErr(v))stat.error=v.err;groups.set(k,stat);};
+  for(let r=a.r+1;r<=b.r;r++){const axis=f=>pivotGroupValue(spec.groups,f,calc.value(si,r,a.c+f));if((spec.filters||[]).some(f=>!pivotItemMatches(axis(f.field),f.items)))continue;const ri=take(rows,rf.map(axis)),ci=take(cols,cf.map(axis));[...values.map(v=>v.formula?-1:v.field),...dependencies].forEach((field,j)=>{if(field<0)return;const v=calc.value(si,r,a.c+field);update(ri,ci,j,v);update(ri,-1,j,v);update(-1,ci,j,v);update(-1,-1,j,v);});}
+  if(!cols.size)take(cols,[]);const rr=[...rows.values()],cc=[...cols.values()],cells={},nv=values.length,headers=Math.max(1,cf.length+(nv>1?1:0)),endR=anchor.r+headers+rr.length,endC=anchor.c+rf.length+(cc.length+(cf.length?1:0))*nv-1;
   if(endR>=1048576||endC>=16384)throw new Error('Pivot output exceeds the worksheet');
-  const put=(r,c,v,bold=false)=>cells[A(r,c)]={v,s:bold?{b:true,fill:'#E8EEF7'}:{}},value=(r,c)=>{const s=groups.get(r+':'+c);if(!s)return '';if(fn==='count')return s.count;if(fn==='countNums')return s.n;if(s.error)return s.error;if(!s.n)return '';return fn==='average'?s.sum/s.n:fn==='min'?s.min:fn==='max'?s.max:s.sum;};
-  put(anchor.r,anchor.c,fields[rf],true);cc.forEach((col,j)=>put(anchor.r,anchor.c+j+1,cf<0?spec.values[0].name||fn+' '+fields[vf]:String(col.value),true));if(cf>=0)put(anchor.r,endC,'Grand Total',true);
-  rr.forEach((row,i)=>{put(anchor.r+i+1,anchor.c,String(row.value));cc.forEach((col,j)=>put(anchor.r+i+1,anchor.c+j+1,value(i,j)));if(cf>=0)put(anchor.r+i+1,endC,value(i,-1),true);});
-  put(endR,anchor.c,'Grand Total',true);cc.forEach((col,j)=>put(endR,anchor.c+j+1,value(-1,j),true));if(cf>=0)put(endR,endC,value(-1,-1),true);
+  const put=(r,c,v,bold=false)=>cells[A(r,c)]={v,...(typeof v==='string'?{literal:true}:{}),s:bold?{b:true,fill:'#E8EEF7'}:{}},value=(r,c,j)=>{const s=groups.get(r+':'+c+':'+j),fn=values[j].fn||'sum';if(!s)return '';if(fn==='count')return s.count;if(fn==='countNums')return s.n;if(s.error)return s.error;if(!s.n)return '';if(['var','varP','stdDev','stdDevP'].includes(fn)){const df=s.n-(fn==='var'||fn==='stdDev'?1:0);if(df<=0)return '#DIV/0!';const v=Math.max(0,s.m2/df);return fn.startsWith('std')?Math.sqrt(v):v;}return fn==='average'?s.mean:fn==='min'?s.min:fn==='max'?s.max:fn==='product'?s.product:s.sum;};
+  const computed=new Map(),aggregate=(r,c,j)=>{if(!compiled[j])return value(r,c,j);const key=r+':'+c+':'+j;if(!computed.has(key)){const totals=Array(fields.length).fill(0);dependencies.forEach((f,k)=>{const s=groups.get(r+':'+c+':'+(nv+k));totals[f]=s?.error?{err:s.error}:s?.sum||0;});computed.set(key,evaluatePivotFormula(compiled[j],totals));}return computed.get(key);};
+  const shown=(r,c,j)=>pivotDisplayed((rr,cc)=>aggregate(rr,cc,j),r,c,values[j],rr,cc,rf,cf);
+  const caption=j=>values[j].name||(values[j].fn||'sum')+' '+fields[values[j].field],dataCol=anchor.c+rf.length;
+  rf.forEach((f,i)=>put(anchor.r+headers-1,anchor.c+i,fields[f],true));
+  cc.forEach((col,c)=>values.forEach((_,j)=>{const x=dataCol+c*nv+j;cf.forEach((f,k)=>put(anchor.r+k,x,String(col.value[k]??''),true));if(!cf.length||nv>1)put(anchor.r+headers-1,x,caption(j),true);}));
+  if(cf.length)values.forEach((_,j)=>{const x=dataCol+cc.length*nv+j;put(anchor.r,x,'Grand Total',true);if(headers>1)put(anchor.r+headers-1,x,nv>1?caption(j):'Grand Total',true);});
+  rr.forEach((row,r)=>{const y=anchor.r+headers+r;rf.forEach((_,k)=>put(y,anchor.c+k,String(row.value[k]??'')));cc.forEach((col,c)=>values.forEach((_,j)=>put(y,dataCol+c*nv+j,shown(row.index,col.index,j))));if(cf.length)values.forEach((_,j)=>put(y,dataCol+cc.length*nv+j,shown(row.index,-1,j),true));});
+  put(endR,anchor.c,'Grand Total',true);cc.forEach((col,c)=>values.forEach((_,j)=>put(endR,dataCol+c*nv+j,shown(-1,col.index,j),true)));if(cf.length)values.forEach((_,j)=>put(endR,dataCol+cc.length*nv+j,shown(-1,-1,j),true));
+  for(const [ref,cell]of Object.entries(cells)){const at=parseA(ref),j=(at.c-dataCol)%nv;if(at.r>=anchor.r+headers&&at.c>=dataCol&&['percentOfRow','percentOfCol','percentOfTotal','percent','percentDiff'].includes(values[j]?.showAs))cell.s={...cell.s,fmt:'percent',code:'0.00%'};}
   return {cells,range:A(anchor.r,anchor.c)+':'+A(endR,endC),fields};
 }
 export function refreshPivot(doc, sheet, pivot) {
   const output=pivotOutput(doc,pivot),inside=(ref,range)=>{if(!range)return false;const p=parseA(ref),[a,b]=range.split(':').map(parseA);return p.r>=a.r&&p.r<=b.r&&p.c>=a.c&&p.c<=b.c;};
+  const source=doc.sheets.find(s=>sameSheet(s.name,pivot.sourceSheet));
+  if(source===sheet&&Object.keys(output.cells).some(ref=>inside(ref,pivot.sourceRange)))throw new Error('Pivot output overlaps its source');
   for(const ref of Object.keys(output.cells))if(!inside(ref,pivot.range)&&sheet.cells[ref]?.v!=null&&sheet.cells[ref].v!=='')throw new Error('Pivot output would overwrite existing cells');
   const styles=new Map();for(const ref of Object.keys(sheet.cells))if(inside(ref,pivot.range)){const s=sheet.cells[ref].s;if(s){styles.set(ref,s);sheet.cells[ref]={v:'',s};}else delete sheet.cells[ref];}
-  for(const [ref,cell] of Object.entries(output.cells))sheet.cells[ref]={...cell,s:styles.get(ref)||cell.s};
+  for(const [ref,cell] of Object.entries(output.cells)) {
+    const prior=styles.get(ref),style={...(prior||cell.s)};
+    if(cell.s?.code){style.fmt=cell.s.fmt;style.code=cell.s.code;}
+    else if(prior?.fmt==='percent'&&prior.code==='0.00%'){delete style.fmt;delete style.code;}
+    sheet.cells[ref]={...cell,s:style};
+  }
   delete pivot.sourceChanged;pivot.range=output.range;pivot.fields=output.fields;pivot.refresh=(pivot.refresh||0)+1;
   return output;
 }
+
+export function pivotFieldItems(doc,spec,field){const si=doc.sheets.findIndex(s=>sameSheet(s.name,spec.sourceSheet));if(si<0)return [];const [a,b]=String(spec.sourceRange).split(':').map(parseA);if(!a||!b)return [];const calc=new Calc(doc),items=new Map();for(let r=a.r+1;r<=b.r;r++){const v=calc.value(si,r,a.c+field);if(!isErr(v))items.set(JSON.stringify(v),v);}return [...items.values()];}
+
+export function compilePivotFormula(formula,fields){const compiled=pivotFormulaSource(formula,fields);try{parse(compiled.source);}catch{throw new Error('Invalid pivot field formula');}return compiled;}
+export function evaluatePivotFormula(compiled,totals){const cells={};compiled.fields.forEach(i=>cells[A(0,i)]={v:totals[i]?.err?'='+totals[i].err:totals[i]??0});const value=new Calc({sheets:[{name:'Pivot',cells}]}).evaluateFormula(compiled.source);return isErr(value)?value.err:typeof value==='number'?value:typeof value==='boolean'?Number(value):'#VALUE!';}
+export function pivotFormulaBatch(input){const compiled=input.formulas.map(f=>compilePivotFormula(f,input.fields));return input.totals.map(t=>compiled.map(f=>evaluatePivotFormula(f,t)));}

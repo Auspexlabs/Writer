@@ -169,6 +169,34 @@ public class XlsxLookTests
         Assert.Contains(">2024-03-05</td>", HtmlWriter.Render(doc));
     }
 
+    [Theory]
+    [InlineData(false, "45356", "45357")]
+    [InlineData(true, "43894", "43895")]
+    public void Date_formula_caches_use_the_workbooks_date_system(bool date1904, string serial, string next)
+    {
+        using var doc = Dated(date1904, serial);
+        void Formula(string cell, string formula, bool date = false)
+        {
+            var node = PathResolver.Single(doc.Root, "/sheet[1]/cell[" + cell + "]");
+            if (date) node.SetProp("format", "yyyy-mm-dd");
+            node.SetProp("formula", formula);
+        }
+        Formula("B1", "A1+1", true);
+        Formula("C1", "DATE(2024,3,6)", true);
+        Formula("D1", "YEAR(B1)");
+        Formula("E1", "B1-A1");
+        Formula("F1", "DATEVALUE(\"2024-03-06\")", true);
+        using var saved = new MemoryStream(); doc.Save(saved); saved.Position = 0;
+        using var reopened = new XlsxAdapter().Open(saved);
+        Assert.Equal("2024-03-06", Get(reopened, "/sheet[1]/cell[B1]")["value"]);
+        Assert.Equal(next, Serial(reopened, "B1"));
+        Assert.Equal(next, Serial(reopened, "C1"));
+        Assert.Equal(next, Serial(reopened, "F1"));
+        Assert.Equal("2024", Serial(reopened, "D1"));
+        Assert.Equal("1", Serial(reopened, "E1"));
+        Assert.Equal(date1904 ? "true" : "false", reopened.Root.GetProps()["date1904"]);
+    }
+
     [Fact]
     public void The_1900_system_counts_as_Excel_does_before_March_1900()
     {

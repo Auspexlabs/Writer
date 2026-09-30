@@ -8,13 +8,13 @@ namespace Writer.Formats.Xlsx;
 
 static class XlsxBookFeatures
 {
-    internal static string Names(XlsxDocument doc)
+    internal static string Names(XlsxDocument doc, uint? localSheet = null)
     {
         var names = new JsonObject();
-        foreach (var n in doc.Workbook.Workbook!.DefinedNames?.Elements<DefinedName>() ?? []) if (n.LocalSheetId is null && n.Name?.Value is { } name && !name.StartsWith("_xlnm.")) names[name] = n.Text;
+        foreach (var n in doc.Workbook.Workbook!.DefinedNames?.Elements<DefinedName>() ?? []) if (n.LocalSheetId?.Value == localSheet && n.Name?.Value is { } name && !name.StartsWith("_xlnm.")) names[name] = n.Text;
         return names.ToJsonString();
     }
-    internal static void SetNames(XlsxDocument doc, string json)
+    internal static void SetNames(XlsxDocument doc, string json, uint? localSheet = null)
     {
         var values = JsonNode.Parse(json) as JsonObject ?? throw new WriterException(ErrorCode.Validation, "names must be an object", "Use name to formula pairs.");
         if (values.Select(p => p.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() != values.Count) throw new WriterException(ErrorCode.Validation, "Duplicate workbook names", "Names are case-insensitive.");
@@ -24,8 +24,13 @@ static class XlsxBookFeatures
         var book = doc.Workbook.Workbook!;
         var list = book.DefinedNames ?? new DefinedNames();
         if (list.Parent is null) book.AddChild(list, true);
-        foreach (var old in list.Elements<DefinedName>().Where(n => n.LocalSheetId is null && !(n.Name?.Value ?? "").StartsWith("_xlnm.")).ToList()) old.Remove();
-        foreach (var (name, node) in values) list.Append(new DefinedName(node!.GetValue<string>().TrimStart('=')) { Name = name });
+        foreach (var old in list.Elements<DefinedName>().Where(n => n.LocalSheetId?.Value == localSheet && !(n.Name?.Value ?? "").StartsWith("_xlnm.")).ToList()) old.Remove();
+        foreach (var (name, node) in values)
+        {
+            var defined = new DefinedName(node!.GetValue<string>().TrimStart('=')) { Name = name };
+            if (localSheet is { } index) defined.LocalSheetId = index;
+            list.Append(defined);
+        }
         if (!list.HasChildren) list.Remove();
         doc.RecalculateOnLoad();
     }
@@ -47,7 +52,9 @@ static class XlsxBookFeatures
             ["scale"] = setup?.Scale?.Value ?? 100U, ["fitWidth"] = setup?.FitToWidth?.Value, ["fitHeight"] = setup?.FitToHeight?.Value,
             ["left"] = margins?.Left?.Value ?? 0.7, ["right"] = margins?.Right?.Value ?? 0.7, ["top"] = margins?.Top?.Value ?? 0.75, ["bottom"] = margins?.Bottom?.Value ?? 0.75,
             ["header"] = hf?.OddHeader?.Text ?? "", ["footer"] = hf?.OddFooter?.Text ?? "", ["area"] = LocalName(doc, index, "_xlnm.Print_Area") ?? "", ["titles"] = LocalName(doc, index, "_xlnm.Print_Titles") ?? "",
-            ["gridlines"] = ws.GetFirstChild<PrintOptions>()?.GridLines?.Value ?? false
+            ["gridlines"] = ws.GetFirstChild<PrintOptions>()?.GridLines?.Value ?? false,
+            ["rowBreaks"] = new JsonArray((ws.GetFirstChild<RowBreaks>()?.Elements<Break>() ?? []).Where(b => b.ManualPageBreak?.Value == true).Select(b => JsonValue.Create(b.Id?.Value)).Cast<JsonNode?>().ToArray()),
+            ["colBreaks"] = new JsonArray((ws.GetFirstChild<ColumnBreaks>()?.Elements<Break>() ?? []).Where(b => b.ManualPageBreak?.Value == true).Select(b => JsonValue.Create(b.Id?.Value)).Cast<JsonNode?>().ToArray())
         }.ToJsonString();
     }
     internal static void SetPrint(XlsxDocument doc, XlsxSheet sheet, string json)
@@ -71,10 +78,25 @@ static class XlsxBookFeatures
         var index = doc.Sheets.FindIndex(s => ReferenceEquals(s.Part, sheet.Part));
         if (o.ContainsKey("area")) SetLocalName(doc, index, "_xlnm.Print_Area", o["area"]?.GetValue<string>() ?? "");
         if (o.ContainsKey("titles")) SetLocalName(doc, index, "_xlnm.Print_Titles", o["titles"]?.GetValue<string>() ?? "");
+        SetBreaks<RowBreaks>(ws, o, "rowBreaks", 1048576, 16383);
+        SetBreaks<ColumnBreaks>(ws, o, "colBreaks", 16384, 1048575);
+    }
+    static void SetBreaks<T>(Worksheet ws, JsonObject o, string key, uint limit, uint max) where T : OpenXmlCompositeElement, new()
+    {
+        if (!o.ContainsKey(key)) return;
+        var values = o[key]?.AsArray().Select(x => x!.GetValue<uint>()).Distinct().Order().ToArray() ?? [];
+        if (values.Any(x => x == 0 || x >= limit)) throw new WriterException(ErrorCode.Validation, "Invalid page break", "Place page breaks inside the worksheet.");
+        ws.RemoveAllChildren<T>();
+        if (values.Length == 0) return;
+        var breaks = new T();
+        breaks.SetAttribute(new OpenXmlAttribute("count", "", values.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        breaks.SetAttribute(new OpenXmlAttribute("manualBreakCount", "", values.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        foreach (var id in values) breaks.Append(new Break { Id = id, Min = 0, Max = max, ManualPageBreak = true });
+        ws.AddChild(breaks, true);
     }
     internal static void SetProtection(Worksheet ws, string value)
     {
         if (value != "true") { ws.RemoveAllChildren<SheetProtection>(); return; }
-        var p = ws.GetFirstChild<SheetProtection>() ?? new SheetProtection(); if (p.Parent is null) ws.AddChild(p, true); p.Sheet = true; p.Objects = true; p.Scenarios = true;
+        var p = ws.GetFirstChild<SheetProtection>() ?? new SheetProtection { Objects = true, Scenarios = true }; if (p.Parent is null) ws.AddChild(p, true); p.Sheet = true;
     }
 }

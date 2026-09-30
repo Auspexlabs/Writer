@@ -228,14 +228,18 @@ export function smartArtSvg(sa, w, h) {
     const x = s.x / E, y = s.y / E, sw = s.w / E, sh = s.h / E;
     if (sw <= 0 && sh <= 0) continue;
     const rot = s.rot ? ` transform="rotate(${s.rot} ${(x + sw / 2).toFixed(1)} ${(y + sh / 2).toFixed(1)})"` : '';
+    const flips=s.flipH||s.flipV?`translate(${x+sw/2} ${y+sh/2}) scale(${s.flipH?-1:1} ${s.flipV?-1:1}) translate(${-x-sw/2} ${-y-sh/2})`:'';
+    if(flips)out+=`<g transform="${flips}">`;
     out += `${geom(s.geom, x, y, sw, sh)} fill="${hex(s.fill || 'none')}" stroke="${hex(s.line || 'none')}" stroke-width="${s.lw ? Math.max(0.5, s.lw / 12700 * 4 / 3).toFixed(2) : 1}"${rot}/>`;
+    if(s.endArrow&&['line','straightConnector1'].includes(s.geom)){const length=Math.hypot(sw,sh)||1,ux=sw/length,uy=sh/length,size=Math.max(5,(s.lw||19050)/E*3),ex=x+sw,ey=y+sh;out+=`<polygon points="${ex},${ey} ${ex-ux*size-uy*size/2},${ey-uy*size+ux*size/2} ${ex-ux*size+uy*size/2},${ey-uy*size-ux*size/2}" fill="${hex(s.line||'4472C4')}"${rot}/>`;}
+    if(flips)out+='</g>';
     if (s.text) {
       const tb = s.tx || s, tx = tb.x / E, ty = tb.y / E, tw = tb.w / E, th = tb.h / E, size = (s.size || 12) * 4 / 3;
       const justify = s.anchor === 't' ? 'flex-start' : s.anchor === 'b' ? 'flex-end' : 'center', align = s.align === 'l' ? 'left' : s.align === 'r' ? 'right' : 'center';
       out += `<foreignObject x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" width="${Math.max(1, tw).toFixed(1)}" height="${Math.max(1, th).toFixed(1)}"${rot}><div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;display:flex;flex-direction:column;justify-content:${justify};text-align:${align};font-size:${size.toFixed(1)}px;line-height:1.15;color:${hex(s.color || '000000')};${s.bold ? 'font-weight:600;' : ''}overflow:hidden;word-break:break-word;padding:2px 4px;box-sizing:border-box">${esc(s.text).replace(/\n/g, '<br>')}</div></foreignObject>`;
     }
   }
-  return svg(w, h, out);
+  return svg(w, h, sa.width>0&&sa.height>0?`<g transform="scale(${w/(sa.width/E)} ${h/(sa.height/E)})">${out}</g>`:out);
 }
 
 /** What an embedded object is, by its program: 公式（MathType）, Excel 工作表… */

@@ -81,6 +81,8 @@ public static class Registry
     /// <summary>Worksheet cell formatting, shared by the xlsx cell and range kinds.</summary>
     static Prop[] XlsxStyle =>
     [
+        new("locked", PropType.Bool, "Lock the cell while sheet protection is enabled. Default true.") { Formats = Xlsx },
+        new("formulaHidden", PropType.Bool, "Hide the cell formula while sheet protection is enabled.") { Formats = Xlsx },
         new("bold", PropType.Bool, "Bold.") { Example = "true", Formats = Xlsx },
         new("italic", PropType.Bool, "Italic.") { Example = "true", Formats = Xlsx },
         new("underline", PropType.Bool, "Single underline.") { Example = "true", Formats = Xlsx },
@@ -90,7 +92,8 @@ public static class Registry
         new("color", PropType.Color, "Text color.") { Example = "C00000", Formats = Xlsx },
         new("fill", PropType.Color, "Background color, or none.") { Example = "D9E2F3", Formats = Office },
         new("format", PropType.String, "Number format code, e.g. 0.00, #,##0, 0%, yyyy-mm-dd.") { Example = "0.00", Formats = Xlsx },
-        Align(Xlsx),
+        new("align", PropType.Enum, "Horizontal alignment; general restores automatic alignment.")
+            { Values = ["general", "left", "center", "right", "justify"], Example = "center", Formats = Xlsx },
         new("valign", PropType.Enum, "Vertical alignment.") { Values = ["top", "middle", "bottom"], Example = "middle", Formats = Xlsx },
         new("wrap", PropType.Bool, "Wrap text inside the cell.") { Example = "true", Formats = Xlsx },
         new("indent", PropType.Int, "Indent level.") { Min = 0, Max = 15, Example = "2", Formats = Xlsx },
@@ -110,6 +113,10 @@ public static class Registry
             Props =
             [
                 new("names", PropType.Json, "Workbook names mapped to ranges or formulas. Sheet-local and built-in names are preserved.") { Formats = Xlsx },
+                new("queries", PropType.Json, "Writer query definitions and transformations retained alongside their worksheet results: [{name,source,steps,targetSheet,target,range?}].") { Formats = Xlsx },
+                new("iteration", PropType.Json, "Native iterative calculation settings: {enabled,count:1..10000,delta>=0}.") { Formats = Xlsx },
+                new("workbookProtection", PropType.Json, "Native workbook structure protection: {structure:boolean,verifier?:{algorithmName,hashValue,saltValue,spinCount}|{password}}. Never store plaintext passwords.") { Formats = Xlsx },
+                new("activeSheet", PropType.Int, "Active worksheet index, starting at zero.") { Formats = Xlsx, Min = 0 },
                 new("format", PropType.String, "File format.") { ReadOnly = true },
                 new("title", PropType.String, "Title in the file properties.") { Example = "Q4 Report", Formats = Office },
                 new("page", PropType.String, "Paper: A4, Letter, Legal, A3, A5, B5, or a size like 21cm x 29.7cm.") { Example = "A4", Formats = Docx },
@@ -127,13 +134,15 @@ public static class Registry
                 new("evenHeader", PropType.Html, "Even-page header, when evenAndOdd is true.") { Formats = Docx, Example = "Even page" },
                 new("evenFooter", PropType.Html, "Even-page footer, when evenAndOdd is true.") { Formats = Docx, Example = "{page}" },
                 new("formatRevisions", PropType.Json, "Pending run and paragraph formatting changes.") { ReadOnly = true, Formats = Docx },
+                new("rangeBookmarks", PropType.Json, "Precise bookmark endpoints. Write {set:[{name,start,startOffset,end,endOffset}],remove:[name]}.") { Example = "{\"set\":[],\"remove\":[]}", Formats = Docx },
                 new("fields", PropType.String, "Refresh caption and cross-reference field results.") { Example = "all", Formats = Docx },
                 new("theme", PropType.String, "Apply a document theme and bind normal/heading styles to its fonts and colors.") { Formats = Docx, Example = "mist" },
                 new("styleSet", PropType.Enum, "Apply paragraph and heading spacing and sizes.") { Formats = Docx, Values = ["modern", "formal", "compact"], Example = "formal" },
                 new("protected", PropType.Bool, "Restrict document editing. Password-protected documents must be unlocked in Word.") { Formats = Docx, Example = "true" },
                 new("pageBorder", PropType.Json, "Border on all sections: {style,color,width,space}; dimensions in points.") { Formats = Docx, Example = """{"style":"single","color":"333333","width":0.5,"space":24}""" },
-                new("chartData", PropType.Json, "Insert or update a native Word chart with an embedded workbook: {title,type,labels,values,index?,path?}.") { Formats = Docx, Example = """{"labels":["A","B"],"values":[1,2]}""" },
+                new("chartData", PropType.Json, "Insert or update a native Word chart and embedded workbook: {title,type,labels,series:[{name,values,x?,kind?}],legend,stacked,dataLabels,xTitle,yTitle,index?,path?}. A single values array is also accepted.") { Formats = Docx, Example = """{"labels":["A","B"],"values":[1,2]}""" },
                 new("mergeData", PropType.Json, "Replace MERGEFIELD fields with this record, preserving their formatting.") { Example = "{\"Name\":\"Ann\"}", Formats = Docx },
+                new("smartArtData", PropType.Json, "Insert or edit SmartArt nodes and hierarchy: {layout,nodes:[{id,text,parent?}],path?,index?}. Layouts: list, process, cycle, hierarchy; preserve retains an imported layout while editing text.") { WriteOnly = true, Formats = Docx, Example = "{\"layout\":\"process\",\"nodes\":[{\"id\":\"a\",\"text\":\"Start\"}]}" },
                 new("textRevision", PropType.Json, "Accept or reject a single tracked insertion or deletion: {id,index,accept}.") { Formats = Docx, Example = """{"id":"1","accept":true}""" },
                 new("formatRevision", PropType.Json, "Accept or reject one formatting change: {id,accept}.") { Formats = Docx, Example = """{"id":"1","accept":true}""" },
                 new("headingNumbering", PropType.Enum, "Bind heading styles 1 through 6 to a native multilevel numbering definition.") { Values = ["none", "decimal", "chapter"], Formats = Docx, Example = "chapter" },
@@ -158,9 +167,12 @@ public static class Registry
                 new("layouts", PropType.Json, "The presentation's own layouts with placeholder geometry and computed formatting.") { ReadOnly = true, Formats = Pptx },
                 new("slides", PropType.Int, "Slide count.") { ReadOnly = true, Formats = Pptx },
                 new("palette", PropType.Enum, "Colour palette and fonts for the whole deck, written into its theme: paper (white, black accent), ink (dark, gold), sea (deep blue, cyan), clay (terracotta on cream), mist (cool grey, blue), sand (warm beige, amber), rose (white, red accent), night (navy, sky blue). Text, backgrounds and shapes that take theme colours follow; colours set on a shape stay. Reading gives the palette when the deck wears one.") { Values = ["paper", "ink", "sea", "clay", "mist", "sand", "rose", "night"], Example = "sea", Formats = Pptx },
+                new("customShows", PropType.Json, "Named custom slide shows: [{name,slides:[slideId,...]}].") { Formats = Pptx },
+                new("replaceFont", PropType.Json, "Replace one named font throughout slides, layouts, masters, notes, tables and charts: {from,to}.") { WriteOnly = true, Formats = Pptx },
                 new("fonts", PropType.String, "Heading font, body font: the theme fonts. Writing it also takes fonts set on the text itself off every slide, so the whole deck uses these two.") { Example = "Noto Serif SC,Noto Sans SC", Formats = Pptx },
                 new("width", PropType.Length, "Slide width; existing objects keep their positions.") { Example = "33.867cm", Formats = Pptx },
                 new("height", PropType.Length, "Slide height; existing objects keep their positions.") { Example = "19.05cm", Formats = Pptx },
+                new("date1904", PropType.Bool, "Whether the workbook uses the 1904 date system.") { ReadOnly = true, Formats = Xlsx },
                 new("sheets", PropType.Int, "Sheet count.") { ReadOnly = true, Formats = Xlsx },
                 new("font", PropType.String, "The workbook's default font, which cells without a font of their own show.") { ReadOnly = true, Formats = Xlsx },
                 new("size", PropType.Points, "The default font's size.") { ReadOnly = true, Formats = Xlsx },
@@ -196,7 +208,9 @@ public static class Registry
             Props =
             [
                 new("masterObjects", PropType.Json, "Text/shape objects on this slide's master and layout.") { ReadOnly = true },
+                new("chartData", PropType.Json, "Insert or edit a native chart with embedded data: {title,type,labels,series:[{name,values,x?,kind?}],legend,stacked,dataLabels,xTitle,yTitle,path?}.") { WriteOnly = true },
                 new("masterEdit", PropType.Json, "Edit a shared master/layout shape: {source,id?,props?,remove?}; absent id adds a shape.") { WriteOnly = true },
+                new("smartArtData", PropType.Json, "Insert or edit SmartArt: {layout,nodes:[{id,text,parent?}],path?}.") { WriteOnly = true, Example = "{\"layout\":\"process\",\"nodes\":[{\"id\":\"a\",\"text\":\"Start\"}]}" },
                 new("comments", PropType.Json, "Slide comments: [{id?,author,text}].") { Example = "[]" },
                 new("title", PropType.String, "Text of the title placeholder. Writing it creates one when missing.") { Example = "Q4 Results" },
                 new("layout", PropType.String, "Layout: title, content, section, two, comparison, titleOnly, blank, caption (content with caption), picture (picture with caption), quote, or any layout name in the file; a standard one the file lacks is added. Changing it moves the slide's placeholders as PowerPoint does: each takes the place of the new layout's placeholder of the same kind (title, text, picture), keeping its text; an empty one left over goes; the new layout's other placeholders are added empty. Reading gives the layout's name.") { Example = "Two Content" },
@@ -223,12 +237,20 @@ public static class Registry
             Formats = Xlsx, Parents = ["document"], Summary = true,
             Props =
             [
+                new("names", PropType.Json, "Names scoped to this worksheet: name to reference or formula pairs."),
+                new("sparklines", PropType.Json, "Native sparkline groups with styles and [{source,cell}] entries."),
+                new("dataTables", PropType.Json, "Native what-if data tables: [{range,rowInput?,colInput?}]. Range includes the formula/header row and column."),
+                new("solver", PropType.Json, "Per-sheet Writer solver setup: {target,variables,mode,constraints,method,integer,nonnegative}; null clears it."),
+                new("advancedFilter", PropType.Json, "Advanced filter setup: {range,criteria,unique,hidden:[zeroBasedRows]}; null clears it. Row visibility is stored separately in hidden."),
+                new("scenarios", PropType.Json, "Native what-if scenarios: [{name,cells:{A1:10,B2:20},comment?,user?,locked?,hidden?}]."),
                 new("outline", PropType.Json, "Outline groups: array of {axis:r/c,start,end,level:1..7,collapsed} with zero-based inclusive indices."),
-                new("pivots", PropType.Json, "Native pivot tables: array of {id,name,sourceSheet,sourceRange,target,rows:[field],cols:[] or [field],values:[{field,fn,name}],style}. Field indices start at zero; fn is sum/count/countNums/average/min/max. Changed entries rebuild the cache and output; unchanged entries preserve existing parts."),
+                new("pivots", PropType.Json, "Native pivot tables: {id,name,sourceSheet,sourceRange,target,rows:[field],cols:[field],values:[{field,fn,name,showAs,baseField,baseItem}],filters:[{field,items}],style}. Field indices start at zero. showAs supports percentages, index, running totals and differences; baseItem is previous or next. Changed entries rebuild the cache and output; unchanged entries preserve existing parts."),
                 new("tables", PropType.Json, "Native Excel tables: array of {id, name, range, header, totals, style, stripes, columns:[{id,name,formula,total,label}]}. Writing replaces the list and preserves matching table parts."),
                 new("print", PropType.Json, "Page setup: orientation, paper (9=A4), scale, fitWidth, fitHeight, margins in inches, area, titles, header, footer and gridlines."),
                 new("visibility", PropType.Enum, "Worksheet visibility.") { Values = ["visible", "hidden", "veryHidden"] },
                 new("protected", PropType.Bool, "Protect the worksheet from ordinary edits."),
+                new("protection", PropType.Json, "Allowed worksheet actions as booleans. Optional verifier stores password or algorithmName/hashValue/saltValue/spinCount; null removes it. Never store plaintext passwords."),
+                new("rowColumnStyles", PropType.Json, "Sparse inherited styles: rows and cols map to entries in styles, whose values preserve formatting and protection. base is the read-only workbook default."),
                 new("name", PropType.String, "Sheet name.") { Example = "Sales" },
                 new("range", PropType.String, "Used range, e.g. A1:F20.") { ReadOnly = true },
                 Id(Xlsx),
@@ -237,6 +259,8 @@ public static class Registry
                 new("autoHeights", PropType.Json, "Calculated row heights in points. These remain eligible for automatic fitting."),
                 new("heights", PropType.Json, "Custom row heights in points, row number to height. Writing sets those rows and keeps the rest; null or \"default\" resets one.") { Example = "{\"3\":24}" },
                 new("freeze", PropType.String, "Top-left cell of the scrolling area: A2 freezes row 1, B1 column A, B2 both. none unfreezes.") { Example = "A2" },
+                new("split", PropType.Json, "Native split panes: {x,y,topLeft,activePane}. x/y are twips; zero disables that axis, null clears the split."),
+                new("tabSelected", PropType.Bool, "Whether this worksheet belongs to the selected tab group."),
                 new("gridlines", PropType.Bool, "Grid lines shown on screen; reading gives false only when the sheet hides them.") { Example = "false" },
                 new("filter", PropType.String, "AutoFilter range, or none.") { Example = "A1:D20" },
                 new("filters", PropType.Json, "AutoFilter criteria by column letter: {values:[…]} keeps only those texts (\"\" for blanks); {operator, value, value2} keeps what the comparison admits (equal, notEqual, greaterThan, greaterThanOrEqual, lessThan, lessThanOrEqual, between, contains, notContains, beginsWith, endsWith). Writing replaces the whole set; {} clears it. Excel applies the criteria when asked to reapply.")
@@ -386,6 +410,10 @@ public static class Registry
                 new("citeHtml", PropType.String, "The citation as the note shows it, titles in <i>.") { ReadOnly = true },
             ],
         },
+        new("control", "A native inline Word content control: text, rich text, check box, date, drop-down or combo box.") {
+            Formats=Docx,Parents=["paragraph","heading"],Inline=true,
+            Props=[Id(Docx),new("data",PropType.Json,"Content control definition and value."){Example="{\"type\":\"checkbox\",\"checked\":true}"},new("at",PropType.Int,"Offset in ordinary paragraph text."){Min=0,Example="0"},new("text",PropType.String,"Displayed control text."){ReadOnly=true}]
+        },
         new("citation", "A citation in the text as Word makes one (References › Insert Citation): a citation content control around a CITATION field, drawn from the document's sources in its citation style, e.g. (Pegg 288) in MLA. It sits at a character offset of the paragraph's text; its own text is not part of the paragraph's. Address one as //citation[@id=123] or by position under its paragraph.")
         {
             Formats = Docx, Parents = ["paragraph", "heading"], Inline = true,
@@ -418,8 +446,11 @@ public static class Registry
             Formats = ["pptx", "docx"], Parents = ["slide", "paragraph", "heading"],
             Props =
             [
+                new("hidden", PropType.Bool, "Hide this object from the slide.") { Formats = Pptx },
+                new("locked", PropType.Bool, "Lock this object against selection, movement and resizing.") { Formats = Pptx },
                 Text, MdProp with { Formats = Pptx }, HtmlProp with { Formats = Pptx },
                 new("geometry", PropType.String, "Preset shape: textbox, rect, roundRect, ellipse, triangle, rtTriangle, diamond, parallelogram, trapezoid, pentagon, hexagon, octagon, star4, star5, star6, rightArrow, leftArrow, upArrow, downArrow, leftRightArrow, chevron, wedgeRectCallout, wedgeRoundRectCallout, wedgeEllipseCallout, or any other DrawingML preset.") { Example = "rect" },
+                new("pathData", PropType.Json, "Editable freeform vectors: {w,h,paths:[{points:[[x,y],...],closed,fill:norm|none,stroke}] }.") { Formats = Pptx },
                 .. Box,
                 new("rotation", PropType.Int, "Clockwise rotation in degrees.") { Min = -360, Max = 360, Example = "90", Formats = Pptx },
                 new("fill", PropType.Color, "Fill color, or none.") { Example = "4472C4" },
@@ -451,7 +482,8 @@ public static class Registry
                 new("placeholder", PropType.String, "Placeholder role: title, body, subtitle, pic... An empty placeholder shows a prompt in the editor and in PowerPoint; fill it rather than adding a text box.") { ReadOnly = true, Formats = Pptx },
                 new("fit", PropType.Enum, "Write-only. shrink: lowers every text size in the shape by the same factor (down to half) until the text fits the box.") { Values = ["shrink"], WriteOnly = true, Example = "shrink", Formats = Pptx },
                 new("overflow", PropType.Bool, "True when the text is estimated to need more room than the box has: shorten it, enlarge the box, or fit=shrink.") { ReadOnly = true, Formats = Pptx },
-                new("name", PropType.String, "Shape name.") { ReadOnly = true, Formats = Pptx },
+                new("name", PropType.String, "Shape name.") { ReadOnly = true, Formats = Docx },
+                new("name", PropType.String, "Shape name.") { Formats = Pptx },
                 Id(Pptx),
                 new("width", PropType.Length, "Width.") { Example = "5cm", Formats = Docx },
                 new("height", PropType.Length, "Height.") { Example = "2.5cm", Formats = Docx },
@@ -470,6 +502,8 @@ public static class Registry
             Formats = Pptx, Parents = ["slide"],
             Props =
             [
+                new("hidden", PropType.Bool, "Hide this object from the slide.") { Formats = Pptx },
+                new("locked", PropType.Bool, "Lock this object against selection, movement and resizing.") { Formats = Pptx },
                 new("geometry", PropType.Enum, "Connector kind.") { Values = ["line", "straightConnector1", "bentConnector3", "curvedConnector3"], Example = "straightConnector1" },
                 .. Box,
                 new("rotation", PropType.Int, "Clockwise rotation in degrees.") { Min = -360, Max = 360, Example = "90" },
@@ -482,7 +516,7 @@ public static class Registry
                 new("start", PropType.String, "Shape the start sticks to: its id and connection site (0 top, 1 left, 2 bottom, 3 right); empty lets go.") { Example = "2,3" },
                 new("end", PropType.String, "Shape the end sticks to, as start.") { Example = "2,1" },
                 new("shadow", PropType.Bool, "Office's outer shadow.") { Example = "true" },
-                new("name", PropType.String, "Shape name.") { ReadOnly = true },
+                new("name", PropType.String, "Shape name.") { Formats = Pptx },
                 Id(Pptx),
             ],
         },
@@ -491,11 +525,13 @@ public static class Registry
             Formats = Pptx, Parents = ["slide"],
             Props =
             [
+                new("hidden", PropType.Bool, "Hide this object from the slide.") { Formats = Pptx },
+                new("locked", PropType.Bool, "Lock this object against selection, movement and resizing.") { Formats = Pptx },
                 new("members", PropType.String, "Write-only, when adding: the shapes to group, comma-separated paths (shape[2] relative to the slide, or from the outline).") { WriteOnly = true, Example = "shape[2],shape[3]" },
                 .. Box,
                 new("rotation", PropType.Int, "Clockwise rotation in degrees.") { Min = -360, Max = 360, Example = "90" },
                 new("ungroup", PropType.Bool, "Write-only. true dissolves the group, leaving its members on the slide where they were shown.") { WriteOnly = true, Example = "true" },
-                new("name", PropType.String, "Group name.") { ReadOnly = true },
+                new("name", PropType.String, "Group name.") { Formats = Pptx },
                 Id(Pptx),
             ],
         },
@@ -504,6 +540,8 @@ public static class Registry
             Formats = Documents, Parents = ["body", "cell", "slide"], Summary = true,
             Props =
             [
+                new("hidden", PropType.Bool, "Hide this object from the slide.") { Formats = Pptx },
+                new("locked", PropType.Bool, "Lock this object against selection, movement and resizing.") { Formats = Pptx },
                 new("rows", PropType.Int, "Row count. Writing it adds or removes rows at the end.") { Min = 1, Example = "3" },
                 new("cols", PropType.Int, "Column count. Writing it adds or removes columns at the end.") { Min = 1, Example = "4" },
                 Data("Cell texts as a JSON array of rows (visible cells; merged cells count once). Writing it resizes the table and keeps merges that still fit.", "[[\"Name\",\"Score\"],[\"Ann\",\"90\"]]"),
@@ -520,7 +558,7 @@ public static class Registry
                 new("heights", PropType.Json, "Table row heights as a JSON array of lengths; the table height becomes their sum.") { Example = "[\"1cm\",\"2cm\"]", Formats = Pptx },
                 new("widths", PropType.Json, "Column widths from the left as a JSON array of lengths; the table width becomes their sum.") { Example = "[\"3cm\",\"5cm\"]", Formats = DocxPptx },
                 new("align", PropType.Enum, "Table position between the margins.") { Values = ["left", "center", "right"], Example = "center", Formats = Docx },
-                new("name", PropType.String, "Frame name.") { ReadOnly = true, Formats = Pptx },
+                new("name", PropType.String, "Frame name.") { Formats = Pptx },
                 Id(Pptx),
             ],
         },
@@ -573,13 +611,16 @@ public static class Registry
             Formats = DocxPptx, Parents = [],
             Props =
             [
+                new("hidden", PropType.Bool, "Hide this object from the slide.") { Formats = Pptx },
+                new("locked", PropType.Bool, "Lock this object against selection, movement and resizing.") { Formats = Pptx },
                 .. Box,
                 new("at", PropType.Int, "Character offset in its paragraph, excluding object previews.") { Min = 0, Example = "3", Formats = Docx },
                 new("type", PropType.Enum, "What it is.") { Values = ["chart", "smartart", "ole", "group", "canvas", "vml", "drawing"], ReadOnly = true },
                 new("xml", PropType.String, "The original Word drawing XML; related parts stay in the document when it is removed, so undo can restore it.") { ReadOnly = true, Formats = Docx },
                 new("width", PropType.Length, "Width on the page.") { ReadOnly = true },
                 new("height", PropType.Length, "Height on the page.") { ReadOnly = true },
-                new("name", PropType.String, "Its name in the document (Word's selection pane).") { ReadOnly = true },
+                new("name", PropType.String, "Its name in the document (Word's selection pane).") { ReadOnly = true, Formats = Docx },
+                new("name", PropType.String, "Selection pane name.") { Formats = Pptx },
                 new("alt", PropType.String, "Alternative text.") { ReadOnly = true },
                 new("title", PropType.String, "A chart's title.") { ReadOnly = true },
                 new("chart", PropType.Json, "A chart as the values it caches: {kind, dir, grouping, title, xTitle, yTitle, min, max, legend, hole, cats, series: [{name, kind, values, x, color, points}]}; an Office 2016 chart (waterfall, funnel, treemap…) with its layout as kind.") { ReadOnly = true },
@@ -597,7 +638,12 @@ public static class Registry
             Formats = Pictures, Parents = ["body", "slide", "sheet", "cell", "paragraph", "heading"],
             Props =
             [
+                new("name", PropType.String, "Selection pane name.") { Formats = Pptx },
+                new("hidden", PropType.Bool, "Hide this object from the slide.") { Formats = Pptx },
+                new("locked", PropType.Bool, "Lock this object against selection, movement and resizing.") { Formats = Pptx },
                 new("media", PropType.String, "Embed video/audio in this PowerPoint picture from a base64 data URI.") { Formats = ["pptx"], WriteOnly = true },
+                new("captions", PropType.Json, "Media caption tracks: {display:media|slide,tracks:[{id?,label,lang,text}]}. Text is UTF-8 WebVTT.") { Formats = ["pptx"] },
+                new("playback", PropType.Json, "Media playback: trimStart/trimEnd (seconds removed), fades, volume, autoplay, loop, slideCount, hideStopped and bookmarks.") { Formats = ["pptx"] },
                 new("mediaType", PropType.String, "Embedded audio or video.") { Formats = ["pptx"], ReadOnly = true },
                 new("src", PropType.String, "Image file to embed when writing (replaces the picture: the width stays, the height follows the new picture, the crop goes); the stored part name when reading.") { Example = "chart.png" },
                 new("width", PropType.Length, "Display width.") { Example = "8cm", Formats = Docx },

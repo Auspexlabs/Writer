@@ -99,9 +99,11 @@ static partial class DocxSection
     /// <summary>Line numbers in the margin, every line, counted through the document (Word's 行号 › 连续).</summary>
     public static void SetLineNumbers(DocxDocument doc, bool on)
     {
-        var section = Section(doc);
-        section.RemoveAllChildren<W.LineNumberType>();
-        if (on) section.AddChild(new W.LineNumberType { CountBy = 1, Restart = W.LineNumberRestartValues.Continuous });
+        foreach (var section in Sections(doc))
+        {
+            section.RemoveAllChildren<W.LineNumberType>();
+            if (on) section.AddChild(new W.LineNumberType { CountBy = 1, Restart = W.LineNumberRestartValues.Continuous });
+        }
     }
 
     /// <summary>The section a paragraph ends (w:pPr/w:sectPr), made when missing as a copy of the document's last section (its paper,
@@ -328,8 +330,17 @@ static partial class DocxSection
         if (container is null) return "";
         var lines = new List<(string? Align, string Html)>();
         var keep = 0;
-        foreach (var p in container.Elements<W.Paragraph>().Where(p => !WatermarkParagraph(p)))
+        var cellOrdinal = 0;
+        var hasTables = container.Elements<W.Table>().Any();
+        foreach (var block in container.ChildElements)
         {
+            if (block is W.Table table)
+            {
+                var preview = DocxHeaderTables.Preview(doc, table, ref cellOrdinal);
+                lines.Add((null, "<div data-w-hf-table=\"1\" contenteditable=\"false\">" + preview + "</div>"));
+                continue;
+            }
+            if (block is not W.Paragraph p || WatermarkParagraph(p)) continue;
             var html = new StringBuilder();
             var runs = new List<RunSpec>();
             foreach (var (spec, group) in Items(doc, p))
@@ -346,6 +357,7 @@ static partial class DocxSection
             lines.Add((DocxParagraph.AlignOf(p.ParagraphProperties?.Justification ?? doc.Styles.Inherited(p, s => s.Justification)), html.ToString()));
         }
         while (lines.Count > 0 && lines[^1].Html.Length == 0) lines.RemoveAt(lines.Count - 1);
+        if (hasTables) return string.Concat(lines.Select(l => l.Html.StartsWith("<div data-w-hf-table=", StringComparison.Ordinal) ? l.Html : $"<p style=\"text-align:{l.Align ?? "left"}\">{l.Html}</p>"));
         return lines.Any(l => l.Align is not (null or "left"))
             ? string.Concat(lines.Select(l => $"<p style=\"text-align:{l.Align ?? "left"}\">{l.Html}</p>"))
             : string.Join("<br>", lines.Select(l => l.Html));
@@ -464,6 +476,7 @@ static partial class DocxSection
             AddReference(section, header ? new W.HeaderReference { Type = type, Id = main.GetIdOfPart(part) } : new W.FooterReference { Type = type, Id = main.GetIdOfPart(part) });
         }
         OpenXmlCompositeElement container = part is HeaderPart hp ? hp.Header ??= new W.Header() : ((FooterPart)part).Footer ??= new W.Footer();
+        DocxHeaderTables.Apply(doc, container, html);
         var kept = container.Elements<W.Paragraph>().Where(p => !WatermarkParagraph(p)).SelectMany(p => Items(doc, p)).Where(x => x.Keep is not null).Select(x => x.Keep!).ToList();
         var used = new HashSet<int>();
         var slots = container.Elements<W.Paragraph>().Where(p => !WatermarkParagraph(p)).ToList();
@@ -487,6 +500,7 @@ static partial class DocxSection
     /// the paragraph's alignment alone. A br starts another paragraph; placeholders become numbered marks in the text.</summary>
     static List<(string? Align, List<RunSpec> Specs)> Lines(string html)
     {
+        html = DocxHeaderTables.WithoutPreviews(html);
         html = KeepPattern().Replace(html, m => Keep + (m.Groups[1].Success ? m.Groups[1] : m.Groups[2]).Value + KeepEnd);
         var blocks = BlockPattern().Matches(html);
         List<(string? Align, string Html)> parts = blocks.Count == 0 ? [(null, html)]
@@ -537,6 +551,9 @@ static partial class DocxSection
 
     [GeneratedRegex(@"text-align\s*:\s*([a-z]+)", RegexOptions.IgnoreCase)]
     private static partial Regex AlignPattern();
+
+    [GeneratedRegex("<div[^>]*data-w-hf-table[^>]*>[\\s\\S]*?</div>", RegexOptions.IgnoreCase)]
+    private static partial Regex HeaderTablePattern();
 
     [GeneratedRegex("(\\{pages?\\}|\uE000\\d+\uE001)")]
     private static partial Regex TokenPattern();

@@ -445,3 +445,14 @@ test('engine: grouping and ungrouping saved pictures keeps their original bytes 
   assert.deepEqual(doc.slides[0].objs.map(o=>o.kind),['shape','image']);
   assert.equal((await EN.run(['get',file,doc.slides[0].objs[1].path])).props.alt,'logo');
 }));
+
+test('engine: selection-pane metadata survives saving, reopening, no-op saving and undo', {skip:skip()},()=>engine(async()=>{
+ let doc=await deck(join(dir,'object-state.pptx'));const before=structuredClone(doc),c=editor(()=>doc,d=>doc=d);
+ for(const [i,o] of doc.slides[0].objs.entries())c.objectState(o.id,{name:'Object '+i,hidden:true,locked:true});
+ await save(doc);let back=await open(doc);assert.deepEqual(back.slides[0].objs.map(x=>[x.name,x.hidden,x.locked]),[['Object 0',true,true],['Object 1',true,true]]);
+ assert.equal(await save(back),0);
+ const undo=EN.historyModel(before,doc);await save(undo);back=await open(undo);assert.ok(back.slides[0].objs.every(x=>!x.hidden&&!x.locked));
+ const g=K.group(back.slides[0].objs);g.name='Group';g.hidden=true;g.locked=true;g.kids[1].name='Picture';g.kids[1].locked=true;back.slides[0].objs=[g];await save(back);back=await open(back);
+ assert.deepEqual([back.slides[0].objs[0].name,back.slides[0].objs[0].hidden,back.slides[0].objs[0].locked],['Group',true,true]);
+ assert.equal(back.slides[0].objs[0].kids[1].name,'Picture');assert.equal(await save(back),0);
+}));

@@ -156,6 +156,16 @@ test('headers and footers: every page shows its own number, the first page its o
   assert.equal(hfOut('<p><br></p>'), '', 'an emptied header goes, so the engine removes it');
 });
 
+test('editing header text retains read-only table wrappers, nested blocks and empty tables',()=>{
+ const {hfOut,hfEdit}=ctx.HF;
+ for(const table of ['<div data-w-hf-table="1" contenteditable="false"><table><tr><td><p>Once</p><div><p>Nested</p></div></td></tr></table></div>','<div data-w-hf-table="1" contenteditable="false"><table><tr><td></td></tr></table></div>']){
+  const input='<p style="text-align:left">Before</p>'+table+'<p style="text-align:right">After {page}</p>';
+  const output=hfOut(hfEdit(input,1,2));
+  assert.equal(output,input);assert.equal(hfOut(hfEdit(output,2,2)),input);
+  assert.equal(hfOut(table),table,'table-only header is not emptied or wrapped in a paragraph');
+ }
+});
+
 test('样式 / 页码 presets: a template plus an alignment becomes footer html, previewed and round-tripped through the edit box', () => {
   const { hfPreset, hfOut, hfEdit, hfFill } = ctx.HF;
   assert.equal(hfPreset('{page} / {pages}', 'left'), '<p style="text-align:left">{page} / {pages}</p>');

@@ -19,6 +19,17 @@ static class DocxReplace
     public static void Paragraph(DocxDocument doc, W.Paragraph p, IEnumerable<RunSpec> input, Source source)
     {
         var specs = input.Where(s => s.Text.Length > 0).ToList();
+        // HTML explicitly carries editable fields. Removing a chip (including saved undo) must
+        // remove its instruction too; an empty fldSimple would recalculate and resurrect it.
+        if (source == Source.Html)
+        {
+            var instructions = specs.Where(s => s.Field is not null).Select(s => s.Field!.Trim()).ToHashSet(StringComparer.Ordinal);
+            foreach (var field in p.Descendants<W.SimpleField>().Where(f => DocxFields.Editable(f.Instruction?.Value) && !instructions.Contains(f.Instruction!.Value!.Trim())).ToList())
+            {
+                foreach (var child in field.ChildElements.ToList()) { child.Remove(); field.InsertBeforeSelf(child); }
+                field.Remove();
+            }
+        }
         var tracked = DocxRevisions.Tracking(doc) && specs.All(s => s.Change is null);
         // Html (the editor's format) always states the revisions; markdown only when it has ins / del tags; plain text never.
         var revisions = !tracked && (source == Source.Html || specs.Any(s => s.Change is not null));
@@ -51,6 +62,7 @@ static class DocxReplace
             Apply(doc, p, a, b, Take(specs, c, d), source, Key, tracked, revisions, author, now);
         }
         if (hunks.Count > 0) Tidy(p, before);
+        if (source == Source.Html) foreach (var field in p.Descendants<W.SimpleField>().Where(f => DocxFields.Editable(f.Instruction?.Value) && !f.HasChildren).ToList()) field.Remove();
         if (priorFormats is not null && hunks.Count > 0)
         {
             foreach (var boundary in priorFormats.Select(x => x.End).Distinct().OrderDescending()) Cut(Pieces(doc, p, false), boundary);

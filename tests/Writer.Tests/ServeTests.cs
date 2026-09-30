@@ -9,6 +9,22 @@ namespace Writer.Tests;
 
 public class ServeTests : IDisposable
 {
+    [Fact]
+    public async Task Worksheet_password_endpoint_is_authenticated_local_and_writes_no_files()
+    {
+        var unauthorized=await _client.PostAsync("/xlsx/password",new StringContent("{\"password\":\"test\"}",Encoding.UTF8,"application/json"));
+        Assert.Equal(HttpStatusCode.Unauthorized,unauthorized.StatusCode);
+        var response=await _client.SendAsync(Request(HttpMethod.Post,"/xlsx/password","{\"password\":\"中文 test\"}"));
+        Assert.Equal(HttpStatusCode.OK,response.StatusCode);var verifier=await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("中文 test",verifier);
+        response=await _client.SendAsync(Request(HttpMethod.Post,"/xlsx/password","{\"password\":\"中文 test\",\"verifier\":"+verifier+"}"));
+        Assert.True(JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("valid").GetBoolean());
+        response=await _client.SendAsync(Request(HttpMethod.Post,"/xlsx/password","{\"password\":\"wrong\",\"verifier\":"+verifier+"}"));
+        Assert.False(JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("valid").GetBoolean());
+        Assert.Empty(Directory.GetFiles(_dir,"*",SearchOption.AllDirectories));
+        response=await _client.SendAsync(Request(HttpMethod.Post,"/xlsx/password","{\"password\":{},\"verifier\":false}"));
+        Assert.Equal(HttpStatusCode.BadRequest,response.StatusCode);
+    }
     readonly string _dir = Directory.CreateTempSubdirectory("writer-serve").FullName;
     readonly Serve _server;
     readonly HttpClient _client = new(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
@@ -18,6 +34,21 @@ public class ServeTests : IDisposable
         _server = new Serve(0, requireToken: true, ["http://localhost:5173"], _dir, Serve.FindUiDir());
         _server.Start();
         _client.BaseAddress = new Uri(_server.Url);
+    }
+
+    [Fact]
+    public async Task Embedded_media_supports_bounded_suffix_and_unsatisfiable_byte_ranges()
+    {
+        using var doc = new Writer.Formats.Pptx.PptxAdapter().Create();
+        var slide = Writer.Core.Mutations.Add(doc.Root, "slide", new Dictionary<string,string>{{"layout","blank"}}, null);
+        var media = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
+        Writer.Core.Mutations.Add(slide, "image", new Dictionary<string,string>{{"src","data:image/png;base64," + Convert.ToBase64String(FakePng(2,2))},{"media","data:audio/wav;base64," + Convert.ToBase64String(media)}}, null);
+        using (var stream = File.Create(Path.Combine(_dir, "media.pptx"))) doc.Save(stream);
+        const string url = "/binary?file=media.pptx&path=/slide[1]/image[1]";
+        var request = Request(HttpMethod.Get, url); request.Headers.Range = new RangeHeaderValue(10, 19);
+        var response = await _client.SendAsync(request); Assert.Equal(HttpStatusCode.PartialContent,response.StatusCode); Assert.Equal("audio/wav",response.Content.Headers.ContentType?.MediaType); Assert.Equal("bytes 10-19/64",response.Content.Headers.ContentRange?.ToString()); Assert.Equal(media[10..20], await response.Content.ReadAsByteArrayAsync());
+        request = Request(HttpMethod.Get,url); request.Headers.Range = new RangeHeaderValue(null,4); response = await _client.SendAsync(request); Assert.Equal(media[^4..],await response.Content.ReadAsByteArrayAsync());
+        request = Request(HttpMethod.Get,url); request.Headers.Range = new RangeHeaderValue(64,null); response = await _client.SendAsync(request); Assert.Equal(HttpStatusCode.RequestedRangeNotSatisfiable,response.StatusCode); Assert.Equal("bytes */64",response.Content.Headers.ContentRange?.ToString());
     }
 
     [Fact]

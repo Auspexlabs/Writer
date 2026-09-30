@@ -8,7 +8,12 @@
   <ItemGroup>
     <EmbeddedResource Include="Jint.Substitutions.xml" LogicalName="Writer.Calculation.NativeConfiguration" />
     <EmbeddedResource Include="../../ui/sheet-model.js" LogicalName="Writer.Calculation.sheet-model.js" />
+    <EmbeddedResource Include="../../ui/sheet-whatif.js" LogicalName="Writer.Calculation.sheet-whatif.js" />
+    <EmbeddedResource Include="../../ui/sheet-statistics.js" LogicalName="Writer.Calculation.sheet-statistics.js" />
+    <EmbeddedResource Include="../../ui/sheet-pivot-values.js" LogicalName="Writer.Calculation.sheet-pivot-values.js" />
+    <EmbeddedResource Include="../../ui/sheet-pivot-fields.js" LogicalName="Writer.Calculation.sheet-pivot-fields.js" />
     <EmbeddedResource Include="../../ui/sheet-engine.js" LogicalName="Writer.Calculation.sheet-engine.js" />
+    <EmbeddedResource Include="../../ui/word-table-formula.js" LogicalName="Writer.Calculation.word-table-formula.js" />
     <InternalsVisibleTo Include="Writer.Tests" />
   </ItemGroup>
 

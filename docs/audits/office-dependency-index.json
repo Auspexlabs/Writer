@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-09-28T19:33:37.897964+00:00",
+  "fixture": {
+    "rows": 10000,
+    "columns": 100,
+    "cells": 1000000,
+    "formulas": 990000,
+    "formulaPattern": "Each column B:CV refers to the preceding column in the same row plus one",
+    "edit": "A1 = 12345"
+  },
+  "runtime": "dotnet Debug, macOS",
+  "before": {
+    "wallSeconds": 7.18,
+    "peakRssBytes": 1683210240,
+    "log": "/tmp/writer-dependency-before.log"
+  },
+  "after": {
+    "wallSeconds": 6.68,
+    "peakRssBytes": 1677721600,
+    "log": "/tmp/writer-dependency-after.log"
+  },
+  "verifiedBoth": {
+    "A1": "12345",
+    "CV1": "12444",
+    "A10000": "10000",
+    "CV10000": "10099"
+  },
+  "scope": "One run of each version, sequential, no release build running during measurement. Not a rigorous benchmark. Total memory remains high; the graph is only one allocation source."
+}

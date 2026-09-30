@@ -9,6 +9,19 @@ namespace Writer.Tests;
 
 public class PptxMediaCommentTests
 {
+    [Fact] public void Caption_tracks_are_native_WebVTT_and_survive_copy_edit_delete_and_reopen()
+    {
+        using var doc=new PptxAdapter().Create();var slide=Mutations.Add(doc.Root,"slide",P(("layout","blank")),null);
+        var image=Mutations.Add(slide,"image",P(("src","data:image/png;base64,"+Convert.ToBase64String(FakePng(4,2))),("media","data:audio/wav;base64,UklGRgAAAABXQVZF")),null);
+        var spec=new System.Text.Json.Nodes.JsonObject{["display"]="slide",["tracks"]=new System.Text.Json.Nodes.JsonArray((System.Text.Json.Nodes.JsonNode)new System.Text.Json.Nodes.JsonObject{["label"]="中文",["lang"]="zh-CN",["text"]="WEBVTT\n\n00:00:00.000 --> 00:00:02.000\n字幕 & 测试\n"})};
+        image.SetProp("captions",spec.ToJsonString());var expected=image.GetProps()["captions"];Assert.Contains("tracksInfo",image.GetRaw());
+        using var stream=new MemoryStream();doc.Save(stream);using var opened=new PptxAdapter().Open(new MemoryStream(stream.ToArray()));var again=opened.Root.Children[0].Children.Single(n=>n.Kind=="image");Assert.Equal(expected,again.GetProps()["captions"]);
+        Assert.Empty(new OpenXmlValidator(FileFormatVersions.Office2019).Validate(((PptxDocument)opened).Package).Select(e=>e.Path?.XPath+": "+e.Description));
+        using var targetDoc=new PptxAdapter().Create();var target=Mutations.Add(targetDoc.Root,"slide",P(("layout","blank")),null);var copy=Mutations.Copy(again,target,null);Assert.Equal(expected,copy.GetProps()["captions"]);
+        spec["tracks"]![0]!["text"]="Invalid file";Assert.Throws<WriterException>(()=>again.SetProp("captions",spec.ToJsonString()));Assert.Equal(expected,again.GetProps()["captions"]);
+        again.SetProp("captions","{\"display\":\"media\",\"tracks\":[]}");Assert.DoesNotContain("tracksInfo",again.GetRaw());Assert.Equal(expected,copy.GetProps()["captions"]);
+        Assert.DoesNotContain(((PptxDocument)opened).Presentation.SlideParts.First().Parts,p=>p.OpenXmlPart.ContentType=="text/vtt");
+    }
     static Dictionary<string, string> P(params (string, string)[] p) => p.ToDictionary(x => x.Item1, x => x.Item2);
     [Fact]
     public void Motion_path_transition_direction_and_shared_master_edits_are_native()
@@ -59,4 +72,31 @@ public class PptxMediaCommentTests
         Assert.Empty(new OpenXmlValidator(FileFormatVersions.Office2013).Validate(((PptxDocument)reopened).Package).Select(e => e.Path?.XPath + ": " + e.Description));
         Mutations.Set(old, P(("comments", "[]"))); Assert.Equal("[]", old.GetProps()["comments"]);
     }
+    [Fact]
+    public void Media_trim_fades_playback_and_bookmarks_survive_copy_animation_changes_and_deletion()
+    {
+        using var doc = new PptxAdapter().Create();
+        var slide = Mutations.Add(doc.Root, "slide", P(("layout", "blank")), null);
+        var image = Mutations.Add(slide, "image", P(("src", "data:image/png;base64," + Convert.ToBase64String(FakePng(4, 2))), ("media", "data:audio/wav;base64,UklGRgAAAABXQVZF")), null);
+        const string options = """{"trimStart":0.1,"trimEnd":0.2,"fadeIn":0.1,"fadeOut":0.1,"volume":65,"autoplay":true,"loop":true,"slideCount":3,"hideStopped":true,"bookmarks":[{"name":"Start","time":0.3}]}""";
+        Mutations.Set(image, P(("playback", options)));
+        var expected = image.GetProps()["playback"];
+        var shape = Mutations.Add(slide, "shape", P(("text", "Animation stays independent")), null);
+        Mutations.Set(slide, P(("animations", "[{\"shape\":\"" + shape.GetProps()["id"] + "\",\"effect\":\"fade\"}]")));
+        Assert.Equal(expected, image.GetProps()["playback"]);
+        using var target = new PptxAdapter().Create(); var targetSlide = Mutations.Add(target.Root, "slide", P(("layout", "blank")), null);
+        var copied = Mutations.Copy(image, targetSlide, null); Assert.Equal(expected, copied.GetProps()["playback"]);
+        using var stream = new MemoryStream(); doc.Save(stream); using var opened = new PptxAdapter().Open(new MemoryStream(stream.ToArray()));
+        var loaded = opened.Root.Children[0].Children.Single(c => c.Kind == "image"); Assert.Equal(expected, loaded.GetProps()["playback"]);
+        using var package = DocumentFormat.OpenXml.Packaging.PresentationDocument.Open(new MemoryStream(stream.ToArray()), false);
+        var sp = package.PresentationPart!.SlideParts.First(); var trim = sp.Slide!.Descendants<DocumentFormat.OpenXml.Office2010.PowerPoint.MediaTrim>().Single();
+        Assert.Equal("100", trim.Start!.InnerText); Assert.Equal("200", trim.End!.InnerText);
+        Assert.Empty(new OpenXmlValidator(FileFormatVersions.Office2013).Validate(((PptxDocument)opened).Package).Select(e => e.Path?.XPath + ": " + e.Description));
+        Mutations.Set(loaded, P(("playback", """{"autoplay":false,"volume":0,"loop":false}""")));
+        using var cleared = JsonDocument.Parse(loaded.GetProps()["playback"]); Assert.False(cleared.RootElement.GetProperty("autoplay").GetBoolean()); Assert.Equal(0, cleared.RootElement.GetProperty("volume").GetDouble());
+        loaded.Remove(); using var deleted = new MemoryStream(); opened.Save(deleted);
+        Assert.DoesNotContain(((PptxDocument)opened).Package.PresentationPart!.SlideParts.First().Slide!.Descendants<DocumentFormat.OpenXml.Presentation.CommonMediaNode>(), _ => true);
+        var errors = string.Join("\n", new OpenXmlValidator(FileFormatVersions.Office2013).Validate(((PptxDocument)target).Package).Select(e => e.Path?.XPath + ": " + e.Description)); Assert.True(errors.Length == 0, errors);
+    }
+
 }

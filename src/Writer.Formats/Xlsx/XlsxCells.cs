@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -345,7 +346,7 @@ sealed class XlsxStyles(WorkbookPart workbook)
 
     /// <summary>Formatting properties shared by the cell and range kinds; all written through <see cref="Set"/>.</summary>
     public static readonly string[] Props =
-        ["bold", "italic", "underline", "strike", "size", "font", "color", "fill", "format", "align", "valign", "wrap", "indent", "rotate", "border", "borders", "borderColor"];
+        ["bold", "italic", "underline", "strike", "size", "font", "color", "fill", "format", "align", "valign", "wrap", "indent", "rotate", "border", "borders", "borderColor", "locked", "formulaHidden"];
 
     static readonly string[] Sides = ["top", "right", "bottom", "left"];
 
@@ -387,8 +388,58 @@ sealed class XlsxStyles(WorkbookPart workbook)
 
     public CellFormat? FormatOf(Cell cell)
     {
-        var index = (int)(cell.StyleIndex?.Value ?? 0);
+        var index = (int)(cell.StyleIndex?.Value ?? InheritedIndex(cell) ?? 0);
         return Existing?.CellFormats?.Elements<CellFormat>().ElementAtOrDefault(index);
+    }
+
+    static uint? InheritedIndex(Cell cell)
+    {
+        if (cell.Parent is not Row row) return null;
+        if (row.StyleIndex is { } style && row.CustomFormat?.Value != false) return style.Value;
+        if (row.Parent?.Parent is not Worksheet ws) return null;
+        var c = XlsxCells.Position(cell).Col;
+        return ws.GetFirstChild<Columns>()?.Elements<Column>().FirstOrDefault(x => x.Min?.Value <= c && x.Max?.Value >= c)?.Style?.Value;
+    }
+    internal bool NeedsExplicitProtection(Cell cell)
+    {
+        if (cell.StyleIndex is null) return false;
+        if (InheritedIndex(cell) is not null) return true;
+        var normal = Existing?.CellFormats?.GetFirstChild<CellFormat>();
+        return normal?.ApplyProtection?.Value != false && (normal?.Protection?.Locked?.Value == false || normal?.Protection?.Hidden?.Value == true);
+    }
+
+    internal JsonObject Snapshot(uint index)
+    {
+        var cell = new Cell { StyleIndex = index }; var format = FormatOf(cell) ?? new CellFormat();
+        var props = new Dictionary<string,string>(); Read(cell,props);
+        var result = new JsonObject { ["format"] = format.OuterXml, ["locked"] = format.ApplyProtection?.Value == false || format.Protection?.Locked?.Value != false,
+            ["formulaHidden"] = format.ApplyProtection?.Value != false && format.Protection?.Hidden?.Value == true,
+            ["props"] = new JsonObject(props.Select(p => new KeyValuePair<string,JsonNode?>(p.Key,JsonValue.Create(p.Value)))) };
+        if (FontOf(format) is { } font) result["font"] = font.OuterXml;
+        if (FillOf(format) is { } fill) result["fill"] = fill.OuterXml;
+        if (BorderOf(format) is { } border) result["border"] = border.OuterXml;
+        if (format.NumberFormatId?.Value >= 164 && NumberFormatCode(format) is { } code) result["numberFormat"] = code;
+        return result;
+    }
+    internal static void ValidateSnapshot(JsonObject style)
+    {
+        _ = new CellFormat(style["format"]!.GetValue<string>());
+        if (style["font"] is { } font) _ = new Font(font.GetValue<string>());
+        if (style["fill"] is { } fill) _ = new Fill(fill.GetValue<string>());
+        if (style["border"] is { } border) _ = new Border(border.GetValue<string>());
+        if (style["numberFormat"] is { } code) _ = code.GetValue<string>();
+        _ = style["locked"]!.GetValue<bool>(); _ = style["formulaHidden"]!.GetValue<bool>();
+    }
+    internal uint Restore(JsonObject style)
+    {
+        var format = new CellFormat(style["format"]!.GetValue<string>());
+        if (style["font"] is { } font) format.FontId = Index(Sheet.Fonts ??= new Fonts(),new Font(font.GetValue<string>()),n => Sheet.Fonts!.Count=n);
+        if (style["fill"] is { } fill) format.FillId = Index(Sheet.Fills ??= new Fills(),new Fill(fill.GetValue<string>()),n => Sheet.Fills!.Count=n);
+        if (style["border"] is { } border) format.BorderId = Index(Sheet.Borders ??= new Borders(),new Border(border.GetValue<string>()),n => Sheet.Borders!.Count=n);
+        var cell = new Cell { StyleIndex = Index(Sheet.CellFormats ??= new CellFormats(),format,n => Sheet.CellFormats!.Count=n) };
+        var changes = new List<KeyValuePair<string,string>> { new("locked",style["locked"]!.GetValue<bool>()?"true":"false"),new("formulaHidden",style["formulaHidden"]!.GetValue<bool>()?"true":"false") };
+        if (style["numberFormat"] is { } code) changes.Add(new("format",code.GetValue<string>()));
+        Set(cell,changes); return cell.StyleIndex!.Value;
     }
 
     public Font? FontOf(CellFormat? format) =>
@@ -422,6 +473,11 @@ sealed class XlsxStyles(WorkbookPart workbook)
     public void Read(Cell cell, Dictionary<string, string> props)
     {
         var format = FormatOf(cell);
+        if (format?.Protection is { } protection && format.ApplyProtection?.Value != false)
+        {
+            if (protection.Locked?.Value == false) props["locked"] = "false";
+            if (protection.Hidden?.Value == true) props["formulaHidden"] = "true";
+        }
         var font = FontOf(format);
         var normal = Existing?.Fonts?.GetFirstChild<Font>();
         if (On(font?.Bold)) props["bold"] = "true";
@@ -474,6 +530,12 @@ sealed class XlsxStyles(WorkbookPart workbook)
         foreach (var (name, value) in changes)
             switch (name)
             {
+                case "locked" or "formulaHidden":
+                    xf.Protection ??= new Protection();
+                    if (name == "locked") xf.Protection.Locked = value == "true";
+                    else xf.Protection.Hidden = value == "true";
+                    xf.ApplyProtection = true;
+                    break;
                 case "bold" or "italic" or "underline" or "strike" or "size" or "font" or "color":
                     font ??= (Font)(FontOf(xf) ?? Sheet.Fonts?.GetFirstChild<Font>() ?? new Font()).CloneNode(true);
                     switch (name)

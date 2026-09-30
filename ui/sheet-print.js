@@ -1,3 +1,4 @@
+import {sparklineMap,sparklineSvg} from './sheet-sparklines.js';
 import { chartSvg } from './office-draw.js';
 import { autoRowHeights } from './sheet-layout.js';
 // Paginated spreadsheet print/export, using the same visible values and dimensions as the editor.
@@ -5,10 +6,11 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const px = mm => mm * 96 / 25.4;
 const papers = { 1: [215.9, 279.4], 5: [215.9, 355.6], 8: [297, 420], 9: [210, 297], 11: [148, 210] };
 const list = text => String(text || '').split(/,(?=(?:[^']*'[^']*')*[^']*$)/).map(s => s.slice(s.lastIndexOf('!') + 1).replace(/\$/g, '').trim());
-function partition(items, size, available, repeats) {
+function partition(items, size, available, repeats, breaks = []) {
   const prefix = items.filter(i => repeats.has(i)), rest = items.filter(i => !repeats.has(i));
   const space = Math.max(1, available - prefix.reduce((n, i) => n + size(i), 0)), groups = []; let group = [], used = 0;
-  for (const i of rest) { const n = size(i); if (group.length && used + n > space) { groups.push(prefix.concat(group)); group = []; used = 0; } group.push(i); used += n; }
+  let previous = -1;
+  for (const i of rest) { const n = size(i); if (group.length && (used + n > space || breaks.some(b => b > previous && b <= i))) { groups.push(prefix.concat(group)); group = []; used = 0; } group.push(i); used += n; previous = i; }
   if (group.length || !groups.length) groups.push(prefix.concat(group)); return groups;
 }
 function hf(text, page, total, doc, sh) {
@@ -18,10 +20,10 @@ function hf(text, page, total, doc, sh) {
   return ['L', 'C', 'R'].map(z => `<span style="text-align:${({ L: 'left', C: 'center', R: 'right' })[z]}">${textOf(zones[z])}</span>`).join('');
 }
 function cellStyle(s, grid) {
-  const css = [`font-family:${esc(s.font || 'Arial')}`, `font-size:${s.fs || 11}pt`, `font-weight:${s.b ? 700 : 400}`, `font-style:${s.i ? 'italic' : 'normal'}`, `text-decoration:${[s.u && 'underline', s.strike && 'line-through'].filter(Boolean).join(' ') || 'none'}`, `text-align:${s.align === 'general' ? 'left' : s.align || 'left'}`, `vertical-align:${s.va || 'bottom'}`, `white-space:${s.wrap ? 'pre-wrap' : 'pre'}`, `color:${s.color || '#000'}`, `background:${s.fill || 'transparent'}`];
+  const css = [`font-family:${esc(s.font || 'Arial')}`, `font-size:${s.fs || 11}pt`, `font-weight:${s.b ? 700 : 400}`, `font-style:${s.i ? 'italic' : 'normal'}`, `text-decoration:${[s.u && 'underline', s.st && 'line-through'].filter(Boolean).join(' ') || 'none'}`, `text-align:${s.align === 'general' ? 'left' : s.align || 'left'}`, `vertical-align:${s.va || 'bottom'}`, `white-space:${s.wrap ? 'pre-wrap' : 'pre'}`, `color:${s.color || '#000'}`, `background:${s.fill || 'transparent'}`];
   for (const side of ['top', 'right', 'bottom', 'left']) {
-    const b = typeof s.bd === 'object' ? s.bd[side] : s.bd === 'all' ? 'thin' : '';
-    css.push(`border-${side}:${b && b !== 'none' ? (b === 'thick' ? '3px' : b === 'medium' || b === 'double' ? '2px' : '1px') + ' ' + (/dash/i.test(b) ? 'dashed' : /dot/i.test(b) ? 'dotted' : b === 'double' ? 'double' : 'solid') + ' ' + (s.bdc || '#000') : grid ? '1px solid #bbb' : 'none'}`);
+    const b = typeof s.bd === 'object' ? s.bd[side] : s.bd === 'all' ? 'thin' : s.bd || '';
+    css.push(`border-${side}:${b && b !== 'none' ? (b === 'thick' || b === 'double' ? '3px' : b === 'medium' || b === 'double' ? '2px' : '1px') + ' ' + (/dash/i.test(b) ? 'dashed' : /dot/i.test(b) ? 'dotted' : b === 'double' ? 'double' : 'solid') + ' ' + (s.bdc || '#000') : grid ? '1px solid #bbb' : 'none'}`);
   }
   return css.join(';');
 }
@@ -53,6 +55,7 @@ export function sheetPrint(doc, E) {
   const calc = new E.Calc(doc), pages = [];
   for (const [si, sh] of doc.sheets.entries()) {
     if (sh.visibility && sh.visibility !== 'visible') continue;
+    const conditional = E.conditionalFormats(sh, calc, si, E);
     const p = sh.print || {}, paper = papers[p.paper] || papers[9], [w, h] = p.orientation === 'landscape' ? [paper[1], paper[0]] : paper;
     const margin = [p.top ?? .75, p.right ?? .7, p.bottom ?? .75, p.left ?? .7].map(n => n * 25.4);
     const usableW = px(w - margin[1] - margin[3]), usableH = px(h - margin[0] - margin[2]) - 48;
@@ -70,7 +73,13 @@ export function sheetPrint(doc, E) {
       m = /^([A-Z]+):([A-Z]+)$/i.exec(t); if (m) for (let c = E.parseA(m[1] + '1')?.c; c <= E.parseA(m[2] + '1')?.c && c < 16384; c++) repeatC.add(c);
     }
     const ranges = list(p.area).filter(Boolean).map(s => { const [a, b] = s.split(':').map(E.parseA); return a ? { r1: a.r, c1: a.c, r2: (b || a).r, c2: (b || a).c } : null; }).filter(Boolean);
-    if (!ranges.length) { const u = E.usedRange(sh); if (u) ranges.push(u); }
+    if (!ranges.length) {
+      const stored=E.usedRange(sh); let u=stored?{...stored}:null;
+      calc.ensureSpills(si);
+      for (const [key,matrix] of calc.arrays) { const [owner,r,c]=key.split(':').map(Number); if(owner!==si)continue; const r2=r+matrix.length-1,c2=c+matrix[0].length-1;
+        u=u?{r1:Math.min(u.r1,r),c1:Math.min(u.c1,c),r2:Math.max(u.r2,r2),c2:Math.max(u.c2,c2)}:{r1:r,c1:c,r2,c2}; }
+      if (u) ranges.push(u);
+    }
     for (const u of ranges) {
       const rows = Array.from({ length: u.r2 - u.r1 + 1 }, (_, i) => u.r1 + i).filter(r => !hiddenR.has(r)), cols = Array.from({ length: u.c2 - u.c1 + 1 }, (_, i) => u.c1 + i).filter(c => !hiddenC.has(c));
       // Titles may lie outside the print area; include them on every printed page.
@@ -80,7 +89,7 @@ export function sheetPrint(doc, E) {
       if (!rows.length || !cols.length) continue;
       let scale = Math.max(.1, Math.min(4, (p.scale || 100) / 100));
       if (p.fitWidth > 0 || p.fitHeight > 0) scale = Math.min(1, p.fitWidth > 0 ? usableW * p.fitWidth / cols.reduce((n, c) => n + cw(c), 0) : Infinity, p.fitHeight > 0 ? usableH * p.fitHeight / rows.reduce((n, r) => n + rh(r), 0) : Infinity);
-      for (const rr of partition(rows, rh, usableH / scale, repeatR)) for (const cc of partition(cols, cw, usableW / scale, repeatC)) {
+      for (const rr of partition(rows, rh, usableH / scale, repeatR, p.rowBreaks)) for (const cc of partition(cols, cw, usableW / scale, repeatC, p.colBreaks)) {
         let table = '<table><colgroup>' + cc.map(c => `<col style="width:${cw(c)}px">`).join('') + '</colgroup><tbody>';
         for (const r of rr) {
           table += `<tr style="height:${rh(r)}px">`;
@@ -88,8 +97,11 @@ export function sheetPrint(doc, E) {
             const merge = sh.merges?.find(m => r >= m.r && r < m.r + m.rs && c >= m.c && c < m.c + m.cs);
             let rs = 1, cs = 1, ar = r, ac = c;
             if (merge) { const mr = rr.filter(i => i >= merge.r && i < merge.r + merge.rs), mc = cc.filter(i => i >= merge.c && i < merge.c + merge.cs); if (r !== mr[0] || c !== mc[0]) continue; rs = mr.length; cs = mc.length; ar = merge.r; ac = merge.c; }
-            const cell = sh.cells[E.A(ar, ac)], s = {...E.tableStyle?.(sh,ar,ac),...cell?.s}, v = calc.value(si, ar, ac), styled = { ...s, align: s.align || (typeof v === 'number' ? 'right' : 'left') };
-            table += `<td rowspan="${rs}" colspan="${cs}" style="${cellStyle(styled, p.gridlines)}">${esc(E.fmt(v, s))}</td>`;
+            const cell = sh.cells[E.A(ar, ac)], s = {font:doc.font, fs:doc.fs, date1904:doc.date1904, ...E.tableStyle?.(sh,ar,ac), ...(E.effectiveCellStyle?.(sh,E.A(ar,ac))||cell?.s)}, v = calc.value(si, ar, ac), cf = conditional(ar, ac, v, s);
+            const styled = { ...s, fill:cf.bg, color:cf.color || s.color, b:cf.bold ?? s.b, i:cf.italic ?? s.i, align:s.align && s.align !== 'general' ? s.align : typeof v === 'number' ? 'right' : 'left' };
+            const rotation = s.rotate ? `transform:rotate(${-s.rotate}deg);display:inline-block` : '';
+            const icon = cf.icon ? `<span style="color:${esc(cf.iconColor)}">${esc(cf.icon)} </span>` : '';
+            table += `<td rowspan="${rs}" colspan="${cs}" style="position:relative;${cellStyle(styled, p.gridlines)}"><span style="position:absolute;inset:0;pointer-events:none">${sparklineSvg(sparklineMap(sh).get(E.A(ar,ac)),calc,si,cw(c),rh(r))}</span>${icon}<span style="${rotation}">${cf.hideValue ? '' : esc(E.fmt(v, s))}</span></td>`;
           }
           table += '</tr>';
         }

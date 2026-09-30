@@ -1098,7 +1098,10 @@
           "data-dc-tpl": this.props.__tplId
         };
         const chain = Array.isArray(this.context) ? this.context : [];
-        if (chain.includes(this.__name)) {
+        // A split worksheet reuses its editor for leaf panes. Re-entry is
+        // explicit and bounded; ordinary imports keep the one-level guard.
+        const maxImportDepth = Number.isInteger(this.props.maxImportDepth) ? Math.max(1, Math.min(4, this.props.maxImportDepth)) : 1;
+        if (chain.filter(name => name === this.__name).length >= maxImportDepth) {
           const cycle = [
             ...chain.slice(chain.indexOf(this.__name)),
             this.__name

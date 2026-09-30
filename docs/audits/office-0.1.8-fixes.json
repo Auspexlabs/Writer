@@ -1,0 +1,144 @@
+{
+  "version": "0.1.8",
+  "engineCli": "/Users/hongjiazhao/Desktop/Projects/Writer/src/Writer.Cli/bin/Debug/net10.0/writer.dll",
+  "baseCommit": "f44087cdfa8fbcd6399eba286b1b43a562f4b10f",
+  "workingTreeModified": true,
+  "generatedAt": "2026-09-28T03:27:59.184Z",
+  "scope": "Actual Writer formula/render logic and native save/reopen. Expected results use documented semantics; Microsoft Office desktop was not run.",
+  "excel": [
+    {
+      "formula": "=COUNTA(A1:A3)",
+      "expected": 3,
+      "actual": 3,
+      "matches": true
+    },
+    {
+      "formula": "=IFERROR(MAP({1,0,2},LAMBDA(x,1/x)),99)",
+      "expected": [
+        [
+          1,
+          99,
+          0.5
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          99,
+          0.5
+        ]
+      ],
+      "matches": true
+    },
+    {
+      "formula": "=SUMIFS(A1:A1048576,A1:A1048576,\">0\")",
+      "expected": 3,
+      "actual": 3,
+      "matches": true
+    },
+    {
+      "formula": "=WRAPROWS({1,2},5,0)",
+      "expected": [
+        [
+          1,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2
+        ]
+      ],
+      "matches": true
+    }
+  ],
+  "conditionalFormatting": [
+    {
+      "name": "cellIs threshold reference",
+      "values": [
+        20,
+        "",
+        ""
+      ],
+      "backgrounds": [
+        "#123456",
+        "",
+        ""
+      ]
+    },
+    {
+      "name": "dynamic spill scale",
+      "values": [
+        1,
+        2,
+        3
+      ],
+      "backgrounds": [
+        "#ff0000",
+        "#ffff00",
+        "#00ff00"
+      ]
+    },
+    {
+      "name": "stored values scale control",
+      "values": [
+        1,
+        2,
+        3
+      ],
+      "backgrounds": [
+        "#ff0000",
+        "#ffff00",
+        "#00ff00"
+      ]
+    }
+  ],
+  "word": {
+    "headerTable": {
+      "before": "<p style=\"text-align:left\">Before</p><div data-w-hf-table=\"1\" contenteditable=\"false\"><table style=\"table-layout:fixed;\">\n<colgroup><col style=\"width:8.82cm\"></colgroup>\n<tr><td style=\"width:333.4px\">TABLE_SENTINEL</td></tr>\n</table>\n</div>",
+      "serializedByEditor": "<p style=\"text-align:left\">After</p><div data-w-hf-table=\"1\" contenteditable=\"false\"><table style=\"table-layout:fixed;\">\n<colgroup><col style=\"width:8.82cm\"></colgroup>\n<tr><td style=\"width:333.4px\">TABLE_SENTINEL</td></tr>\n</table>\n</div>",
+      "afterSave": "<p style=\"text-align:left\">After</p><div data-w-hf-table=\"1\" contenteditable=\"false\"><table style=\"table-layout:fixed;\">\n<colgroup><col style=\"width:8.82cm\"></colgroup>\n<tr><td style=\"width:333.4px\">TABLE_SENTINEL</td></tr>\n</table>\n</div>",
+      "sentinelBefore": 1,
+      "sentinelAfter": 1
+    }
+  },
+  "ppt": {
+    "numbering": {
+      "input": "III. / IV.",
+      "actual": [
+        "III. ",
+        "IV. "
+      ]
+    },
+    "tablePng": [
+      {
+        "rotate": 0
+      },
+      {
+        "text": "Rich table",
+        "font": "700 64px Noto Sans SC, sans-serif",
+        "color": "#ff0000"
+      }
+    ],
+    "rotatedGroupPng": [
+      {
+        "rotate": 1.5707963267948966
+      },
+      {
+        "rotate": 0
+      },
+      {
+        "text": "Rotated group",
+        "font": "400 32px 'Noto Sans SC','Noto Sans SC',sans-serif",
+        "color": "#1D1D1F"
+      }
+    ]
+  },
+  "nativeFormulaCache": {
+    "D1": "3",
+    "D2": "1",
+    "E2": "99",
+    "F2": "0.5"
+  }
+}

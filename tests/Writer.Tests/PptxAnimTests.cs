@@ -112,4 +112,17 @@ public class PptxAnimTests
         Mutations.Set(back.Root.Children[0], Props(("section", "")));
         Assert.Null(((PptxDocument)back).Presentation.Presentation!.PresentationExtensionList);
     }
+    [Fact]
+    public void Repeat_and_auto_reverse_round_trip_and_delay_the_following_effect()
+    {
+        using var doc=new PptxAdapter().Create();var slide=Mutations.Add(doc.Root,"slide",Props(("layout","blank")),null);
+        var shape=Mutations.Add(slide,"shape",Props(("text","Repeat")),null);var id=shape.GetProps()["id"];
+        Mutations.Set(slide,Props(("animations","[{\"shape\":\""+id+"\",\"effect\":\"spin\",\"duration\":500,\"repeat\":3,\"autoReverse\":true},{\"shape\":\""+id+"\",\"effect\":\"fadeOut\",\"start\":\"after\"}]")));
+        Assert.Empty(Errors(doc));using var back=Open(Save(doc));var effects=Effects(back.Root.Children[0]);Assert.Equal("3",effects[0]["repeat"]);Assert.Equal("true",effects[0]["autoReverse"]);
+        var timing=((SlidePart)back.Root.Children[0].Anchor).Slide!.Timing!;
+        Assert.Contains(timing.Descendants<P.CommonTimeNode>(),n=>n.RepeatCount?.Value=="3000"&&n.AutoReverse?.Value==true);
+        Assert.Contains(timing.Descendants<P.Condition>(),c=>c.Delay?.Value=="3000");
+        Mutations.Set(back.Root.Children[0],Props(("animations","[{\"shape\":\""+id+"\",\"effect\":\"spin\",\"duration\":500,\"repeat\":1,\"autoReverse\":false}]")));
+        Assert.DoesNotContain(((SlidePart)back.Root.Children[0].Anchor).Slide!.Timing!.Descendants<P.CommonTimeNode>(),n=>n.AutoReverse?.Value==true);
+    }
 }

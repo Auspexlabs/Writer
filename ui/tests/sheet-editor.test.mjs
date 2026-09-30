@@ -24,6 +24,26 @@ function editor(sheets) {
   return { component, get doc() { return doc; }, get changed() { return changed; }, messages };
 }
 
+test('special selections format and clear matching cells only, preserve constants and block rectangular mutations',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:'=1'},A2:{v:20},A3:{v:'=3'}}}]),c=x.component;
+ let submit;c.prompt=(_,fields,fn)=>submit=fn;c.goSpecial();submit({kind:'formulas'});
+ assert.equal(c.selectionRanges().length,2);c.style({b:true});assert.equal(x.changed,1);assert.equal(x.doc.sheets[0].cells.A1.s.b,true);assert.equal(x.doc.sheets[0].cells.A2.s,undefined);assert.equal(x.doc.sheets[0].cells.A3.s.b,true);
+ c.commit(sh=>{sh.cells.A2.v=99;});assert.equal(x.doc.sheets[0].cells.A2.v,20);assert.match(x.messages.at(-1),/单一区域/);
+ c.clear('v');assert.equal(x.doc.sheets[0].cells.A1.v,'');assert.equal(x.doc.sheets[0].cells.A2.v,20);assert.equal(x.doc.sheets[0].cells.A3.v,'');
+ c.setSel(1,0);assert.equal(c.selectionRanges().length,1);
+});
+test('trace navigates across sheets without writing values',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:'=Inputs!C3'}}},{name:'Inputs',cells:{C3:{v:8}}}]),c=x.component;c.traceCells('precedents');
+ const b=c.traceResult().ranges[0];assert.equal(b.si,1);c.goRange(b);assert.equal(x.doc.active,1);assert.deepEqual(plain(c.act()),{r:2,c:2});assert.equal(x.doc.sheets[1].cells.C3.v,8);
+});
+test('goal seek commits one undoable edit and leaves data unchanged on failure or invalid input',()=>{
+  const x=editor([{name:'Data',cells:{A1:{v:2,s:{fmt:'number'}},B1:{v:'=A1*12'}}}]);let submit;
+  x.component.prompt=(title,fields,fn)=>{submit=fn;};x.component.goalSeek();submit({target:'B1',changing:'A1',value:'120'});
+  assert.equal(x.changed,1);assert.equal(x.doc.sheets[0].cells.A1.v,10);assert.equal(x.doc.sheets[0].cells.A1.s.fmt,'number');assert.equal(new E.Calc(x.doc).value(0,0,1),120);
+  x.component.goalSeek();submit({target:'A1',changing:'B1',value:'3'});assert.equal(x.changed,1);assert.match(x.messages.at(-1),/目标格/);
+  x.component.goalSeek();submit({target:'B1',changing:'A1',value:'not a number'});assert.equal(x.changed,1);
+});
+
 test('a click moves only the selection: the cells are the last render\'s; an edit makes new only the cells it changed', () => {
   const x = editor([{ name: 'Data', cells: { A1: { v: 1 }, A2: { v: 2 }, A3: { v: '=A1+A2' }, B1: { v: 'x' } } }]);
   const v1 = x.component.renderVals();
@@ -355,6 +375,21 @@ test('filter criteria hide rows until the filter is applied again, the dropdown 
   assert.deepEqual([2, 3, 4, 5].map(r => x.doc.sheets[0].cells['A' + r].v + ' ' + x.doc.sheets[0].cells['C' + r].v), ['East 200', 'East 120', 'East 100', 'West 80']);
 });
 
+test('advanced filtering keeps manual hidden rows, copies results safely, clears and moves criteria with insertions',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:'Item'},B1:{v:'Sales'},A2:{v:'East'},B2:{v:10},A3:{v:'West'},B3:{v:20},A4:{v:'East'},B4:{v:30},D1:{v:'Item'},D2:{v:'East'}},hiddenRows:[2,10]}]),c=x.component;
+ c.applyAdvancedFilter({range:'A1:B4',criteria:'D1:D2'});assert.deepEqual(plain(x.doc.sheets[0].frows),[2]);assert.deepEqual(plain(x.doc.sheets[0].hiddenRows),[2,10]);
+ c.commit(sh=>sh.cells.A3.v='East');c.reapplyFilters();assert.deepEqual(plain(x.doc.sheets[0].frows),[]);assert.deepEqual(plain(x.doc.sheets[0].hiddenRows),[2,10]);
+ c.applyAdvancedFilter({range:'A1:B4',criteria:'D1:D2',mode:'copy',target:'F1'});assert.equal(x.doc.sheets[0].cells.G4.v,30);
+ const before=x.changed;c.applyAdvancedFilter({range:'A1:B4',criteria:'D1:D2',mode:'copy',target:'A1'});assert.equal(x.changed,before);assert.match(x.messages.at(-1),/覆盖列表/);
+ c.insDel('r',0,1);assert.equal(x.doc.sheets[0].advancedFilter.range,'A2:B5');assert.equal(x.doc.sheets[0].advancedFilter.criteria,'D2:D3');assert.deepEqual(plain(x.doc.sheets[0].advancedFilter.manualHidden),[3,11]);
+ c.setFilters({});assert.equal(x.doc.sheets[0].advancedFilter,null);assert.deepEqual(plain(x.doc.sheets[0].hiddenRows),[3,11]);
+});
+test('visual sorting moves full local records and formulas, rejecting merged and spilled output',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:'Item'},B1:{v:'Value'},A2:{v:'low',s:{fill:'#FF0000'}},B2:{v:'=C2'},A3:{v:'high',s:{fill:'#00FF00'}},B3:{v:'=C3'},C2:{v:2},C3:{v:3}}}]),c=x.component;
+ Object.assign(c.state,{anc:{r:0,c:0},sel:{r:2,c:1}});c.sort([{c:0,by:'fill',match:'#00ff00',asc:true}]);assert.equal(x.doc.sheets[0].cells.A2.v,'high');assert.equal(x.doc.sheets[0].cells.B2.v,'=C2');assert.equal(x.doc.sheets[0].cells.C2.v,2);
+ c.commit(sh=>sh.merges=[{r:1,c:0,rs:1,cs:2}]);let before=x.changed;c.sort([{c:0,asc:true}]);assert.equal(x.changed,before);assert.match(x.messages.at(-1),/合并/);
+ c.commit(sh=>{sh.merges=[];sh.cells.B2={v:'=SEQUENCE(2)'};delete sh.cells.B3;});before=x.changed;c.sort([{c:0,asc:true}]);assert.equal(x.changed,before);assert.match(x.messages.at(-1),/数组公式/);
+});
 test('freeze panes: 首行 / 首列 / 至当前单元格 / 取消 from the view tab', () => {
   const x = editor([{ name: 'Data', cells: {} }]), c = x.component; c.state.tab = 'view';
   Object.assign(c.state, { anc: { r: 2, c: 1 }, sel: { r: 2, c: 1 } }); c.renderVals();
@@ -464,7 +499,7 @@ test('the format panel: the Word 定稿 panel with the sheet\'s own tabs and gro
   assert.deepEqual(titles(v), ['剪贴板', '字体', '颜色', '对齐', '数字', '边框与样式', '行和列', '编辑']);
   const bius = v.panelGroups[1].rows[1].items.find(it => it.t === 'seg');
   assert.deepEqual(plain(bius.opts.map(o => [o.label, !!o.on])), [['B', true], ['I', false], ['U', false], ['S', false]]);
-  for (const [tab, want] of [['insert', ['图表', '表格', '常用', '行列与工作表', '函数']], ['formula', ['函数', '常用函数', '名称', '显示']], ['data', ['排序和筛选', '数据透视表', '分组与汇总', '数据工具', '填充']], ['view', ['页面', '冻结窗格', '显示', '缩放']]]) {
+  for (const [tab, want] of [['insert', ['图表', '表格', '常用', '行列与工作表', '函数']], ['formula', ['函数', '常用函数', '名称', '计算', '公式审核', '显示']], ['data', ['查询', '排序和筛选', '数据透视表', '分组与汇总', '数据工具', '模拟分析', '填充']], ['view', ['页面', '冻结窗格', '拆分窗格', '显示', '缩放']]]) {
     c.state.tab = tab; v = c.renderVals(); assert.deepEqual(titles(v), want, tab);
   }
   c.state.pop = null; v.panelTabs[0].onClick(); assert.equal(c.state.tab, 'home');
@@ -547,7 +582,7 @@ test('row insertion shifts names, print ranges and object anchors; protection an
  const x = editor([{ name: 'Data', cells: { A1: { v: 1 } }, print: { area: 'Data!$A$1:$B$4', titles: 'Data!$1:$1' }, images: [{ id: 'i', x: 0, y: 40 }], charts: [{ id: 'c', x: 0, y: 60 }] }, { name: 'Other', cells: {} }]), c = x.component;
  c.props.onChange({ ...x.doc, names: { Range: 'Data!$A$2:$B$4' } }); c.insDel('r', 1, 2);
  assert.equal(x.doc.names.Range, 'Data!$A$4:$B$6'); assert.equal(x.doc.sheets[0].print.area, 'Data!$A$1:$B$6'); assert.equal(x.doc.sheets[0].images[0].y, 80); assert.equal(x.doc.sheets[0].charts[0].y, 100);
- c.protectSheet(); c.commit(sh => { sh.cells.A1.v = 99; }); assert.equal(x.doc.sheets[0].cells.A1.v, 1); c.protectSheet(); c.commit(sh => { sh.cells.A1.v = 3; }); assert.equal(x.doc.sheets[0].cells.A1.v, 3);
+ c.protectSheet(); c.state.dlg.ok({}); c.commit(sh => { sh.cells.A1.v = 99; }); assert.equal(x.doc.sheets[0].cells.A1.v, 1); c.protectSheet(); c.commit(sh => { sh.cells.A1.v = 3; }); assert.equal(x.doc.sheets[0].cells.A1.v, 3);
  c.hideSheet(0); assert.equal(x.doc.active, 1); c.hideSheet(1); assert.equal(x.doc.sheets[1].visibility, undefined); c.hideSheet(0, false); assert.equal(x.doc.sheets[0].visibility, 'visible');
 });
 
@@ -562,4 +597,136 @@ test('conditional expression follows relative references and icon rules show ord
  const x = editor([{ name: 'Data', cells: { A1: { v: '1' }, A2: { v: '5' }, A3: { v: '10' } }, cf: [{ range: 'A1:A3', type: 'expression', value: 'A1>4', fill: '#123456' }, { range: 'A1:A3', type: 'iconSet', iconSet: '3Arrows' }] }]);
  const cells = x.component.renderVals().cells.filter(c => c.gc === '2' && ['2', '3', '4'].includes(c.gr));
  assert.deepEqual(plain(cells.map(c => c.icon)), ['↓', '→', '↑']); assert.notEqual(cells[0].bg, '#123456'); assert.equal(cells[1].bg, '#123456'); assert.equal(cells[2].bg, '#123456');
+});
+
+test('time and custom validation check candidate values, relative references, formulas and required blanks', () => {
+  const x=editor([{name:'Data',cells:{A1:{v:10},B1:{v:2}},dv:[
+    {range:'C1:C3',type:'time',value:'09:00',value2:'17:00'},
+    {range:'A1:A3',type:'custom',value:'AND(A1>0,A1<=$B$1)',allowBlank:false}
+  ]}]), c=x.component;
+  assert.ok(c.dvBad(0,2,'08:00')); assert.equal(c.dvBad(0,2,'09:00'),null);
+  assert.equal(c.dvBad(0,2,'=TIME(12,30,0)'),null); assert.ok(c.dvBad(0,2,'=TIME(18,0,0)'));
+  assert.ok(c.dvBad(0,0,'-3')); assert.equal(c.dvBad(0,0,'2'),null); assert.ok(c.dvBad(0,0,'=1+2'));
+  assert.equal(c.dvBad(2,0,'1'),null); assert.ok(c.dvBad(2,0,'3')); assert.ok(c.dvBad(0,0,''));
+  assert.equal(x.doc.sheets[0].cells.A1.v,10,'validation never changes the document');
+});
+test('validation dialog creates time and custom rules with required values',()=>{
+ const x=editor([{name:'S',cells:{}}]),c=x.component;c.dvSet();const fields=c.state.dlg.fields;
+ const set=(key,value)=>fields.find(f=>f.key===key).value=value;
+ set('t','time');set('v','09:00');set('v2','17:00');set('blank','no');c.dlgOk();
+ assert.equal(x.doc.sheets[0].dv[0].type,'time');assert.equal(x.doc.sheets[0].dv[0].allowBlank,false);assert.ok(c.dvBad(0,0,'08:00'));
+ c.dvSet();c.state.dlg.fields.find(f=>f.key==='t').value='custom';c.state.dlg.fields.find(f=>f.key==='v').value='=A1>0';c.dlgOk();assert.equal(x.doc.sheets[0].dv[0].value,'A1>0');assert.ok(c.dvBad(0,0,'-1'));
+});
+test('name manager creates worksheet-local names and the save bridge writes their scope',()=>{
+ const x=editor([{name:'Data',cells:{}}]),c=x.component;c.nameManager();const fields=c.state.dlg.fields;
+ fields.find(f=>f.key==='scope').value='sheet';fields.find(f=>f.key==='name').value='LocalRate';fields.find(f=>f.key==='ref').value='3';c.dlgOk();
+ assert.equal(x.doc.sheets[0].names.LocalRate,'3');assert.equal(x.doc.names,undefined);assert.equal(new E.Calc(x.doc).evaluate('LocalRate*10'),30);
+});
+
+test('manual areas copy holes without exposing or overwriting unselected cells',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:1},B1:{v:'private'},C1:{v:'=A1+1'},F1:{v:'keep'}}}]),c=x.component;
+ c.selectAreas([{r1:0,c1:0,r2:0,c2:0},{r1:0,c1:2,r2:0,c2:2}]);assert.equal(c.copy(false),'1\t\t2');
+ c.setSel(0,4);c.paste(null);assert.equal(x.doc.sheets[0].cells.E1.v,1);assert.equal(x.doc.sheets[0].cells.F1.v,'keep');assert.equal(x.doc.sheets[0].cells.G1.v,'=E1+1');assert.equal(c.selectionRanges().length,2);assert.equal(x.changed,1);
+});
+test('multi-area paste tiles target rectangles in one history edit',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:7}}}]),c=x.component;c.copy(false);c.selectAreas([{r1:2,c1:2,r2:4,c2:3},{r1:7,c1:0,r2:8,c2:0}]);c.paste(null);
+ for(const a of ['C3','D3','C4','D4','C5','D5','A8','A9'])assert.equal(x.doc.sheets[0].cells[a].v,7);assert.equal(x.doc.sheets[0].cells.A7,undefined);assert.equal(x.changed,1);assert.equal(c.selectionRanges().length,2);
+});
+test('disjoint cut moves references across sheets and keeps references into holes',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:4},B1:{v:5},C1:{v:'=A1+B1'},D1:{v:'=A1+C1'}}},{name:'T',cells:{B3:{v:99}}}]),c=x.component;
+ c.selectAreas([{r1:0,c1:0,r2:0,c2:0},{r1:0,c1:2,r2:0,c2:2}]);c.copy(true);x.doc.active=1;c.setSel(2,0);c.paste(null);
+ assert.equal(x.doc.sheets[0].cells.A1,undefined);assert.equal(x.doc.sheets[0].cells.B1.v,5);assert.equal(x.doc.sheets[0].cells.C1,undefined);assert.equal(x.doc.sheets[0].cells.D1.v,"='T'!A3+'T'!C3");assert.equal(x.doc.sheets[1].cells.C3.v,"=A3+'S'!B1");assert.equal(x.doc.sheets[1].cells.B3.v,99);assert.equal(c.clip,null);assert.equal(x.changed,1);
+});
+test('clipboard copies merged cells and rejects partial merge and protected destinations',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:'merged'},E1:{v:'safe'}},merges:[{r:0,c:0,rs:2,cs:2},{r:0,c:4,rs:1,cs:2}]}]),c=x.component;
+ c.selectAreas([{r1:0,c1:0,r2:1,c2:1}]);c.copy(false);c.setSel(3,2);c.paste(null);assert.deepEqual(plain(x.doc.sheets[0].merges.at(-1)),{r:3,c:2,rs:2,cs:2});
+ c.setSel(0,5);c.paste(null);assert.equal(x.changed,1);assert.match(x.messages.at(-1),/合并单元格/);x.doc.sheets[0].protected=true;c.setSel(8,0);c.paste(null);assert.equal(x.changed,1);
+});
+test('page break commands preserve other print options and form undoable edits',()=>{
+ const x=editor([{name:'S',cells:{},print:{header:'Report'}}]),c=x.component;c.setSel(10,3);c.pageBreak('both');assert.deepEqual(plain(x.doc.sheets[0].print),{header:'Report',rowBreaks:[10],colBreaks:[3]});c.pageBreak('row');assert.equal(x.doc.sheets[0].print.rowBreaks.length,1);c.pageBreak('remove');assert.deepEqual(plain(x.doc.sheets[0].print.rowBreaks),[]);c.pageBreak('both');c.pageBreak('reset');assert.deepEqual(plain(x.doc.sheets[0].print.colBreaks),[]);
+});
+
+test('clipboard preserves dynamic arrays, copies isolated spill values and rejects overwriting part of a spill',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:'=SEQUENCE(3)'},C1:{v:99}}}]),c=x.component;
+ c.setSel(1,0);assert.equal(c.copy(false),'2');c.setSel(0,3);c.paste(null);assert.equal(x.doc.sheets[0].cells.D1.v,2);
+ c.selectAreas([{r1:0,c1:0,r2:2,c2:0}]);c.copy(false);c.setSel(0,4);c.paste(null);assert.equal(new E.Calc(x.doc).value(0,2,4),3);assert.equal(x.doc.sheets[0].cells.E2,undefined);
+ c.selectAreas([{r1:0,c1:0,r2:2,c2:0}]);c.copy(false);c.setSel(0,5);c.paste(null,{mode:'values'});assert.equal(x.doc.sheets[0].cells.F2.v,2);assert.equal(x.doc.sheets[0].cells.F3.v,3);
+ c.setSel(0,2);c.copy(false);c.setSel(1,0);const n=x.changed;c.paste(null);assert.equal(x.changed,n);assert.match(x.messages.at(-1),/起始单元格/);c.copy(true);assert.equal(c.clip,null);
+});
+
+test('literal formula-like text survives structural edits, clipboard and sheet rename',()=>{
+ const x=editor([{name:'Data',cells:{A1:{v:'=A2',literal:true},A2:{v:'=SEQUENCE(100)',literal:true}}}]),c=x.component;
+ c.insDel('r',0,1);assert.equal(x.doc.sheets[0].cells.A2.v,'=A2');assert.equal(x.doc.sheets[0].cells.A3.v,'=SEQUENCE(100)');
+ c.setSel(1,0);c.setState({anc:{r:1,c:0},sel:{r:2,c:0}});c.fillDir('down');assert.equal(x.doc.sheets[0].cells.A3.v,'=A2');
+ assert.equal(new E.Calc(x.doc).evaluate('ISFORMULA(A2)'),false);assert.equal(E.cellStats(x.doc.sheets[0].cells).spills.length,0);
+ let submit;c.prompt=(_,fields,fn)=>submit=fn;c.renameSheet(0);submit({name:'Changed'});assert.equal(x.doc.sheets[0].cells.A2.v,'=A2');
+});
+
+test('protected inputs edit atomically, reject locked cells across sheets and enforce formatting permissions',()=>{
+ const x=editor([{name:'S',protected:true,protection:{formatRows:true},cells:{A1:{v:1,s:{locked:false}},B1:{v:'=A1*2',s:{formulaHidden:true}}}},{name:'Other',protected:true,cells:{A1:{v:5}}}]),c=x.component;
+ c.commit(sh=>{sh.cells.A1.v=2;});assert.equal(x.doc.sheets[0].cells.A1.v,2);
+ c.commit(sh=>{sh.cells.A1.v=3;sh.cells.B1.v=9;});assert.equal(x.doc.sheets[0].cells.A1.v,2);assert.equal(x.changed,1);
+ c.commit((sh,d)=>{sh.cells.A1.v=4;d.sheets[1].cells.A1.v=8;});assert.equal(x.changed,1);
+ c.commit(sh=>{sh.cells.B1.v=9;},true);assert.equal(x.changed,1,'silent is not permission to edit locked values');
+ c.style({b:true});assert.equal(x.changed,1);c.commit(sh=>{sh.rowH={1:40};});assert.equal(x.doc.sheets[0].rowH[1],40);
+ c.setSel(0,1);c.startEdit(null,'bar');assert.equal(c.state.edit,null);assert.equal(c.renderVals().fxValue,'');
+ c.commit(sh=>{sh.showF=true;},true);assert.equal(c.renderVals().cells.find(x=>x.gr==='2'&&x.gc==='3').text,'4');
+ c.copy(false);assert.equal(c.clip.cells[0][0].v,4,'copy hidden formula as its displayed value');
+ c.setSel(0,0);c.paste('7');assert.equal(x.doc.sheets[0].cells.A1.v,'7');assert.equal(x.doc.sheets[0].cells.A1.s.locked,false);
+ c.setState({anc:{r:0,c:0},sel:{r:0,c:1}});c.paste('8\t9');assert.equal(x.doc.sheets[0].cells.A1.v,'7','whole paste rejected');
+ c.setSel(0,0);c.clear('v');assert.equal(x.doc.sheets[0].cells.A1.s.locked,false);assert.equal(x.doc.sheets[0].cells.A1.v,'');
+});
+test('protection dialogs persist cell flags and allow formatting, existing filters and unlocked sorting',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:2},A2:{v:1}},filter:'A1:A2',filters:{}}]),c=x.component;
+ c.setState({anc:{r:0,c:0},sel:{r:1,c:0}});c.cellProtection();c.state.dlg.ok({locked:'no',formulaHidden:'yes'});
+ assert.equal(x.doc.sheets[0].cells.A2.s.locked,false);c.protectSheet();c.state.dlg.ok({formatCells:'yes',sort:'yes',autoFilter:'yes'});
+ c.style({b:true});assert.equal(x.doc.sheets[0].cells.A2.s.b,true);c.sort([{c:0,asc:true}],{header:false});assert.equal(x.doc.sheets[0].cells.A1.v,1);
+ c.setFilters({A:{values:['1']}});assert.deepEqual(plain(x.doc.sheets[0].filters),{A:{values:['1']}});
+ c.style({locked:true});assert.equal(x.doc.sheets[0].cells.A1.s.locked,false);
+ c.protectSheet();assert.equal(x.doc.sheets[0].protected,false);
+});
+test('protection retains cut clipboard on rejected paste and does not remove password protections',()=>{
+ const x=editor([{name:'S',protected:true,protection:{passwordProtected:true},cells:{A1:{v:1,s:{locked:false}},B1:{v:2}}}]),c=x.component;
+ c.copy(true);c.setSel(0,1);c.paste(null);assert.ok(c.clip?.cut);assert.equal(x.changed,0);assert.equal(x.doc.sheets[0].cells.A1.v,1);
+ c.protectSheet();assert.equal(x.changed,0);assert.equal(x.doc.sheets[0].protected,true);assert.equal(c.state.dlg.fields[0].type,'password');
+});
+
+test('password dialogs verify before mutation, retain hashes for undo and abort a stale asynchronous result',async()=>{
+ const x=editor([{name:'S',cells:{A1:{v:7}}}]),c=x.component,verifier={password:'83AF'};
+ c.EN={sheetPassword:async(password,hash)=>hash?{valid:password==='password'}:verifier};
+ c.protectSheet();await c.state.dlg.ok({password:'password',confirm:'wrong'});assert.equal(x.changed,0);
+ c.protectSheet();await c.state.dlg.ok({password:'password',confirm:'password',formatRows:'yes'});
+ const locked=x.doc;assert.equal(locked.sheets[0].protected,true);assert.deepEqual(plain(locked.sheets[0].protection.verifier),verifier);assert.ok(!JSON.stringify(locked).includes('"password":"password"'));
+ c.protectSheet();await c.state.dlg.ok({password:'wrong'});assert.equal(x.changed,1);assert.match(x.messages.at(-1),/密码不正确/);
+ c.protectSheet();await c.state.dlg.ok({password:'password'});assert.equal(x.changed,2);assert.equal(x.doc.sheets[0].protected,false);assert.equal(x.doc.sheets[0].protection.verifier,null);assert.equal(locked.sheets[0].protected,true);
+ let resolve;c.EN.sheetPassword=()=>new Promise(r=>resolve=r);c.protectSheet();const pending=c.state.dlg.ok({password:'password',confirm:'password'});c.commit(sh=>{sh.cells.A1.v=8;});resolve(verifier);await pending;
+ assert.equal(x.doc.sheets[0].protected,false);assert.equal(x.doc.sheets[0].cells.A1.v,8);assert.match(x.messages.at(-1),/工作表已变化/);
+});
+test('whole-line protection remains sparse, inherited blank cells edit, and structural permissions keep references correct',()=>{
+ const x=editor([{name:'S',cells:{A1:{v:7},B1:{v:9}}},{name:'Other',protected:true,cells:{A1:{v:'=S!A1'}}}]),c=x.component;
+ c.setState({anc:{r:0,c:0},sel:{r:0,c:c.nCols-1}});c.cellProtection();c.state.dlg.ok({locked:'no',formulaHidden:'no'});
+ assert.equal(Object.keys(x.doc.sheets[0].cells).length,2);assert.equal(E.cellProtection(x.doc.sheets[0],'XFD1').locked,false);assert.equal(E.cellProtection(x.doc.sheets[0],'A2').locked,true);
+ c.commit(sh=>{sh.protected=true;sh.protection={insertRows:true,deleteRows:true,insertColumns:false};},false,true);c.setSel(0,2);
+ c.commit(sh=>c.setCellRaw(sh,0,2,'typed'));assert.equal(x.doc.sheets[0].cells.C1.v,'typed');c.setSel(1,0);c.commit(sh=>c.setCellRaw(sh,1,0,'blocked'));assert.equal(x.doc.sheets[0].cells.A2,undefined);
+ c.insDel('c',0,1);assert.equal(x.doc.sheets[0].cells.A1.v,7);
+ c.insDel('r',0,1);assert.equal(x.doc.sheets[0].cells.A2.v,7);assert.equal(x.doc.sheets[1].cells.A1.v,'=S!A2');assert.equal(E.cellProtection(x.doc.sheets[0],'XFD2').locked,false);
+ c.insDel('r',1,-1);assert.equal(x.doc.sheets[0].cells.A2,undefined);assert.equal(x.doc.sheets[1].cells.A1.v,'=#REF!');
+ const before=x.changed;c.insDel('r',2,-1);assert.equal(x.changed,before);assert.match(x.messages.at(-1),/锁定单元格/);
+});
+test('column protection reaches unmaterialized far rows and explicit row/cell defaults win',()=>{
+ const sh={name:'S',cells:{A1:{v:1}}};E.setAxisProtection(sh,'c',0,0,{locked:false,formulaHidden:false});sh.protected=true;
+ assert.equal(E.cellLocked(sh,'A1048576'),false);assert.equal(E.areaHasLocked(sh,{r1:0,r2:1048575,c1:0,c2:0}),false);
+ E.setAxisProtection(sh,'r',3,3,{locked:true,formulaHidden:false});assert.equal(E.cellLocked(sh,'A4'),true);assert.equal(E.areaHasLocked(sh,{r1:0,r2:1048575,c1:0,c2:0}),true);
+ sh.cells.A4={v:'',s:{locked:false}};assert.equal(E.areaHasLocked(sh,{r1:0,r2:1048575,c1:0,c2:0}),false);
+ E.shiftStyleDefaults(sh,'c',0,1);assert.equal(E.cellLocked(sh,'B1048576'),false);assert.equal(E.cellLocked(sh,'B4'),true);
+ assert.equal(Object.keys(sh.cells).length,2);
+});
+test('selection restrictions cover name box, multiple areas, headers and keyboard skips locked cells',()=>{
+ const x=editor([{name:'S',protected:true,protection:{selectLockedCells:false,selectUnlockedCells:true},cells:{A1:{v:1,s:{locked:false}},D1:{v:2,s:{locked:false}},A70:{v:3,s:{locked:false}}}}]),c=x.component;
+ c.setSel(0,1);assert.equal(c.act().c,0);c.goName('B2');assert.deepEqual(plain(c.act()),{r:0,c:0});
+ c.selectAreas([{r1:0,r2:0,c1:0,c2:1}]);assert.equal(c.rng().c2,0);
+ c.move(0,1);assert.equal(c.act().c,3);c.move(0,-1);assert.equal(c.act().c,0);c.move(1,0);assert.equal(c.act().r,69);c.setSel(0,0);c.hidden=new Set([69]);c.move(1,0);assert.equal(c.act().r,0);c.hidden.clear();c.move(1,0);assert.equal(c.act().r,69);
+ const values=c.renderVals();values.colHeads[0].onMD({button:0,preventDefault(){}});assert.equal(c.rng().r1,69);assert.equal(c.rng().r2,69);
+ assert.equal(E.selectionAllowed(x.doc.sheets[0],[{r1:0,r2:69,c1:0,c2:0}]),false);
+ x.doc.sheets[0].protection={selectLockedCells:true,selectUnlockedCells:false};c.setSel(0,1);assert.equal(c.act().c,1);c.setSel(0,0);assert.equal(c.act().c,1);
 });

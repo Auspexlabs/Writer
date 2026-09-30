@@ -1,3 +1,5 @@
+import { customPaperCm } from './word-pages.js';
+import { lineNumbersHtml } from './word-line-numbers.js';
 import { marginsCm } from './office-io.js';
 const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const cssText = style => Array.from(style).map(k => `${k}:${style.getPropertyValue(k)}`).join(';');
@@ -7,10 +9,10 @@ export function wordPrint(editor) {
   const sheet = ed.parentElement, rect = sheet.getBoundingClientRect(), W = rect.width / zoom;
   const margins = marginsCm(pg.margin).map(v => v * 96 / 2.54), [mt, mr, mb, ml] = margins;
   const sizes = { A4: [793.7,1122.52], A3: [1122.52,1587.4], A5: [559.37,793.7], B5: [665.2,944.88], Letter: [816,1056], Legal: [816,1344] };
-  const sz = sizes[pg.size] || sizes.A4, H = pg.orient === 'landscape' ? sz[0] : sz[1];
+  const sz = sizes[pg.size] || customPaperCm(pg.size)?.map(v=>v*96/2.54) || sizes.A4, H = pg.orient === 'landscape' ? sz[0] : sz[1];
   const count = editor.state.info.pages, gap = 20;
   // Use the editor's real physical spacing, rather than assuming rounded paper dimensions.
-  const paper = Array.from(sheet.children).filter(e => e.style.pointerEvents === 'none' && parseFloat(e.style.height) > 500);
+  const paper = Array.from(sheet.children).filter(e => e.style.pointerEvents === 'none' && parseFloat(e.style.height) > 0 && e.querySelector('.wd-page-border'));
   const actualH = paper[0] ? parseFloat(paper[0].style.height) : H, actualStep = paper[1] ? parseFloat(paper[1].style.top) : actualH + gap;
   const styleRules = [];
   for (const style of document.styleSheets) { try { for (const rule of style.cssRules) if (/wd-|data-pg|data-fnpg|katex|@font-face|@counter-style|wfont/.test(rule.cssText)) styleRules.push(rule.cssText); } catch {} }
@@ -21,20 +23,25 @@ export function wordPrint(editor) {
   const kids = Array.from(ed.children).map((el, index) => { const r = el.getBoundingClientRect(); return { el, index, top: (r.top - box.top) / zoom, bottom: (r.bottom - box.top) / zoom, left: (r.left - box.left) / zoom, width: r.width / zoom }; });
   const parts = [], meta = editor.sectionPages();
   for (let i = 0; i < count; i++) {
-    const y = i * actualStep, p = meta[i] || editor.pageMeta(i);
-    const root = ed.cloneNode(false); root.removeAttribute('contenteditable'); root.style.cssText = bodyStyle;
-    Object.assign(root.style, { position: 'absolute', top: mt + 'px', left: ml + 'px', width: ed.offsetWidth + 'px', height: actualH - mt - mb + 'px', minHeight: '0', overflow: 'hidden', margin: '0', padding: '0', opacity: '1', zoom: '1', display: 'block' });
+    const geometry = editor.pageBoxes?.[i], y = geometry?.y ?? i * actualStep, p = meta[i] || editor.pageMeta(i);
+    const pageW = geometry?.w || W, pageH = geometry?.h || actualH, pm = geometry?.m || {top:mt,right:mr,bottom:mb,left:ml}, contentW = geometry?.contentW || ed.offsetWidth, contentH = geometry?.contentH || pageH - mt - mb, dx = geometry ? geometry.left + pm.left - ml : 0;
+    const root = ed.cloneNode(false); root.removeAttribute('contenteditable'); root.style.cssText = bodyStyle; root.style.maskImage = 'none';
+    Object.assign(root.style, { position: 'absolute', top: pm.top + 'px', left: pm.left + 'px', width: contentW + 'px', height: contentH + 'px', minHeight: '0', overflow: 'hidden', margin: '0', padding: '0', opacity: '1', zoom: '1', display: 'block' });
     for (const k of kids) {
-      if (k.bottom <= y || k.top >= y + actualH - mt - mb) continue;
+      if (k.bottom <= y || k.top >= y + contentH) continue;
       const c = k.el.cloneNode(true); c.setAttribute('data-print-index', k.index + 1);
-      Object.assign(c.style, { position: 'absolute', top: k.top - y + 'px', left: k.left + 'px', width: k.width + 'px', boxSizing: 'border-box' }); c.style.setProperty('margin', '0', 'important');
+      Object.assign(c.style, { position: 'absolute', top: k.top - y + 'px', left: k.left - dx + 'px', width: k.width + 'px', boxSizing: 'border-box' }); c.style.setProperty('margin', '0', 'important');
       c.removeAttribute('contenteditable'); c.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable')); root.append(c);
     }
-    const hf = kind => { const key = editor.hfKey(kind, i), html = String(p.section[key] || '').replace(/\{page\}/g, p.label).replace(/\{pages\}/g, count); return `<div class="wd-hf print-${kind}" style="position:absolute;left:${ml}px;right:${mr}px;${kind === 'header' ? 'top:' + Math.max(0, mt / 2 - 10) : 'bottom:' + Math.max(0, mb / 2 - 10)}px">${html}</div>`; };
-    const notes = Array.from(editor.fnRef.current?.querySelectorAll(':scope > .wd-fn-area') || []).filter(n => Math.abs(parseFloat(n.style.top) - (y + actualH - mb)) < 2).map(n => { const c = n.cloneNode(true); c.style.top = actualH - mb + 'px'; c.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable')); return c.outerHTML; }).join('');
+    const hf = kind => { const key = editor.hfKey(kind, i), html = String(p.section[key] || '').replace(/\{page\}/g, p.label).replace(/\{pages\}/g, count); return `<div class="wd-hf print-${kind}" style="position:absolute;left:${pm.left}px;right:${pm.right}px;${kind === 'header' ? 'top:' + Math.max(0, pm.top / 2 - 10) : 'bottom:' + Math.max(0, pm.bottom / 2 - 10)}px">${html}</div>`; };
+    const notes = Array.from(editor.fnRef.current?.querySelectorAll(':scope > .wd-fn-area') || []).filter(n => Math.abs(parseFloat(n.style.top) - (geometry ? geometry.top + pageH - pm.bottom : y + actualH - mb)) < 2).map(n => { const c = n.cloneNode(true); c.style.top = pageH - pm.bottom + 'px'; c.style.left = pm.left + 'px'; c.style.setProperty('--fn-w',contentW+'px'); c.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable')); return c.outerHTML; }).join('');
+    const numbers=editor.doc?.lineNumbers?`<div class="wd-line-numbers" style="position:absolute;left:${pm.left}px;top:${pm.top}px">${lineNumbersHtml((editor.lineNumberRows||[]).filter(l=>l.y>=y&&l.y<y+contentH).map(l=>({...l,x:l.x-dx,y:l.y-y})))}</div>`:'';
+    const repeated=(editor.repeatedHeaders||[]).filter(r=>r.y>=y&&r.y<y+contentH).map(r=>`<div class="wd-ed wd-repeat-header" style="position:absolute;left:${pm.left+r.x-dx}px;top:${pm.top+r.y-y}px;width:${r.width}px;font-size:11pt;line-height:1.8">${r.html}</div>`).join('');
     const watermark = pg.wm ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none"><span style="font:64px serif;color:rgba(128,128,128,.18);transform:rotate(-35deg)">${esc(pg.wm)}</span></div>` : '';
-    parts.push(`<section class="writer-print-page" style="width:${W}px;height:${actualH}px;background:${/^#[0-9a-f]{6}$/i.test(pg.color) ? pg.color : '#fff'}">${paper[i]?.querySelector('.wd-page-border')?.outerHTML || ''}${watermark}${root.outerHTML}${hf('header')}${hf('footer')}<div class="wd-fnotes" data-fnpg="${editor.pgId}" style="--fn-w:${ed.offsetWidth}px">${notes}</div></section>`);
+    parts.push(`<section class="writer-print-page" style="page:writer-page-${i};width:${pageW}px;height:${pageH}px;background:${/^#[0-9a-f]{6}$/i.test(pg.color) ? pg.color : '#fff'}">${paper[i]?.querySelector('.wd-page-border')?.outerHTML || ''}${watermark}${root.outerHTML}${numbers}${repeated}${hf('header')}${hf('footer')}<div class="wd-fnotes" data-fnpg="${editor.pgId}" style="--fn-w:${contentW}px">${notes}</div></section>`);
+    css += `\n@page writer-page-${i}{size:${pageW}px ${pageH}px;margin:0}`;
   }
   css += `\n@page{size:${W}px ${actualH}px;margin:0}html,body{margin:0;padding:0;background:white;color:#1d1d1f}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.writer-print-page{position:relative;overflow:hidden;break-after:page;box-sizing:border-box}.writer-print-page:last-child{break-after:auto}.wd-ed [data-w-sectionbreak]::after,.wd-ed hr[data-pb]::after{display:none!important}.wd-ed a{color:inherit}.wd-hf{font-size:12px}.wd-fnotes{position:absolute;inset:0;pointer-events:none}.wd-fn-bin{display:none!important}`;
+  css += '\n.wd-ed span[data-control]{background:transparent!important;border-bottom-color:transparent!important}';
   return { css, body: parts.join('') };
 }

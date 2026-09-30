@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-09-28T03:25:14.764Z",
+  "uiRoot": "/Users/hongjiazhao/Desktop/Projects/Writer/ui",
+  "result": {
+    "header": "<p style=\"text-align:left\">After</p><div data-w-hf-table=\"1\" contenteditable=\"false\"><table style=\"table-layout:fixed;\">\n<colgroup><col style=\"width:8.82cm\"></colgroup>\n<tbody><tr><td style=\"width:333.4px\">TABLE_SENTINEL</td></tr>\n</tbody></table>\n</div>",
+    "redPixels": 2472,
+    "redHeight": 48,
+    "rotated": [
+      255,
+      0,
+      0,
+      255
+    ],
+    "vacated": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "numbering": [
+      "III.",
+      "IV."
+    ]
+  },
+  "errors": []
+}

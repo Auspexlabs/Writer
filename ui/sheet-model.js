@@ -88,7 +88,7 @@ export function isSpillFormula(text) {
   if(text.includes('[@')||/#This Row/i.test(text)){
     let probe='',start=0,i=0;while(i<text.length){if(text[i]!=='['){i++;continue;}let end=i,depth=0;for(;end<text.length;end++){if(text[end]==="'"&&/[\[\]#@']/.test(text[end+1]||'')){end++;continue;}if(text[end]==='[')depth++;else if(text[end]===']'&&--depth===0)break;}const token=text.slice(i,end+1);probe+=text.slice(start,i)+(/\[@|#This Row/i.test(token)?'1':token);i=end+1;start=i;}text=probe+text.slice(start);
   }
-  return /[\[{:;]|\b(?:SEQUENCE|FILTER|SORT|SORTBY|UNIQUE|TRANSPOSE|TEXTSPLIT|HSTACK|VSTACK|TAKE|DROP|CHOOSECOLS|CHOOSEROWS|REGEXEXTRACT|TREND|GROWTH|FREQUENCY)\s*\(|^=[A-Za-z_]+$/i.test(text);
+  return /[\[{:;]|\b(?:MAP|SCAN|BYROW|BYCOL|MAKEARRAY|TOCOL|TOROW|WRAPROWS|WRAPCOLS|EXPAND|SEQUENCE|FILTER|SORT|SORTBY|UNIQUE|TRANSPOSE|TEXTSPLIT|HSTACK|VSTACK|TAKE|DROP|CHOOSECOLS|CHOOSEROWS|REGEXEXTRACT|LINEST|LOGEST|TREND|GROWTH|FREQUENCY)\s*\(|^=[A-Za-z_]+$/i.test(text);
 }
 const PART_STATS = new WeakMap(), MAP_STATS = new WeakMap();
 export function cellStats(cells) {
@@ -104,7 +104,7 @@ export function cellStats(cells) {
         const r = +m[2] - 1; let c = 0; for (const ch of m[1].toUpperCase()) c = c * 26 + ch.charCodeAt(0) - 64; c--;
         if (r >= 1048576 || c >= 16384) continue;
         stat.count++; stat.rows = Math.max(stat.rows, r + 1); stat.cols = Math.max(stat.cols, c + 1);
-        const x = part[a]; if (x?.s?.wrap) stat.wrapped.push(a); if (x && isSpillFormula(x.v)) stat.spills.push(a); if (x && x.v !== '' && x.v != null) stat.used = include(stat.used, r, c, r, c);
+        const x = part[a]; if (x?.s?.wrap) stat.wrapped.push(a); if (x && !x.literal && isSpillFormula(x.v)) stat.spills.push(a); if (x && x.v !== '' && x.v != null) stat.used = include(stat.used, r, c, r, c);
       }
       if (META.has(cells)) PART_STATS.set(part, stat);
     }

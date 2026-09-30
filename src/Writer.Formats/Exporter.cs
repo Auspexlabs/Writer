@@ -337,8 +337,8 @@ public static class Exporter
     public static List<RunSpec> RunsOf(Node block)
     {
         var runs = block.Children.Where(c => c.Kind == "run").Select(RunSpecOf).Where(r => !r.Deleted).ToList();
-        var cites = block.Children.Where(c => c.Kind == "citation").Select(c => c.GetProps())
-            .Select(p => (At: int.TryParse(p.GetValueOrDefault("at"), out var at) ? at : int.MaxValue, Runs: InlineHtml.Parse(p.GetValueOrDefault("html") ?? "").ToList()))
+        var cites = block.Children.Where(c => c.Kind is "citation" or "control").Select(c => c.GetProps())
+            .Select(p => (At: int.TryParse(p.GetValueOrDefault("at"), out var at) ? at : int.MaxValue, Runs: InlineHtml.Parse(p.GetValueOrDefault("html") ?? InlineHtml.Esc(p.GetValueOrDefault("text")??"")).ToList()))
             .OrderBy(x => x.At).ToList();
         if (cites.Count == 0) return runs;
         var spliced = new List<RunSpec>();

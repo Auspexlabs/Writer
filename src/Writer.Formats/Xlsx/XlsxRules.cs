@@ -30,6 +30,7 @@ static class XlsxRules
                 w.WriteString("range", range);
                 var type = r.Type?.InnerText ?? "expression";
                 w.WriteString("type", type);
+                if (r.StopIfTrue?.Value == true) w.WriteBoolean("stopIfTrue", true);
                 if (r.Operator?.InnerText is { } op && type == "cellIs") w.WriteString("operator", op);
                 var formulas = r.Elements<Formula>().Select(f => f.Text).ToList();
                 if (r.Text?.Value is { } text) w.WriteString("text", text);
@@ -111,6 +112,8 @@ static class XlsxRules
                 if (!CfTypes.Contains(type))
                     throw new WriterException(ErrorCode.Validation, $"cf: '{type}' is not a rule type", "Types: " + string.Join(", ", CfTypes) + ".");
                 var rule = new ConditionalFormattingRule { Type = new ConditionalFormatValues(type), Priority = priority++ };
+                if (Num(e, "priority") is { } explicitPriority && explicitPriority > 0) rule.Priority = (int)explicitPriority;
+                if (Bool(e, "stopIfTrue")) rule.StopIfTrue = true;
                 string value = Str(e, "value") ?? "", text = Str(e, "text") ?? "";
                 var value2 = Str(e, "value2");
                 switch (type)

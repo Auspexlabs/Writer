@@ -25,6 +25,7 @@ sealed class PptxRoot(PptxDocument doc) : Node
             ["format"] = "pptx",
             ["slides"] = doc.Slides.Count.ToString(CultureInfo.InvariantCulture),
             ["layouts"] = PptxLayouts.Read(doc),
+            ["customShows"] = PptxCustomShows.Read(doc),
             ["width"] = width.ToString(CultureInfo.InvariantCulture),
             ["height"] = height.ToString(CultureInfo.InvariantCulture),
         };
@@ -41,6 +42,8 @@ sealed class PptxRoot(PptxDocument doc) : Node
             case "title": doc.Package.PackageProperties.Title = value.Length > 0 ? value : null; break;
             case "palette": PptxDesign.ApplyPalette(doc, PptxTemplate.FindPalette(value)!); break;
             case "fonts": PptxDesign.SetFonts(doc, value); break;
+            case "customShows": PptxCustomShows.Write(doc,value); break;
+            case "replaceFont": PptxFontReplace.Apply(doc, value); break;
             case "width" or "height":
                 var length = Units.ParseLength(value);
                 if (length <= 0 || length > 51206400) throw new WriterException(ErrorCode.Validation, "Slide dimensions must be between 0 and 56 inches", "Use a positive slide width or height.");
@@ -195,6 +198,8 @@ sealed class PptxSlide(PptxDocument doc, SlidePart slide) : Node
     {
         switch (name)
         {
+            case "chartData": PptxCharts.Write(doc, slide, value); break;
+            case "smartArtData": PptxCharts.SmartArt(doc, slide, value); break;
             case "title":
                 var title = TitleShape() ?? AddTitleShape();
                 PptxText.SetBody(title.TextBody ??= new P.TextBody(new A.BodyProperties(), new A.ListStyle()), slide, [new RunSpec(value)]);
@@ -373,6 +378,7 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
         if (shape.NonVisualShapeProperties?.NonVisualShapeDrawingProperties?.TextBox?.Value == true) props["geometry"] = "textbox";
         else if (shape.ShapeProperties?.GetFirstChild<A.PresetGeometry>()?.Preset?.InnerText is { } preset) props["geometry"] = preset;
         else if (shape.ShapeProperties?.GetFirstChild<A.CustomGeometry>() is not null) props["geometry"] = "custom";
+        if (PptxFreeform.Read(shape.ShapeProperties) is { } freeform) props["pathData"] = freeform;
         var xfrm = shape.ShapeProperties?.Transform2D ?? InheritedTransform();
         AddBox(props, xfrm?.Offset?.X?.Value, xfrm?.Offset?.Y?.Value, xfrm?.Extents?.Cx?.Value, xfrm?.Extents?.Cy?.Value);
         T.Apply(props);
@@ -398,6 +404,7 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
         if (Nv?.Name?.Value is { Length: > 0 } name) props["name"] = name;
         if (Nv?.Id?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
         if (props["text"].Trim().Length > 0 && PptxDesign.Overflows(shape, Box(shape, slide), SizePt(props))) props["overflow"] = "true";
+        PptxObjectState.Read(shape, props);
         return props;
     }
 
@@ -455,6 +462,7 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
 
     public override void SetProp(string name, string value)
     {
+        if (PptxObjectState.Set(shape, name, value)) return;
         var spPr = shape.ShapeProperties ??= new P.ShapeProperties();
         if ((name is "rotation" or "flipH" or "flipV") && spPr.Transform2D is null) Materialise(spPr);
         if (PptxOutline.Set(spPr, name, value)) return;
@@ -484,6 +492,7 @@ sealed class PptxShape(PptxDocument doc, SlidePart slide, P.Shape shape) : Node
                 if (spPr.Transform2D is { } xfrm) spPr.InsertAfter(geometry, xfrm);
                 else spPr.PrependChild(geometry);
                 break;
+            case "pathData": PptxFreeform.Write(shape, value); break;
             case "x" or "y" or "w" or "h":
                 var transform = spPr.Transform2D ?? Materialise(spPr);
                 PptxOutline.SetBox(transform.Offset!, transform.Extents!, name, value, T);
@@ -785,7 +794,8 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
 
     protected override void OwnProps(Dictionary<string, string> props)
     {
-        if (PptxMedia.Reference(part, picture)?.DataPart is { } media) props["mediaType"] = media.ContentType.StartsWith("video/", StringComparison.Ordinal) ? "video" : "audio";
+        PptxObjectState.Read(picture, props);
+        if (PptxMedia.Reference(part, picture)?.DataPart is { } media) { props["mediaType"] = media.ContentType.StartsWith("video/", StringComparison.Ordinal) ? "video" : "audio"; props["playback"] = PptxMedia.ReadPlayback(part, picture); props["captions"]=PptxCaptions.Read(part,picture); }
         var xfrm = picture.ShapeProperties?.Transform2D;
         PptxShape.AddBox(props, xfrm?.Offset?.X?.Value, xfrm?.Offset?.Y?.Value, xfrm?.Extents?.Cx?.Value, xfrm?.Extents?.Cy?.Value);
         T.Apply(props);
@@ -823,7 +833,7 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
         var id = PptxDocument.NextShapeId(slide);
         var pic = new P.Picture(
             new P.NonVisualPictureProperties(
-                new P.NonVisualDrawingProperties { Id = id, Name = name, Description = props.GetValueOrDefault("alt") is { Length: > 0 } alt ? alt : null },
+                new P.NonVisualDrawingProperties { Id = id, Name = name, Description = props.GetValueOrDefault("alt") is { Length: > 0 } alt ? new StringValue(alt) : null },
                 new P.NonVisualPictureDrawingProperties(new A.PictureLocks { NoChangeAspect = true }),
                 new P.ApplicationNonVisualDrawingProperties()),
             new P.BlipFill(new A.Blip { Embed = relId }, new A.Stretch(new A.FillRectangle())),
@@ -846,11 +856,16 @@ sealed class PptxImage(PptxDocument doc, OpenXmlPart part, P.Picture picture) : 
 
     protected override void SetOwnProp(string name, string value)
     {
+        if (PptxObjectState.Set(picture, name, value)) return;
         switch (name)
         {
             case "x" or "y" or "w" or "h":
                 var xfrm = Transform();
                 PptxOutline.SetBox(xfrm.Offset!, xfrm.Extents!, name, value, T);
+                break;
+            case "captions": PptxCaptions.Write(part,picture,value);break;
+            case "playback":
+                if (part is SlidePart playbackSlide) PptxMedia.WritePlayback(playbackSlide, picture, value);
                 break;
             case "media":
                 if (part is SlidePart slidePart) PptxMedia.Attach(doc, slidePart, picture, value);
@@ -921,6 +936,7 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
         var nv = frame.NonVisualGraphicFrameProperties?.NonVisualDrawingProperties;
         if (nv?.Name?.Value is { Length: > 0 } name) props["name"] = name;
         if (nv?.Id?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
+        PptxObjectState.Read(frame, props);
         return props;
     }
 
@@ -1066,6 +1082,7 @@ sealed class PptxTable(PptxDocument doc, SlidePart slide, P.GraphicFrame frame) 
 
     public override void SetProp(string name, string value)
     {
+        if (PptxObjectState.Set(frame, name, value)) return;
         switch (name)
         {
             case "rows": SetRowCount(frame, int.Parse(value, CultureInfo.InvariantCulture)); break;

@@ -18,7 +18,7 @@ test('page breaks: tree → block → html', () => {
 test('pageOf maps engine props to the editor page: the panel\'s papers and margin presets, custom margins as the engine prints them, other sizes kept in raw', () => {
   assert.deepEqual(EN.pageOf({ page: 'Letter', orientation: 'landscape', margin: 'moderate', columns: '2' }), { size: 'Letter', orient: 'landscape', margin: 'moderate', cols: 2, color: '', wm: '', raw: { size: 'Letter', margin: 'moderate' } });
   assert.deepEqual(EN.pageOf({ page: 'Legal', margin: '2cm 1cm 2cm 1cm' }), { size: 'Legal', orient: 'portrait', margin: '2cm 1cm 2cm 1cm', cols: 1, color: '', wm: '', raw: { size: 'Legal', margin: '2cm 1cm 2cm 1cm' } });
-  assert.deepEqual(EN.pageOf({ page: '18.4cm x 26cm', margin: 'mirrored' }), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, color: '', wm: '', raw: { size: '18.4cm x 26cm', margin: 'mirrored' } });
+  assert.deepEqual(EN.pageOf({ page: '18.4cm x 26cm', margin: 'mirrored' }), { size: '18.4cm x 26cm', orient: 'portrait', margin: 'normal', cols: 1, color: '', wm: '', raw: { size: '18.4cm x 26cm', margin: 'mirrored' } });
   assert.deepEqual(EN.pageOf(undefined), { size: 'A4', orient: 'portrait', margin: 'normal', cols: 1, color: '', wm: '', raw: { size: '', margin: '' } });
 });
 

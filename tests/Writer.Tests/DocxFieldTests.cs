@@ -9,9 +9,60 @@ namespace Writer.Tests;
 
 public class DocxFieldTests
 {
+    [Fact] public void Bookmarked_table_references_use_live_values_and_cross_table_dependencies()
+    {
+        using var doc=new DocxAdapter().Create();var body=doc.Root.Children.Single();
+        var source=Mutations.Add(body,"table",P(("data","[[3,4],[5,0]]")),null);
+        source.Children[1].Children[1].SetProp("html","<span data-field='=PRODUCT(R1)'>0</span>");
+        var table=(W.Table)source.Anchor;
+        table.Descendants<W.Paragraph>().First().PrependChild(new W.BookmarkStart{Id="90",Name="Sales"});
+        table.Descendants<W.Paragraph>().Last().Append(new W.BookmarkEnd{Id="90"});
+        var output=Mutations.Add(body,"table",P(("data","[[0]]")),null);
+        output.Children[0].Children[0].SetProp("html","<span data-field='=SUM(Sales R1C1:R2C2)'>0</span>");
+        doc.Root.SetProp("fields","all");using var reopened=Reopen(doc);Valid(reopened);
+        Assert.Equal(new[]{"12","24"},((DocxDocument)reopened).Main.Document!.Descendants<W.SimpleField>().Select(f=>f.InnerText));
+        source.Children[0].Children[0].SetProp("text","6");doc.Root.SetProp("fields","all");
+        Assert.Equal("39",output.Children[0].Children[0].GetProps()["text"]);
+    }
     static Dictionary<string, string> P(params (string, string)[] pairs) => pairs.ToDictionary(x => x.Item1, x => x.Item2);
     static Document Reopen(Document doc) { var ms = new MemoryStream(); doc.Save(ms); return OpenDocx(ms.ToArray()); }
     static void Valid(Document doc) => Assert.Empty(new OpenXmlValidator(FileFormatVersions.Office2013).Validate(((DocxDocument)doc).Package).Select(e => e.Description));
+
+    [Fact] public void Formulas_use_bookmark_values_and_defined_names_after_reopen()
+    {
+        using var doc=new DocxAdapter().Create();var body=doc.Root.Children.Single();
+        Mutations.Add(body,"paragraph",P(("text","1250"),("bookmark","Total")),null);
+        var table=Mutations.Add(body,"table",P(("data","[[0,0]]")),null);
+        table.Children[0].Children[0].SetProp("html","<span data-field='=Total*20%'>0</span>");
+        table.Children[0].Children[1].SetProp("html","<span data-field='=IF(DEFINED(Total),SUM(R),0)'>0</span>");
+        doc.Root.SetProp("fields","all");using var reopened=Reopen(doc);Valid(reopened);Assert.Equal(new[]{"250","250"},((DocxDocument)reopened).Main.Document!.Descendants<W.SimpleField>().Select(f=>f.InnerText));
+    }
+    [Fact]
+    public void Table_formulas_are_real_fields_recalculate_dependencies_and_keep_number_format_on_reopen()
+    {
+        using var doc = new DocxAdapter().Create(); var body=doc.Root.Children.Single();
+        var table=Mutations.Add(body,"table",P(("data","[[20,3,0],[10,2,0],[0,0,0]]")),null);
+        var formulas=new[]{(0,2,"=A1*B1"),(1,2,"=PRODUCT(LEFT)"),(2,0,"=SUM(ABOVE) \\# \"0.00\""),(2,2,"=SUM(C1:C2)")};
+        foreach(var (r,c,f) in formulas) Mutations.Set(table.Children[r].Children[c],P(("html","<span data-field='"+f+"'>0</span>")));
+        Mutations.Set(doc.Root,P(("fields","all")));
+        Assert.Equal(new[]{"60","20","30.00","80"},formulas.Select(x=>table.Children[x.Item1].Children[x.Item2].GetProps()["text"]));
+        Mutations.Set(table.Children[0].Children[0],P(("text","40")));Mutations.Set(doc.Root,P(("fields","all")));
+        using var back=Reopen(doc);Valid(back);var native=((DocxDocument)back).Main.Document!.Body!;
+        Assert.Equal(new[]{"120","20","50.00","140"},native.Descendants<W.SimpleField>().Select(f=>f.InnerText));
+        Assert.Contains("SUM(ABOVE)",native.OuterXml);Assert.Contains("data-field",back.Root.Children.Single().Children.First(n=>n.Kind=="table").Children[2].Children[0].GetProps()["html"]);
+    }
+
+    [Fact]
+    public void Editing_or_removing_a_formula_replaces_the_instruction_without_nesting_or_resurrection()
+    {
+        using var doc=new DocxAdapter().Create();var table=Mutations.Add(doc.Root.Children.Single(),"table",P(("data","[[2,3,0]]")),null);var cell=table.Children[0].Children[2];
+        Mutations.Set(cell,P(("html","<span data-field='=SUM(LEFT)'>5</span>")));
+        Mutations.Set(cell,P(("html","<span data-field='=PRODUCT(LEFT)'>6</span>")));
+        Mutations.Set(doc.Root,P(("fields","all")));Assert.Equal("6",cell.GetProps()["text"]);
+        Assert.Single(((W.TableCell)cell.Anchor).Descendants<W.SimpleField>());
+        Mutations.Set(cell,P(("html","")));Mutations.Set(doc.Root,P(("fields","all")));
+        Assert.Empty(((W.TableCell)cell.Anchor).Descendants<W.SimpleField>());Assert.Equal("",cell.GetProps()["text"]);Valid(doc);
+    }
 
     [Fact]
     public void Chapter_captions_reset_and_figures_directory_contains_only_its_label()

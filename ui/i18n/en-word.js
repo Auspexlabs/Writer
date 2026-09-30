@@ -1,5 +1,7 @@
 // English UI text, keyed by the Chinese source string (rules in ui/i18n.js). Loaded only when the UI is in English.
 Object.assign(window.I18N_EN = window.I18N_EN || {}, {
+  '高级查找':'Advanced Find','清除查找条件':'Clear Search Options','查找表达式无效':'Invalid search expression','使用通配符（?、*、[a-z]、@、{n,m}、()）':'Use wildcards (?, *, [a-z], @, {n,m}, ())','字体（留空不限）':'Font (blank for any)','字号（pt，留空不限）':'Size (pt, blank for any)','不限':'Any',
+  '计算':'Calculate','表格公式':'Table Formula','更新表格公式':'Update Table Formulas','公式（如 =SUM(ABOVE)、=SUM(LEFT)、=A1*B1）':'Formula (e.g. =SUM(ABOVE), =SUM(LEFT), =A1*B1)','公式无效：{error}':'Invalid formula: {error}',
   '中文': 'Chinese', '西文': 'Latin', '中文字体': 'Chinese Font', '西文字体': 'Latin Font',
   // top bar / global
   '文件': 'File', 'AI 助手': 'Assistant', '沉浸书写 Ctrl+.': 'Immersive Writing Ctrl+.',

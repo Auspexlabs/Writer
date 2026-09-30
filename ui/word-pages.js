@@ -1,3 +1,9 @@
+/** Native custom paper sizes retain their physical dimensions instead of falling back to A4. */
+export function customPaperCm(value) {
+  const parts=String(value||'').trim().split(/\s*[xX×*]\s*/);if(parts.length!==2)return null;
+  const cm=s=>{const m=/^([\d.]+)\s*(cm|mm|in|pt)$/i.exec(s);return m?Number(m[1])*({cm:1,mm:.1,in:2.54,pt:2.54/72}[m[2].toLowerCase()]):NaN;};
+  const size=parts.map(cm);return size.every(n=>Number.isFinite(n)&&n>0&&n<=55.88)?size:null;
+}
 /** Page labels are separate from physical page indices (odd/even headers use the latter). */
 export function pageNumber(n, format = 'decimal') {
   if (/Roman$/.test(format) && n > 0 && n < 4000) {

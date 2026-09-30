@@ -21,6 +21,11 @@ public static partial class HtmlWriter
         .toc ul{list-style:none;padding-left:0}.toc li{display:flex;justify-content:space-between}.toc-title{font-weight:bold}
         """;
 
+    internal static string Fragment(Node node)
+    {
+        var sb = new StringBuilder(); Block(node, sb); return sb.ToString();
+    }
+
     public static string Render(Document doc)
     {
         var sb = new StringBuilder();
@@ -332,7 +337,7 @@ public static partial class HtmlWriter
     {
         var runs = node.Children.Where(c => c.Kind == "run").ToList();
         // docx citations, and notes while a document's pages are drawn: each goes in at its character offset of the (undeleted) text
-        var marks = node.Children.Where(c => c.Kind == "citation" || c.Kind == "footnote" && _notes is not null).Select(c => c.GetProps())
+        var marks = node.Children.Where(c => c.Kind == "citation" || c.Kind == "control" || c.Kind == "footnote" && _notes is not null).Select(c => c.GetProps())
             .OrderBy(n => int.TryParse(n.GetValueOrDefault("at"), out var at) ? at : int.MaxValue).ToList();
         if (runs.Count == 0)
         {
@@ -392,7 +397,7 @@ public static partial class HtmlWriter
     }
 
     /// <summary>A citation's text (a citation's props have html), else a note's mark.</summary>
-    static string Mark(IReadOnlyDictionary<string, string> props) => props.TryGetValue("html", out var html) && !props.ContainsKey("kind") ? html : NoteMark(props);
+    static string Mark(IReadOnlyDictionary<string, string> props) => props.ContainsKey("data") ? Esc(props.GetValueOrDefault("text")??"") : props.TryGetValue("html", out var html) && !props.ContainsKey("kind") ? html : NoteMark(props);
 
     static string RunText(string text) => Esc(text).Replace("\n", "<br>").Replace("\f", Common.InlineHtml.PageBreak);
 

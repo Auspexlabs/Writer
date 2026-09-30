@@ -56,6 +56,7 @@ public sealed class PptxDocument(PresentationDocument package) : Document
     {
         foreach (var slide in Slides) PptxAnim.Prune(slide);
         PptxSections.Normalize(this);
+        PptxCustomShows.Prune(this);
         using var clone = Package.Clone(stream);
     }
 

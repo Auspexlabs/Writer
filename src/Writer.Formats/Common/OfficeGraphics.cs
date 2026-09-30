@@ -383,6 +383,9 @@ public static class OfficeGraphics
             w.WriteStartObject();
             if (tree is not null)
             {
+                var ext=tree.Element(Dsp+"grpSpPr")?.Element(A+"xfrm")?.Element(A+"chExt");
+                if(long.TryParse(ext?.Attribute("cx")?.Value,out var width))w.WriteNumber("width",width);
+                if(long.TryParse(ext?.Attribute("cy")?.Value,out var height))w.WriteNumber("height",height);
                 w.WritePropertyName("shapes");
                 w.WriteStartArray();
                 foreach (var sp in tree.Descendants(Dsp + "sp")) WriteShape(w, sp, scheme);
@@ -398,6 +401,7 @@ public static class OfficeGraphics
                     if (TextOf(pt.Element(Dgm + "t")) is { Length: > 0 } t) w.WriteStringValue(t);
                 w.WriteEndArray();
             }
+            if(data is not null){var model=OfficeSmartArt.Read(data);w.WriteString("layout",model.Layout);w.WritePropertyName("nodes");w.WriteStartArray();foreach(var n in model.Nodes){w.WriteStartObject();w.WriteString("id",n.Id);w.WriteString("text",n.Text);if(n.Parent is not null)w.WriteString("parent",n.Parent);w.WriteEndObject();}w.WriteEndArray();}
             w.WriteEndObject();
         }
         return Encoding.UTF8.GetString(ms.ToArray());
@@ -418,6 +422,7 @@ public static class OfficeGraphics
         w.WriteNumber("h", L(ext, "cy"));
         if (L(xfrm, "rot") is var rot and not 0) w.WriteNumber("rot", rot / 60000.0);
         if (xfrm?.Attribute("flipH")?.Value is "1" or "true") w.WriteBoolean("flipH", true);
+        if (xfrm?.Attribute("flipV")?.Value is "1" or "true") w.WriteBoolean("flipV", true);
         w.WriteString("geom", spPr?.Element(A + "prstGeom")?.Attribute("prst")?.Value ?? (spPr?.Element(A + "custGeom") is null ? "rect" : "custom"));
         var styleFill = ColorIn(style?.Element(A + "fillRef"), scheme);
         var fill = spPr?.Element(A + "noFill") is not null ? "none"
@@ -430,6 +435,7 @@ public static class OfficeGraphics
         var line = ln?.Element(A + "noFill") is not null ? "none" : ColorIn(ln?.Element(A + "solidFill"), scheme, styleLine) ?? styleLine;
         if (line is not null) w.WriteString("line", line);
         if (L(ln, "w") is var lw and > 0) w.WriteNumber("lw", lw);
+        if(ln?.Element(A+"tailEnd")?.Attribute("type")?.Value is {} endArrow && endArrow!="none")w.WriteString("endArrow",endArrow);
         var body = sp.Element(Dsp + "txBody");
         var text = TextOf(body);
         if (text.Length > 0)

@@ -12,11 +12,14 @@
 <style>
 .sv-t li[data-marker]::marker{content:attr(data-marker)}.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}
 .se-ed:focus{outline:none}
+.se-outline,.se-outline *{font-size:12px!important;line-height:1.7!important;letter-spacing:normal!important;color:inherit!important}
+.se-outline p,.se-outline div{margin:0 0 4px!important}.se-outline:focus{outline:1px solid var(--line,#ddd);border-radius:4px}
 .se-ed:empty::before{content:attr(data-hint);opacity:.45;pointer-events:none}.se-ed:focus::before{content:none}
 [data-thumbpanel] [draggable="true"]{content-visibility:auto;contain-intrinsic-height:auto 84px}
 </style>
 </helmet>
 <div data-edroot="1" tabIndex="-1" onKeyDown="{{ onRootKey }}" onClick="{{ onLink }}" style="height:100%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box;padding-right:{{ panelPad }};background:transparent;position:relative;outline:none;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;color:var(--k1, #1D1D1F)">
+  <sc-if value="{{ groupEditing }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:240px;top:12px;z-index:60;display:flex;gap:12px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--panel-bg,#fff);box-shadow:var(--panel-sh);font-size:13px"><span>{{ groupTitle }}</span><button onClick="{{ leaveGroup }}">返回上一级</button></div></sc-if>
   <sc-if value="{{ findOpen }}" hint-placeholder-val="{{ false }}">
     <div role="search" onMouseDown="{{ findMD }}" style="position:absolute;top:58px;left:230px;z-index:70;max-width:calc(100% - 250px);padding:12px;display:flex;flex-direction:column;gap:8px;border-radius:12px;background:var(--fp-bg);box-shadow:var(--fp-sh);font-size:12px">
       <div style="display:flex;gap:8px;align-items:center"><input data-slide-find="1" aria-label="查找" placeholder="查找" value="{{ findText }}" onChange="{{ onFindText }}" onKeyDown="{{ findKey }}" style="width:190px"><button onClick="{{ findNext }}">下一个</button><span>{{ findCount }}</span><button onClick="{{ closeFind }}" title="关闭">✕</button></div>
@@ -29,7 +32,7 @@
   </sc-if>
   <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ bodyCols }};transition:grid-template-columns .55s cubic-bezier(.2,1,.3,1)">
     <sc-if value="{{ outlineView }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:12px;top:12px;bottom:12px;width:204px;box-sizing:border-box;z-index:45;overflow:auto;padding:14px;border-radius:16px;background:var(--panel-bg,#fff);box-shadow:var(--panel-sh);font-size:12px">
-      <div style="font-weight:600;margin-bottom:12px">大纲</div><sc-for list="{{ outlineItems }}" as="item" hint-placeholder-count="1"><div onClick="{{ item.onClick }}" style="padding:10px 0;border-bottom:1px solid var(--line,#ddd);cursor:pointer"><strong>{{ item.title }}</strong><div style="white-space:pre-wrap;color:var(--ink-2);line-height:1.7;margin-top:6px">{{ item.text }}</div></div></sc-for>
+      <div style="font-weight:600;margin-bottom:12px">大纲</div><sc-for list="{{ outlineItems }}" as="item" hint-placeholder-count="1"><div onClick="{{ item.onClick }}" style="padding:10px 0;border-bottom:1px solid var(--line,#ddd);cursor:pointer"><strong>{{ item.title }}</strong><sc-for list="{{ item.boxes }}" as="box" hint-placeholder-count="1"><div class="se-outline" contentEditable="{{ box.editable }}" suppressContentEditableWarning="{{ true }}" dangerouslySetInnerHTML="{{ box.html }}" onBlur="{{ box.onBlur }}" onPaste="{{ box.onPaste }}" style="margin-top:6px;min-height:1.7em;cursor:text;white-space:pre-wrap;color:var(--ink-2)"></div></sc-for></div></sc-for>
     </div></sc-if>
     <sc-if value="{{ showThumbs }}" hint-placeholder-val="{{ true }}">
     <div data-thumbpanel="1" data-pop="left" style="position:absolute;top:12px;left:12px;bottom:12px;width:204px;z-index:45;display:flex;flex-direction:column;min-height:0;border-radius:var(--panel-r, 16px);overflow:hidden;background:var(--panel-bg, linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.7)));backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--panel-bd, rgba(0,0,0,0.06));box-shadow:var(--panel-sh, 0 16px 40px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.95))"><div style="height:40px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 8px"><button onClick="{{ closeThumbs }}" title="关闭" style="width:26px;height:26px;border:none;border-radius:var(--ctl-r, 8px);background:transparent;font-size:11px;color:var(--ink-2, rgba(29,29,31,0.62));cursor:pointer;transition:background .2s,transform .35s cubic-bezier(.2,1.4,.4,1)" style-hover="background:var(--fill, rgba(0,0,0,0.07))" style-active="transform:scale(0.88)">✕</button></div><div style="flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;padding:0 12px 16px 8px;display:flex;flex-direction:column;gap:16px">
@@ -99,8 +102,8 @@
         <sc-if value="{{ o.isImg }}" hint-placeholder-val="{{ false }}">
                   <div style="position:absolute;inset:0;pointer-events:none;{{ o.picFrame }}"><img src="{{ o.src }}" alt="" draggable="false" style="{{ o.picImage }}"></div>
                 </sc-if>
-                <sc-if value="{{ o.isVideo }}" hint-placeholder-val="{{ false }}"><video src="{{ o.src }}" controls preload="metadata" onMouseDown="{{ mediaDown }}" onClick="{{ mediaDown }}" style="position:absolute;inset:0;width:100%;height:100%;background:#151515"></video></sc-if>
-                <sc-if value="{{ o.isAudio }}" hint-placeholder-val="{{ false }}"><audio src="{{ o.src }}" controls preload="metadata" onMouseDown="{{ mediaDown }}" onClick="{{ mediaDown }}" style="position:absolute;inset:0;width:100%;height:100%"></audio></sc-if>
+                <sc-if value="{{ o.isVideo }}" hint-placeholder-val="{{ false }}"><video data-media-id="{{ o.id }}" src="{{ o.src }}" controls preload="metadata" onMouseDown="{{ mediaDown }}" onClick="{{ mediaDown }}" style="position:absolute;inset:0;width:100%;height:100%;background:#151515"></video></sc-if>
+                <sc-if value="{{ o.isAudio }}" hint-placeholder-val="{{ false }}"><audio data-media-id="{{ o.id }}" src="{{ o.src }}" controls preload="metadata" onMouseDown="{{ mediaDown }}" onClick="{{ mediaDown }}" style="position:absolute;inset:0;width:100%;height:100%"></audio></sc-if>
                 <sc-if value="{{ o.hasText }}" hint-placeholder-val="{{ false }}">
                   <div data-tbox="{{ o.id }}" style="position:absolute;inset:0;padding:{{ o.pad }};display:flex;flex-direction:column;justify-content:{{ o.va }};color:{{ o.color }};font-size:{{ o.fs }};font-family:{{ o.font }};font-weight:{{ o.fw }};font-style:{{ o.fst }};text-decoration:{{ o.td }};text-align:{{ o.align }};line-height:{{ o.lh }};overflow:{{ o.ovf }};word-break:break-word;outline:{{ o.phLine }};{{ o.tx }}">
                     <div class="sv-t se-ed" data-edit="{{ o.id }}" data-hint="{{ o.hint }}" data-complete="{{ aiHint }}" contentEditable="{{ o.ce }}" suppressContentEditableWarning="{{ true }}" onBlur="{{ o.onBlur }}" dangerouslySetInnerHTML="{{ o.inner }}" style="zoom:{{ o.editZoom }};min-height:1em;cursor:{{ o.tcur }};user-select:{{ o.us }};outline:none"></div>
@@ -174,7 +177,7 @@
   <sc-if value="{{ showing }}" hint-placeholder-val="{{ false }}">
     <div ref="{{ showRef }}" tabIndex="0" onKeyDown="{{ onShowKey }}" onClick="{{ onShowClick }}" onContextMenu="{{ onShowCtx }}" onMouseDown="{{ onShowDown }}" onMouseMove="{{ onShowMove }}" onMouseUp="{{ onShowUp }}" style="position:fixed;inset:0;z-index:1000;background:#000;display:flex;align-items:center;justify-content:center;outline:none;cursor:{{ showCursor }}">
       <div ref="{{ showSlideRef }}" style="position:relative;width:{{ showWpx }};height:{{ showHpx }}">
-        <dc-import name="SlideView" slide="{{ showSlide }}" theme="{{ themeKey }}" ratio="{{ ratio }}" width="{{ showW }}" hidden="{{ showHidden }}" hints="{{ false }}" hint-size="10px,10px"></dc-import>
+        <dc-import name="SlideView" slide="{{ showSlide }}" theme="{{ themeKey }}" ratio="{{ ratio }}" width="{{ showW }}" hidden="{{ showHidden }}" hints="{{ false }}" playToken="{{ showMediaToken }}" hint-size="10px,10px"></dc-import>
         <div style="position:absolute;inset:0;pointer-events:none" dangerouslySetInnerHTML="{{ inkSvg }}"></div>
       </div>
       <sc-if value="{{ laserOn }}" hint-placeholder-val="{{ false }}"><div style="position:fixed;left:{{ laserX }};top:{{ laserY }};width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle,#FF3B30 0 32%,rgba(255,59,48,0.35) 58%,transparent 70%);pointer-events:none;z-index:3"></div></sc-if>
@@ -236,6 +239,7 @@ const ZMIN = 0.2, ZMAX = 4;
 const wheelFactor = e => { let d = e.deltaY; if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 100; return Math.exp(-Math.max(-20, Math.min(20, d)) * 0.01); };
 
 class Component extends DCLogic {
+  mediaEpoch = 0;
   state = { tab: 'home', cur: 0, sel: null, sels: [], editing: null, lives: null, guides: null, pop: null, gridHover: null, box: { w: 800, h: 500 }, zoom: 1, zoomEdit: null, show: null, showNotes: true, drop: null, vw: window.innerWidth, vh: window.innerHeight };
   stageRef = React.createRef(); slideRef = React.createRef(); imgRef = React.createRef(); showRef = React.createRef(); showSlideRef = React.createRef();
   componentDidMount() {
@@ -250,13 +254,14 @@ class Component extends DCLogic {
     if (this.stageRef.current) this.ro.observe(this.stageRef.current);
     this.attachWheel();
     this.attachImages();
+    this.K?.bindSlideMedia(this.stageRef.current,this.slide?.objs,false);
     import('./follow.js').then(F => { this.F = F; this.attachFollow(); });
   }
   /** Caret follow (镜头跟随) in the stage: the caret of the object being edited, or the selected object's box after a keyboard nudge. */
   attachFollow() { const st = this.stageRef.current; if (this.gone || !this.F || !st || (this.follow && this.follow.el === st)) return; this.follow && this.follow.detach(); this.follow = this.F.attach(st, r => { if (this.state.editing) return this.F.caretRect(st); const el = r === 'nudge' && this.state.sel && st.querySelector(`[data-soid="${this.state.sel}"]`); return el ? el.getBoundingClientRect() : null; }, { insets: { top: 0 } }); }
   /** Ctrl/⌘ + wheel and trackpad pinch zoom the stage instead of the browser page: a native non-passive listener on the editor root. */
   attachWheel() { if (this.rootEl) return; const el = this.stageRef.current && this.stageRef.current.closest('[data-edroot]'); if (el) { this.rootEl = el; el.addEventListener('wheel', this.onWheel, { passive: false }); } }
-  componentWillUnmount() { window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); window.removeEventListener('resize', this.onResize); document.removeEventListener('fullscreenchange', this.onFs); this.ro && this.ro.disconnect(); if (this.rootEl) this.rootEl.removeEventListener('wheel', this.onWheel); this.gone = true; this.follow && this.follow.detach(); clearInterval(this.clockT); if (this.presenter && !this.presenter.closed) this.presenter.close(); }
+  componentWillUnmount() { this.K?.disposeSlideMedia(this.stageRef.current); this.K?.stopCarriedMedia(this.showRef.current); this.K?.disposeSlideMedia(this.showRef.current); window.removeEventListener('mousemove', this.onWM); window.removeEventListener('mouseup', this.onWU); window.removeEventListener('resize', this.onResize); document.removeEventListener('fullscreenchange', this.onFs); this.ro && this.ro.disconnect(); if (this.rootEl) this.rootEl.removeEventListener('wheel', this.onWheel); this.gone = true; this.follow && this.follow.detach(); clearInterval(this.clockT); if (this.presenter && !this.presenter.closed) this.presenter.close(); }
   /** Zoom factor over the fitted scale, 20%–400% (100% = fit); `at` (client coords) is the point on the slide that stays put. */
   setZoom(z, at) {
     z = Math.max(ZMIN, Math.min(ZMAX, z)); const stg = this.stageRef.current, sl = this.slideRef.current, k0 = this.k; if (!stg || !sl || Math.abs(z - this.state.zoom) < 1e-4) return;
@@ -267,11 +272,12 @@ class Component extends DCLogic {
   applyZoomText() { const v = parseFloat(this.state.zoomEdit); this.setState({ zoomEdit: null }); if (v > 0) this.setZoom(v / 100); }
   componentDidUpdate(pp) {
     this.attachImages();
+    this.K?.bindSlideMedia(this.stageRef.current,this.slide?.objs,false);
     // the side panel opened or closed: measure the stage now, in this commit (the ResizeObserver comes a frame later), so the
     // slide's new scale is there when the shell's FLIP measures it
     if (!!pp.panelOpen !== !!this.props.panelOpen && this.stageRef.current) { const el = this.stageRef.current; if (el.clientWidth) this.setState({ box: { w: el.clientWidth, h: el.clientHeight } }); }
     this.attachWheel(); this.attachFollow();
-    if (pp.doc && pp.doc.id !== this.props.doc.id) this.setState({ cur: 0, sel: null, editing: null });
+    if (pp.doc && pp.doc.id !== this.props.doc.id) this.setState({ groupEdit:null,cur: 0, sel: null, sels:[], objectTarget:null, editing: null });
     const pic = this.obj && this.obj.t === 'image' ? this.obj.id : null; // the 图片 tab comes and goes with the selected picture
     if (pic !== this.picSel && this.P) { this.picSel = pic; const patch = this.P.tabAfterSelect(this.state, 'picture', !!pic); if (patch || this.state.picLive) this.setState(Object.assign({ picLive: null }, patch)); }
     if (this.stageRef.current && this.ro && !this.observed) { this.ro.observe(this.stageRef.current); this.observed = true; }
@@ -292,14 +298,27 @@ class Component extends DCLogic {
   get H() { return this.K ? this.K.slideH(this.doc.ratio) : 900; }
   get ci() { return Math.max(0, Math.min(this.state.cur, this.doc.slides.length - 1)); }
   get slide() { return this.doc.slides[this.ci]; }
-  get obj() { const s = this.slide; return s && s.objs.find(o => o.id === this.state.sel); }
+  groupScope(s=this.slide,scope=this.state.groupEdit) {
+    if(!s||scope?.slide!==s.id)return null;
+    let objs=s.objs,group=null;for(const id of scope.ids){group=objs.find(o=>o.id===id&&o.t==='group'&&!o.hidden&&!o.locked);if(!group)return null;objs=group.kids;}return group;
+  }
+  objects(s=this.slide,scope=this.state.groupEdit) { return this.groupScope(s,scope)?.kids||s?.objs||[]; }
+  setObjects(s,objects) { const group=this.groupScope(s);if(group)group.kids=objects;else s.objs=objects; }
+  enterGroup(id=this.state.sel) { const group=this.objects().find(o=>o.id===id&&o.t==='group'&&!o.hidden&&!o.locked);if(!group)return;this.endEdit();const ids=this.groupScope()?this.state.groupEdit.ids:[];this.setState({groupEdit:{slide:this.slide.id,ids:ids.concat(id)},sel:null,sels:[],editing:null,objectTarget:null}); }
+  leaveGroup() { this.endEdit();const ids=this.state.groupEdit?.ids||[],id=ids.at(-1);this.setState({groupEdit:ids.length>1?{slide:this.slide.id,ids:ids.slice(0,-1)}:null,sel:id||null,sels:id?[id]:[],editing:null,objectTarget:id||null}); }
+  get obj() { const s = this.slide; return s && this.objects(s).find(o => o.id === this.state.sel && !o.hidden && !this.objectLocked(o)); }
+  objectLocked(o) { return !!o && (!!o.locked || (o.kids || []).some(k => this.objectLocked(k))); }
+  objectRows() { const rows=[]; const walk=(objs,depth,root,blocked)=>{ for(const o of [...objs].reverse()){ const owner=root||o; rows.push({o,depth,root:owner,blocked:blocked||!!o.hidden}); walk(o.kids||[],depth+1,owner,blocked||o.hidden); } }; walk(this.slide?.objs||[],0,null,false); return rows; }
+  objectState(id,patch) { this.endEdit(); this.commit((d,s)=>{const o=this.K.flatObjs(s.objs).find(x=>x.id===id); if(o) for(const k of ['name','hidden','locked']) if(k in patch) o[k]=patch[k];},false,true); this.setState({editing:null}); }
+  selectObjectRow(row) { this.endEdit(); this.setState({groupEdit:null,objectTarget:row.o.id,sel:!row.blocked&&!this.objectLocked(row.root)?row.root.id:null,sels:!row.blocked&&!this.objectLocked(row.root)?[row.root.id]:[],editing:null}); }
   /** Every selected object (⇧-click adds to the selection); the primary one is state.sel. */
-  get sels() { const s = this.slide, ids = this.state.sels && this.state.sels.length ? this.state.sels : this.state.sel ? [this.state.sel] : []; return s ? ids.map(id => s.objs.find(o => o.id === id)).filter(Boolean) : []; }
-  select(id, add) { const ids = add ? (this.state.sels.includes(id) ? this.state.sels.filter(x => x !== id) : this.state.sels.concat(id)) : [id]; this.setState({ sel: ids[ids.length - 1] || null, sels: ids, editing: null, pop: null }); }
+  get sels() { const s = this.slide, ids = this.state.sels && this.state.sels.length ? this.state.sels : this.state.sel ? [this.state.sel] : []; return s ? ids.map(id => this.objects(s).find(o => o.id === id)).filter(o=>o&&!o.hidden&&!this.objectLocked(o)) : []; }
+  select(id, add) { const o=this.objects().find(x=>x.id===id); if(!o||o.hidden||this.objectLocked(o))return; const ids = add ? (this.state.sels.includes(id) ? this.state.sels.filter(x => x !== id) : this.state.sels.concat(id)) : [id]; this.setState({ sel: ids[ids.length - 1] || null, objectTarget:ids[ids.length - 1]||null, sels: ids, editing: null, pop: null }); }
   get k() { const { w, h } = this.state.box; return Math.max(0.1, Math.min((w - 64) / 1600, (h - 48) / this.H)) * (this.state.zoom || 1); }
   toast(m) { this.props.toast && this.props.toast(m); }
-  commit(fn, silent) {
+  commit(fn, silent, metadata=false) {
     const d = structuredClone(this.doc), s = d.slides[this.ci]; fn(d, s);
+    if(!metadata) for(const before of this.doc.slides){const after=d.slides.find(x=>x.id===before.id);if(!after)continue;const next=new Map(this.K.flatObjs(after.objs).map(o=>[o.id,o]));for(const o of this.K.flatObjs(before.objs)){const n=next.get(o.id),own=x=>x?JSON.stringify({...x,kids:undefined}):'';if((o.locked&&JSON.stringify(o)!==JSON.stringify(n))||(this.objectLocked(o)&&own(o)!==own(n))){this.toast($t('对象已锁定，请先在选择窗格中解锁'));return false;}}}
     this.K.keepSections(this.doc.slides, d.slides);
     d.slides.forEach((sl,i) => this.K.flatObjs(sl.objs).forEach(o => { if (o.field === 'slideNumber') o.html = '<p>'+(i+1)+'</p>'; }));
     if (s) { this.K.relinkLines(s); if (s.anims && s.anims.length) { const ids = new Set(this.K.flatObjs(s.objs).map(o => o.id)); s.anims = s.anims.filter(a => !a.id || ids.has(a.id)); } } // an object's effects go with it
@@ -309,10 +328,20 @@ class Component extends DCLogic {
   findHits() { return this.K.findSlides(this.doc,this.state.findText||'',{caseSensitive:this.state.findCase,wholeWord:this.state.findWord}); }
   nextFind() { const hits=this.findHits(); if(!hits.length)return; const i=((this.state.findIndex??-1)+1)%hits.length,h=hits[i]; this.setState({cur:h.slide,sel:h.rootId,sels:[h.rootId],editing:null,findIndex:i}); }
   replaceFind(all) { const hits=this.findHits(); if(!hits.length)return; const selected=all?hits:[hits[Math.max(0,this.state.findIndex||0)%hits.length]]; this.commit(d=>this.K.replaceSlideHits(d,selected,this.state.replaceText||'')); this.setState({findIndex:-1}); }
-  patchObj(id, patch, silent) { this.commit((d, s) => { const o = s.objs.find(x => x.id === id); if (o) Object.assign(o, patch, { html: this.K.formatSlideText(patch.html ?? o.html, patch) }); }, silent); }
+  async replaceFonts() {
+    const from=this.state.fontFrom?.trim(),to=this.state.fontTo?.trim();if(!from||!to||!this.EN)return;
+    try { this.endEdit();const doc=await this.EN.nativeEdit(this.doc,['set',this.doc.path,'/','--prop','replaceFont='+JSON.stringify({from,to})]);this.props.onChange?.(doc);this.toast($t('已替换全部幻灯片字体')); }
+    catch(e){this.toast(e.message);}
+  }
+  editOutline(slideIndex,id,html) {
+    const o=this.K.flatObjs(this.doc.slides[slideIndex]?.objs||[]).find(x=>x.id===id);
+    if(!o||o.html===html||o.field)return;
+    this.commit(d=>{const target=this.K.flatObjs(d.slides[slideIndex].objs).find(x=>x.id===id);if(target)target.html=html;});
+  }
+  patchObj(id, patch, silent) { this.commit((d, s) => { const o = this.objects(s).find(x => x.id === id); if (o) Object.assign(o, patch, { html: this.K.formatSlideText(patch.html ?? o.html, patch) }); }, silent); }
   patchSel(patch) { const o = this.obj; if (o) this.patchObj(o.id, patch); }
   /** The same change on every selected object. */
-  patchSels(patch) { const ids = this.sels.map(o => o.id); if (ids.length) this.commit((d, s) => s.objs.forEach(o => { if (ids.includes(o.id)) Object.assign(o, typeof patch === 'function' ? patch(o) : patch); })); }
+  patchSels(patch) { const ids = this.sels.map(o => o.id); if (ids.length) this.commit((d, s) => this.objects(s).forEach(o => { if (ids.includes(o.id)) Object.assign(o, typeof patch === 'function' ? patch(o) : patch); })); }
   /** The object clipboard from a menu, as ⌘C / ⌘X / ⌘V use it: objects stay in the app (they are shapes, not text). */
   copySels(cut) { if (!this.sels.length) return; const token = this.EN?.capturePptx?.(this.doc); this.clip = this.sels.map(x => this.clipOf(x, token)); window.__writerObjectClip = {doc:this.doc.id,objs:this.clip}; if (cut) this.deleteSels(); }
   pasteSels() {
@@ -320,14 +349,14 @@ class Component extends DCLogic {
     const copies = clip.objs.map(c => { const n = this.copyOf(c); Object.assign(n, this.moveKids(n, {x:n.x+24,y:n.y+24}));
       if (clip.doc === this.doc.id && !n.importSource?.token) delete n.importSource;
       if (clip.doc !== this.doc.id) { const strip = o => { delete o.from; (o.kids || []).forEach(strip); }; strip(n); } return n; });
-    this.commit((d,s) => s.objs.push(...copies)); this.setState({sel:copies.at(-1).id,sels:copies.map(c=>c.id),editing:null});
+    this.commit((d,s) => this.objects(s).push(...copies)); this.setState({sel:copies.at(-1).id,sels:copies.map(c=>c.id),editing:null});
   }
   /** Right-click on the slide: the objects' menu when some are selected (the press selected the one under it), else the slide's. */
   onStageCtx = e => { e.preventDefault(); if (this.state.editing) return; this.setState({ pop: { id: 'stagectx', x: e.clientX, y: Math.min(e.clientY, window.innerHeight - 380) } }); };
-  deleteSels() { const ids = this.sels.map(o => o.id); if (!ids.length) return; this.commit((d, s) => { s.objs = s.objs.filter(x => !ids.includes(x.id)); }); this.setState({ sel: null, sels: [] }); }
+  deleteSels() { const ids = this.sels.map(o => o.id); if (!ids.length) return; this.commit((d, s) => { this.setObjects(s,this.objects(s).filter(x => !ids.includes(x.id))); }); this.setState({ sel: null, sels: [] }); }
   /** 组合 Ctrl+G: the selected objects become one group where the topmost of them was; 取消组合 puts a group's members back. */
-  groupSels() { const ids = this.sels.map(o => o.id); if (ids.length < 2) return this.toast($t('先选中两个以上的对象')); let g; this.commit((d, s) => { const kids = s.objs.filter(o => ids.includes(o.id)); g = this.K.group(kids); const at = Math.max(...kids.map(k => s.objs.indexOf(k))); s.objs.splice(at + 1, 0, g); s.objs = s.objs.filter(o => !ids.includes(o.id)); }); this.setState({ sel: g.id, sels: [g.id] }); }
-  ungroup() { const o = this.obj; if (!o || o.t !== 'group') return; const ids = o.kids.map(k => k.id); this.commit((d, s) => { const i = s.objs.findIndex(x => x.id === o.id); s.objs.splice(i, 1, ...s.objs[i].kids); }); this.setState({ sel: ids[ids.length - 1], sels: ids }); }
+  groupSels() { const ids = this.sels.map(o => o.id); if (ids.length < 2) return this.toast($t('先选中两个以上的对象')); let g; this.commit((d, s) => { const kids = this.objects(s).filter(o => ids.includes(o.id)); g = this.K.group(kids); const at = Math.max(...kids.map(k => this.objects(s).indexOf(k))); this.objects(s).splice(at + 1, 0, g); this.setObjects(s,this.objects(s).filter(o => !ids.includes(o.id))); }); this.setState({ sel: g.id, sels: [g.id] }); }
+  ungroup() { const o = this.obj; if (!o || o.t !== 'group') return; const ids = o.kids.map(k => k.id); this.commit((d, s) => { const i = this.objects(s).findIndex(x => x.id === o.id); this.objects(s).splice(i, 1, ...this.K.ungroup(this.objects(s)[i])); }); this.setState({ sel: ids[ids.length - 1], sels: ids }); }
   /** Slide units per centimetre, for the exact size and position fields. */
   get cmU() { const g = this.doc._orig && this.doc._orig.geo; return g ? 1 / g.kx : (this.doc.ratio === '4:3' ? 25.4 : 33.867) / 1600; }
   endEdit() { const a = document.activeElement; if (a && a.isContentEditable) a.blur(); }
@@ -371,19 +400,35 @@ class Component extends DCLogic {
     ask(whole ? $t('美化整份幻灯片：先为全稿定一套配色（palette）和字体（fonts），再逐页统一字号层级、对齐与留白，缩小溢出的文字，需要时换版式；不改动文字内容。')
       : $t('美化第 {n} 页幻灯片：统一字号层级、对齐与留白，缩小溢出的文字，需要时换版式或配色；只改这一页，不改动文字内容。', { n: this.ci + 1 }));
   }
-  insertObj(o) { this.endEdit(); this.commit((d, s) => s.objs.push(o)); this.setState({ sel: o.id, sels: [o.id] }); return o; }
+  async editSmartArt(edit=false,selected=this.obj) {
+    const slide=this.slide,object=edit?selected:null;if(!slide||!this.EN||object&&this.objectLocked(object))return;this.endEdit();
+    try{const model=object?.data?.smartart?(typeof object.data.smartart==='string'?JSON.parse(object.data.smartart):object.data.smartart):null,data=await(await import('./office-smartart-editor.js')).editSmartArt(model);if(!data||this.gone||!this.doc.slides.includes(slide))return;
+      const next=await this.EN.nativeEdit(this.doc,['set',this.doc.path,slide.path||'/slide['+(this.doc.slides.indexOf(slide)+1)+']','--prop','smartArtData='+JSON.stringify({...data,...(object?{path:object.path}:{})})]);this.props.onChange?.(next);this.setState({sel:null,sels:[],editing:null});
+    }catch(e){this.toast(e.message);}
+  }
+  async editChart(edit = false, selected = this.obj) {
+    const slide=this.slide,object=edit?selected:null;if(!slide||!this.EN||object&&this.objectLocked(object))return;
+    this.endEdit();
+    try { const chart=object?.data?.chart?(typeof object.data.chart==='string'?JSON.parse(object.data.chart):object.data.chart):null;
+      const data=await (await import('./office-chart-editor.js')).editChart(chart);if(!data||this.gone||!this.doc.slides.includes(slide))return;
+      const next=await this.EN.nativeEdit(this.doc,['set',this.doc.path,slide.path||'/slide['+(this.doc.slides.indexOf(slide)+1)+']','--prop','chartData='+JSON.stringify({...data,...(object?{path:object.path}:{})})]);
+      this.props.onChange?.(next);this.setState({sel:null,sels:[],editing:null});
+    } catch(e) { this.toast(e.message); }
+  }
+  insertObj(o) { this.endEdit(); this.commit((d, s) => this.objects(s).push(o)); this.setState({ sel: o.id, sels: [o.id] }); return o; }
   attachImages() { const stage = this.stageRef.current; if (stage === this.imageStage) return; if (this.imageStage) { this.imageStage.removeEventListener('paste', this.onImagePaste); this.imageStage.removeEventListener('dragover', this.onImageDrag); this.imageStage.removeEventListener('drop', this.onImageDrop); } this.imageStage = stage; if (stage) { stage.addEventListener('paste', this.onImagePaste); stage.addEventListener('dragover', this.onImageDrag); stage.addEventListener('drop', this.onImageDrop); } }
   async insertImageFile(file, into = null, background = false) {
     if (!file || !file.type.startsWith('image/')) return;
-    const slideId = this.slide?.id; if (!slideId) return;
+    const slideId = this.slide?.id,scope=this.state.groupEdit; if (!slideId) return;
     try {
       const src = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
       const image = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
       if (this.gone || !this.doc.slides.some(s => s.id === slideId)) return;
-      const ph = this.doc.slides.find(s => s.id === slideId).objs.find(x => x.id === into), box = ph || { x: 0, y: 0, w: 1600, h: this.H };
+      const target=this.doc.slides.find(s=>s.id===slideId);if(scope?.slide===slideId&&scope.ids.length&&!this.groupScope(target,scope))return;
+      const ph = this.objects(target,scope).find(x => x.id === into), box = ph || { x: 0, y: 0, w: 1600, h: this.H };
       const scale = Math.min(1, (ph ? box.w : 1000) / image.naturalWidth, (ph ? box.h : this.H * .7) / image.naturalHeight), w = Math.round(image.naturalWidth * scale), h = Math.round(image.naturalHeight * scale);
       const pic = this.K.txt({ t: 'image', src, x: Math.round(box.x + (box.w - w) / 2), y: Math.round(box.y + (box.h - h) / 2), w, h, html: '' });
-      this.endEdit(); this.commit(d => { const slide = d.slides.find(s => s.id === slideId); if (background) { slide.bgImage = src; slide.bg = null; slide.bgGradient = null; } else if (ph) slide.objs.splice(slide.objs.findIndex(x => x.id === into), 1, pic); else slide.objs.push(pic); });
+      this.endEdit(); this.commit(d => { const slide = d.slides.find(s => s.id === slideId); if (background) { slide.bgImage = src; slide.bg = null; slide.bgGradient = null; } else if (ph) this.objects(slide,scope).splice(this.objects(slide,scope).findIndex(x => x.id === into), 1, pic); else this.objects(slide,scope).push(pic); });
       if (!background && this.slide?.id === slideId) this.setState({ sel: pic.id, sels: [pic.id] });
     } catch { this.toast($t('无法读取图片')); }
   }
@@ -427,14 +472,14 @@ class Component extends DCLogic {
   }
   insertTable(r, c) { const K = this.K, H = this.H; const rows = Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => i === 0 ? $t('标题 {n}', { n: j + 1 }) : '')); this.insertObj(K.txt({ t: 'table', x: 160, y: Math.max(60, H / 2 - r * 40), w: 1280, h: r * 80, fs: 26, rows, html: '', merges: [], cells: {}, tstyle: 'MediumStyle2Accent1', header: true, banded: true, firstCol: false })); this.setState({ pop: null }); }
   /** 表格工具: one of the model edits (office-io tableInsertRow…) on the selected table, at the current cell; the cell stays current. */
-  tableOp(fn) { const o = this.obj; if (!o || o.t !== 'table') return; const cell = this.state.cell || { r: 0, c: 0 }; this.commit((d, s) => { const t = s.objs.find(x => x.id === o.id); if (t) { t.merges = t.merges || []; t.cells = t.cells || {}; fn(t, cell, this.state.cellSel); } }); this.setState({ cellSel: null }); }
+  tableOp(fn) { const o = this.obj; if (!o || o.t !== 'table') return; const cell = this.state.cell || { r: 0, c: 0 }; this.commit((d, s) => { const t = this.objects(s).find(x => x.id === o.id); if (t) { t.merges = t.merges || []; t.cells = t.cells || {}; fn(t, cell, this.state.cellSel); } }); this.setState({ cellSel: null }); }
   /** The cells 合并 works on: the shift-clicked range, else the current cell's own merge. */
   cellRange() { const c = this.state.cell || { r: 0, c: 0 }, s = this.state.cellSel; return s ? [Math.min(c.r, s.r), Math.min(c.c, s.c), Math.max(c.r, s.r), Math.max(c.c, s.c)] : [c.r, c.c, c.r, c.c]; }
   /** A cell's own style (fill, line, align) on the current cell or the whole shift-clicked range. */
   patchCells(patch) { const [r1, c1, r2, c2] = this.cellRange(); this.tableOp(t => { for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) t.cells[r + ':' + c] = Object.assign({}, t.cells[r + ':' + c], patch); }); }
   formatCells(styles) { this.endEdit(); const [r1,c1,r2,c2]=this.cellRange(); this.tableOp(o => { o.cells ||= {}; for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++) { const key=r+':'+c, own=o.cells[key]||{}, root=document.createElement('div'); root.innerHTML=own.html || this.K.escHtml(o.rows[r]?.[c]||''); const walk=document.createTreeWalker(root,4), nodes=[];let n;while((n=walk.nextNode()))nodes.push(n);for(const n of nodes){const span=document.createElement('span');Object.assign(span.style,styles);n.replaceWith(span);span.append(n);}o.cells[key]={...own,html:root.innerHTML}; } }); }
   setRowHeight(value) { if (!(value>0))return; const [r1,,r2]=this.cellRange(); this.tableOp(o=>{const heights=this.K.rowHeights(o);for(let r=r1;r<=r2;r++)heights[r]=value;o.rowH=heights;o.h=heights.reduce((a,b)=>a+b,0);}); }
-  arrange(kind) { const o = this.obj; if (!o) return; this.commit((d, s) => { const i = s.objs.findIndex(x => x.id === o.id); const [x] = s.objs.splice(i, 1); const j = kind === 'front' ? s.objs.length : kind === 'back' ? 0 : kind === 'up' ? Math.min(s.objs.length, i + 1) : Math.max(0, i - 1); s.objs.splice(j, 0, x); }); }
+  arrange(kind) { const o = this.obj; if (!o) return; this.commit((d, s) => { const i = this.objects(s).findIndex(x => x.id === o.id); const [x] = this.objects(s).splice(i, 1); const j = kind === 'front' ? this.objects(s).length : kind === 'back' ? 0 : kind === 'up' ? Math.min(this.objects(s).length, i + 1) : Math.max(0, i - 1); this.objects(s).splice(j, 0, x); }); }
   /** 对齐: one object lines up with the slide, several with the box around them (as PowerPoint does). */
   alignObj(kind) {
     const os = this.sels; if (!os.length) return; const H = this.H, b = os.length > 1 ? this.K.union(os) : { x: 0, y: 0, w: 1600, h: H };
@@ -446,8 +491,8 @@ class Component extends DCLogic {
   copyOf(o) { const n = Object.assign(structuredClone(o), { id: this.K.oid(), from: o.path || o.from }); delete n.path; if (n.kids) n.kids = o.kids.map(k => this.copyOf(k)); return n; }
   /** What Ctrl+C and Ctrl+X keep: a copy whose picture shows its own bytes once read, as a cut one may have left the file by the paste. */
   clipOf(o, token) { const c = this.copyOf(o); if (o.path) c.importSource = {file:this.doc.path,path:o.path,...(token ? {token} : {})}; this.clipDoc = this.doc.id; if (this.EN) { const from=this.K.flatObjs([o]), to=this.K.flatObjs([c]); from.forEach((x,i)=>{ if (x.t==='image') this.EN.pictureData(this.doc.path,x).then(u=>{if(u){to[i].src=u;if(x.mediaType)to[i].media=u;}}); }); } return c; }
-  dupSels() { const copies = this.sels.map(o => { const n = this.copyOf(o); return Object.assign(n, this.moveKids(n,{x:o.x+32,y:o.y+32})); }); if (!copies.length) return; this.commit((d,s)=>s.objs.push(...copies)); this.setState({sel:copies.at(-1).id,sels:copies.map(o=>o.id),editing:null}); }
-  dup(o, dx) { const n = this.copyOf(o); Object.assign(n, this.moveKids(n, {x:o.x+(dx??32),y:o.y+(dx??32)})); this.commit((d,s)=>s.objs.push(n)); this.setState({sel:n.id,sels:[n.id],editing:null}); return n; }
+  dupSels() { const copies = this.sels.map(o => { const n = this.copyOf(o); return Object.assign(n, this.moveKids(n,{x:o.x+32,y:o.y+32})); }); if (!copies.length) return; this.commit((d,s)=>this.objects(s).push(...copies)); this.setState({sel:copies.at(-1).id,sels:copies.map(o=>o.id),editing:null}); }
+  dup(o, dx) { const n = this.copyOf(o); Object.assign(n, this.moveKids(n, {x:o.x+(dx??32),y:o.y+(dx??32)})); this.commit((d,s)=>this.objects(s).push(n)); this.setState({sel:n.id,sels:[n.id],editing:null}); return n; }
   /** Slide i again right after it, made of copies, and shown: 开始 › 复制 and the thumbnail's 复制幻灯片. */
   dupSlide(i) { const n = this.slideCopy(this.doc.slides[i], true); this.commit(d => d.slides.splice(i + 1, 0, n)); this.setState({ cur: i + 1 }); }
   /** A copy of slide s to insert: its objects copies with ids of their own and its effects on them; it starts no section. from (where
@@ -490,15 +535,15 @@ class Component extends DCLogic {
   measureFits() {
     const s = this.slide, st = this.stageRef.current; if (!s || !st) return;
     this.fitKeys = this.fitKeys || {}; const patch = {};
-    for (const o of s.objs) {
-      if (o.autofit !== 'shrink' || !(o.t === 'text' || o.t === 'shape')) continue;
+    for (const o of this.objects(s)) {
+      if (this.objectLocked(o) || o.hidden || o.autofit !== 'shrink' || !(o.t === 'text' || o.t === 'shape')) continue;
       if (this.state.editing === o.id) continue;
       const key = [o.html, o.w, o.h, o.fs, o.lh, o.cols].join('|'), box = st.querySelector(`[data-tbox="${o.id}"]`); if (!box) continue;
       if (this.fitKeys[o.id] !== key) { const changed = this.fitKeys[o.id] != null; this.fitKeys[o.id] = key; if (changed && (o.fit || 1) < 1) { patch[o.id] = 1; continue; } }
       const over = box.scrollHeight - box.clientHeight;
       if (over > 1) { const fit = Math.max(0.4, Math.round((o.fit || 1) * box.clientHeight / box.scrollHeight * 0.97 * 100) / 100); if (fit < (o.fit || 1) - 0.005) patch[o.id] = fit; }
     }
-    if (Object.keys(patch).length) this.commit((d, cs) => cs.objs.forEach(x => { if (patch[x.id] != null) x.fit = patch[x.id]; }), true);
+    if (Object.keys(patch).length) this.commit((d, cs) => this.objects(cs).forEach(x => { if (patch[x.id] != null) x.fit = patch[x.id]; }), true);
   }
   toggleList(ordered) {
     const o = this.obj; if (!o || o.t === 'table' || o.t === 'image') return;
@@ -526,11 +571,17 @@ class Component extends DCLogic {
   addComment() {
     this.commit((d, s) => { s.comments = (s.comments || []).concat([{ id: this.K.oid(), author: this.state.commentAuthor || 'Writer', text: '' }]); });
   }
+  async editCaptions() {
+    const o=this.obj;if(!o?.mediaType||o.locked)return;const id=o.id,docId=this.doc.id;const {editCaptions}=await import('./slide-captions.js');const value=await editCaptions(o.captions);if(value&&this.doc.id===docId)this.patchObj(id,{captions:value});
+  }
+  async editPlayback() {
+    const o=this.obj;if(!o?.mediaType||o.locked)return;const id=o.id,docId=this.doc.id;const player=[...this.stageRef.current.querySelectorAll("[data-media-id]")].find(el=>el.dataset.mediaId===id);const {editMediaPlayback}=await import("./slide-media.js");const value=await editMediaPlayback(o,player?.duration);if(value&&this.doc.id===docId)this.patchObj(id,{playback:value});
+  }
   insertMedia() {
     const input = document.createElement('input'); input.type = 'file'; input.accept = 'video/*,audio/*';
     input.onchange = () => { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => {
       const video = file.type.startsWith('video/'), id = this.K.oid();
-      this.commit((d, s) => s.objs.push({ id, t: 'image', mediaType: video ? 'video' : 'audio', media: reader.result, src: reader.result, html: '', x: 320, y: 200, w: 960, h: video ? 540 : 100, rot: 0, look: {} })); this.setState({ sel: id, sels: [id] });
+      this.commit((d, s) => this.objects(s).push({ id, t: 'image', mediaType: video ? 'video' : 'audio', media: reader.result, src: reader.result, html: '', x: 320, y: 200, w: 960, h: video ? 540 : 100, rot: 0, look: {} })); this.setState({ sel: id, sels: [id] });
     }; reader.readAsDataURL(file); }; input.click();
   }
   snapCands(objects) {
@@ -542,22 +593,31 @@ class Component extends DCLogic {
     const ink = this.state.ink || {}; if (!times && !Object.values(ink).some(lines => lines.length)) return;
     this.commit(d => { for (const [index, lines] of Object.entries(ink)) {
       const slide = d.slides[+index]; if (!slide || !lines.length) continue;
-      let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0; for (const line of lines) for (const [px, py] of line) { minX = Math.min(minX, px); minY = Math.min(minY, py); maxX = Math.max(maxX, px); maxY = Math.max(maxY, py); }
-      const x = Math.max(0, minX - 4), y = Math.max(0, minY - 4), w = Math.max(8, maxX - x + 4), h = Math.max(8, maxY - y + 4);
-      const canvas = document.createElement('canvas'); canvas.width = Math.ceil(w * 2); canvas.height = Math.ceil(h * 2); const ctx = canvas.getContext('2d');
-      ctx.scale(2, 2); ctx.translate(-x, -y); ctx.strokeStyle = '#FF3B30'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (const line of lines) { if (!line.length) continue; ctx.beginPath(); ctx.moveTo(...line[0]); for (const point of line.slice(1)) ctx.lineTo(...point); if (line.length === 1) ctx.lineTo(line[0][0] + .1, line[0][1]); ctx.stroke(); }
-      slide.objs.push({ id: this.K.oid(), t: 'image', src: canvas.toDataURL('image/png'), html: '', x, y, w, h, rot: 0, look: {} });
+      const geometry=this.K.inkGeometry(lines);if(geometry)slide.objs.push(this.K.shape({id:this.K.oid(),shape:'custom',...geometry,fill:'',stroke:'#FF3B30',sw:5,rot:0,html:''}));
     } if (times) d.slides.forEach(s => { if (times[s.id]) s.advanceAfter = times[s.id]; }); }); this.setState({ ink: {} });
   }
-  startShow(from, presenter) {
-    const i = this.shownFrom(from, 1) ?? this.shownFrom(0, 1); if (i == null) return this.toast($t('没有可放映的幻灯片'));
+  async editVertices(create=false) {
+    const selected=create?null:this.obj;if(selected&&this.objectLocked(selected))return;
+    const id=selected?.id,slideId=this.slide?.id;
+    const data=selected?.pathData||(selected?{w:100,h:100,paths:[{points:this.K.POLY[selected.shape]||(selected.shape==='ellipse'?Array.from({length:48},(_,i)=>[50+50*Math.cos(i*Math.PI/24),50+50*Math.sin(i*Math.PI/24)]):[[0,0],[100,0],[100,100],[0,100]]),closed:true,fill:'norm',stroke:true}]}:null);
+    const value=await (await import('./slide-freeform.js')).editFreeform(data);if(!value||this.slide?.id!==slideId)return;
+    if(id)this.patchObj(id,{pathData:value,shape:'custom'});else {const object=this.K.shape({id:this.K.oid(),shape:'custom',pathData:value,x:480,y:220,w:480,h:360,fill:'',stroke:'acc',sw:4});this.commit((d,s)=>this.objects(s).push(object));this.setState({sel:object.id,sels:[object.id]});}
+  }
+  async customShowEdit(current) {
+    const docId=this.doc.id;const value=await (await import('./slide-custom-shows.js')).editCustomShow(this.doc,current);
+    if(!value||this.doc.id!==docId)return;
+    this.commit(d=>{d.customShows=(d.customShows||[]).filter(s=>s.name!==current?.name);if(!value.remove)d.customShows.push(value);});
+  }
+  startShow(from, presenter, customName) {
+    const route=customName?this.K.customShowRoute(this.doc,customName):null;
+    const i = route?route[0]:this.shownFrom(from, 1) ?? this.shownFrom(0, 1); if (i == null) return this.toast($t('没有可放映的幻灯片'));
     const pv = !!presenter && !this.openPresenter(); // no second window: the presenter view covers the show, the audience's slide under it
     this.endEdit(); this.showT0 = Date.now(); clearInterval(this.clockT); this.clockT = setInterval(() => this.tick(), 1000);
-    this.setState({ pop: null, ink: {}, jump: '', laser: null }); this.goSlide(i, null, { pv });
+    this.setState({ pop: null, ink: {}, jump: '', laser: null }); this.goSlide(i, null, { pv,route,routePos:0 });
     setTimeout(() => { const el = this.showRef.current; if (el && el.requestFullscreen) el.requestFullscreen().then(() => { this.wasFs = true; }).catch(() => { }); }, 30);
   }
   exitShow() {
+    this.K.stopCarriedMedia(this.showRef.current);
     this.recordRehearsal(); const times = this.rehearsal; this.rehearsal = null; this.persistInk(times);
     this.pendShow = null; clearInterval(this.clockT); this.typed = '';
     if (this.presenter && !this.presenter.closed) this.presenter.close(); this.presenter = null;
@@ -574,12 +634,12 @@ class Component extends DCLogic {
   }
   /** The presenter window follows the show: redrawn when the slide (or the deck) changes; the clock ticks on its own. */
   syncPresenter() {
-    const w = this.presenter, sh = this.state.show; if (!w || w.closed || !sh || (this.pvKey === sh.i && this.pvDoc === this.doc)) return;
-    this.pvKey = sh.i; this.pvDoc = this.doc; const el = w.document.getElementById('pv'); if (el) el.innerHTML = this.K.presenterHtml(this.doc, sh.i, this.clock());
+    const w = this.presenter, sh = this.state.show; if (!w || w.closed || !sh || (this.pvKey === (sh.entered ?? sh.i) && this.pvDoc === this.doc)) return;
+    this.pvKey = sh.entered ?? sh.i; this.pvDoc = this.doc; const el = w.document.getElementById('pv'); if (el) el.innerHTML = this.K.presenterHtml(this.doc, sh.i, this.clock(), sh, this.state.loop);
   }
   clock() { const t = Math.max(0, Math.floor((Date.now() - (this.showT0 || Date.now())) / 1000)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); }
   recordRehearsal() { if (this.rehearsal && this.state.show && this.slideStarted) this.rehearsal[this.doc.slides[this.state.show.i].id] = Math.max(100, Date.now() - this.slideStarted); }
-  tick() { const sh = this.state.show; if (sh && !sh.blank && !this.rehearsal) { const s = this.doc.slides[sh.i]; if (s.advanceAfter > 0 && Date.now() - this.slideStarted >= s.advanceAfter) { const j = this.shownFrom(sh.i + 1, 1) ?? (this.state.loop ? this.shownFrom(0, 1) : null); if (j == null) this.exitShow(); else this.goSlide(j, sh.i); } } const t = this.clock(); for (const d of [this.presenter && !this.presenter.closed && this.presenter.document, this.showRef.current]) if (d) d.querySelectorAll('[data-clock]').forEach(n => { n.textContent = t; }); }
+  tick() { const sh = this.state.show; if (sh && !sh.blank && !this.rehearsal) { const s = this.doc.slides[sh.i]; if (s.advanceAfter > 0 && Date.now() - this.slideStarted >= s.advanceAfter) { const next=this.K.showDestination(sh,this.doc.slides,1,this.state.loop);if(!next)this.exitShow();else this.goSlide(next.index,sh.i,{routePos:next.position}); } } const t = this.clock(); for (const d of [this.presenter && !this.presenter.closed && this.presenter.document, this.showRef.current]) if (d) d.querySelectorAll('[data-clock]').forEach(n => { n.textContent = t; }); }
   presenterAct(act) {
     const sh = this.state.show; if (!sh) return;
     if (act === 'next') this.showNext(); else if (act === 'prev') this.showPrev(); else if (act === 'end') this.exitShow();
@@ -592,7 +652,7 @@ class Component extends DCLogic {
     const sh = this.state.show; if (!sh) return; e.stopPropagation?.(); const k = e.key, ctrl = e.ctrlKey || e.metaKey, set = patch => this.setState({ show: Object.assign({}, this.state.show, patch) });
     if (sh.blank) { e.preventDefault(); return set({ blank: null }); }
     if (/^[0-9]$/.test(k)) { this.typed = (this.typed || '') + k; return this.setState({ jump: this.typed }); }
-    if (k === 'Enter' && this.typed) { e.preventDefault(); const n = +this.typed - 1; this.typed = ''; this.setState({ jump: '' }); if (n >= 0 && n < this.doc.slides.length && n !== sh.i) this.goSlide(n, sh.i); return; }
+    if (k === 'Enter' && this.typed) { e.preventDefault(); const n = +this.typed - 1; this.typed = ''; this.setState({ jump: '' }); const pos=sh.route?.indexOf(n); if (n >= 0 && n < this.doc.slides.length && n !== sh.i && (pos==null||pos>=0)) this.goSlide(n, sh.i, {routePos:pos}); return; }
     if (this.typed) { this.typed = ''; this.setState({ jump: '' }); }
     const low = k.toLowerCase();
     if (ctrl && low === 'l') { e.preventDefault(); return set({ tool: sh.tool === 'laser' ? null : 'laser' }); }
@@ -603,7 +663,7 @@ class Component extends DCLogic {
     if (['ArrowRight', 'ArrowDown', ' ', 'Enter', 'PageDown', 'n', 'N'].includes(k)) { e.preventDefault(); this.showNext(); }
     else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p', 'P'].includes(k)) { e.preventDefault(); this.showPrev(); }
     else if (k === 'Escape') { e.preventDefault(); if (sh.tool) set({ tool: null }); else this.exitShow(); }
-    else if (k === 'Home' || k === 'End') { const j = k === 'Home' ? this.shownFrom(0, 1) : this.shownFrom(this.doc.slides.length - 1, -1); if (j != null && j !== sh.i) this.goSlide(j, sh.i); }
+    else if (k === 'Home' || k === 'End') { e.preventDefault(); const pos=sh.route?(k==='Home'?0:sh.route.length-1):undefined; const j = sh.route?sh.route[pos]:k === 'Home' ? this.shownFrom(0, 1) : this.shownFrom(this.doc.slides.length - 1, -1); if (j != null && (j !== sh.i||pos!==sh.routePos)) this.goSlide(j, sh.i, {routePos:pos}); }
   }
   /** A point of the pen's ink, in slide units. */
   inkPt(e) { const r = this.showSlideRef.current.getBoundingClientRect(); return [Math.round((e.clientX - r.left) / r.width * 1600), Math.round((e.clientY - r.top) / r.height * this.H)]; }
@@ -611,35 +671,39 @@ class Component extends DCLogic {
   /** The first slide the show shows from i on, in direction d (hidden ones are skipped), or null. */
   shownFrom(i, d) { const sl = this.doc.slides; for (let j = i; j >= 0 && j < sl.length; j += d) if (!sl[j].hidden) return j; return null; }
   /** A slide's clicks: its animation steps, less the one that plays by itself as it appears. */
-  stepsOf(s) { const st = this.K.fxSteps(this.animsOf(s)); return { st, auto: st[0] && st[0].auto ? 1 : 0 }; }
+  showAnims(s) { const ids=new Set();const walk=objs=>{for(const o of objs)if(!o.hidden){ids.add(o.id);walk(o.kids||[]);}};walk(s?.objs||[]);return this.animsOf(s).filter(a=>!a.id||ids.has(a.id)); }
+  stepsOf(s) { const st = this.K.fxSteps(this.showAnims(s)); return { st, auto: st[0] && st[0].auto ? 1 : 0 }; }
   /** The show moves to slide j (from slide `from`, whose objects a morph continues): its transition, then what plays by itself. */
   goSlide(j, from, extra) {
+    if(this.state.show){const old=this.state.show;this.K.carrySlideMedia(this.showRef.current,this.doc.slides[from]?.objs,old.route?old.routePos:from,old.route?extra?.routePos:j);}
     this.recordRehearsal(); this.slideStarted = Date.now();
     const s = this.doc.slides[j], { st, auto } = this.stepsOf(s);
     this.pendShow = { reset: true, trans: { kind: s.trans || 'none', dur: s.duration, from }, fx: auto ? st[0] : null };
-    this.setState({ show: Object.assign({}, this.state.show, extra, { i: j, step: 0, live: true }), cur: j });
+    this.setState({ show: Object.assign({}, this.state.show, extra, { i: j,entered:++this.mediaEpoch,step: 0, live: true }), cur: j });
   }
   showNext() {
     const sh = this.state.show; if (!sh) return; const { st, auto } = this.stepsOf(this.doc.slides[sh.i]);
     if (sh.step < st.length - auto) { this.pendShow = { fx: st[sh.step + auto] }; this.setState({ show: Object.assign({}, sh, { step: sh.step + 1, live: true }) }); return; }
-    const j = this.shownFrom(sh.i + 1, 1) ?? (this.state.loop ? this.shownFrom(0, 1) : null); if (j == null) return this.exitShow(); // 循环放映: back to the first
-    this.goSlide(j, sh.i);
+    const next=this.K.showDestination(sh,this.doc.slides,1,this.state.loop);if(!next)return this.exitShow();
+    this.goSlide(next.index,sh.i,{routePos:next.position});
   }
   showPrev() {
     const sh = this.state.show; if (!sh) return; this.pendShow = { reset: true };
     if (sh.step > 0) return this.setState({ show: Object.assign({}, sh, { step: sh.step - 1, live: false }) });
-    const j = this.shownFrom(sh.i - 1, -1); if (j == null) return;
-    const { st, auto } = this.stepsOf(this.doc.slides[j]); this.setState({ show: Object.assign({}, sh, { i: j, step: st.length - auto, live: false }), cur: j });
+    const previous=this.K.showDestination(sh,this.doc.slides,-1);if(!previous)return;const j=previous.index;
+    this.K.stopCarriedMedia(this.showRef.current);
+    const { st, auto } = this.stepsOf(this.doc.slides[j]); this.setState({ show: Object.assign({}, sh, { i: j,routePos:previous.position,entered:++this.mediaEpoch,step: st.length - auto, live: false }), cur: j });
   }
   /** What the show plays once it has drawn: the transition, then a step's effects (after the transition when they play by themselves). */
   playShow() {
     const p = this.pendShow, root = this.showRef.current, box = this.showSlideRef.current, sh = this.state.show; if (!p || !root || !box || !sh) return;
     const K = this.K, H = this.H, s = this.doc.slides[sh.i], el = id => root.querySelector(`[data-oid="${id}"]`);
-    if (s.objs.length && !el(s.objs[0].id)) { if ((p.tries = (p.tries || 0) + 1) < 30) requestAnimationFrame(() => this.playShow()); return; } // the slide view draws once its kit has loaded
+    const first=s.objs.find(o=>!o.hidden);
+    if (first && !el(first.id)) { if ((p.tries = (p.tries || 0) + 1) < 30) requestAnimationFrame(() => this.playShow()); return; } // the slide view draws once its kit has loaded
     this.pendShow = null;
     if (p.reset) { try { root.getAnimations({ subtree: true }).forEach(a => a.cancel()); } catch (e) { } }
     const base = p.trans ? this.playTrans(box, el, s, p.trans.from != null ? this.doc.slides[p.trans.from] : null, p.trans.kind, p.trans.dur) : 0;
-    if (p.fx) for (const { a, at } of p.fx.fx) { const o = s.objs.find(x => x.id === a.id), e = o && el(a.id); if (e) e.animate(K.fxFrames(a, o, H), { duration: K.fxDur(a), delay: base + at, fill: 'both', easing: EASE }); }
+    if (p.fx) for (const { a, at } of p.fx.fx) { const o = s.objs.find(x => x.id === a.id), e = o && el(a.id); if (e) e.animate(K.fxFrames(a, o, H), { ...K.fxTiming(a), delay: base + at, fill: 'both', easing: EASE }); }
   }
   /** A transition into slide s on its box (el finds an object's element): 平滑 carries each object from its pair on slide prev. Its length in ms. */
   playTrans(box, el, s, prev, kind, dur) {
@@ -667,7 +731,7 @@ class Component extends DCLogic {
     const s = this.slide, root = this.stageRef.current, K = this.K; if (!s || !root) return; let t0 = 0;
     for (const step of K.fxSteps(this.animsOf(s))) {
       let end = 0;
-      for (const { a, at } of step.fx) { const o = s.objs.find(x => x.id === a.id), e = o && root.querySelector(`[data-soid="${a.id}"]`); if (e) e.animate(K.fxFrames(a, o, this.H), { duration: K.fxDur(a), delay: t0 + at, fill: 'backwards', easing: EASE }); end = Math.max(end, at + K.fxDur(a)); }
+      for (const { a, at } of step.fx) { const o = s.objs.find(x => x.id === a.id), e = o && root.querySelector(`[data-soid="${a.id}"]`); if (e) e.animate(K.fxFrames(a, o, this.H), { ...K.fxTiming(a), delay: t0 + at, fill: 'backwards', easing: EASE }); end = Math.max(end, at + K.fxSpan(a)); }
       t0 += end + 300;
     }
   }
@@ -678,7 +742,7 @@ class Component extends DCLogic {
     if (op.kind === 'notes') return this.setState({ notesH: Math.round(Math.max(48, Math.min(this.state.box.h * 0.6 + op.h, op.h - (e.clientY - op.sy)))) }); // the divider drags the notes pane taller, the slide gives way
     const box = o => ({ x: o.x, y: o.y, w: o.w, h: o.h, rot: o.rot || 0 });
     const K = this.K, s = this.slide, th = 8 / k, snapping = !(e.ctrlKey || e.metaKey); // ⌘ / Ctrl drags free of the guides
-    const others = () => s.objs.filter(o => !(op.objs || [op.o]).some(m => m.id === o.id) && o.t !== 'line');
+    const others = () => this.objects(s).filter(o => !(op.objs || [op.o]).some(m => m.id === o.id) && o.t !== 'line');
     if (op.kind === 'move') {
       if (!op.moved && Math.abs(dx) + Math.abs(dy) < 3 / k) return; op.moved = true;
       const b0 = op.objs.length > 1 ? K.union(op.objs) : box(op.o); let x = Math.round(b0.x + dx), y = Math.round(b0.y + dy), guides = [], hints = [];
@@ -698,7 +762,7 @@ class Component extends DCLogic {
     if (op.kind === 'col') { const ws = K.colWidths(op.o).slice(), d = Math.max(40 - ws[op.col], Math.round(dx)); ws[op.col] += d; this.setState({ lives: { [op.o.id]: Object.assign(box(op.o), { w: op.o.w + d, colW: ws }) } }); }
     if (op.kind === 'end') { // a line's end follows the pointer, and sticks to a shape's side when dropped over one
       const [px, py] = this.slidePt(e), [a, b] = K.lineEnds(op.o), pts = [[op.o.x + a[0], op.o.y + a[1]], [op.o.x + b[0], op.o.y + b[1]]];
-      const target = !e.altKey && s.objs.slice().reverse().find(o => o.id !== op.o.id && o.t !== 'line' && px >= o.x && px <= o.x + o.w && py >= o.y && py <= o.y + o.h);
+      const target = !e.altKey && this.objects(s).slice().reverse().find(o => o.id !== op.o.id && o.t !== 'line' && px >= o.x && px <= o.x + o.w && py >= o.y && py <= o.y + o.h);
       let at = [px, py], ref = null;
       if (target) { const sites = [0, 1, 2, 3].map(i => K.site(target, i)); let best = 0; sites.forEach((q, i) => { if (Math.hypot(q[0] - px, q[1] - py) < Math.hypot(sites[best][0] - px, sites[best][1] - py)) best = i; }); at = sites[best]; ref = { id: target.id, idx: best }; }
       if (e.shiftKey && !target) { const o2 = pts[1 - op.end]; if (Math.abs(px - o2[0]) > Math.abs(py - o2[1])) at = [px, o2[1]]; else at = [o2[0], py]; }
@@ -714,7 +778,7 @@ class Component extends DCLogic {
   };
   onWU = () => {
     const op = this.op; this.op = null; if (!op) return; const lives = this.state.lives;
-    if (lives) { this.commit((d, s) => { for (const o of s.objs) { const lv = lives[o.id]; if (lv) Object.assign(o, this.moveKids(o, lv)); } }); this.setState({ lives: null, guides: null }); }
+    if (lives) { this.commit((d, s) => { for (const o of this.objects(s)) { const lv = lives[o.id]; if (lv) Object.assign(o, this.moveKids(o, lv)); } }); this.setState({ lives: null, guides: null }); }
   };
   openPop(id, e, x, y, extra) { const r = e && e.currentTarget.getBoundingClientRect(); this.setState({ pop: this.state.pop && this.state.pop.id === id && x == null ? null : Object.assign({ id, x: x ?? r.left, y: y ?? r.bottom + 4 }, extra), gridHover: null }); }
   openTab(k, e) { const root = e.currentTarget.closest('[data-edroot]'); const r = (e.currentTarget.closest('[data-glass-bar]') || e.currentTarget).getBoundingClientRect(), rr = root ? root.getBoundingClientRect() : { left: 0 }; const same = this.state.bubble && this.state.tab === k; this.setState({ tab: k, bubble: !same, bx: Math.round(r.left + r.width / 2 - rr.left), bRootW: Math.round(rr.width), pop: null }); }
@@ -724,7 +788,7 @@ class Component extends DCLogic {
   picTools() {
     const o = this.obj; if (!o || o.t !== 'image' || !this.P) return null;
     if (this.pt && this.pt.id === o.id) return this.pt.tools;
-    const id = o.id, find = d => { for (const s of d.slides) { const x = s.objs.find(y => y.id === id); if (x) return x; } return null; };
+    const id = o.id, find = d => { for (const s of d.slides) { const x = this.K.flatObjs(s.objs).find(y => y.id === id); if (x) return x; } return null; };
     const tools = this.P.pictureTools({
       look: () => { const x = find(this.doc); return x ? Object.assign({}, x.look, x.rot ? { rotation: String(Math.round(x.rot)) } : {}) : {}; },
       show: look => this.setState({ picLive: { id, look } }),
@@ -759,6 +823,7 @@ class Component extends DCLogic {
     const arrange = () => G('排列', R(sel('arr', $t('层次'), null, { title: '置于顶层、上移、下移、置于底层' }), sel('aln', $t('对齐'), null, { title: '对齐幻灯片或所选对象' })),
       R(btn('组合', null, () => this.groupSels(), { dis: this.sels.length < 2, title: '组合 Ctrl+G' }), o.t === 'group' && btn('取消组合', null, () => this.ungroup(), { title: '取消组合 Ctrl+Shift+G' }),
         btn('复制', 'duplicate', () => this.dupSels(), { title: '复制 Ctrl+D' }), btn('删除', 'trash', () => this.deleteSels())));
+    if(tab==='picture'&&o?.mediaType)return {tabs,groups:[G('媒体播放',R(btn('剪辑与播放设置','play',()=>this.editPlayback()),btn('字幕',null,()=>this.editCaptions())),...(o.playback?.bookmarks||[]).map(b=>R(btn(b.name+' · '+b.time+'s',null,()=>{const el=[...this.stageRef.current.querySelectorAll('[data-media-id]')].find(el=>el.dataset.mediaId===o.id);if(el){el.currentTime=b.time;el.play()?.catch(()=>{});}})))),arrange(),box()]};
     if (tab === 'picture' && o && o.t === 'image') return { tabs, groups: this.P.picturePanel(k, I, this.picTools(), this.picLook(o), st.picBusy).concat([arrange(), box()]) };
     if (tab === 'table' && o && o.t === 'table') {
       const cell = st.cell || { r: 0, c: 0 }, own = (o.cells || {})[cell.r + ':' + cell.c] || {}, [r1, c1, r2, c2] = this.cellRange(), merged = (o.merges || []).some(m => m.r === cell.r && m.c === cell.c), al = own.align || 'left';
@@ -787,12 +852,12 @@ class Component extends DCLogic {
       const shapeG = isLine ? G('箭头与线型', R(lab('起点'), sp(), sel('head', $t((ENDS.find(([v]) => v === (o.head || 'none')) || ENDS[0])[1]), null, { w: 150, title: '起点箭头' })),
           R(lab('终点'), sp(), sel('tail', $t((ENDS.find(([v]) => v === (o.tail || 'none')) || ENDS[0])[1]), null, { w: 150, title: '终点箭头' })),
           R(lab('线型'), sp(), sel('lk', $t(o.bent ? '肘形连接符' : '直线'), null, { w: 150, title: '线型' })))
-        : o.t === 'shape' ? G('形状', R(sel('shp', $t('更改形状'), null, { title: '更改形状' })), R(chk('锁定纵横比', !!o.lockAspect, v => this.patchSel({ lockAspect: v }))))
+        : o.t === 'shape' ? G('形状', R(sel('shp', $t('更改形状'), null, { title: '更改形状' }), btn('编辑顶点', null, () => this.editVertices())), R(chk('锁定纵横比', !!o.lockAspect, v => this.patchSel({ lockAspect: v }))))
         : o.t !== 'group' ? G('大小', R(chk('锁定纵横比', !!o.lockAspect, v => this.patchSel({ lockAspect: v })))) : null;
       return { tabs, groups: [outline, shapeG, arrange(), box()].filter(Boolean) };
     }
     if (tab === 'insert') return { tabs, groups: [
-      G('常用', grid(3, card('文本框', 'textbox', () => this.insertText()), card('图片', 'picture', () => this.imgRef.current.click()), card('视频 / 音频', 'play', () => this.insertMedia()), menuCard('shape', '形状', 'shape', null), menuCard('table', '表格', 'table', null))),
+      G('常用', grid(3, card('文本框', 'textbox', () => this.insertText()), card('图片', 'picture', () => this.imgRef.current.click()), card('视频 / 音频', 'play', () => this.insertMedia()), menuCard('shape', '形状', 'shape', null), card('自由形状','shape',()=>this.editVertices(true)), menuCard('table', '表格', 'table', null))),
       G('页面', grid(3, card('新建幻灯片', 'slide', e => this.openGallery('newslide2', 'new', e)), card('日期', 'date', () => this.insertDate()), card('页脚', 'footer', () => this.insertFooter()), card('页码', 'pageNumber', () => this.insertPageNums(), { title: '为所有幻灯片添加页码' })))] };
     if (tab === 'design') { const masters = s?.masterObjects || [], selected = masters.find(m => m.source + ':' + m.id === st.masterKey) || masters[0], mk = this.doc.id + ':' + (selected?.source || '') + ':' + (selected?.id || ''), draft = st.masterDraftKey === mk ? st.masterDraft || {} : {}, value = key => draft[key] ?? selected?.[key] ?? '', field = (key, label) => R(lab(label), k.input(label, value(key), e => this.setState({ masterDraftKey: mk, masterDraft: { ...draft, [key]: e.target.value } }))); return { tabs, groups: [
       G('主题', grid(3, Object.keys(K.THEMES).map(key => theme(K.THEMES[key].name, K.THEMES[key], d.theme === key, () => this.commit(dd => { dd.theme = key; }))))),
@@ -821,9 +886,17 @@ class Component extends DCLogic {
       G('计时', R(lab('开始'), sp(), pick(curFx ? curFx.start || 'click' : 'click', FX_START.map(([v, l]) => [v, $t(l)]), v => this.patchFx({ start: v }), { w: 150, title: '动画开始方式' })),
         R(lab('持续时间'), sp(), num(secs(curFx ? K.fxDur(curFx) / 1000 : 0.5), dd => curFx && this.patchFx({ dur: Math.max(1, Math.round((K.fxDur(curFx) / 1000 + dd * 0.25) * 1000)) }), t => { const v = secParse(t); if (v != null) this.patchFx({ dur: Math.max(1, Math.round(v * 1000)) }); }, { w: 80, title: '持续时间（秒）' })),
         R(lab('延迟'), sp(), num(secs(curFx ? (curFx.delay || 0) / 1000 : 0), dd => curFx && this.patchFx({ delay: Math.max(0, Math.round(((curFx.delay || 0) / 1000 + dd * 0.25) * 1000)) }), t => { const v = secParse(t); if (v != null) this.patchFx({ delay: Math.max(0, Math.round(v * 1000)) }); }, { w: 80, title: '延迟（秒）' }))),
+      G('重复与反向', R(lab('重复次数'),sp(),num(String(curFx?.repeat||1),dd=>curFx&&this.patchFx({repeat:Math.max(1,Math.min(100,(curFx.repeat||1)+dd))}),t=>{const v=Number(t);if(Number.isFinite(v)&&v>=1&&v<=100)this.patchFx({repeat:v});},{w:80,title:'1 至 100 次'})),R(chk('自动反向',!!curFx?.autoReverse,v=>this.patchFx({autoReverse:v})))),
       G('动画窗格', R(btn('动画窗格', null, () => this.setState({ fxPane: !st.fxPane }), { on: !!st.fxPane }), btn('预览', 'play', () => this.previewFx())),
         R(k.link('清除本页动画', () => { this.commit((dd, cs) => { cs.anims = []; }); this.setState({ fx: null }); }, { dis: !anims.length })))] };
-    if (tab === 'view') return { tabs, groups: [G('视图', R(btn('普通', 'slide', () => this.setState({ outlineView: false, notesPage: false, notesH: 84 })), btn('大纲', 'list', () => this.setState({ outlineView: true, notesPage: false })), btn('备注页', 'note', () => this.setState({ outlineView: false, notesPage: true, showNotes: true, notesH: Math.max(220, this.state.box.h * .45) })))),
+    if (tab === 'view') return { tabs, groups: [
+      G('组合编辑', R(btn('编辑组合',null,()=>this.enterGroup(),{dis:!this.objects().some(o=>o.id===st.sel&&o.t==='group'&&!o.locked)}),btn('返回上一级',null,()=>this.leaveGroup(),{dis:!this.groupScope()}))),
+      G('选择窗格', ...this.objectRows().map((row,i)=>R(btn('　'.repeat(row.depth)+(row.o.hidden?'◌ ':row.o.locked?'▣ ':'')+(row.o.name || K.textOf(row.o.html||'').trim().slice(0,24) || $t('对象 {n}',{n:i+1})),null,()=>this.selectObjectRow(row),{on:(st.objectTarget||st.sel)===row.o.id}))),
+        ...(()=>{const target=K.flatObjs(s?.objs||[]).find(x=>x.id===(st.objectTarget||st.sel));return target?[...(target.t==='group'&&!target.locked?[R(btn('编辑组合',null,()=>{const path=[];const locate=(objs)=>{for(const o of objs){if(o.id===target.id)return true;if(o.kids){path.push(o.id);if(locate(o.kids))return true;path.pop();}}return false;};locate(s.objs);this.setState({groupEdit:{slide:s.id,ids:path}});this.enterGroup(target.id);} ))]:[]),R(k.input('对象名称',target.name||'',e=>this.objectState(target.id,{name:e.target.value}))),R(chk('隐藏对象',!!target.hidden,v=>this.objectState(target.id,{hidden:v})),chk('锁定对象',!!target.locked,v=>this.objectState(target.id,{locked:v})))]:[];})(),
+        R(btn('上移一层',null,()=>this.arrange('up'),{dis:!o}),btn('下移一层',null,()=>this.arrange('down'),{dis:!o}))),
+      G('替换文字字体', R(k.input('原字体',st.fontFrom||'',e=>this.setState({fontFrom:e.target.value}))), R(k.input('替换为',st.fontTo||'',e=>this.setState({fontTo:e.target.value}))), R(btn('替换全部幻灯片',null,()=>this.replaceFonts(),{dis:!st.fontFrom?.trim()||!st.fontTo?.trim()}))),
+      G('视图', R(btn('普通', 'slide', () => this.setState({ outlineView: false, notesPage: false, notesH: 84 })), btn('大纲', 'list', () => this.setState({ outlineView: true, notesPage: false })), btn('备注页', 'note', () => this.setState({ outlineView: false, notesPage: true, showNotes: true, notesH: Math.max(220, this.state.box.h * .45) })))),
+      G('打印', R(pick(st.printMode||'handout',[['handout',$t('讲义')],['notes',$t('备注页')],['slides',$t('整页幻灯片')]],v=>this.setState({printMode:v}))), R(pick(String(st.printCount||6),[1,2,3,4,6,9].map(n=>[String(n),$t('每页 {n} 张',{n})]),v=>this.setState({printCount:+v}))), R(chk('包含隐藏幻灯片',!!st.printHidden,v=>this.setState({printHidden:v}))), R(btn('打印 / 保存为 PDF',null,()=>this.K.printDoc(this.doc,{printOptions:{mode:st.printMode||'handout',count:st.printCount||6,hidden:!!st.printHidden}})))),
       G('对齐辅助', R(chk('标尺', !!st.ruler, value => this.setState({ ruler: value })), chk('参考线', !!st.fixedGuides, value => this.setState({ fixedGuides: value }))),
         R(lab('垂直位置 %'), num(String(st.guideX ?? 50), delta => this.setState({ guideX: Math.max(0, Math.min(100, (st.guideX ?? 50) + delta)) }), text => this.setState({ guideX: Math.max(0, Math.min(100, +text || 0)) }))),
         R(lab('水平位置 %'), num(String(st.guideY ?? 50), delta => this.setState({ guideY: Math.max(0, Math.min(100, (st.guideY ?? 50) + delta)) }), text => this.setState({ guideY: Math.max(0, Math.min(100, +text || 0)) }))))] };
@@ -831,6 +904,7 @@ class Component extends DCLogic {
     if (tab === 'show') return { tabs, groups: [
       G('开始放映', grid(3, card('从头开始', 'play', () => this.startShow(0), { title: '从头开始 F5' }), card('从当前页', 'slide', () => this.startShow(this.ci), { title: '从当前幻灯片开始 Shift+F5' }), card('演示者视图', 'fit', () => this.startShow(this.ci, true), { title: '演示者视图 Alt+F5' })),
         R(btn('排练计时', 'play', () => { this.rehearsal = {}; this.startShow(0); }), chk('循环放映', !!st.loop, v => this.setState({ loop: v }), { title: '放映到最后一张后从头开始，按 Esc 结束' }))),
+      G('自定义放映',R(btn('新建自定义放映',null,()=>this.customShowEdit())),...(d.customShows||[]).map(show=>R(btn(show.name,'play',()=>this.startShow(0,false,show.name)),btn('编辑',null,()=>this.customShowEdit(show))))),
       G('视图', R(btn('幻灯片浏览', 'grid', () => this.setState({ sorter: !st.sorter, sel: null, sels: [], editing: null }), { on: !!st.sorter }), btn('显示备注', 'note', () => this.setState({ showNotes: !st.showNotes }), { on: !!st.showNotes })),
         R(chk('隐藏本页', !!(s && s.hidden), () => this.commit((dd, cs) => { cs.hidden = !cs.hidden; }), { title: '放映时跳过这一页' })))] };
     // 开始: the slide, then the text of what is selected
@@ -909,7 +983,7 @@ class Component extends DCLogic {
     ];
     if (tab === 'insert') ribbon = [
       G('newslide2', '新建幻灯片'), SEP,
-      B('文本框', () => this.insertText()), M('shape', '形状', K.SHAPE_GALLERY.flatMap(([name, items]) => [HD(name), ...items.map(([key, l]) => I(l, () => this.insertShape(key)))])), B('图片', () => this.imgRef.current.click()), B('视频 / 音频', () => this.insertMedia()), M('table', '表格', []), SEP,
+      B('文本框', () => this.insertText()), M('shape', '形状', K.SHAPE_GALLERY.flatMap(([name, items]) => [HD(name), ...items.map(([key, l]) => I(l, () => this.insertShape(key)))])), B('图片', () => this.imgRef.current.click()), B('视频 / 音频', () => this.insertMedia()), M('table', '表格', []), B('图表', () => this.editChart()), B('SmartArt', () => this.editSmartArt()), B('编辑 SmartArt', () => this.editSmartArt(true), { dis: this.obj?.data?.type !== 'smartart' }), B('编辑图表', () => this.editChart(true), { dis: this.obj?.data?.type !== 'chart' }), SEP,
       B('日期', () => this.insertDate()),
       B('页码', () => this.insertPageNums(), { title: '为所有幻灯片添加页码' })
     ];
@@ -942,7 +1016,7 @@ class Component extends DCLogic {
       return { n: click ? clickNo : '', dot: FX_DOT[K.fxClass(a)], label: $t(K.fxLabel(a)) + ' · ' + name, bg: st.fx === i ? 'var(--fill, rgba(0,0,0,0.07))' : 'transparent',
         onClick: () => this.setState(ob ? { fx: i, sel: ob.id, sels: [ob.id] } : { fx: i }), up: e => { e.stopPropagation(); this.moveFx(i, -1); }, down: e => { e.stopPropagation(); this.moveFx(i, 1); }, del: e => { e.stopPropagation(); this.delFx(i); } };
     });
-    if (tab === 'view') ribbon = [B('大纲', () => this.setState({ outlineView: !st.outlineView })), B('备注页', () => this.setState({ notesPage: !st.notesPage, showNotes: true, notesH: 280 })), B('标尺', () => this.setState({ ruler: !st.ruler })), B('参考线', () => this.setState({ fixedGuides: !st.fixedGuides }))];
+    if (tab === 'view') ribbon = [B('选择对象 / 替换字体',()=>{if(!this.props.formatOpen)this.props.onFormat?.();}), B('大纲', () => this.setState({ outlineView: !st.outlineView })), B('备注页', () => this.setState({ notesPage: !st.notesPage, showNotes: true, notesH: 280 })), B('标尺', () => this.setState({ ruler: !st.ruler })), B('参考线', () => this.setState({ fixedGuides: !st.fixedGuides }))];
     if (tab === 'review') ribbon = [B('新建批注', () => this.addComment())];
     if (tab === 'show') ribbon = [B('从头开始', () => this.startShow(0), { title: 'F5' }), B('从当前幻灯片开始', () => this.startShow(this.ci), { title: 'Shift+F5' }),
       B('演示者视图', () => this.startShow(this.ci, true), { title: 'Alt+F5' }), B('循环放映', () => this.setState({ loop: !st.loop }), { on: !!st.loop, title: '放映到最后一张后从头开始，按 Esc 结束' }), SEP, B('幻灯片浏览', () => this.setState({ sorter: !st.sorter, sel: null, sels: [], editing: null }), { on: !!st.sorter }), SEP, B(s && s.hidden ? '取消隐藏' : '隐藏幻灯片', () => this.commit((dd, cs) => { cs.hidden = !cs.hidden; })), SEP, B(st.showNotes ? '隐藏备注' : '显示备注', () => this.setState({ showNotes: !st.showNotes }))];
@@ -976,7 +1050,7 @@ class Component extends DCLogic {
       M('grad', '渐变', gradients()), SEP,
       ...outlineTools(),
       M('op', '透明度', [1, 0.8, 0.6, 0.4, 0.2].map(v => I(Math.round((1 - v) * 100) + '%', () => this.patchSel({ fillOpacity: v }), { on: (o.fillOpacity ?? 1) === v }))),
-      o.t === 'shape' ? M('shp', '更改形状', K.SHAPE_GALLERY.filter(g => g[0] !== '线条').flatMap(([name, items]) => [HD(name), ...items.map(([key, l]) => I(l, () => this.patchSel({ shape: key }), { on: o.shape === key }))])) : SEP,
+      o.t === 'shape' ? M('shp', '更改形状', K.SHAPE_GALLERY.filter(g => g[0] !== '线条').flatMap(([name, items]) => [HD(name), ...items.map(([key, l]) => I(l, () => this.patchSel({ shape: key, pathData: null }), { on: o.shape === key }))])) : SEP,
       B('锁定纵横比', () => this.patchSel({ lockAspect: !o.lockAspect }), { on: !!o.lockAspect }), SEP,
       ...placeTools(), ...groupTools(), ...rotTools(), SEP, ...boxFields(), SEP,
       ...copyTools()
@@ -1013,7 +1087,7 @@ class Component extends DCLogic {
         popItems = many ? [I('剪切', () => this.copySels(true), { hint: K + 'X' }), I('复制', () => this.copySels(false), { hint: K + 'C' }), ...(clip ? [I('粘贴', () => this.pasteSels(), { hint: K + 'V' })] : []),
           I('复制一份', () => this.dupSels(), { hint: K + 'D' }), I('删除', () => this.deleteSels(), { hint: '⌫' }), IS,
           I('置于顶层', () => this.arrange('front')), I('上移一层', () => this.arrange('up')), I('下移一层', () => this.arrange('down')), I('置于底层', () => this.arrange('back')),
-          ...(many > 1 ? [IS, I('组合', () => this.groupSels(), { hint: K + 'G' })] : o && o.t === 'group' ? [IS, I('取消组合', () => this.ungroup())] : [])]
+          ...(many > 1 ? [IS, I('组合', () => this.groupSels(), { hint: K + 'G' })] : o && o.t === 'group' ? [IS, I('编辑组合', () => this.enterGroup()), I('取消组合', () => this.ungroup())] : [])]
           : [...(clip ? [I('粘贴', () => this.pasteSels(), { hint: K + 'V' }), IS] : []), HD('新建幻灯片'), ...layoutItems(key => this.addSlide(key, this.ci + 1)), IS, I('从此页放映', () => this.startShow(this.ci))];
       }
       else popItems = this.menus[st.pop.id] || [];
@@ -1021,37 +1095,39 @@ class Component extends DCLogic {
     const lives = st.lives || {}, live = x => { const lv = lives[x.id]; return lv ? Object.assign({}, x, lv, this.moveKids(x, lv)) : x; };
     // a picture tool's result shows at once, before the engine has answered
     const livePic = x => { const pl = st.picLive; if (!pl || pl.id !== x.id) return x; const look = Object.assign({}, pl.look); delete look.rotation; return Object.assign({}, x, { look, rot: Number(pl.look.rotation) || 0 }); };
-    const decor = s ? K.slideDecor(s, H).map(x => Object.assign(K.objView(x, th, ptPx), { id: x.id, ce: false, cursor: 'default', pe: 'none', phLine: 'none', onMD: null, onDbl: null, onBlur: null })) : [];
+    const decor = s && !this.groupScope() ? K.slideDecor(s, H).map(x => Object.assign(K.objView(x, th, ptPx), { id: x.id, ce: false, cursor: 'default', pe: 'none', phLine: 'none', onMD: null, onDbl: null, onBlur: null })) : [];
     // AI 自动补全 (complete.js): what the model is told about the text being typed
     const titled = s && s.objs.find(x => /^(title|ctrTitle)$/.test(x.ph || '')), slideTitle = titled ? K.textOf(titled.html).trim().slice(0, 80) : '';
     const onSlide = s ? ' on slide ' + (this.ci + 1) + ' of a presentation' + (slideTitle ? ' titled "' + slideTitle + '"' : '') : '';
-    const objs = s ? decor.concat(s.objs.map(x => {
+    const objs = s ? decor.concat(this.objects(s).filter(x=>!x.hidden).map(x => {
+      const locked=this.objectLocked(x);
       const y = livePic(live(x));
       const v = K.objView(y, th, ptPx), editing = st.editing === x.id, isSel = st.sel === x.id;
       return Object.assign(v, {
-        inner: editing ? {__html:x.html || ''} : v.inner, editZoom: editing && x.autofit === 'shrink' ? (x.fit || 1) : 1, fs: editing ? x.fs + 'px' : v.fs, id: x.id, ce: editing, us: editing ? 'text' : 'none', tcur: editing ? 'text' : 'inherit', cursor: editing ? 'text' : 'move', pe: 'auto', ovf: 'visible',
+        inner: editing ? {__html:x.html || ''} : v.inner, editZoom: editing && x.autofit === 'shrink' ? (x.fit || 1) : 1, fs: editing ? x.fs + 'px' : v.fs, id: x.id, ce: editing, us: editing ? 'text' : 'none', tcur: editing ? 'text' : 'inherit', cursor: locked ? 'default' : editing ? 'text' : 'move', pe: locked ? 'none' : 'auto', ovf: 'visible',
         op: st.picBusy && isSel ? 0.5 : v.op,
         phLine: x.ph && !isSel && !K.textOf(x.html) ? `${1 / k}px dashed rgba(128,128,128,0.5)` : 'none',
         hasBadge: tab === 'anim' && x.id in fxNo, badge: fxNo[x.id],
         tcells: v.tcells.map(c => Object.assign(c, {
           outline: isSel && st.cell && ((st.cell.r === c.r && st.cell.c === c.c) || (st.cellSel && c.r >= Math.min(st.cell.r, st.cellSel.r) && c.r <= Math.max(st.cell.r, st.cellSel.r) && c.c >= Math.min(st.cell.c, st.cellSel.c) && c.c <= Math.max(st.cell.c, st.cellSel.c))) ? `${1.5 / k}px solid var(--k59, #3F7D5C)` : 'none',
-          onBlur: e => { const html=e.currentTarget.innerHTML, t = e.currentTarget.innerText; if (t !== (x.rows[c.r][c.c] || '') || html !== x.cells?.[c.r+':'+c.c]?.html) this.commit((dd, cs) => { const oo = cs.objs.find(z => z.id === x.id); if (oo) { oo.rows[c.r][c.c] = t; oo.cells ||= {}; const key=c.r+':'+c.c; oo.cells[key]={...(oo.cells[key]||{}),html}; } }); const rt = e.relatedTarget; if (!rt || !String(rt.getAttribute && rt.getAttribute('data-edit') || '').startsWith(x.id)) this.setState({ editing: null }); },
+          onBlur: e => { const html=e.currentTarget.innerHTML, t = e.currentTarget.innerText; if (t !== (x.rows[c.r][c.c] || '') || html !== x.cells?.[c.r+':'+c.c]?.html) this.commit((dd, cs) => { const oo = this.objects(cs).find(z => z.id === x.id); if (oo) { oo.rows[c.r][c.c] = t; oo.cells ||= {}; const key=c.r+':'+c.c; oo.cells[key]={...(oo.cells[key]||{}),html}; } }); const rt = e.relatedTarget; if (!rt || !String(rt.getAttribute && rt.getAttribute('data-edit') || '').startsWith(x.id)) this.setState({ editing: null }); },
           onFocus: () => { if (!st.cell || st.cell.r !== c.r || st.cell.c !== c.c) this.setState({ cell: { r: c.r, c: c.c } }); },
           // in a selected table a click puts the caret in the cell (⇧-click extends the range 合并 works on) instead of dragging the table
           onMD: e => { if (!isSel) return; e.stopPropagation(); if (e.shiftKey && st.cell) { e.preventDefault(); this.setState({ cellSel: { r: c.r, c: c.c } }); return; } if (!editing) { e.preventDefault(); this.setState({ editing: x.id, cell: { r: c.r, c: c.c }, cellSel: null }); this.focusEdit = c.key; this.selectAll = false; } else this.setState({ cell: { r: c.r, c: c.c }, cellSel: null }); }
         })),
         onMD: e => {
+          if(locked)return;
           if (e.button === 2) { e.stopPropagation(); if (!editing && !this.state.sels.includes(x.id)) this.select(x.id, false); return; } // right-click: select it for the menu, move nothing
           if (editing) { e.stopPropagation(); return; } e.stopPropagation(); e.preventDefault(); this.endEdit(); this.thumbFocus = false;
           const inSel = this.state.sels.includes(x.id); if (e.shiftKey || !inSel) this.select(x.id, e.shiftKey); else this.setState({ sel: x.id, editing: null, pop: null });
           let objs = e.shiftKey ? [] : (inSel ? this.sels : [x]);
           if (e.altKey && objs.length) { // ⌥-drag moves a copy and leaves the original
-            const copies = objs.map(o => this.copyOf(o)); this.commit((dd, cs) => cs.objs.push(...copies)); this.setState({ sel: copies[copies.length - 1].id, sels: copies.map(c => c.id) }); objs = copies;
+            const copies = objs.map(o => this.copyOf(o)); this.commit((dd, cs) => this.objects(cs).push(...copies)); this.setState({ sel: copies[copies.length - 1].id, sels: copies.map(c => c.id) }); objs = copies;
           }
           if (objs.length) this.op = { kind: 'move', o: objs.find(o => o.id === x.id) || objs[objs.length - 1], objs, sx: e.clientX, sy: e.clientY, moved: false };
           e.currentTarget.closest('[tabindex]') && e.currentTarget.closest('[tabindex]').focus({ preventScroll: true });
         },
-        onDbl: e => { e.stopPropagation(); if (x.t === 'image' || x.t === 'line' || x.t === 'group' || x.t === 'object' || x.field === 'slideNumber' || x.field === 'date') return; if (x.ph === 'pic') { this.picFor = x.id; this.imgRef.current.click(); return; } this.setState({ editing: x.id, sel: x.id, sels: [x.id] }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = false; },
+        onDbl: e => { e.stopPropagation(); if(x.t==='group'&&!x.locked){this.enterGroup(x.id);return;} if(locked)return; if(x.t==='object'&&x.data?.type==='smartart'){this.select(x.id,false);this.editSmartArt(true,x);return;} if(x.t==='object'&&x.data?.type==='chart'){this.select(x.id,false);this.editChart(true,x);return;} if (x.t === 'image' || x.t === 'line' || x.t === 'group' || x.t === 'object' || x.field === 'slideNumber' || x.field === 'date') return; if (x.ph === 'pic') { this.picFor = x.id; this.imgRef.current.click(); return; } this.setState({ editing: x.id, sel: x.id, sels: [x.id] }); this.focusEdit = x.t === 'table' ? x.id + ':0:0' : x.id; this.selectAll = false; },
         onBlur: e => { const h = e.currentTarget.innerHTML; if (h !== x.html) this.patchObj(x.id, { html: h }); this.setState({ editing: null }); }
       });
     })) : [];
@@ -1123,7 +1199,8 @@ class Component extends DCLogic {
       onFindCase:e=>this.setState({findCase:e.target.checked,findIndex:-1}), onFindWord:e=>this.setState({findWord:e.target.checked,findIndex:-1}),
       findNext:()=>this.nextFind(), replaceOne:()=>this.replaceFind(false), replaceAll:()=>this.replaceFind(true), closeFind:()=>this.setState({findOpen:false}),
       findKey:e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();this.nextFind();}if(e.key==='Escape'){e.preventDefault();this.setState({findOpen:false});}},
-      outlineView: !!st.outlineView, outlineItems: d.slides.map((slide, i) => { const texts = K.flatObjs(slide.objs).map(o => K.textOf(o.html || '')).filter(Boolean); return { title: (i + 1) + '. ' + (texts[0] || $t('幻灯片')), text: texts.slice(1).join('\n'), onClick: () => this.setState({ cur: i, sel: null, sels: [] }) }; }),
+      groupEditing:!!this.groupScope(),groupTitle:this.groupScope()?.name||$t('编辑组合'),leaveGroup:()=>this.leaveGroup(),
+      outlineView: !!st.outlineView, outlineItems: d.slides.map((slide, i) => ({ title: (i + 1) + '. ' + $t('幻灯片'), boxes: K.flatObjs(slide.objs).filter(o=>(o.t==='text'||o.t==='shape')&&!o.field).map(o=>({editable:!o.hidden&&!this.objectLocked(slide.objs.find(root=>K.flatObjs([root]).some(x=>x.id===o.id))),html:{__html:o.html||'<p><br></p>'},onBlur:e=>this.editOutline(i,o.id,e.currentTarget.innerHTML),onPaste:e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData?.getData('text/plain')||'');}})), onClick: () => { if(this.ci!==i)this.setState({ cur: i, sel: null, sels: [] }); } })),
       rulerHtml: { __html: st.ruler ? `<svg width="1600" height="${H}" style="overflow:visible"><g fill="#666" stroke="#999" font-size="${11/k}">${Array.from({length:16}, (_,i) => `<path d="M ${i*100} 0 v 12"/><text stroke="none" x="${i*100+4}" y="${14/k}">${Math.round(i*100/(d._orig?.geo?.kx || 47.24)*10)/10}</text>`).join('')}${Array.from({length:Math.ceil(H/100)}, (_,i) => `<path d="M 0 ${i*100} h 12"/><text stroke="none" x="${16/k}" y="${i*100+12/k}">${Math.round(i*100/(d._orig?.geo?.ky || 47.24)*10)/10}</text>`).join('')}</g></svg>` : '' },
       mediaDown: e => e.stopPropagation(), onLink: K.slideLinkClick,
       onRootKey: e => {
@@ -1138,7 +1215,7 @@ class Component extends DCLogic {
         if (ctrl && key === 'z') { e.preventDefault(); e.shiftKey ? this.props.onRedo && this.props.onRedo() : this.props.onUndo && this.props.onUndo(); return; }
         if (ctrl && key === 'y') { e.preventDefault(); this.props.onRedo && this.props.onRedo(); return; }
         if (ctrl && key === 'm') { e.preventDefault(); this.addSlide('content'); return; }
-        if (ctrl && key === 'a' && s) { e.preventDefault(); const ids = s.objs.map(x => x.id); this.setState({ sel: ids[ids.length - 1] || null, sels: ids }); return; }
+        if (ctrl && key === 'a' && s) { e.preventDefault(); const ids = this.objects(s).filter(o=>!o.hidden&&!this.objectLocked(o)).map(x => x.id); this.setState({ sel: ids[ids.length - 1] || null, sels: ids }); return; }
         if (ctrl && key === 'g') { e.preventDefault(); e.shiftKey ? this.ungroup() : this.groupSels(); return; }
         if (o) {
           if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteSels(); return; }
@@ -1163,9 +1240,9 @@ class Component extends DCLogic {
         if (ctrl && key === 'v' && (window.__writerObjectClip || this.clip?.length)) { e.preventDefault(); this.pasteSels(); }
       },
       showing: !!sh, showSlide, showW, showWpx: showW + 'px', showHpx: showW * H / 1600 + 'px',
-      showHidden: sh && showSlide ? K.fxHidden(this.animsOf(showSlide), sh.step + this.stepsOf(showSlide).auto, sh.live) : [],
+      showHidden: sh && showSlide ? K.fxHidden(this.showAnims(showSlide), sh.step + this.stepsOf(showSlide).auto, sh.live) : [],
       fxPane: !!st.fxPane && !!s, fxRows, fxEmpty: !anims.length, closeFxPane: () => this.setState({ fxPane: false }),
-      showCounter: sh ? `${sh.i + 1} / ${d.slides.length}` : '',
+      showMediaToken:sh?.entered,showCounter: sh ? sh.route?`${(sh.routePos||0)+1} / ${sh.route.length}`:`${sh.i + 1} / ${d.slides.length}` : '',
       onShowKey: e => this.showKey(e),
       onShowClick: () => { if (!sh || sh.tool === 'pen') return; if (sh.blank) this.setState({ show: Object.assign({}, sh, { blank: null }) }); else if (this.doc.slides[sh.i].advanceOnClick !== false) this.showNext(); },
       onShowCtx: e => { e.preventDefault(); this.showPrev(); },
@@ -1178,7 +1255,7 @@ class Component extends DCLogic {
       showCursor: sh && sh.tool === 'pen' ? 'crosshair' : 'none', laserOn: !!(sh && sh.tool === 'laser' && st.laser), laserX: st.laser ? st.laser[0] + 'px' : 0, laserY: st.laser ? st.laser[1] + 'px' : 0,
       inkSvg: { __html: sh && ((st.ink || {})[sh.i] || []).length ? `<svg viewBox="0 0 1600 ${H}" width="100%" height="100%" style="display:block">${st.ink[sh.i].map(l => `<polyline points="${l.map(p => p.join(',')).join(' ')}" fill="none" stroke="#FF3B30" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}</svg>` : '' },
       showBlank: !!(sh && sh.blank), blankBg: sh && sh.blank || '#000', hasJump: !!st.jump, jumpText: $t('跳转到第 {n} 张', { n: st.jump || '' }),
-      presenterIn: !!(sh && sh.pv), presenterHtml: { __html: sh && sh.pv ? K.presenterHtml(d, sh.i, this.clock()) : '' },
+      presenterIn: !!(sh && sh.pv), presenterHtml: { __html: sh && sh.pv ? K.presenterHtml(d, sh.i, this.clock(), sh, st.loop) : '' },
       onPresenterClick: e => { e.stopPropagation(); const a = e.target.closest && e.target.closest('[data-act]'); if (a) this.presenterAct(a.getAttribute('data-act')); },
       onStageCtx: this.onStageCtx, hasPop: !!st.pop, popX: st.pop ? st.pop.x + 'px' : 0, popY: st.pop ? Math.max(8, st.pop.y) + 'px' : 0, popShift: st.pop ? `min(0px, calc(100vw - 8px - ${st.pop.x}px - 100%)) 0px` : 'none', popItems, popIsGrid, gridCells, gridLabel, popIsGallery, gallery, galleryLabel,
       gridLeave: () => this.setState({ gridHover: null }), closePop: () => this.setState({ pop: null })

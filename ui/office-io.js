@@ -1,8 +1,12 @@
+export { inkGeometry } from './slide-freeform.js';
+import { freeformSvg, freeformPaths } from './slide-freeform.js';
+export {bindSlideMedia,disposeSlideMedia,carrySlideMedia,stopCarriedMedia} from './slide-media.js';
+import { richParagraphs, paintText } from './slide-canvas.js';
 // Shared slide kit + file import/export/print for 素笺 Office.
 export { formatSlideText, listMarker } from './slide-format.js';
 export { findSlides, replaceSlideHits } from './slide-find.js';
 import { sheetPrint } from './sheet-print.js';
-import { pictureView, picSrc } from './picture.js';
+import { pictureView, picSrc, cropOf } from './picture.js';
 import { objectInner } from './office-draw.js';
 // $t under node (this module is node-tested): falls back to the Chinese, vars filled the same way. Only for text a new
 // slide/table is created with — never for existing content, which engine.js reads from the file as it is.
@@ -32,6 +36,12 @@ export function shape(o) { return Object.assign(txt({ t: 'shape', shape: 'rect',
 export function line(o) { return Object.assign({ id: oid(), t: 'line', x: 500, y: 450, w: 600, h: 0, rot: 0, flipH: false, flipV: false, bent: false, stroke: 'acc', sw: 3, dash: 'solid', head: 'none', tail: 'none', start: null, end: null, shadow: false, op: 1 }, o); }
 /** A group: its kids in slide coordinates (moving the group moves them); its box is the box around them. */
 export function group(kids) { const b = union(kids); return Object.assign({ id: oid(), t: 'group', rot: 0, op: 1, kids }, b); }
+/** Move children out of a group without losing its rotation or inherited appearance. */
+export function ungroup(g) {
+  const angle=(g.rot||0)*Math.PI/180,cos=Math.cos(angle),sin=Math.sin(angle),cx=g.x+g.w/2,cy=g.y+g.h/2;
+  const translate=(o,dx,dy)=>{o.x+=dx;o.y+=dy;for(const child of o.kids||[])translate(child,dx,dy);};
+  return (g.kids||[]).map(child=>{const n=JSON.parse(JSON.stringify(child)),x=n.x+n.w/2-cx,y=n.y+n.h/2-cy,dx=cx+x*cos-y*sin-n.w/2-n.x,dy=cy+x*sin+y*cos-n.h/2-n.y;translate(n,dx,dy);n.rot=((n.rot||0)+(g.rot||0)+360)%360;n.op=(n.op??1)*(g.op??1);if(g.hidden)n.hidden=true;if(g.locked)n.locked=true;if(g.shadow)n.shadow=true;return n;});
+}
 export function union(objs) { const x = Math.min(...objs.map(o => o.x)), y = Math.min(...objs.map(o => o.y)); return { x, y, w: Math.max(...objs.map(o => o.x + o.w)) - x, h: Math.max(...objs.map(o => o.y + o.h)) - y }; }
 // 插入 › 形状: PowerPoint's gallery by family. Keys are DrawingML presets (rect, roundRect as round, ellipse, pill: a roundRect
 // with round ends), which the file keeps; lines are connectors.
@@ -145,13 +155,15 @@ export const fxDur = a => a.fx === 'appear' || a.fx === 'disappear' ? 1 : a.dur 
 /** The show's clicks: each with its effects and when each starts (ms after the click). A click starts a step; with the previous
  *  starts at the same time as the effect before it, after the previous when the effects before it are done. Effects before the first
  *  click play as the slide appears (the first step, auto). The engine groups p:timing the same way. */
+export const fxSpan = a => fxDur(a) * Math.max(1, Math.min(100, Number(a.repeat)||1)) * (a.autoReverse ? 2 : 1);
+export const fxTiming = a => ({duration:fxDur(a),iterations:Math.max(1,Math.min(100,Number(a.repeat)||1))*(a.autoReverse?2:1),direction:a.autoReverse?'alternate':'normal'});
 export function fxSteps(anims) {
   const steps = []; let cur = null, at = 0, end = 0;
   for (const a of anims || []) {
     const start = a.start || 'click';
     if (!cur || start === 'click') { cur = []; steps.push({ auto: !steps.length && start !== 'click', fx: cur }); at = end = 0; }
     else if (start === 'after') at = end;
-    const t = at + (a.delay || 0); cur.push({ a, at: t }); end = Math.max(end, t + fxDur(a));
+    const t = at + (a.delay || 0); cur.push({ a, at: t }); end = Math.max(end, t + fxSpan(a));
   }
   return steps;
 }
@@ -160,7 +172,7 @@ export function fxSteps(anims) {
 export function fxHidden(anims, played, live) {
   const vis = {};
   for (const a of anims || []) if (a.id && !(a.id in vis)) vis[a.id] = fxClass(a) !== 'entr';
-  fxSteps(anims).slice(0, played).forEach((st, k) => { for (const { a } of st.fx) { if (!a.id) continue; const c = fxClass(a); if (c === 'entr') vis[a.id] = true; else if (c === 'exit' && !(live && k === played - 1)) vis[a.id] = false; } });
+  fxSteps(anims).slice(0, played).forEach((st, k) => { for (const { a } of st.fx) { if (!a.id) continue; const c = fxClass(a); const n=fxTiming(a).iterations, progress=a.autoReverse ? (n % 2 <= 1 ? n % 2 : 2 - n % 2) : (n % 1 || 1); if (c === 'entr') vis[a.id] = progress > 0 || !!(live && k === played - 1); else if (c === 'exit' && !(live && k === played - 1)) vis[a.id] = progress < 1; } });
   return Object.keys(vis).filter(id => !vis[id]);
 }
 /** What an effect does to its object on screen: keyframes for Element.animate, run with fill both (an exit stays out, 放大 stays big).
@@ -215,7 +227,10 @@ export function morphPairs(prev, next) {
   return out;
 }
 /** The keyframes that carry object o from where its pair p was. */
-export const morphFrames = (p, o) => [{ translate: `${Math.round(p.x + p.w / 2 - o.x - o.w / 2)}px ${Math.round(p.y + p.h / 2 - o.y - o.h / 2)}px`, scale: `${o.w ? p.w / o.w : 1} ${o.h ? p.h / o.h : 1}` }, { translate: '0 0', scale: '1 1' }];
+export const morphFrames = (p, o) => {
+  const rotation = (((p.rot || 0) - (o.rot || 0)) % 360 + 540) % 360 - 180;
+  return [{ translate: `${Math.round(p.x + p.w / 2 - o.x - o.w / 2)}px ${Math.round(p.y + p.h / 2 - o.y - o.h / 2)}px`, scale: `${o.w ? p.w / o.w : 1} ${o.h ? p.h / o.h : 1}`, ...(rotation ? { rotate: rotation + 'deg' } : {}) }, { translate: '0 0', scale: '1 1', ...(rotation ? { rotate: '0deg' } : {}) }];
+};
 
 // ----- sections (节): a slide's sec names the section it starts, as the engine's section prop does -----
 /** Sections follow their first slide, as the file's do: a deleted first slide hands its section to the next slide of that section, and
@@ -273,6 +288,7 @@ function svgOf(o, fill, stroke, sw, dash, gid) {
   const defs = grad ? `<defs><linearGradient id="${gid}" gradientTransform="rotate(${+grad[2] || 0} .5 .5)"><stop offset="0" stop-color="${grad[0]}"/><stop offset="1" stop-color="${grad[1]}"/></linearGradient></defs>` : '';
   const paint = grad ? `url(#${gid})` : fill || 'none', da = dashArray(dash, sw);
   const attrs = `fill="${paint}" stroke="${sw ? stroke : 'none'}" stroke-width="${sw}"${da ? ` stroke-dasharray="${da}"` : ''} stroke-linejoin="round" vector-effect="non-scaling-stroke"`;
+  if(o.pathData)return `<svg viewBox="0 0 1000 1000" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">${defs}${freeformSvg(o.pathData,attrs)}</svg>`;
   return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">${defs}<polygon points="${POLY[o.shape].map(p => p.join(',')).join(' ')}" ${attrs}/></svg>`;
 }
 function lineSvg(o, stroke) {
@@ -336,7 +352,7 @@ export function objView(o, th, ptPx) {
   const fill = isShape ? resolveColor(o.fill, th, th.acc) : resolveColor(o.fill, th, '');
   const color = resolveColor(o.color, th, o.ph === 'sub' ? th.sub : (isShape && (o.fill == null) ? '#FFFFFF' : th.fg));
   const font = o.font === 'head' || (!o.font && o.ph === 'title') ? th.hf : (o.font || th.bf);
-  const stroke = resolveColor(o.stroke, th, isLine ? th.acc : ''), sw = o.sw || 0, poly = isShape && POLY[o.shape];
+  const stroke = resolveColor(o.stroke, th, isLine ? th.acc : ''), sw = o.sw || 0, poly = isShape && (o.pathData || POLY[o.shape]);
   let radius = '0';
   if (o.shape === 'round') radius = Math.min(o.w, o.h) * 0.18 + 'px';
   if (o.shape === 'ellipse') radius = '50%';
@@ -379,9 +395,10 @@ export function textStyle(o, fs, th) {
 /** Bullet levels (Tab / ⇧Tab): li and p carry data-lvl 1–4; both editors and the print page use this CSS. */
 export const LVL_CSS = '.sv-t li[data-marker]::marker{content:attr(data-marker)}.sv-t p,.sv-t li{margin:var(--sb,0) 0 var(--sa,0)}.sv-t li{margin-left:0}.sv-t [data-lvl="1"]{margin-left:1.6em}.sv-t [data-lvl="2"]{margin-left:3.2em}.sv-t [data-lvl="3"]{margin-left:4.8em}.sv-t [data-lvl="4"]{margin-left:6.4em}.sv-t ol,.sv-t ul{margin:0;padding-left:1.1em}';
 export function slideObjectHtml(o, v) {
+    if(o.hidden) return '';
     let h = `<div style="position:absolute;left:${v.left};top:${v.top};width:${v.width};height:${v.height};transform:${v.tf};opacity:${v.op};filter:${v.flt}">`;
     h += `<div style="position:absolute;inset:0;background:${v.bg};border-radius:${v.radius};border:${v.border};box-sizing:border-box">${v.svg.__html}</div>`;
-    if (v.isVideo || v.isAudio) { const tag = v.isVideo ? 'video' : 'audio'; h += `<${tag} src="${esc(v.src)}" controls preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;background:#151515" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()"></${tag}>`; }
+    if (v.isVideo || v.isAudio) { const tag = v.isVideo ? 'video' : 'audio'; h += `<${tag} data-media-id="${esc(o.id)}" src="${esc(v.src)}" controls preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;background:#151515" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()"></${tag}>`; }
     if (v.isImg) h += `<div style="position:absolute;inset:0;${v.picFrame}"><img src="${esc(v.src)}" style="${v.picImage}"></div>`;
     if (v.hasText) h += `<div style="position:absolute;inset:0;padding:${v.pad};display:flex;flex-direction:column;justify-content:${v.va};color:${v.color};font-size:${v.fs};font-family:${v.font};font-weight:${v.fw};font-style:${v.fst};text-decoration:${v.td};text-align:${v.align};line-height:${v.lh};${v.tx}"><div class="sv-t t">${v.inner.__html}</div></div>`;
     if (v.isTable) h += `<div style="position:absolute;inset:0;display:grid;grid-template-columns:${v.gtc};grid-template-rows:${v.gtr};font-size:${v.fs};font-family:${v.font}">` + v.tcells.map(c => `<div style="grid-column:${c.gc};grid-row:${c.gr};display:flex;align-items:${c.va};justify-content:${c.jc};padding:0 16px;background:${c.bg};color:${c.color};font-weight:${c.fw};border:${c.border};border-bottom:${c.bb};overflow:hidden;box-sizing:border-box">${c.html.__html}</div>`).join('') + '</div>';
@@ -398,19 +415,19 @@ function slideHtml(s, th, H, scale) {
 
 /** 演示者视图 (a second window, or over the show when there is none): the current slide, the next, the notes and the clock
  *  ([data-clock], which the show ticks). Its buttons carry data-act: prev, next, black, reset, end. */
-export function presenterHtml(doc, i, clock) {
-  const th = THEMES[doc.theme] || THEMES.paper, H = slideH(doc.ratio), s = doc.slides[i], next = doc.slides.find((x, j) => j > i && !x.hidden);
+export function presenterHtml(doc, i, clock, show = null, loop = false) {
+  const th = THEMES[doc.theme] || THEMES.paper, H = slideH(doc.ratio), s = doc.slides[i], destination = show ? showDestination(show, doc.slides, 1, loop) : null, next = show ? (destination ? doc.slides[destination.index] : null) : doc.slides.find((x, j) => j > i && !x.hidden);
   const btn = (act, label) => `<button data-act="${act}" style="height:32px;padding:0 14px;border:1px solid rgba(255,255,255,0.18);border-radius:999px;background:rgba(255,255,255,0.08);color:#F5F5F7;font:inherit;font-size:13px;cursor:pointer">${esc(T(label))}</button>`;
   const lbl = t => `<div style="font-size:13px;color:#A1A1A6">${esc(T(t))}</div>`;
   return `<div style="position:absolute;inset:0;overflow:hidden;background:#141414;color:#F5F5F7;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;display:flex;flex-direction:column;gap:16px;padding:18px 22px;box-sizing:border-box"><style>${LVL_CSS}</style>`
-    + `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span data-clock style="font-size:30px;font-variant-numeric:tabular-nums;margin-right:8px">${clock}</span><span style="color:#A1A1A6;font-size:14px">${esc(T('幻灯片 {i} / {n}', { i: i + 1, n: doc.slides.length }))}</span><span style="flex:1"></span>`
+    + `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span data-clock style="font-size:30px;font-variant-numeric:tabular-nums;margin-right:8px">${clock}</span><span style="color:#A1A1A6;font-size:14px">${esc(T('幻灯片 {i} / {n}', { i: show?.route ? (show.routePos || 0) + 1 : i + 1, n: show?.route ? show.route.length : doc.slides.length }))}</span><span style="flex:1"></span>`
     + btn('prev', '上一张') + btn('next', '下一张') + btn('black', '黑屏') + btn('reset', '重置计时') + btn('end', '结束放映') + '</div>'
     + `<div style="flex:1;min-height:0;display:flex;gap:24px"><div style="flex:none;box-shadow:0 0 0 1px rgba(255,255,255,0.12)">${slideHtml(s, th, H, 0.45)}</div>`
     + `<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">${lbl('下一张')}<div style="flex:none">${next ? slideHtml(next, th, H, 0.2) : `<div style="font-size:14px;color:#A1A1A6">${esc(T('放映结束'))}</div>`}</div>`
     + `${lbl('备注@@notes')}<div style="flex:1;min-height:0;overflow:auto;font-size:20px;line-height:1.6;white-space:pre-wrap">${esc(s.notes || '')}</div></div></div></div>`;
 }
 
-// ----- 导出: each slide as a PNG (drawn on a canvas, lite: a paragraph takes its box's font, a picture fills its box) and the outline as Markdown -----
+// ----- PNG export preserves text runs and image crops; outline export uses plain paragraphs. -----
 const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', nbsp: ' ', '#39': "'" };
 const plainText = h => String(h).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&(amp|lt|gt|quot|nbsp|#39);/g, (x, e) => ENT[e]);
 /** A text box's paragraphs: text (hard breaks as \n), level, and the bullet or number it carries. */
@@ -431,45 +448,43 @@ export function htmlParas(html) {
 export function paintSlide(g, s, th, H, pics) {
   const col = (c, f) => { const v = resolveColor(c, th, f); return String(v || '').startsWith('grad:') ? v.slice(5).split(',')[0] : v; };
   const text = (o, paras, box, font, color, align) => {
-    const fs = o.fs || 32, lh = fs * (o.lh || 1.35), lines = [];
-    g.font = font; g.fillStyle = color; g.textBaseline = 'middle';
-    for (const p of paras) for (const hard of p.text.split('\n')) {
-      const ind = p.lvl * fs * 1.6 + (p.bullet ? fs * 1.1 : 0), max = box.w - ind; let cur = '', first = true;
-      for (const tok of hard.match(/[\u3000-\u9fff\uff00-\uffef]|[^\s\u3000-\u9fff\uff00-\uffef]+|\s+/g) || ['']) {
-        if (cur && g.measureText(cur + tok).width > max) { lines.push({ t: cur, ind, b: first ? p.bullet : '' }); cur = tok.trim() ? tok : ''; first = false; } else cur += tok;
-      }
-      lines.push({ t: cur, ind, b: first ? p.bullet : '' });
-    }
-    const y0 = box.y + (o.va === 'middle' ? (box.h - lines.length * lh) / 2 : o.va === 'bottom' ? box.h - lines.length * lh : 0);
-    lines.forEach((l, i) => {
-      const y = y0 + lh * (i + 0.5); g.textAlign = align === 'center' ? 'center' : align === 'right' ? 'right' : 'left';
-      if (l.b) { g.textAlign = 'left'; g.fillText(l.b, box.x + l.ind - fs * 1.1, y); g.textAlign = align === 'center' ? 'center' : align === 'right' ? 'right' : 'left'; }
-      g.fillText(l.t, align === 'center' ? box.x + l.ind + (box.w - l.ind) / 2 : align === 'right' ? box.x + box.w : box.x + l.ind, y);
-    });
+    const base={fs:o.fs||32,font:font.replace(/^.*?[\d.]+px\s*/,''),bold:/\b[6-9]00\b/.test(font),italic:font.startsWith('italic'),color,align};
+    paintText(g,o,typeof paras==='string'?richParagraphs(paras,base):paras,box,base);
   };
   const one = o => {
-    if (o.t === 'group') return (o.kids || []).forEach(one);
-    g.save(); g.globalAlpha = o.op ?? 1; g.translate(o.x + o.w / 2, o.y + o.h / 2); g.rotate((o.rot || 0) * Math.PI / 180); g.translate(-o.w / 2, -o.h / 2);
+    if(o.hidden) return;
+    g.save(); g.globalAlpha = (g.globalAlpha ?? 1) * (o.op ?? 1); g.translate(o.x + o.w / 2, o.y + o.h / 2); g.rotate((o.rot || 0) * Math.PI / 180); g.translate(-o.w / 2, -o.h / 2);
+    if (o.t === 'group') { g.translate(-o.x,-o.y); (o.kids || []).forEach(one); g.restore(); return; }
     if (o.t === 'line') { const [a, b] = lineEnds(o); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.strokeStyle = col(o.stroke, th.acc); g.lineWidth = o.sw || 2; g.stroke(); }
-    else if (o.t === 'image') { const im = pics && pics.get(o.src); if (im) g.drawImage(im, 0, 0, o.w, o.h); }
+    else if (o.t === 'image') { const im = pics && pics.get(o.src); if (im) {
+      const look=o.look||{}, [l,t,r,b]=cropOf(look), iw=im.naturalWidth||im.width||o.w, ih=im.naturalHeight||im.height||o.h;
+      g.globalAlpha*=1-(+look.transparency||0)/100;
+      const fx=look.flipH==='true'?-1:1,fy=look.flipV==='true'?-1:1;
+      if(fx<0||fy<0){g.translate(fx<0?o.w:0,fy<0?o.h:0);g.scale(fx,fy);}
+      const brightness=(+look.brightness||0)/100,contrast=(+look.contrast||0)/100;g.filter=[contrast?`contrast(${contrast>=0?1/Math.max(.01,1-contrast):1+contrast})`:'',brightness>0?`invert(1) brightness(${1-brightness}) invert(1)`:brightness<0?`brightness(${1+brightness})`:'',look.grayscale==='true'?'grayscale(1)':''].filter(Boolean).join(' ')||'none';
+      g.drawImage(im,l*iw,t*ih,Math.max(.01,1-l-r)*iw,Math.max(.01,1-t-b)*ih,0,0,o.w,o.h);
+      if(look.line&&look.line!=='none'){g.filter='none';g.strokeStyle='#'+look.line;g.lineWidth=(parseFloat(look.lineWidth)||.75)*4/3;g.strokeRect(0,0,o.w,o.h);}
+    } }
     else if (o.t === 'table') {
       const ws = colWidths(o), xs = ws.map((w, i) => ws.slice(0, i).reduce((a, b) => a + b, 0)), hs = rowHeights(o);
       for (const c of tableCells(o, th)) {
         const x = xs[c.c], y = hs.slice(0,c.r).reduce((a,b)=>a+b,0), w = ws.slice(c.c, c.c + c.cs).reduce((a, b) => a + b, 0), h = hs.slice(c.r,c.r+c.rs).reduce((a,b)=>a+b,0);
         if (c.bg !== 'transparent') { g.fillStyle = c.bg; g.fillRect(x, y, w, h); }
         if (c.border !== 'none') { g.strokeStyle = c.border.split(' ').slice(2).join(' '); g.lineWidth = 1; g.strokeRect(x, y, w, h); }
-        text({ fs: o.fs, va: 'middle', lh: 1.2 }, [{ text: c.text, lvl: 0, bullet: '' }], { x: x + 16, y, w: w - 32, h }, `${c.fw} ${o.fs || 24}px ${th.bf}, sans-serif`, c.color, c.align);
+        text({ fs: o.fs || 24, va: c.va === 'flex-start' ? 'top' : c.va === 'flex-end' ? 'bottom' : 'middle', lh: 1.2 }, c.html.__html, { x: x + 16, y, w: w - 32, h }, `${c.fw} ${o.fs || 24}px ${th.bf}, sans-serif`, c.color, c.align);
       }
     } else {
-      const shape = o.shape, w = o.w, h = o.h, p = new Path2D();
-      if (shape === 'ellipse') p.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
-      else if (POLY[shape]) POLY[shape].forEach(([x, y], i) => i ? p.lineTo(x * w / 100, y * h / 100) : p.moveTo(x * w / 100, y * h / 100));
-      else p.roundRect(0, 0, w, h, shape === 'pill' ? Math.min(w, h) / 2 : shape === 'round' ? Math.min(w, h) * 0.12 : 0);
-      p.closePath();
-      const fill = col(o.fill, o.t === 'shape' ? th.acc : ''); if (fill) { g.save(); g.globalAlpha *= o.fillOpacity ?? 1; g.fillStyle = fill; g.fill(p); g.restore(); }
-      if (o.sw && o.stroke) { g.strokeStyle = col(o.stroke, th.fg); g.lineWidth = o.sw; g.stroke(p); }
+      const shape = o.shape, w = o.w, h = o.h;
+      const geometry = o.pathData ? freeformPaths(o.pathData) : [null];
+      for(const path of geometry){
+        const p=new Path2D();
+        if(path){path.points.forEach(([x,y],i)=>{const controls=path.controls?.[i]?.flatMap(([x,y])=>[x*w/1000,y*h/1000]);if(!i)p.moveTo(x*w/1000,y*h/1000);else if(controls?.length===4)p.bezierCurveTo(...controls,x*w/1000,y*h/1000);else if(controls?.length===2)p.quadraticCurveTo(...controls,x*w/1000,y*h/1000);else p.lineTo(x*w/1000,y*h/1000);});if(path.closed)p.closePath();}
+        else {if(shape==='ellipse')p.ellipse(w/2,h/2,w/2,h/2,0,0,Math.PI*2);else if(POLY[shape])POLY[shape].forEach(([x,y],i)=>i?p.lineTo(x*w/100,y*h/100):p.moveTo(x*w/100,y*h/100));else p.roundRect(0,0,w,h,shape==='pill'?Math.min(w,h)/2:shape==='round'?Math.min(w,h)*.12:0);p.closePath();}
+        const fill=col(o.fill,o.t==='shape'?th.acc:'');if(fill&&path?.fill!=='none'){g.save();g.globalAlpha*=o.fillOpacity??1;g.fillStyle=fill;g.fill(p);g.restore();}
+        if(o.sw&&o.stroke&&path?.stroke!==false){g.strokeStyle=col(o.stroke,th.fg);g.lineWidth=o.sw;g.lineCap='round';g.lineJoin='round';g.setLineDash(dashArray(o.dash,o.sw).split(/[ ,]+/).map(Number).filter(n=>n>0));g.stroke(p);g.setLineDash([]);}
+      }
       const pad = o.t === 'text' ? [12, 8] : [24, 16], v = objView(o, th);
-      text(o, htmlParas(o.html), { x: pad[0], y: pad[1], w: w - pad[0] * 2, h: h - pad[1] * 2 }, `${o.italic ? 'italic ' : ''}${v.fw} ${o.fs || 32}px ${v.font}`, v.color, o.align);
+      text(o, o.html || '', { x: pad[0], y: pad[1], w: w - pad[0] * 2, h: h - pad[1] * 2 }, `${o.italic ? 'italic ' : ''}${v.fw} ${o.fs || 32}px ${v.font}`, v.color, o.align);
     }
     g.restore();
   };
@@ -518,6 +533,15 @@ export function marginsCm(margin) {
 }
 /** The Noto aliases of assets/fonts/fonts.css (local() fonts only, nothing to fetch), for the pages the app writes out: prints and HTML exports. */
 export const fontFaces = () => [...document.styleSheets].filter(s => /\/fonts\.css$/.test(s.href)).flatMap(s => [...s.cssRules].map(r => r.cssText)).filter(t => t.includes('local(')).join('');
+export function slidesPrint(doc, options = {}) {
+  const th=THEMES[doc.theme]||THEMES.paper,H=slideH(doc.ratio),slides=doc.slides.map((s,i)=>({s,i})).filter(({s})=>options.hidden||!s.hidden);
+  if(!options.mode||options.mode==='slides')return {css:`@page{size:${SW*.6}px ${H*.6}px;margin:0}body{margin:0}.sl{break-after:page}.sl:last-child{break-after:auto}`+LVL_CSS,body:slides.map(({s})=>slideHtml(s,th,H,.6)).join('')};
+  const notes=options.mode==='notes',count=notes?1:([1,2,3,4,6,9].includes(+options.count)?+options.count:6),columns=count===1||count===2||count===3?1:count===9?3:2,rows=Math.ceil(count/columns);
+  const landscape=options.orientation==='landscape',pageW=landscape?297:210,pageH=landscape?210:297,w=(pageW-24-(columns-1)*7)*96/25.4/columns,h=(pageH-30-(rows-1)*8)*96/25.4/rows;
+  const thumbW=notes?w:count===3?w*.58:w,scale=Math.min(thumbW/SW,(notes?h*.52:h-24)/H),pages=[];
+  for(let at=0;at<slides.length;at+=count)pages.push(`<section class="handout" style="grid-template-columns:repeat(${columns},1fr);grid-template-rows:repeat(${rows},minmax(0,1fr))">`+slides.slice(at,at+count).map(({s,i})=>`<article class="handout-item ${count===3?'with-lines':''}"><div class="slide-preview">${slideHtml(s,th,H,scale)}<div class="slide-number">${i+1}</div></div>${notes?`<div class="slide-notes">${esc(s.notes||'')}</div>`:count===3?'<div class="note-lines"></div>':''}</article>`).join('')+'</section>');
+  return {body:pages.join(''),css:`@page{size:A4 ${landscape?'landscape':'portrait'};margin:12mm}body{margin:0;color:#111;font-family:Arial,sans-serif}.handout{height:${pageH-30}mm;display:grid;gap:8mm 7mm;break-after:page}.handout:last-child{break-after:auto}.handout-item{min-width:0;min-height:0;break-inside:avoid}.sl{border:1px solid #bbb;box-sizing:border-box}.slide-preview{display:flex;align-items:center;flex-direction:column;gap:3mm}.slide-number{font-size:9pt}.slide-notes{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12pt;line-height:1.5;padding:5mm 0}.with-lines{display:flex;gap:7mm}.note-lines{flex:1;background:repeating-linear-gradient(transparent 0,transparent 7mm,#bbb 7mm,#bbb 7.2mm)}${notes?'.handout{display:block;height:auto;min-height:'+ (pageH-30)+'mm}.handout-item{break-inside:auto}':''}${LVL_CSS}`};
+}
 export async function printDoc(doc, ctx) {
   let css = '', body = '';
   const fonts = `<style>${fontFaces()}</style>`;
@@ -531,9 +555,7 @@ export async function printDoc(doc, ctx) {
   } else if (doc.type === 'xlsx') {
     ({ css, body } = sheetPrint(doc, ctx.E));
   } else {
-    const th = THEMES[doc.theme] || THEMES.paper, H = slideH(doc.ratio);
-    css = `@page{size:${SW * 0.6}px ${H * 0.6}px;margin:0}body{margin:0}.sl{break-after:page}` + LVL_CSS;
-    body = doc.slides.filter(s => !s.hidden).map(s => slideHtml(s, th, H, 0.6)).join('');
+    ({css,body}=slidesPrint(doc,ctx?.printOptions));
   }
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(doc.title)}</title>${fonts}<style>${css}</style></head><body>${body}</body></html>`;
   const f = document.createElement('iframe');
@@ -809,3 +831,6 @@ export function slideLinkClick(e) {
   const href = a.getAttribute('href') || '';
   if ((e.ctrlKey || e.metaKey) && /^(https?:|mailto:)/i.test(href)) window.open(href, '_blank', 'noopener,noreferrer');
 }
+
+export function customShowRoute(doc,name){const show=(doc.customShows||[]).find(s=>s.name===name);return show?show.slides.map(id=>doc.slides.findIndex(s=>s.id===id)).filter(i=>i>=0):[];}
+export function showDestination(show,slides,dir,loop=false){if(show?.route){let position=(show.routePos||0)+dir;if(position>=show.route.length&&loop)position=0;if(position<0||position>=show.route.length)return null;return {index:show.route[position],position};}for(let i=(show?.i??-1)+dir;i>=0&&i<slides.length;i+=dir)if(!slides[i].hidden)return {index:i};if(dir>0&&loop){const i=slides.findIndex(s=>!s.hidden);if(i>=0)return {index:i};}return null;}

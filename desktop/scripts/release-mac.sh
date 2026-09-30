@@ -17,7 +17,9 @@
 #             provisioning profile for cn.thewriter.app saved as ../.signing/Writer_Mac_App_Store.provisionprofile
 # Overrides: SIGN_ID, INSTALLER_ID, TEAM_ID, NOTARY_PROFILE (default writer-notary), EXTRA_FEATURES (e.g. test-hooks),
 # BUILD_NUMBER (the store's CFBundleVersion, which must grow with every upload; default: the commit count), UPDATER_KEY,
-# NOTES or NOTES_FILE (the release notes the update dialog shows).
+# NOTES or NOTES_FILE (the release notes the update dialog shows). ASC_KEY_FILE,
+# ASC_KEY_ID and ASC_ISSUER_ID may authenticate notarization directly when this
+# Mac cannot store a notarytool keychain profile. Private keys stay at that path.
 set -euo pipefail
 mode=${1:-}
 cd "$(dirname "$0")/.."
@@ -77,7 +79,13 @@ updater_files() { # the in-app updater's files, from the stapled app: a signed a
 
 notarize() { # notarize a zip/dmg/pkg and staple the ticket to what was submitted (or to the app for a zip)
   local file=$1 staple=${2:-$1}
-  xcrun notarytool submit "$file" --keychain-profile "${NOTARY_PROFILE:-writer-notary}" --wait
+  if [ -z "${NOTARY_PROFILE:-}" ] && [ -n "${ASC_KEY_FILE:-}" ]; then
+    need "ASC_KEY_ID" "${ASC_KEY_ID:-}" "请加载现有的 Apple API 配置。"
+    need "ASC_ISSUER_ID" "${ASC_ISSUER_ID:-}" "请加载现有的 Apple API 配置。"
+    xcrun notarytool submit "$file" --key "$ASC_KEY_FILE" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait
+  else
+    xcrun notarytool submit "$file" --keychain-profile "${NOTARY_PROFILE:-writer-notary}" --wait
+  fi
   xcrun stapler staple "$staple"
 }
 

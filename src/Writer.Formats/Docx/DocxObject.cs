@@ -163,7 +163,7 @@ sealed class DocxObject(DocxDocument doc, OpenXmlElement element, W.Paragraph? b
                 break;
             case "smartart":
                 var dataPart = Part(RelAttr(data, "dm"));
-                var drawingPart = dataPart is null ? null : Part(OfficeGraphics.SmartArtDrawingId(dataPart));
+                var drawingPart = dataPart is null ? null : OfficeSmartArt.Drawing(doc.Main,dataPart);
                 if (OfficeGraphics.SmartArtJson(drawingPart, dataPart, doc.Scheme) is { } smartart) props["smartart"] = smartart;
                 break;
             case "ole":

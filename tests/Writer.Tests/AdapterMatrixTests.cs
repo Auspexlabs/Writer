@@ -25,6 +25,7 @@ public class AdapterMatrixTests : IDisposable
         ("docx", "equation", "/body/paragraph[1]"),
         ("docx", "shape", "/body/paragraph[1]"),
         ("docx", "citation", "/body/paragraph[1]"),
+        ("docx", "control", "/body/paragraph[1]"),
         ("docx", "bibliography", "/body"),
         ("md", "heading", "/body"),
         ("md", "paragraph", "/body"),
@@ -113,6 +114,10 @@ public class AdapterMatrixTests : IDisposable
                 for (var i = 0; i < left.Length; i++)
                     Assert.InRange(Math.Abs(Units.ParseLength(left[i].GetString()!) - Units.ParseLength(right[i].GetString()!)), 0L, 635L);
             }
+            else if (kind=="control"&&p.Name=="data") {
+                using var requested=JsonDocument.Parse(expected);using var stored=JsonDocument.Parse(canonical[p.Name]);
+                foreach(var property in requested.RootElement.EnumerateObject())Assert.Equal(property.Value.GetRawText(),stored.RootElement.GetProperty(property.Name).GetRawText());
+            }
             else if (p.Name is not ("src" or "backgroundImage")) Assert.Equal(expected, canonical[p.Name]);
         }
 
@@ -125,6 +130,7 @@ public class AdapterMatrixTests : IDisposable
         "run" => new() { ["text"] = "seed" },
         "image" => new() { ["src"] = _png },
         "table" => new() { ["rows"] = "2", ["cols"] = "2" },
+        "control" => new() { ["data"] = "{\"type\":\"text\",\"value\":\"Entry\"}" },
         "citation" => new() { ["sources"] = "Peg15" },
         _ => new(),
     };

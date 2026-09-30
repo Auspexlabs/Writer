@@ -160,6 +160,7 @@ sealed class PptxConnector(PptxDocument doc, SlidePart slide, P.ConnectionShape 
         if (Links.EndConnection is { Id.Value: var eid, Index.Value: var eidx }) props["end"] = $"{eid},{eidx}";
         if (Nv?.Name?.Value is { Length: > 0 } name) props["name"] = name;
         if (Nv?.Id?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
+        PptxObjectState.Read(cxn, props);
         return props;
     }
 
@@ -168,6 +169,7 @@ sealed class PptxConnector(PptxDocument doc, SlidePart slide, P.ConnectionShape 
 
     public override void SetProp(string name, string value)
     {
+        if (PptxObjectState.Set(cxn, name, value)) return;
         var spPr = cxn.ShapeProperties ??= new P.ShapeProperties();
         if (PptxOutline.Set(spPr, name, value)) return;
         switch (name)
@@ -276,11 +278,13 @@ sealed class PptxGroup(PptxDocument doc, SlidePart slide, P.GroupShape group) : 
         var nv = group.NonVisualGroupShapeProperties?.NonVisualDrawingProperties;
         if (nv?.Name?.Value is { Length: > 0 } name) props["name"] = name;
         if (nv?.Id?.Value is { } id) props["id"] = id.ToString(CultureInfo.InvariantCulture);
+        PptxObjectState.Read(group, props);
         return props;
     }
 
     public override void SetProp(string name, string value)
     {
+        if (PptxObjectState.Set(group, name, value)) return;
         switch (name)
         {
             case "x" or "y" or "w" or "h":
