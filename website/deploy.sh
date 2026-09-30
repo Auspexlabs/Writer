@@ -17,7 +17,7 @@ local_conf="$(cd "$(dirname "$0")" && pwd)/.deploy.local"
 host=${WRITER_HOST:?set WRITER_HOST in website/.deploy.local}
 ssh_="ssh -i ${WRITER_KEY:?set WRITER_KEY in website/.deploy.local} -o StrictHostKeyChecking=accept-new"
 # --chmod: a folder synced from elsewhere may arrive 700 here; on the server Caddy must read everything it serves
-rsync_() { rsync -az --no-owner --no-group --chmod=D755,F644 -e "$ssh_" "$@"; }
+rsync_() { rsync -az --no-owner --no-group --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r -e "$ssh_" "$@"; }
 dmg= exe= updates=
 while [ $# -gt 0 ]; do
   case $1 in
