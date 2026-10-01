@@ -37,7 +37,7 @@ const at = (c, tab, fmt) => { c.state.tab = tab; if (fmt) c.state.fmt = Object.a
 test('the Word panel has the seven tabs and, on each, its groups in order; 表格 joins in a table as a context tab', () => {
   const c = word();
   const design = { home: ['样式', '字体', '颜色', '对齐与缩进', '间距', '列表', '边框与底纹', '换行和分页', '工具'], insert: ['常用', '页面', '符号与批注'], layout: ['纸张', '页边距', '分栏与分隔', '本节页码', '页面'],
-    design: ['主题', '样式集', '页面边框'], refs: ['目录', '脚注和尾注', '引文与书目', '题注', '交叉引用', '邮件合并', '书签'], review: ['文档', '字数统计', '批注', '修订', '查找与替换'], view: ['视图', '缩放', '显示', '翻页'] };
+    design: ['主题', '样式集', '页面边框'], refs: ['目录', '脚注和尾注', '引文与书目', '题注', '交叉引用', '邮件合并', '书签'], review: ['文档', '字数统计', '批注', '修订', '语法检查', '查找与替换'], view: ['视图', '缩放', '显示', '翻页'] };
   for (const [tab, want] of Object.entries(design)) {
     const v = at(c, tab);
     assert.deepEqual(Array.from(v.panelTabs, t => t.label), ['开始', '插入', '设计', '布局', '引用', '审阅', '视图']);

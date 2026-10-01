@@ -1,6 +1,6 @@
 // node --test ui/tests/ — the new-file gallery (ui/templates, built by ui/tools/templates/build.mjs from its sources): every
 // template a source lists is in index.json, exists in Chinese and English with its thumbnail, has its English name in
-// ui/i18n/en-shell.js, and opens through the engine; a deck has four to six slides. Needs the CLI built (dotnet build).
+// ui/i18n/en-shell.js, and opens through the engine; a deck has four to six slides. Needs an engine: the CLI built (dotnet build), WRITER=<binary>, or the installed Writer.app.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -9,15 +9,17 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..'), TPL = join(root, 'ui/templates');
-const cli = join(root, 'src/Writer.Cli/bin/Debug/net10.0/writer.dll');
+const cli = join(root, 'src/Writer.Cli/bin/Debug/net10.0/writer.dll'), app = '/Applications/Writer.app/Contents/MacOS/writer';
+/** The engine: WRITER, the repo's build, or the installed app's (no dotnet on this machine). */
+const ENGINE = process.env.WRITER ? [process.env.WRITER] : existsSync(cli) ? ['dotnet', cli] : existsSync(app) ? [app] : null;
 const MIN = { docx: 12, xlsx: 8, pptx: 10, md: 3, mm: 3 }; // what the gallery promises, at least
 const sources = {};
 for (const type of Object.keys(MIN)) sources[type] = await import(`../tools/templates/${type}.mjs`);
 
 let server, base;
 before(async () => {
-  if (!existsSync(cli)) return;
-  server = spawn('dotnet', [cli, 'serve', '--dir', TPL, '--port', '0', '--no-token'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  if (!ENGINE) return;
+  server = spawn(ENGINE[0], [...ENGINE.slice(1), 'serve', '--dir', TPL, '--port', '0', '--no-token'], { stdio: ['ignore', 'ignore', 'pipe'] });
   base = await new Promise((resolve, reject) => {
     let err = '';
     server.stderr.on('data', d => { err += d; const m = /"url"\s*:\s*"([^"]+)"/.exec(err); if (m) resolve(m[1]); });
@@ -31,7 +33,7 @@ async function run(argv) {
   return JSON.parse(r.output);
 }
 
-test('every template of every source is built in both languages with a thumbnail, listed, named in English, and opens in the engine', { skip: !existsSync(cli) && 'build the CLI first: dotnet build Writer.slnx' }, async () => {
+test('every template of every source is built in both languages with a thumbnail, listed, named in English, and opens in the engine', { skip: !ENGINE && 'build the CLI first (dotnet build Writer.slnx), set WRITER, or install Writer.app' }, async () => {
   const index = JSON.parse(readFileSync(join(TPL, 'index.json'), 'utf8'));
   const win = {}; new Function('window', readFileSync(join(root, 'ui/i18n/en-shell.js'), 'utf8'))(win);
   const there = f => assert.ok(existsSync(join(TPL, f)) && statSync(join(TPL, f)).size > 0, f + ' is built');

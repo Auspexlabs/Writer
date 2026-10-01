@@ -6,13 +6,16 @@ using Writer.Core;
 
 namespace Writer.Cli;
 
-/// <summary>The autocomplete and the model list: two small requests beside the assistant's turns. A completion is one short reply
-/// without tools and without streaming, from the fast model the settings name (CompleteModel), with the model's thinking turned off
-/// where the provider has a switch for it, since a completion that comes after the user typed on is no use.</summary>
+/// <summary>The autocomplete, the editor's own questions and the model list: small requests beside the assistant's turns. A completion
+/// is one short reply without tools and without streaming, from the fast model the settings name (CompleteModel), with the model's
+/// thinking turned off where the provider has a switch for it, since a completion that comes after the user typed on is no use. An
+/// ask (POST /ask) is the same request with the editor's own system prompt and a longer answer: the grammar check of a paragraph,
+/// the citation style a paper is written in.</summary>
 public sealed partial class Chat
 {
-    static readonly TimeSpan CompleteTimeout = TimeSpan.FromSeconds(15);
+    static readonly TimeSpan CompleteTimeout = TimeSpan.FromSeconds(15), AskTimeout = TimeSpan.FromSeconds(90);
     const int CompleteTokens = 400; // room for a model that thinks anyway (GLM-5.3, Kimi K3); the prompt asks for a few words
+    public const int AskTokens = 4000; // the most an ask may take: a paragraph's corrections as JSON need a few hundred
 
     /// <summary>POST /complete: what the user is likely to type next at the caret, one line, or "" (Assistant.CleanCompletion).</summary>
     public async Task<string> CompleteAsync(string before, string after, CancellationToken ct) => await CompleteAsync(before, after, null, ct);
@@ -27,8 +30,8 @@ public sealed partial class Chat
         var user = Assistant.CompleteMessage(before, after, hint);
         try
         {
-            var text = Codex ? await CodexComplete(model, user, limit.Token)
-                : _openAi ? await OpenAiComplete(model, user, limit.Token) : await AnthropicComplete(model, user, limit.Token);
+            var text = Codex ? await CodexComplete(model, Assistant.CompleteSystem, user, false, limit.Token)
+                : _openAi ? await OpenAiComplete(model, Assistant.CompleteSystem, user, CompleteTokens, limit.Token) : await AnthropicComplete(model, Assistant.CompleteSystem, user, CompleteTokens, limit.Token);
             return Assistant.CleanCompletion(text, before);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
@@ -37,13 +40,32 @@ public sealed partial class Chat
         }
     }
 
-    async Task<string> AnthropicComplete(string model, string user, CancellationToken ct)
+    /// <summary>POST /ask: the fast model's one reply to the editor's own system prompt and message, whole, as it wrote it (the editor
+    /// reads it: JSON for the grammar check, one word for a paper's style). maxTokens bounds the answer, up to AskTokens.</summary>
+    public async Task<string> AskAsync(string system, string user, int maxTokens, CancellationToken ct)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        limit.CancelAfter(AskTimeout);
+        var model = CompleteModel.Length > 0 ? CompleteModel : Model;
+        var tokens = Math.Clamp(maxTokens, 1, AskTokens);
+        try
+        {
+            return Codex ? await CodexComplete(model, system, user, true, limit.Token)
+                : _openAi ? await OpenAiComplete(model, system, user, tokens, limit.Token) : await AnthropicComplete(model, system, user, tokens, limit.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw TimedOut();
+        }
+    }
+
+    async Task<string> AnthropicComplete(string model, string system, string user, int maxTokens, CancellationToken ct)
     {
         var body = new JsonObject
         {
             ["model"] = model,
-            ["max_tokens"] = CompleteTokens,
-            ["system"] = Assistant.CompleteSystem,
+            ["max_tokens"] = maxTokens,
+            ["system"] = system,
             ["messages"] = new JsonArray((JsonNode)new JsonObject { ["role"] = "user", ["content"] = user }),
         };
         using var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl + "/v1/messages") { Content = new StringContent(Json(body), Encoding.UTF8, "application/json") };
@@ -55,7 +77,7 @@ public sealed partial class Chat
     }
 
     /// <summary>With the provider's switch for thinking first, then, when the provider refuses that parameter, without it.</summary>
-    async Task<string> OpenAiComplete(string model, string user, CancellationToken ct)
+    async Task<string> OpenAiComplete(string model, string system, string user, int maxTokens, CancellationToken ct)
     {
         for (var quiet = true; ; quiet = false)
         {
@@ -63,12 +85,12 @@ public sealed partial class Chat
             {
                 ["model"] = model,
                 ["messages"] = new JsonArray(
-                    (JsonNode)new JsonObject { ["role"] = "system", ["content"] = Assistant.CompleteSystem },
+                    (JsonNode)new JsonObject { ["role"] = "system", ["content"] = system },
                     (JsonNode)new JsonObject { ["role"] = "user", ["content"] = user }),
                 ["stream"] = false,
             };
-            var extra = quiet && NoThinking(body);
-            if (!extra) body["max_tokens"] = CompleteTokens;
+            var extra = quiet && NoThinking(body, maxTokens);
+            if (!extra) body["max_tokens"] = maxTokens;
             using var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl + "/chat/completions") { Content = new StringContent(Json(body), Encoding.UTF8, "application/json") };
             if (_apiKey.Length > 0) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
             try
@@ -86,20 +108,20 @@ public sealed partial class Chat
 
     /// <summary>The provider's way to answer without thinking first (checked 2026-09-26 in each provider's API docs), with the
     /// output limit under the name that provider takes; false when it has none (the caller sets max_tokens).</summary>
-    bool NoThinking(JsonObject body)
+    bool NoThinking(JsonObject body, int maxTokens)
     {
         switch (_provider)
         {
             case "openai":
-                body["max_completion_tokens"] = CompleteTokens;
+                body["max_completion_tokens"] = maxTokens;
                 body["reasoning_effort"] = "none";
                 return true;
             case "qwen":
-                body["max_tokens"] = CompleteTokens;
+                body["max_tokens"] = maxTokens;
                 body["enable_thinking"] = false;
                 return true;
             case "deepseek" or "glm" or "doubao" or "kimi":
-                body["max_tokens"] = CompleteTokens;
+                body["max_tokens"] = maxTokens;
                 body["thinking"] = new JsonObject { ["type"] = "disabled" };
                 return true;
             default:

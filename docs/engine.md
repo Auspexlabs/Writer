@@ -119,6 +119,7 @@ preview with a one-time code that the first visit swaps for an HttpOnly cookie, 
 | `GET /ai`, `PUT /ai` with `{"provider","baseUrl","model","completeModel","apiKey"}` | the assistant's model settings; the key and the ChatGPT sign-in's tokens never come back (`hasKey`, `account {email, plan}`) |
 | `POST /ai/test`, `POST /ai/models` | one small request with the given (or saved) settings → `{ok, error}`; the models a service lists → `{models:[{id, name}]}` |
 | `POST /complete` with `{"before","after","hint"}` | AI autocomplete: `{"text"}`, one line to show after the caret |
+| `POST /ask` with `{"system","user","maxTokens"}` | One reply from the completion model to the editor's own prompt (the grammar check, a paper's citation style): `{"text"}`, whole |
 | `GET /cite/page?url=` | a web page's html (http/https only, 2 MB), for looking a source up from its address; 502 when it is not a page |
 | `POST /ai/chatgpt/login`, `GET /ai/chatgpt/login`, `POST /ai/chatgpt/cancel`, `POST /ai/chatgpt/logout` | ChatGPT sign-in (below): start it (`{url, opened}`), follow it (`{state}`: waiting, done, error, cancelled), stop it, delete its tokens |
 | `GET /app/` | the editor app |

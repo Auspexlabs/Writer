@@ -3,8 +3,9 @@
 // English from its one source, through the writer engine itself (serve --no-token, POST /run), into
 // ui/templates/<zh|en>/<type>/<id>.<ext>; renders each file's thumbnail with the app's own editors in headless Chrome
 // (<id>.webp beside it); and writes the gallery's list (ui/templates/index.json) and the English names and categories
-// (a generated block in ui/i18n/en-shell.js). Needs dotnet (the engine is built when src/Writer.Cli has no build yet; run
-// dotnet build src/Writer.Cli after changing it) and Chrome (CHROME=<path> for another build). Nothing opens on screen.
+// (a generated block in ui/i18n/en-shell.js). Needs an engine — dotnet (the engine is built when src/Writer.Cli has no build
+// yet; run dotnet build src/Writer.Cli after changing it), WRITER=<writer binary>, or the installed /Applications/Writer.app —
+// and Chrome (CHROME=<path> for another build). Nothing opens on screen.
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -21,9 +22,20 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SOURCES = {};
 for (const type of TYPES) SOURCES[type] = await import(`./${type}.mjs`);
 
+/** The engine command: WRITER, else the repo's build (built here when dotnet is around), else the installed app's. */
+function engineCmd() {
+  if (process.env.WRITER) return [process.env.WRITER];
+  const has = cmd => { try { execFileSync('which', [cmd], { stdio: 'ignore' }); return true; } catch (e) { return false; } };
+  if (has('dotnet')) { if (!existsSync(CLI)) execFileSync('dotnet', ['build', join(ROOT, 'src/Writer.Cli'), '-v', 'q', '-nologo'], { stdio: 'inherit' }); return ['dotnet', CLI]; }
+  const app = '/Applications/Writer.app/Contents/MacOS/writer';
+  if (existsSync(app)) { console.log('no dotnet: using the installed app\'s engine', app); return [app]; }
+  throw new Error('no engine: install dotnet, set WRITER to a writer binary, or install Writer.app');
+}
+const ENGINE = engineCmd();
+
 /** writer serve on dir (with the app's ui/ when ui is given); run(argv) runs one command and returns its JSON. */
 async function engine(dir, ui) {
-  const proc = spawn('dotnet', [CLI, 'serve', '--dir', dir, '--port', '0', '--no-token', ...(ui ? ['--ui', ui] : [])], { stdio: ['ignore', 'ignore', 'pipe'] });
+  const proc = spawn(ENGINE[0], [...ENGINE.slice(1), 'serve', '--dir', dir, '--port', '0', '--no-token', ...(ui ? ['--ui', ui] : [])], { stdio: ['ignore', 'ignore', 'pipe'] });
   let err = '';
   const url = await new Promise((resolve, reject) => {
     proc.stderr.on('data', d => { err += d; const m = /"url"\s*:\s*"([^"]+)"/.exec(err); if (m) resolve(m[1]); });
@@ -121,7 +133,6 @@ function writeIndex() {
 // ---------------------------------------------------------------------------------------------------------------------
 const args = process.argv.slice(2), only = args.filter(a => !a.startsWith('--'));
 const list = writeIndex().filter(x => !only.length || only.includes(x.type) || only.includes(x.id));
-if (!existsSync(CLI)) execFileSync('dotnet', ['build', join(ROOT, 'src/Writer.Cli'), '-v', 'q', '-nologo'], { stdio: 'inherit' });
 const eng = await engine(OUT);
 try {
   for (const x of list) for (const lang of LANGS) {

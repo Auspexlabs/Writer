@@ -343,6 +343,11 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '重新复制服务商给的 Key 再粘贴。': 'Copy the key from the provider again and paste it.',
   '接口地址不对': 'Wrong API address',
   '请填写 API Key': 'Enter an API key',
+  // 写作辅助 (assist.js): the card in the AI panel and its suggestions
+  '不用': 'No, thanks', '不是这个格式？': 'A different style?', '开启 {style} 辅助': 'Turn on {style} assist',
+  '这份文档看起来是一篇 {style} 格式的论文。要开启写作辅助吗？开启后：引文和书目按 {style} 排版；写完一段，自动检查语法和格式；{list} 页底下可以直接粘贴网址或参考文献；AI 助手按这个格式协助。': 'This document looks like a paper in {style} style. Turn on writing assist? Citations and the list will follow {style}; each paragraph is checked for grammar and style as you finish it; a web address or reference pasted under {list} becomes an entry; and the AI assistant works in this style.',
+  '已开启 {name} 写作辅助。下面的建议可以直接点；在「引用 › 写作辅助」里可以关掉。': 'Writing assist is on for {name}. Tap a suggestion below, or turn it off under References › Writing Assist.', '好的，这份文档不开启写作辅助。需要时在「引用 › 写作辅助」里打开。': 'All right, no writing assist for this document. Turn it on under References › Writing Assist whenever you like.',
+  '检查全文是否符合 {style} 格式': 'Check the whole paper against {style} format', '检查全文语法': 'Check grammar throughout', '核对文中的引文和 {list} 是否一一对应': 'Check that in-text citations and {list} match',
 
   // ---- template gallery: names and categories, written by ui/tools/templates/build.mjs from its sources ----
   '简历求职': 'Résumés & Jobs',
@@ -362,6 +367,10 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   '论文封面与目录': 'Thesis Cover & Contents',
   '项目计划书': 'Project Plan',
   '请假申请单': 'Leave Request Form',
+  '学术论文': 'Academic Papers',
+  'MLA 论文': 'MLA Paper',
+  'APA 论文': 'APA Paper',
+  'Chicago 论文': 'Chicago Paper',
   '个人生活': 'Personal',
   '个人记账': 'Personal Ledger',
   '财务': 'Financial',

@@ -180,7 +180,7 @@ button,input,select,textarea{font-family:inherit;color:inherit}
         <sc-for list="{{ live }}" as="L" key-by="id" hint-placeholder-count="0">
           <div data-live="{{ L.onA }}" style="position:absolute;inset:0;{{ L.vis }}">
           <sc-if value="{{ L.isDocx }}" hint-placeholder-val="{{ false }}">
-            <dc-import name="WordEditor" doc="{{ L.doc }}" on-open-documents="{{ onOpenDocuments }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-revise="{{ onRevise }}" on-rewrite="{{ onRewrite }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
+            <dc-import name="WordEditor" doc="{{ L.doc }}" assist="{{ L.assist }}" grammar="{{ L.grammarOn }}" on-assist="{{ onAssist }}" on-open-documents="{{ onOpenDocuments }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" on-revise="{{ onRevise }}" on-rewrite="{{ onRewrite }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
           </sc-if>
           <sc-if value="{{ L.isXlsx }}" hint-placeholder-val="{{ false }}">
             <dc-import name="SheetEditor" grid="{{ L.gridOn }}" doc="{{ L.doc }}" on-change="{{ onDocChange }}" on-undo="{{ onUndo }}" on-redo="{{ onRedo }}" toast="{{ toastFn }}" on-file-menu="{{ onFileMenu }}" bar-right="{{ L.barRight }}" bar-left="{{ L.barLeft }}" merged="{{ L.merged }}" lead-w="{{ L.leadW }}" on-ai="{{ toggleAI }}" ai-on="{{ L.aiOn }}" on-play="{{ enterPure }}" show-thumbs="{{ L.showThumbs }}" format-open="{{ L.formatOpen }}" pure="{{ L.pure }}" panel-open="{{ L.panelOpen }}" panel-enter="{{ L.panelEnter }}" on-toggle-thumbs="{{ toggleThumbs }}" style="position:absolute;inset:0" hint-size="100%,100%"></dc-import>
@@ -371,6 +371,23 @@ button,input,select,textarea{font-family:inherit;color:inherit}
                   </sc-if>
                 </div>
               </sc-if>
+              <sc-if value="{{ m.hasAssist }}" hint-placeholder-val="{{ false }}">
+                <div data-assist="1" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;background:var(--k17, rgba(0,0,0,0.07))">
+                  <div style="font-size:13.5px;line-height:1.6;color:var(--k1, #1D1D1F)">{{ m.assistText }}</div>
+                  <sc-if value="{{ m.assistPending }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-wrap:wrap;gap:6px">
+                      <button onClick="{{ m.onAssistOn }}" style="height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k7, #1D1D1F);color:var(--kinv, #fff);font-size:12.5px;cursor:pointer;transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.95)">{{ m.assistOnLabel }}</button>
+                      <button onClick="{{ m.onAssistOff }}" style="height:28px;padding:0 14px;border:none;border-radius:999px;background:var(--k0, #FFFFFF);font-size:12.5px;cursor:pointer;color:var(--k1, #1D1D1F);transition:transform .35s cubic-bezier(.2,1.4,.4,1)" style-active="transform:scale(0.95)">不用</button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:var(--k8, #8E8E93)">
+                      <span>不是这个格式？</span>
+                      <sc-for list="{{ m.assistOthers }}" as="o" hint-placeholder-count="0">
+                        <button onClick="{{ o.onClick }}" style="height:22px;padding:0 9px;border:none;border-radius:999px;background:var(--k0, #FFFFFF);font-size:11.5px;cursor:pointer;color:var(--k1, #1D1D1F)">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
             </div>
           </sc-if>
         </sc-for>
@@ -497,6 +514,7 @@ class Component extends DCLogic {
     if (PERF) { window.__shell = this; import('./perf.js'); }
     Promise.all([import('./office-io.js'), import('./sheet-engine.js'), import('./md.js'), import('./pdf-kit.js'), import('./engine.js'), import('./prefs.js')]).then(async ([K, E, MD, PK, EN, P]) => {
       this.K = K; this.E = E; this.MD = MD; this.PK = PK; this.EN = EN; this.P = P; this.applyTheme(); this.loadAiCfg();
+      import('./assist.js').then(m => { this.A = m; this.forceUpdate(); }); // 写作辅助: a paper's style, told from the document; what the assistant is told
       // AI 自动补全, in every editor of this page (complete.js; the editors mark where documents are typed with data-complete)
       import('./complete.js').then(C => { if (this.gone) return; this.ac = C.install(document, {
         enabled: () => !!this.state.chatOn && this.prefs.ai !== false && this.prefs.complete !== false,
@@ -743,6 +761,7 @@ class Component extends DCLogic {
         const nd = await this.EN.open(d); nd.openSeq = seq; this.loading = null; this.setState(s => ({ docs: s.docs.map(x => x.id === id ? nd : x), cur: id, view: 'doc', menu: null, docsOpen: false, toast: null }));
         // compatibility mode (.doc, .xls, .ppt, .wps, .odt, .rtf, .csv …): the file was read into a draft of the editor's own type
         if (nd.from) this.toastMsg($t('「{name}」已按兼容模式打开：存储时将另存为 {ext} 文件，原文件保持不变。', { name: nd.from.replace(/\\/g, '/').split('/').pop(), ext: '.' + nd.type }));
+        this.assistCheck(id); // a paper? the AI panel asks about 写作辅助 once
       }
       catch (e) { this.loading = null; this.toastMsg($t('无法打开 {title}：{msg}', { title: d.title, msg: $t(e.message) })); return; }
     } else { this.setState({ cur: id, view: 'doc', menu: null, docsOpen: false }); this.checkExternal(id); }
@@ -808,7 +827,12 @@ class Component extends DCLogic {
   loadTemplates() { fetch('./templates/index.json', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(list => this.setState({ templates: Array.isArray(list) ? list : [] })).catch(() => { }); }
   /** A template card: a new draft that starts as a copy of the template's file in the interface language, named after it. */
   async createFrom(x) {
-    try { const d = await this.EN.createFrom(`./templates/${$lang()}/${x.type}/${x.id}.${x.type}`, $t(x.name), x.type); await this.addLazy(d, true); }
+    try {
+      const d = await this.EN.createFrom(`./templates/${$lang()}/${x.type}/${x.id}.${x.type}`, $t(x.name), x.type); await this.addLazy(d, true);
+      // an academic paper's template: 写作辅助 is on from the start, in the style the template is written in, said so in the AI panel
+      const nd = this.state.docs.find(y => y.id === d.id);
+      if (x.cat === '学术论文' && nd && nd.citeStyle && this.A && this.A.STYLES[nd.citeStyle]) { this.assistSet(nd.id, -1, nd.citeStyle); if (this.prefs.ai !== false) this.panelTo({ showAI: true, showFormat: false }); } // i18n-ok: the category as the sources name it
+    }
     catch (e) { this.toastMsg($t('创建失败：{msg}', { msg: $t(e.message) })); }
   }
   async importFiles(files) {
@@ -860,7 +884,7 @@ class Component extends DCLogic {
   async commitTitle() {
     const d = this.doc, t = (this.state.titleDraft || '').trim(); this.setState({ titleDraft: null });
     if (!d || !t || t === d.title) return;
-    try { await this.flushSave(d.id); const path = await this.EN.rename(d, t); this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { title: t, path }) : x) })); this.watch(d.id); this.toastMsg($t('已重命名为 {path}', { path })); }
+    try { await this.flushSave(d.id); const path = await this.EN.rename(d, t); if (this.A) this.A.moveAssist(d.path, path); this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { title: t, path }) : x) })); this.watch(d.id); this.toastMsg($t('已重命名为 {path}', { path })); }
     catch (e) { this.toastMsg($t('重命名失败：{msg}', { msg: $t(e.message) })); }
   }
   /** 存储: a draft asks the host where (its Save dialog) and moves there; other documents are already autosaved. */
@@ -883,7 +907,7 @@ class Component extends DCLogic {
   besideOriginal(d) { const f = d.from && d.from.replace(/\\/g, '/'); return f && f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : undefined; }
   async moveTo(d, target, keep) {
     try {
-      const path = await this.EN.saveAs(d, target, keep);
+      const path = await this.EN.saveAs(d, target, keep); if (!keep && this.A) this.A.moveAssist(d.path, path);
       const title = path.replace(/\\/g, '/').split('/').pop().replace(/\.[^.]+$/, '');
       this.setState(s => ({ docs: s.docs.map(x => x.id === d.id ? Object.assign({}, x, { path, title }) : x) }));
       if (this.state.cur === d.id) this.watch(d.id); // a draft closed from its tab may not be the one on screen
@@ -1035,6 +1059,7 @@ class Component extends DCLogic {
     const pushSoon = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; push(); }); };
     try {
       const opts = Object.assign(this.P ? this.P.chatOptions(this.prefs, this.lastSel) : {}, { signal: ctrl.signal });
+      const style = this.assistStyle(d0); if (style) opts.instructions = [opts.instructions, this.A.chatInstructions(style)].filter(Boolean).join('\n\n'); // 写作辅助: what the paper is, how its citations are kept
       await this.EN.chat(d0, history, (name, data) => {
         if (name === 'delta') { live += data.text || ''; msg.text = join(settled, live); if (this.state.thinking) this.setState({ thinking: false }); pushSoon(); }
         else if (name === 'text') { settled = join(settled, data.text || ''); live = ''; msg.text = settled; this.setState({ thinking: false }); push(); }
@@ -1060,6 +1085,61 @@ class Component extends DCLogic {
       } catch (e) { this.toastMsg($t('重新载入失败：{msg}', { msg: $t(e.message) })); }
     }
     this.refreshFiles();
+  }
+  // ---- 写作辅助 (assist.js): a Word document that reads like an academic paper is asked about once, in the AI panel ----
+  /** The style assistance is on for a document, '' when off or not decided. */
+  assistStyle(d) { const a = d && this.A ? this.A.assistOf(d.path) : ''; return a && this.A.STYLES[a] ? a : ''; }
+  /** A Word document as the detector reads it: its paragraphs and headings, the works-cited list's title as a heading, its header's text. */
+  assistSignals(d) {
+    const dom = new DOMParser().parseFromString('<div id="r">' + (d.html || '') + '</div>', 'text/html'), blocks = [];
+    for (const el of dom.querySelectorAll('p,h1,h2,h3,li,blockquote,nav[data-bib]')) {
+      if (el.tagName === 'NAV') { if (el.getAttribute('data-title')) blocks.push({ kind: 'heading', text: el.getAttribute('data-title') }); continue; }
+      if (el.closest('nav[data-bib]') || el.querySelector('p,li')) continue;
+      blocks.push({ kind: /^H[1-3]$/.test(el.tagName) ? 'heading' : 'paragraph', text: el.textContent || '' });
+    }
+    const header = new DOMParser().parseFromString('<div id="h">' + (d.header || '') + '</div>', 'text/html').getElementById('h').textContent || '';
+    return { blocks, header, notes: (d.notes || []).length, citeStyle: d.citeStyle || '', sources: (d.sources || []).length };
+  }
+  /** A Word document just opened: when its works-cited list, its citations or its header say which style it is written in — or, when it
+   *  reads like a paper and nothing says, the fast model does — the AI panel opens with the question. Once per file. */
+  async assistCheck(id) {
+    const d = this.state.docs.find(x => x.id === id); if (!d || d.type !== 'docx' || !d.loaded || !this.A || !this.EN || this.A.assistOf(d.path)) return;
+    const sig = this.assistSignals(d);
+    let style = this.A.detect(sig);
+    if (!style && this.state.chatOn && this.prefs.ai !== false && this.A.looksAcademic(sig.blocks)) {
+      const q = this.A.classifyPrompt(sig.blocks, sig.header);
+      try { style = this.A.parseStyle(await this.EN.ask(q.system, q.user, { maxTokens: 12 })); } catch (e) { style = ''; }
+    }
+    if (this.A.assistOf(d.path) || !this.state.docs.some(x => x.id === id)) return; // decided meanwhile, or closed
+    if (!style) { this.A.setAssist(d.path, 'none'); return; }
+    this.addMsg(id, { role: 'ai', text: '', assist: { style, state: 'pending' } });
+    if (this.state.cur === id && this.prefs.ai !== false) this.panelTo({ showAI: true, showFormat: false });
+  }
+  /** The answer, from the card or the 引用 tab: a style turns assistance on (the editor redraws the paper's citations in it), 'off' turns it off. */
+  assistSet(id, idx, style) {
+    const d = this.state.docs.find(x => x.id === id); if (!d || !this.A) return;
+    this.A.setAssist(d.path, style);
+    const msgs = [...(this.state.chats[id] || [])], at = idx >= 0 ? idx : msgs.findIndex(m => m.assist && m.assist.state === 'pending');
+    if (at >= 0) { const m = Object.assign({}, msgs[at]); m.assist = Object.assign({}, m.assist, { state: style === 'off' ? 'off' : 'on', style: style === 'off' ? m.assist.style : style }); msgs[at] = m; }
+    else if (style !== 'off') msgs.push({ role: 'ai', text: '', assist: { style, state: 'on' } });
+    this.setState(s => ({ chats: Object.assign({}, s.chats, { [id]: msgs }), assistRev: (s.assistRev || 0) + 1 }));
+  }
+  /** What the card says in each state, and its buttons. */
+  assistVals(d, m, i) {
+    const a = m.assist; if (!a || !this.A) return { hasAssist: false };
+    const S = this.A.STYLES, s = S[a.style] || { short: a.style, name: a.style, list: '' };
+    const text = a.state === 'pending' ? $t('这份文档看起来是一篇 {style} 格式的论文。要开启写作辅助吗？开启后：引文和书目按 {style} 排版；写完一段，自动检查语法和格式；{list} 页底下可以直接粘贴网址或参考文献；AI 助手按这个格式协助。', { style: s.short, list: s.list })
+      : a.state === 'on' ? $t('已开启 {name} 写作辅助。下面的建议可以直接点；在「引用 › 写作辅助」里可以关掉。', { name: $t(s.name) }) : $t('好的，这份文档不开启写作辅助。需要时在「引用 › 写作辅助」里打开。');
+    return { hasAssist: true, assistPending: a.state === 'pending', assistText: text, assistOnLabel: $t('开启 {style} 辅助', { style: s.short }),
+      onAssistOn: () => this.assistSet(d.id, i, a.style), onAssistOff: () => this.assistSet(d.id, i, 'off'),
+      assistOthers: this.A.KEYS.filter(k => k !== a.style).map(k => ({ label: $t(S[k].name), onClick: () => this.assistSet(d.id, i, k) })) };
+  }
+  /** The AI panel's suggestions for a paper with assistance on: its format, its grammar (the editor's own check), its citations. */
+  assistChips(d, style) {
+    const s = this.A.STYLES[style], ask = t => ({ text: t, onClick: () => this.send(t) });
+    return [ask($t('检查全文是否符合 {style} 格式', { style: s.short })),
+      { text: $t('检查全文语法'), onClick: () => { const ed = document.querySelector('.wd-ed[data-pg]'); if (ed && ed.__writerGrammar) ed.__writerGrammar(); } },
+      ask($t('核对文中的引文和 {list} 是否一一对应', { list: s.list }))];
   }
   toggleSteps(id, idx) {
     const msgs = [...(this.state.chats[id] || [])], m = Object.assign({}, msgs[idx]); if (!m.steps) return;
@@ -1151,7 +1231,9 @@ class Component extends DCLogic {
     const HIDDEN = CV_HIDDEN ? 'content-visibility:hidden;pointer-events:none' : 'visibility:hidden;opacity:0;pointer-events:none'; // visibility inherits: showing it again restyled the whole editor
     const live = st.docs.filter(x => this.liveIds.includes(x.id)).map(x => {
       const on = isDoc && x.id === d.id, t = x.type;
-      return { id: x.id, doc: x, onA: on ? '1' : '0', vis: on ? '' : HIDDEN, isDocx: t === 'docx', isXlsx: t === 'xlsx', isPptx: t === 'pptx', isMd: t === 'md', isMm: t === 'mm', isPdf: t === 'pdf' };
+      // 写作辅助 and 语法检查 for a Word editor: the style assistance is on for (or 'off' / 'none' / ''), and whether a model is there for the check
+      return { id: x.id, doc: x, onA: on ? '1' : '0', vis: on ? '' : HIDDEN, isDocx: t === 'docx', isXlsx: t === 'xlsx', isPptx: t === 'pptx', isMd: t === 'md', isMm: t === 'mm', isPdf: t === 'pdf',
+        assist: t === 'docx' && this.A ? this.A.assistOf(x.path) : '', grammarOn: !!(st.chatOn && this.prefs.ai !== false && this.prefs.grammar !== false) };
     });
     const ICO = t => `./assets/doc/doc-${({ docx: 'word', xlsx: 'excel', pptx: 'ppt', md: 'markdown', pdf: 'pdf', mm: 'mindmap' })[t] || 'word'}-32.png`;
     const menuItems = [];
@@ -1229,8 +1311,8 @@ class Component extends DCLogic {
       hasModelChip: !!(st.chatOn && cfg && PP && cfg.source !== 'host'), modelChip: cfg && PP ? PP.modelName(cfg.provider, st.model || cfg.model) : st.model || '', modelChipTitle: $t('切换模型'),
       openModelMenu: e => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ menu: { kind: 'model', x: Math.round(Math.max(8, Math.min(window.innerWidth - 268, r.left))), y: Math.round(r.bottom + 6) }, docsOpen: false }); },
       ...this.setupVals(),
-      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', html: { __html: m.text ? (this.MD ? this.MD.mdToHtml(m.text, { safe: true }) : escHtml(m.text)) : '' }, setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: $t('执行了 {n} 条命令', { n: (m.steps || []).length }), stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? $t('{n} 处修改', { n: ch.items.length }) : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: $t(ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复'), onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false) }; }),
-      chips: d && !msgs.length ? CHIPS[d.type].map(t => { const label = $t(t); return { text: label, onClick: () => this.send(label) }; }) : [],
+      msgs: msgs.map((m, i) => { const ch = m.change; return { isUser: m.role === 'user', isAi: m.role === 'ai', text: m.text || '', html: { __html: m.text ? (this.MD ? this.MD.mdToHtml(m.text, { safe: true }) : escHtml(m.text)) : '' }, setup: !!m.setup && !st.chatOn, hasSteps: !!(m.steps && m.steps.length), stepsOpen: !!m.stepsOpen, stepsLabel: $t('执行了 {n} 条命令', { n: (m.steps || []).length }), stepsArrow: m.stepsOpen ? '90deg' : '0deg', onToggleSteps: () => this.toggleSteps(d.id, i), steps: (m.steps || []).map(s => ({ text: s.text, mark: s.ok ? '✓' : '✕', color: s.ok ? 'var(--k35, #3F7D5C)' : '#B5563A' })), hasChange: !!ch, items: ch ? ch.items.map(([k, l]) => ({ kind: k, label: l })) : [], countText: ch ? $t('{n} 处修改', { n: ch.items.length }) : '', pending: !!ch && ch.state === 'pending', settled: !!ch && ch.state !== 'pending', statusText: $t(ch && ch.state === 'kept' ? '已保留' : '已撤销，文档已恢复'), onKeep: () => this.settle(d.id, i, true), onUndo: () => this.settle(d.id, i, false), ...this.assistVals(d, m, i) }; }),
+      chips: d && (!msgs.length || msgs.every(m => m.assist)) ? (this.assistStyle(d) ? this.assistChips(d, this.assistStyle(d)) : CHIPS[d.type].map(t => { const label = $t(t); return { text: label, onClick: () => this.send(label) }; })) : [], // before the talk starts (a 写作辅助 card is not talk)
       input: st.input, onInput: e => this.setState({ input: e.target.value }),
       onInputKey: e => { if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.send(st.input); } },
       sendClick: () => st.sending ? this.stopChat() : this.send(st.input), sendLabel: st.sending ? $t('停止') : '↑', sendW: st.sending ? '44px' : '30px', sendFs: st.sending ? '11.5px' : '14px',
@@ -1242,7 +1324,8 @@ class Component extends DCLogic {
       hasAsk: !!st.ask, askTitle: st.ask ? st.ask.title : '', askSave: () => st.ask && st.ask.res('save'), askDiscard: () => st.ask && st.ask.res('discard'), askCancel: () => st.ask && st.ask.res('cancel'),
       workspace: this.EN ? this.EN.state.workspace : '', version: this.EN ? this.EN.state.version : '',
       createSub: ai ? $t('描述你要的内容，助手会先写好初稿；也可以从空白开始。') : $t('选择类型，从空白开始。'),
-      mdAuto: this.prefs.md !== false, gridOn: this.prefs.grid !== false
+      mdAuto: this.prefs.md !== false, gridOn: this.prefs.grid !== false,
+      onAssist: style => isDoc && this.assistSet(d.id, -1, style) // 写作辅助 chosen in the Word editor's 引用 tab (its assist and grammarOn ride on live)
     };
   }
 }

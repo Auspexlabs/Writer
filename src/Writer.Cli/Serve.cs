@@ -310,6 +310,9 @@ public sealed class Serve : IDisposable
                 case "/complete" when request.HttpMethod == "POST":
                     if (await JsonBody(request, response, CompleteExample) is { } typed) await Complete(response, typed);
                     break;
+                case "/ask" when request.HttpMethod == "POST":
+                    if (await JsonBody(request, response, AskExample) is { } question) await Ask(response, question);
+                    break;
                 case "/ai/chatgpt/login" when request.HttpMethod == "POST":
                     if (await JsonBody(request, response, "{}") is not null) await Json(response, 200, StartLogin());
                     break;
@@ -1132,6 +1135,32 @@ public sealed class Serve : IDisposable
         if (root.ValueKind != JsonValueKind.Object || Text(root, "before") is not { } before)
             throw new WriterException(ErrorCode.Usage, "Body needs before", "Send " + CompleteExample + ".");
         var text = await chat.CompleteAsync(before, Text(root, "after") ?? "", Text(root, "hint"), _stop.Token);
+        await Json(response, 200, NodeJson.Write(w =>
+        {
+            w.WriteStartObject();
+            w.WriteString("text", text);
+            w.WriteEndObject();
+        }));
+    }
+
+    const string AskExample = "{\"system\":\"You are the grammar checker of a document editor…\",\"user\":\"The paragraph to check\",\"maxTokens\":1500}";
+
+    /// <summary>POST /ask: {system, user, maxTokens?} → {text}: one reply from the settings' completion model to a request of the
+    /// editor's own (the grammar check of a paragraph, the citation style a paper is written in), whole as the model wrote it,
+    /// without tools and without the document. 503 NO_MODEL while no model is set up.</summary>
+    async Task Ask(HttpListenerResponse response, string body)
+    {
+        var chat = Ai().Chat;
+        if (chat is null)
+        {
+            await Json(response, 503, Error("NO_MODEL", "No model is set up", "Set one up in Settings › AI."));
+            return;
+        }
+        var root = ParseBody(body);
+        if (root.ValueKind != JsonValueKind.Object || Text(root, "user") is not { } user || user.Trim().Length == 0)
+            throw new WriterException(ErrorCode.Usage, "Body needs user", "Send " + AskExample + ".");
+        var tokens = root.TryGetProperty("maxTokens", out var max) && max.ValueKind == JsonValueKind.Number && max.TryGetInt32(out var n) ? n : 1500;
+        var text = await chat.AskAsync(Text(root, "system") ?? "", user, tokens, _stop.Token);
         await Json(response, 200, NodeJson.Write(w =>
         {
             w.WriteStartObject();

@@ -271,6 +271,13 @@ export async function complete(before, after, hint, signal) {
   const r = await http('/complete', { method: 'POST', headers: JSON_BODY, body: JSON.stringify({ before, after, hint: hint || '' }), signal });
   return (await r.json()).text || '';
 }
+/** A question of the editor's own to the fast model (POST /ask): a system prompt and a message in, the reply whole, as the model
+ *  wrote it (grammar.js reads corrections from it, assist.js a paper's style); maxTokens bounds the answer, signal cancels it. */
+export async function ask(system, user, opts) {
+  const { signal, maxTokens } = opts || {};
+  const r = await http('/ask', { method: 'POST', headers: JSON_BODY, body: JSON.stringify({ system, user, maxTokens: maxTokens || 1500 }), signal });
+  return (await r.json()).text || '';
+}
 
 // ---------- units ----------
 const UNIT = { cm: 1, mm: 0.1, in: 2.54, pt: 2.54 / 72, px: 2.54 / 96, emu: 2.54 / 914400 };
@@ -1109,6 +1116,8 @@ export async function citeEdit(doc, change, el, exec = run) {
     return { sources: doc.sources, tag };
   });
 }
+/** A web page's html, read by the engine (GET /cite/page), for what the lookup's citation tags do not give. */
+export async function citePage(url) { const r = await http('/cite/page?url=' + enc(url)); return r.text(); }
 /** Looks a source up from what was pasted (cite.js): Crossref and Open Library straight from here, a web page through the engine,
  *  which may read another site. */
 export async function lookupSource(q) {

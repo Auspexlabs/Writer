@@ -82,17 +82,19 @@ public sealed partial class Chat
     }
 
     /// <summary>A completion: one short reply without tools or reasoning, read until its first line is whole (the backend takes no
-    /// output limit). A model that refuses to skip reasoning is asked again with a little.</summary>
-    async Task<string> CodexComplete(string model, string user, CancellationToken ct)
+    /// output limit); an ask (whole) is read to its end. A model that refuses to skip reasoning is asked again with a little.</summary>
+    async Task<string> CodexComplete(string model, string system, string user, bool whole, CancellationToken ct)
     {
+        Func<StringBuilder, bool>? enough = null;
+        if (!whole) enough = t => t.Length > 300 || t.ToString().Count(ch => ch == '\n') >= 2;
         for (var effort = "none"; ; effort = "low")
         {
-            var body = CodexBody(model, Assistant.CompleteSystem, new JsonArray(Message("user", "input_text", user)));
+            var body = CodexBody(model, system, new JsonArray(Message("user", "input_text", user)));
             body["reasoning"] = new JsonObject { ["effort"] = effort };
             try
             {
                 using var response = await CodexSend(() => Post("/responses", body), HttpCompletionOption.ResponseHeadersRead, ct);
-                var (items, streamed) = await CodexEvents(response, null, t => t.Length > 300 || t.ToString().Count(ch => ch == '\n') >= 2, ct);
+                var (items, streamed) = await CodexEvents(response, null, enough, ct);
                 return streamed.Length > 0 ? streamed.ToString() : string.Concat(items.Where(i => Str(i["type"]) == "message").Select(MessageText));
             }
             catch (WriterException ex) when (effort == "none" && (Says(ex, "effort") || Says(ex, "reasoning")))

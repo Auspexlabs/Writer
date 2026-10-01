@@ -57,6 +57,11 @@ This repository holds two things built from the same code:
   stop working).
 - **AI autocomplete.** Pause while typing and a grey suggestion appears after the cursor; press Tab to take it. It works
   wherever you write: Word, sheets, slides, Markdown and mind maps.
+- **Academic writing.** MLA, APA and Chicago paper templates on the start page, with the page, header, spacing and sample
+  citations already right. Open a paper and Writer tells which style it is in and asks whether to assist: citations and the
+  works-cited list follow the style (the engine knows MLA 9, APA 7, Chicago 18, GB/T 7714 and IEEE), each paragraph is
+  checked for spelling, grammar and style as you finish it — words to delete struck through, problems underlined, Tab to
+  accept — and a web address, DOI or whole reference pasted under Works Cited becomes a sorted entry.
 - **Picture tools.** Remove a photo's background (with the Mac's own Apple Vision, on your Mac), crop, rotate and
   compress pictures.
 - **Made the Mac way.** Native menus and shortcuts, light and dark mode, pinch to zoom, slide shows. New documents are

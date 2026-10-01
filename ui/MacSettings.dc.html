@@ -111,7 +111,7 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:640},&quot;tab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;general&quot;,&quot;look&quot;,&quot;edit&quot;,&quot;ai&quot;,&quot;file&quot;,&quot;keys&quot;],&quot;default&quot;:&quot;general&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
-const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, autoUpdate: true, lang: '跟随系统', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, complete: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
+const DEF = { iconStyle: 'b', quickTab: '开始', theme: 'light', startup: 'last', newType: 'docx', restore: true, autoUpdate: true, lang: '跟随系统', paper: 'A4', accent: '#3F7D5C', density: 'std', glass: 55, grid: true, motion: false, darkPages: false, font: '思源宋体', size: 12, md: true, spell: true, quote: true, track: false, ai: true, complete: true, grammar: true, tone: 'bal', preview: true, ctx: true, web: true, instr: '', autosave: true, interval: '30s', history: true, fmt_docx: '.docx', fmt_xlsx: '.xlsx', fmt_pptx: '.pptx', fmt_md: '.md' };
 const TABS = [['general', '通用', '⚙︎'], ['look', '外观', '◐'], ['edit', '编辑@@settings', '✎'], ['ai', 'AI', '✦'], ['file', '存储@@settings', '▤'], ['keys', '快捷键', '⌘']];
 const ICONS = ['word', 'excel', 'ppt', 'markdown', 'pdf', 'mindmap'];
 const O = a => a.map(x => Array.isArray(x) ? { v: String(x[0]), l: $t(String(x[1])) } : { v: String(x), l: $t(String(x)) });
@@ -235,6 +235,7 @@ class Component extends DCLogic {
     return [
       tg('complete', '打字时显示 AI 建议', gpt ? '停顿片刻后，光标后面会出现灰色的建议文字：按 Tab 接受。用 ChatGPT 登录时，每次建议都计入套餐的用量'
         : '停顿片刻后，光标后面会出现灰色的建议文字：按 Tab 接受，按 Esc 或继续打字忽略。光标前后的一段文字会发给所选的模型'),
+      tg('grammar', '写完一段后检查语法', 'Word 文档里，光标离开一段时，这一段会发给建议用的模型检查拼写和语法：要删的字划线，有问题的地方画波浪线，光标移过去按 Tab 接受。审阅页签里可以随时关掉'),
       ...(f ? [{ ...base('建议用的模型', cm && cm.note ? $t(cm.note) : '越快越好：选标着「适合自动补全」的模型'), isPopup: true, value: f.completeModel || '', minW: '200px',
         opts: [{ v: '', l: $t('与助手相同') }].concat(menu.map(x => ({ v: x.id, l: x.name }))),
         onChange: e => { const v = e.target.value; this.setState(s => ({ ai: Object.assign({}, s.ai, { completeModel: v }) }), () => this.saveAi()); } }] : [])

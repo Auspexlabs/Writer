@@ -6,8 +6,8 @@ using Writer.Cli;
 
 namespace Writer.Tests;
 
-/// <summary>The autocomplete (POST /complete) and the model list (POST /ai/models): the requests they make of each kind of
-/// provider, and what the editor gets back.</summary>
+/// <summary>The autocomplete (POST /complete), the editor's own asks (POST /ask) and the model list (POST /ai/models): the requests
+/// they make of each kind of provider, and what the editor gets back.</summary>
 public class CompleteTests : IDisposable
 {
     const string Key = "sk-secret-0123456789";
@@ -146,6 +146,29 @@ public class CompleteTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, elsewhere.StatusCode);
         Assert.Equal("请填写 API Key", (await Read(elsewhere)).GetProperty("error").GetProperty("message").GetString());
         Assert.Equal(2, api.Requests.Count); // the OpenAI key never went to DeepSeek
+    }
+
+    [Fact]
+    public async Task An_ask_sends_the_editors_own_prompt_to_the_fast_model_and_returns_the_reply_whole()
+    {
+        const string reply = "[{\"find\":\"teh\",\"replace\":\"the\",\"why\":\"spelling\",\"kind\":\"spelling\"}]\nsecond line kept";
+        var api = new Api((_, _, _) => (HttpStatusCode.OK, Choice(reply)));
+        var client = Start(api, new { provider = "deepseek", baseUrl = "https://api.deepseek.com", model = "deepseek-v4-pro", completeModel = "deepseek-flash", apiKey = Key });
+
+        var done = await Read(await client.PostAsync("/ask", Body(new { system = "You are the grammar checker.", user = "<paragraph>teh cat</paragraph>", maxTokens = 800 })));
+        Assert.Equal(reply, done.GetProperty("text").GetString());
+        var (url, auth, _, sent) = api.Requests.Single();
+        Assert.Equal(("https://api.deepseek.com/chat/completions", "Bearer " + Key), (url, auth));
+        var body = JsonDocument.Parse(sent).RootElement;
+        Assert.Equal("deepseek-flash", body.GetProperty("model").GetString());
+        Assert.Equal("You are the grammar checker.", body.GetProperty("messages")[0].GetProperty("content").GetString());
+        Assert.Equal("<paragraph>teh cat</paragraph>", body.GetProperty("messages")[1].GetProperty("content").GetString());
+        Assert.Equal(800, body.GetProperty("max_tokens").GetInt32());
+        Assert.Equal("disabled", body.GetProperty("thinking").GetProperty("type").GetString());
+
+        var noUser = await client.PostAsync("/ask", Body(new { system = "x" }));
+        Assert.Equal(HttpStatusCode.BadRequest, noUser.StatusCode);
+        Assert.Single(api.Requests);
     }
 
     [Theory]

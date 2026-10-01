@@ -269,6 +269,7 @@ Object.assign(window.I18N_EN = window.I18N_EN || {}, {
   // 设置 › AI › 自动补全
   '自动补全': 'Autocomplete',
   '打字时显示 AI 建议': 'Show AI suggestions as you type',
+  '写完一段后检查语法': 'Check grammar when you finish a paragraph', 'Word 文档里，光标离开一段时，这一段会发给建议用的模型检查拼写和语法：要删的字划线，有问题的地方画波浪线，光标移过去按 Tab 接受。审阅页签里可以随时关掉': 'In Word documents, when the caret leaves a paragraph it is sent to the suggestion model to check spelling and grammar: words to delete are struck through, problems get a wavy underline, and Tab accepts a correction. The Review tab can turn it off at any time',
   '停顿片刻后，光标后面会出现灰色的建议文字：按 Tab 接受，按 Esc 或继续打字忽略。光标前后的一段文字会发给所选的模型': 'Pause for a moment and a grey suggestion appears after the cursor. Press Tab to accept it; press Esc or keep typing to ignore it. The text around the cursor is sent to the chosen model.',
   '建议用的模型': 'Model for suggestions',
   '越快越好：选标着「适合自动补全」的模型': 'Faster is better: pick a model marked “good for autocomplete”',

@@ -100,6 +100,19 @@
 .wd-cg-p{color:var(--k1, #1D1D1F)}
 .wd-cg-chip{padding:2px 8px;border-radius:8px;background:var(--k0, #FFFFFF);box-shadow:0 2px 10px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.06);font:12px/20px 'Noto Sans SC',sans-serif!important;color:var(--k11, #6E6E73)}
 .wd-cg-k{margin-left:8px;padding:0 5px;border-radius:4px;background:var(--k12, #F2F2F7);font-size:11px;color:var(--k11, #6E6E73)}
+/* 语法检查: the correction at the caret, explained under its line (the words themselves are struck through or underlined by ::highlight) */
+.wd-gg{position:absolute;z-index:3;display:none;max-width:440px;padding:6px 10px;border-radius:10px;background:var(--k0, #FFFFFF);box-shadow:0 2px 12px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.06);font:12.5px/1.5 'Noto Sans SC',sans-serif!important;color:var(--k1, #1D1D1F);cursor:pointer;pointer-events:auto;white-space:normal}
+.wd-gg s{color:var(--k8, #8E8E93)}
+.wd-gg b{font-weight:600;color:var(--k61, #2E7350)}
+.wd-gg .wd-gg-why{display:block;color:var(--k11, #6E6E73);font-size:11.5px}
+.wd-gg .wd-gg-k{margin-left:8px;padding:0 5px;border-radius:4px;background:var(--k12, #F2F2F7);font-size:11px;color:var(--k11, #6E6E73)}
+.wd-gg .wd-gg-x{margin-left:4px;padding:0 5px;border-radius:4px;color:var(--k8, #8E8E93)}
+.wd-gg .wd-gg-x:hover{background:var(--k12, #F2F2F7)}
+/* 书目页的粘贴框: under the works-cited list, the editor's own (the list's contents are never saved) */
+.wd-ed nav[data-bib] .wd-bib-add{display:flex;flex-direction:column;gap:4px;margin-top:14px;text-indent:0;line-height:1.5;user-select:text;-webkit-user-select:text}
+.wd-ed nav[data-bib] .wd-bib-add input{width:100%;box-sizing:border-box;height:30px;padding:0 10px;border:1px dashed #C7C7CC;border-radius:7px;background:rgba(255,255,255,0.72);font:12.5px 'Noto Sans SC',sans-serif;color:#1D1D1F;outline:none;user-select:text;-webkit-user-select:text} /* theme: keep — on the page's own light paper */
+.wd-ed nav[data-bib] .wd-bib-add input:focus{border-style:solid;border-color:#1D1D1F}
+.wd-ed nav[data-bib] .wd-bib-add-s{font:11.5px/1.5 'Noto Sans SC',sans-serif;color:#6E6E73;min-height:0}
 .wd-ed span[data-control]{cursor:pointer;border-radius:3px;background:rgba(47,93,138,.08);border-bottom:1px dotted #59718c;padding:1px 3px}
 .wd-ed span[data-cite]{cursor:pointer;border-radius:3px;user-select:none;transition:background .12s}
 .wd-ed span[data-cite]:hover,.wd-ed span[data-cite][data-on]{background:var(--k48, rgba(47,93,138,0.1))}
@@ -611,13 +624,18 @@ class Component extends DCLogic {
     import('./panel.js').then(m => { this.FP = m; this.forceUpdate(); }); // the format panel's controls
     import('./md.js').then(m => { this.MD = m; this.drawEqs(); }); // KaTeX, for the equations
     import('./cite-suggest.js').then(m => { this.CS = m; this.citeScan(); }); // 引文建议: which sentences want a citation
+    import('./grammar.js').then(m => { this.G = m; }); // 语法检查: a paragraph's corrections, read from the model's reply
+    import('./assist.js').then(m => { this.A = m; if (!this.gone) this.forceUpdate(); }); // 写作辅助: the paper's style and its conventions
+    this.gram = new Map(); this.gramNo = new Set(); // 语法检查: each paragraph's corrections; the ones the writer said no to
     this.load();
     document.addEventListener('selectionchange', this.onSel); document.addEventListener('mousedown', this.ctxAway, true); document.addEventListener('keydown', this.ctxKey, true);
     const ed = this.edRef.current;
     ed.__writerDocId = () => this.doc.id;
     ed.__writerPrint = async () => { this.flush(); this.commitHF(); if (!this.paged) await new Promise(done => this.setState({ view: 'page' }, done)); this.refreshInfo(); return (this.WPrint || await import('./word-print.js')).wordPrint(this); };
-    ed.__complete = () => this.citeSug ? null : undefined; // AI 自动补全 waits while a citation is offered at the caret (Tab is the citation's)
+    ed.__complete = () => this.citeSug || this.gramSug ? null : undefined; // AI 自动补全 waits while a citation or a correction is offered at the caret (Tab is theirs)
+    ed.__writerGrammar = () => this.gramAll(); // the AI panel's 检查全文语法
     ed.addEventListener('keydown', this.onCiteKey);
+    ed.addEventListener('keydown', this.onGramKey);
     ed.addEventListener('paste', this.onPaste);
     ed.addEventListener('beforeinput', this.onBI);
     ed.addEventListener('compositionstart', this.onCS);
@@ -633,7 +651,7 @@ class Component extends DCLogic {
   }
   /** engine.js has loaded: the text shown before it came gets what needs it, the document's own styles above all (its fonts, sizes,
    *  heading looks, italic Emphasis), and the notes' and captions' numbers; the pages are measured again in those fonts. */
-  engineReady(m) { this.EN = m; if (this.gone || !this.edRef.current) return; this.ink(); this.styleSheet(); this.refreshInfo(); }
+  engineReady(m) { this.EN = m; if (this.gone || !this.edRef.current) return; this.ink(); this.styleSheet(); this.refreshInfo(); this.bibBox(); } // the paste box under the works-cited list needs the engine too
   /** Caret follow (镜头跟随): the caret inside edRef or a .wd-hf keeps the canvas scrolled with it; bound once the canvas element exists, re-bound if it changes. */
   attachFollow() { const cv = this.cvRef.current; if (this.gone || !this.F || !cv || (this.follow && this.follow.el === cv)) return; this.follow && this.follow.detach(); this.follow = this.F.attach(cv); }
   /** Ctrl/⌘ + wheel and trackpad pinch zoom the document instead of the browser page: a native non-passive listener on the editor root. */
@@ -644,7 +662,7 @@ class Component extends DCLogic {
     if (this.syncT) { clearTimeout(this.syncT); this.flush(); }
     this.fontCss && this.fontCss.remove(); this.commitHF(); this.pgCss && this.pgCss.remove(); this.stCss && this.stCss.remove();
     this.gone = true; this.follow && this.follow.detach(); this.hb && this.hb.remove(); this.shb && this.shb.remove();
-    clearTimeout(this.csT); clearTimeout(this.fnT); if (window.CSS && CSS.highlights) CSS.highlights.delete('wdcite' + this.pgId); // 引文建议's grey lines
+    clearTimeout(this.csT); clearTimeout(this.fnT); if (window.CSS && CSS.highlights) for (const k of ['wdcite', 'wdgdel', 'wdgfix', 'wdgon']) CSS.highlights.delete(k + this.pgId); // 引文建议's grey lines, 语法检查's marks
   }
   onCvScroll = () => { this.hb && this.hb.layout(); this.shb && this.shb.layout(); if (this.state.ctxBar) this.setState({ ctxBar: null }); };
   /** Right-click in the page: the design's selection bar at the pointer, in place of the system menu (in 沉浸书写 too). WebKit
@@ -723,6 +741,7 @@ class Component extends DCLogic {
     else if(o.lineNumbers!==d.lineNumbers||o.hyphenation!==d.hyphenation)this.refreshInfo();
     else if (o.notes !== d.notes && this.paged) this.refreshInfo(); // a note typed, cited or gone: its entry at the foot of the page, and the room it takes
     if (o.sources !== d.sources || o.citeStyle !== d.citeStyle || o.id !== d.id || (o.rev || 0) !== (d.rev || 0)) this.citeScan();
+    if (pp.assist !== this.props.assist && this.assistStyle() && (d.citeStyle || '') !== this.assistStyle() && this.EN) this.setCiteStyle(this.assistStyle()); // 写作辅助 turned on: the paper's citations in its style
     if (this.focusFind && this.findRef.current) { this.findRef.current.focus(); this.findRef.current.select(); this.focusFind = false; }
   }
   get doc() { return this.props.doc; }
@@ -736,11 +755,16 @@ class Component extends DCLogic {
     if (this.selShape) this.selectShape(null);
     this.drawEqs(); this.drawShapes();
     this.styleSheet();
+    this.bibBox();
+    if (this.gram) { this.gram.clear(); this.gramBlock = null; this.gramSug = null; this.gramChip(); this.gramDraw(); } // the text is new: its corrections start over
   }
   // ----- the style gallery (样式): the document's styles, drawn as they look, applied as pStyle / rStyle rather than direct formatting -----
   /** A stylesheet that draws the document's own styles on the page: [data-style] blocks and spans, and h1–h3 for its heading styles. */
   styleSheet() { if (!this.EN) return; this.stCss = this.stCss || document.head.appendChild(document.createElement('style')); const css = this.EN.styleCss(this.doc.styles, `[data-pg="${this.pgId}"]`, this.doc.base) + '\n' + this.EN.styleCss(this.doc.styles, `[data-fnpg="${this.pgId}"]`, this.doc.base)
-      + `\n::highlight(wdcite${this.pgId}){text-decoration:underline dotted rgba(142,142,147,.95);text-decoration-thickness:1.5px;text-underline-offset:3px;background-color:rgba(142,142,147,.1)}`; // 引文建议's grey
+      + `\n::highlight(wdcite${this.pgId}){text-decoration:underline dotted rgba(142,142,147,.95);text-decoration-thickness:1.5px;text-underline-offset:3px;background-color:rgba(142,142,147,.1)}` // 引文建议's grey
+      + `\n::highlight(wdgdel${this.pgId}){text-decoration:line-through;text-decoration-thickness:1.5px}` // 语法检查: a deletion, struck through in the text's own colour
+      + `\n::highlight(wdgfix${this.pgId}){text-decoration:underline wavy #B5563A;text-decoration-skip-ink:none;text-underline-offset:3px}` // a fix, a red wave under it
+      + `\n::highlight(wdgon${this.pgId}){background-color:rgba(181,86,58,.14)}`; // the one at the caret
     if (this.stCss.textContent !== css) this.stCss.textContent = css; } // the notes at the foot of the page too (FootnoteText)
   /** The gallery: the document's quick styles first (by the names Word gives them), then the built-in ones it lacks, then its other styles. */
   gallery() {
@@ -1523,12 +1547,180 @@ class Component extends DCLogic {
   };
   /** Esc: not this sentence (for as long as the document is open), and nothing more offered for it. */
   citeDismiss() { const x = this.citeSug; if (!x) return; (this.citeNo = this.citeNo || new Set()).add(x.t.text.slice(x.start, x.end).trim()); this.citeSug = null; this.citeDraw(); this.citeFind(); }
+  // ----- 语法检查: the paragraph the caret left is checked by the fast model (grammar.js); its corrections are drawn over the text — a
+  // deletion struck through, a fix underlined — and the one at the caret is explained under its line; Tab takes it, Esc says no -----
+  /** Whether the writer wants the automatic check (审阅 › 自动检查; on unless turned off, per viewer). props.grammar says a model is there. */
+  gramOn() { try { return localStorage.getItem('writerGrammar') !== 'off'; } catch (e) { return true; } }
+  gramSet(v) { try { localStorage.setItem('writerGrammar', v ? 'on' : 'off'); } catch (e) { } if (!v && this.gram) { this.gram.clear(); this.gramSug = null; this.gramChip(); this.gramDraw(); } this.forceUpdate(); }
+  /** The style assistance is on for (props.assist, from the shell), when it is one the engine knows; '' otherwise. */
+  assistStyle() { const a = this.props.assist; return a && a !== 'off' && a !== 'none' && this.A && this.A.STYLES[a] ? a : ''; }
+  /** 写作辅助's menu (引用): the styles to assist in, the one on marked, and off. */
+  assistMenu(I, HD) {
+    const A = this.A, on = this.assistStyle();
+    const items = A ? [...A.KEYS.map(k => I(A.STYLES[k].name, () => this.props.onAssist && this.props.onAssist(k), { on: on === k })), HD(''), I('关闭写作辅助', () => this.props.onAssist && this.props.onAssist('off'), { on: !on })] : [];
+    return { label: on ? $t('写作辅助：{s}', { s: A.STYLES[on].short }) : $t('写作辅助'), items };
+  }
+  /** The paragraph a node is in, when it is one the check reads: not a table's cell, a note, a caption or the works-cited list. */
+  gramBlockOf(node) { const ed = this.edRef.current, el = node && (node.nodeType === 3 ? node.parentElement : node), b = el && el.closest && el.closest('p,li,blockquote,h1,h2,h3'); return b && ed && ed.contains(b) && !b.closest('nav,table,.wd-fn,[data-caption]') && !b.querySelector('p,li') ? b : null; }
+  /** The caret moved: the paragraph it left is checked (when its text changed since its last check); the correction it is in is shown. */
+  gramCaret() {
+    const s = window.getSelection(), ed = this.edRef.current; if (!ed || !s.rangeCount || this.state.hf || !this.gram) return;
+    const b = ed.contains(s.anchorNode) ? this.gramBlockOf(s.anchorNode) : null;
+    if (b !== this.gramBlock) { const prev = this.gramBlock; this.gramBlock = b; if (prev && prev.isConnected && this.props.grammar && this.gramOn()) this.gramCheck(prev); }
+    this.gramShow();
+  }
+  /** Typed into a paragraph: its corrections no longer fit the text; they go until it is checked again (not while one is being taken). */
+  gramTouch() { if (this.gram && this.gram.size && !this.gramHold) this.gramDraw(); }
+  /** Asks the model about one paragraph (force: even when checked as it is) and keeps what it finds, placed in the text. */
+  async gramCheck(block, force) {
+    if (!block || !block.isConnected || !this.EN || !this.EN.ask || !this.G || !this.gram) return;
+    const t = this.blockText(block), text = t.text, was = this.gram.get(block);
+    if (!force && was && was.text === text) return;
+    if (text.trim().length < 12 || !/\p{L}[\s\S]*\p{L}/u.test(text)) { if (was) { this.gram.delete(block); this.gramDraw(); } return; }
+    const seq = ((was && was.seq) || 0) + 1;
+    this.gram.set(block, { text, issues: was && was.text === text ? was.issues : [], seq, busy: true });
+    const style = this.assistStyle(), q = this.G.prompt(text, { rules: style ? this.A.grammarRules(style) : '' });
+    let reply = '';
+    try { reply = await this.EN.ask(q.system, q.user, { maxTokens: 1200 }); }
+    catch (e) { if (!this.gramWarned && !this.gone) { this.gramWarned = true; this.props.toast && this.props.toast($t('语法检查暂时用不了：{msg}', { msg: $t(e.message) })); } }
+    if (this.gone) return;
+    const cur = this.gram.get(block); if (!cur || cur.seq !== seq) return;
+    cur.busy = false;
+    if (!block.isConnected || this.blockText(block).text !== text) return; // typed since: checked again when the caret leaves it next
+    cur.issues = this.G.anchor(this.G.parse(reply), text).filter(x => !this.gramNo.has(x.find + '\u2192' + x.replace));
+    this.gramDraw();
+  }
+  /** 检查语法: every paragraph of the text in turn, and how it went. */
+  async gramAll() {
+    if (!this.props.grammar) return this.props.toast && this.props.toast($t('先在「设置 › AI」里接入模型，再检查语法'));
+    if (this.gramBusy) return;
+    const ed = this.edRef.current; if (!ed || !this.gram) return;
+    const blocks = Array.from(ed.querySelectorAll('p,li,blockquote,h1,h2,h3')).filter(b => this.gramBlockOf(b) === b);
+    this.gramBusy = true; this.props.toast && this.props.toast($t('正在检查全文…'));
+    try { for (const b of blocks) { if (this.gone) return; await this.gramCheck(b, true); } }
+    finally { this.gramBusy = false; }
+    const n = Array.from(this.gram.values()).reduce((sum, g) => sum + g.issues.length, 0);
+    this.props.toast && this.props.toast(n ? $t('检查完成：{n} 处建议。光标移到划线处，按 Tab 接受，Esc 忽略', { n }) : $t('检查完成：没有发现问题'));
+  }
+  /** Draws every paragraph's corrections — a deletion struck through, a fix underlined — with the text itself untouched; stale ones go. */
+  gramDraw() {
+    if (!(window.CSS && CSS.highlights && window.Highlight) || !this.gram) return;
+    const del = [], fix = [];
+    for (const [block, g] of this.gram) {
+      if (!block.isConnected) { this.gram.delete(block); continue; }
+      if (!g.issues.length) continue;
+      const t = this.blockText(block); if (t.text !== g.text) { g.issues = []; continue; }
+      for (const x of g.issues) { const r = this.textRange(t, x.start, x.end); if (r) (x.replace === '' ? del : fix).push(r); }
+    }
+    const put = (name, rs) => { if (rs.length) CSS.highlights.set(name + this.pgId, new Highlight(...rs)); else CSS.highlights.delete(name + this.pgId); };
+    put('wdgdel', del); put('wdgfix', fix);
+    this.gramShow();
+  }
+  /** The correction the caret is in, explained under its line; none when the caret is elsewhere or text is selected. */
+  gramShow() {
+    const s = window.getSelection(), ed = this.edRef.current; let hit = null;
+    if (this.gram && this.gram.size && ed && s.rangeCount && s.isCollapsed && ed.contains(s.anchorNode) && !this.state.hf) {
+      const block = this.gramBlockOf(s.anchorNode), g = block && this.gram.get(block);
+      if (g && g.issues.length) {
+        const t = this.blockText(block);
+        if (t.text === g.text) { const head = document.createRange(); head.setStart(block, 0); head.setEnd(s.anchorNode, s.anchorOffset); const off = this.fragText(head), x = g.issues.find(y => off >= y.start && off <= y.end); if (x) hit = { block, t, x }; }
+      }
+    }
+    if ((hit && hit.x) !== (this.gramSug && this.gramSug.x)) { this.gramSug = hit; this.gramChip(); }
+  }
+  /** The chip under the correction at the caret: the words to go, the words to come, why; Tab takes it, ✕ (or Esc) says no. */
+  gramChip() {
+    const h = this.gramSug, sheet = this.fnRef.current && this.fnRef.current.parentElement; if (!sheet) return;
+    let g = this.gramEl; if (!g) { g = this.gramEl = document.createElement('div'); g.className = 'wd-gg'; g.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); if (e.target.closest('.wd-gg-x')) this.gramDismiss(); else this.gramAccept(); }); sheet.appendChild(g); }
+    if (window.CSS && CSS.highlights) CSS.highlights.delete('wdgon' + this.pgId);
+    if (!h) { g.style.display = 'none'; return; }
+    if (document.__writerComplete) document.__writerComplete.clear(); // one grey suggestion at a time
+    const r = this.textRange(h.t, h.x.start, h.x.end); if (!r) { g.style.display = 'none'; return; }
+    if (window.CSS && CSS.highlights && window.Highlight) CSS.highlights.set('wdgon' + this.pgId, new Highlight(r));
+    const rects = r.getClientRects(), last = rects[rects.length - 1] || r.getBoundingClientRect(), first = rects[0] || last, sr = sheet.getBoundingClientRect(), z = sr.width / (sheet.offsetWidth || sr.width || 1) || 1, esc = this.EN ? this.EN.esc : x => x;
+    const main = h.x.replace === '' ? `<s>${esc(h.x.find)}</s> <span style="color:var(--k11, #6E6E73)">${esc($t('删去'))}</span>` : `<s>${esc(h.x.find)}</s> → <b>${esc(h.x.replace)}</b>`;
+    g.innerHTML = `<span>${main}<span class="wd-gg-k">Tab</span><span class="wd-gg-x" title="${esc($t('忽略（Esc）'))}">✕</span></span>` + (h.x.why ? `<span class="wd-gg-why">${esc(h.x.why)}</span>` : '');
+    g.style.left = Math.max(0, (first.left - sr.left) / z) + 'px';
+    g.style.top = (last.bottom - sr.top + 6) / z + 'px';
+    g.title = $t('Tab 接受这条修改，Esc 忽略');
+    g.style.display = 'block';
+  }
+  /** Tab: the correction taken — its words deleted and the new ones typed through the editor's own input path, so revisions record it when they are on. */
+  gramAccept() {
+    const h = this.gramSug; if (!h) return false;
+    const t = this.blockText(h.block); this.gramSug = null; this.gramChip();
+    if (t.text !== h.t.text) return true;
+    const r = this.textRange(t, h.x.start, h.x.end); if (!r) return true;
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); this.range = r.cloneRange();
+    const g = this.gram.get(h.block), rest = g ? this.G.shift(g.issues, h.x) : []; // the others, moved by what this one adds or takes
+    this.gramHold = true; // the input events of the edit must not take the others for stale
+    try { document.execCommand('delete'); if (h.x.replace) document.execCommand('insertText', false, h.x.replace); }
+    finally { this.gramHold = false; }
+    if (g) { g.issues = rest; g.text = this.blockText(h.block).text; }
+    this.after(); this.gramDraw();
+    return true;
+  }
+  /** Esc: not this one (for as long as the document is open). */
+  gramDismiss() {
+    const h = this.gramSug; if (!h) return;
+    this.gramNo.add(h.x.find + '\u2192' + h.x.replace);
+    const g = this.gram.get(h.block); if (g) g.issues = g.issues.filter(x => x !== h.x);
+    this.gramSug = null; this.gramChip(); this.gramDraw();
+  }
+  /** Tab takes the correction offered at the caret, Esc says no to it (a citation offered there comes first). */
+  onGramKey = e => {
+    if (!this.gramSug || this.citeSug || e.isComposing || e.keyCode === 229 || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || (e.key !== 'Tab' && e.key !== 'Escape')) return;
+    e.preventDefault(); e.stopPropagation(); if (e.key === 'Tab') this.gramAccept(); else this.gramDismiss();
+  };
+  // ----- 书目页的粘贴框: a line under the works-cited list to paste a source into; the list's own contents are never saved -----
+  /** Puts the box under every works-cited list (again whenever the engine draws the list anew): an input for a DOI, an ISBN, a web
+   *  address or a whole reference, looked up as 管理源 does; what the lookup cannot find, the fast model reads. Its events stay in it. */
+  bibBox() {
+    const ed = this.edRef.current; if (!ed || !this.EN) return;
+    for (const nav of ed.querySelectorAll('nav[data-bib]')) {
+      nav.querySelectorAll('.wd-bib-add').forEach(x => x.remove());
+      const box = document.createElement('div'); box.className = 'wd-bib-add'; box.setAttribute('contenteditable', 'false');
+      const input = document.createElement('input'); input.type = 'text'; input.spellcheck = false; input.placeholder = $t('粘贴网址、DOI、ISBN 或整条参考文献，回车加入书目');
+      const status = document.createElement('span'); status.className = 'wd-bib-add-s';
+      box.append(input, status);
+      for (const ev of ['input', 'beforeinput', 'keydown', 'keypress', 'keyup', 'paste', 'cut', 'copy', 'mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'selectstart', 'compositionstart'])
+        box.addEventListener(ev, e => { e.stopPropagation(); if (ev === 'keydown' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); this.bibAdd(box); } });
+      nav.appendChild(box);
+    }
+  }
+  /** Enter in the box: the source looked up and kept in the file; the engine draws the list again with it in its place. */
+  async bibAdd(box) {
+    const input = box.querySelector('input'), status = box.querySelector('.wd-bib-add-s'), q = (input.value || '').trim(); if (!q || box.busy || !this.EN) return;
+    box.busy = true; input.disabled = true; status.textContent = $t('正在查找…');
+    let note = '';
+    try {
+      let r = await this.EN.lookupSource(q);
+      if (!r) r = await this.bibGuess(q);
+      if (!r) { status.textContent = $t('没有找到这条来源。可以粘贴它的 DOI，或在「管理源」里手动填写。'); return; }
+      const saved = await this.EN.citeEdit(this.doc, r.source, this.edRef.current);
+      this.change({ sources: saved.sources, html: this.edRef.current.innerHTML }, true);
+      note = $t('已加入：{label}', { label: this.srcLabel(r.source) }) + (r.from === 'model' ? $t('（由 AI 读取，请核对）') : '');
+      this.citeScan();
+    } catch (e) { status.textContent = $t(e.message); return; }
+    finally { box.busy = false; input.disabled = false; }
+    this.bibBox(); // the list was drawn again: a fresh box under it
+    const nb = this.edRef.current && this.edRef.current.querySelector('nav[data-bib] .wd-bib-add'); if (nb) { nb.querySelector('.wd-bib-add-s').textContent = note; nb.querySelector('input').focus(); }
+  }
+  /** What the lookup cannot find — a page without citation tags, a reference in an unusual form — the fast model reads into the source's
+   *  fields (assist.js sourcePrompt): nothing it does not see is made up, and the writer is told to check it. */
+  async bibGuess(q) {
+    if (!this.props.grammar || !this.A || !this.EN.ask) return null;
+    let page = '';
+    if (/^(https?:\/\/|www\.)/i.test(q)) { try { page = this.A.pageText(await this.EN.citePage(/^www\./i.test(q) ? 'https://' + q : q)); } catch (e) { page = ''; } }
+    const p = this.A.sourcePrompt(q, page);
+    try { const src = this.A.parseSource(await this.EN.ask(p.system, p.user, { maxTokens: 700 })); if (!src) return null; if (page && !src.url) src.url = q; return { source: src, from: 'model' }; } catch (e) { return null; }
+  }
   /** Where typing and the ribbon go: the header or footer being edited, else the text. */
   /** The canvas's padding above the page: under the title bar, or in 纯净模式 clear of the lights. */
   get cvTop() { return CV_PAD[0]; } // 沉浸书写 keeps the page where it is: only the chrome around it goes
   get root() { return (this.state.hf && this.hfRef.current) || this.edRef.current; }
   onSel = () => {
-    this.citeCaret();
+    this.citeCaret(); this.gramCaret();
     const ed = this.root, s = window.getSelection(); if (!ed || !s.rangeCount) return;
     const r = s.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return;
     this.range = r.cloneRange();
@@ -1975,16 +2167,16 @@ class Component extends DCLogic {
     const ed = this.edRef.current; if (!ed || !this.EN) return;
     const old = ed.querySelector('nav[data-bib]'); if (old) { this.focusEl(old); return this.props.toast && this.props.toast($t('文档里已经有书目，保存时会按来源更新')); }
     const box = document.createElement('div'); box.innerHTML = this.EN.bibHtml('', this.EN.listTitle(this.doc.citeStyle || 'mla'), ''); ed.appendChild(box.firstChild);
-    this.after(); this.focusEl(ed.lastChild);
+    this.bibBox(); this.after(); this.focusEl(ed.lastChild);
   }
   /** The document's citation style: every citation and the list are drawn again in it (in the file now, then shown). */
   async setCiteStyle(name) {
     if (!this.EN || (this.doc.citeStyle || 'mla') === name && this.doc.citeStyle) return;
-    try { const r = await this.EN.citeEdit(this.doc, { citationStyle: name }, this.edRef.current); this.change({ sources: r.sources, citeStyle: name, html: this.edRef.current.innerHTML }, true); }
+    try { const r = await this.EN.citeEdit(this.doc, { citationStyle: name }, this.edRef.current); this.bibBox(); this.change({ sources: r.sources, citeStyle: name, html: this.edRef.current.innerHTML }, true); }
     catch (e) { this.props.toast && this.props.toast(e.message); }
   }
   /** 更新引文和书目: what the engine draws from the sources now, shown (a save draws them too). */
-  async refreshCites() { if (!this.EN) return; await this.EN.refreshCites(this.doc, this.edRef.current); this.change({ html: this.edRef.current.innerHTML, notes: this.doc.notes }, true); }
+  async refreshCites() { if (!this.EN) return; await this.EN.refreshCites(this.doc, this.edRef.current); this.bibBox(); this.change({ html: this.edRef.current.innerHTML, notes: this.doc.notes }, true); }
   /** 管理源: the document's sources, a box to look one up, and its form. `then` 'cite' puts a citation of the source saved at the caret. */
   openSources(then) { this.setState({ srcDlg: { q: '', status: '', kind: '', form: null, busy: false, then: then || null } }); }
   /** 插入引文's menu: the document's sources, then one to add (and cite) a new one. */
@@ -2025,14 +2217,14 @@ class Component extends DCLogic {
     const json = this.srcJson(dlg.form); if (!json.title && !(json.authors || []).length) return this.srcSet({ status: $t('至少填写标题或作者'), kind: 'err' });
     this.srcSet({ busy: true });
     try {
-      const r = await this.EN.citeEdit(this.doc, json, this.edRef.current);
+      const r = await this.EN.citeEdit(this.doc, json, this.edRef.current); this.bibBox();
       this.change({ sources: r.sources, html: this.edRef.current.innerHTML }, true);
       if (dlg.then === 'cite' && r.tag) { this.setState({ srcDlg: null }); this.insertCite(r.tag); return; }
       this.srcSet({ busy: false, form: null, q: '', status: $t('已保存'), kind: 'ok', preview: '' });
     } catch (e) { this.srcSet({ busy: false, status: e.message, kind: 'err' }); }
   }
   async srcDelete(tag) {
-    try { const r = await this.EN.citeEdit(this.doc, { tag, remove: true }, this.edRef.current); this.change({ sources: r.sources, html: this.edRef.current.innerHTML }, true); this.srcSet({ status: '' }); }
+    try { const r = await this.EN.citeEdit(this.doc, { tag, remove: true }, this.edRef.current); this.bibBox(); this.change({ sources: r.sources, html: this.edRef.current.innerHTML }, true); this.srcSet({ status: '' }); }
     catch (e) { this.srcSet({ status: e.code === 'VALIDATION' ? $t('文中还引用着这条来源，先删掉那些引文') : e.message, kind: 'err' }); }
   }
   /** A citation clicked: its settings next to it. */
@@ -2655,7 +2847,8 @@ class Component extends DCLogic {
       G('引文与书目', R(lab('样式@@cite'), sp(), sel('cstyle', $t(((EN && EN.CITE_STYLES) || []).find(x => x[0] === (d.citeStyle || 'mla'))?.[1] || 'MLA 第 9 版'), ((EN && EN.CITE_STYLES) || []).map(([key, l]) => I(l, () => this.setCiteStyle(key), { on: (d.citeStyle || 'mla') === key })), { w: 190, title: '引文和书目的格式；换样式后所有引文和书目自动改写' })),
         R(menuBtn('cite-go', '插入引文', 'cite', this.citeItems(I, HD), { title: '在光标处插入所选来源的引文；Chicago 脚注样式插入脚注' }), btn('管理源', 'sources', () => this.openSources(), { title: '粘贴 DOI、ISBN、网址或整条参考文献，自动查到来源' })),
         R(btn('插入书目', 'bib', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }), btn('更新@@cite', 'refresh', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' })),
-        R(chk('引文建议', this.citeHints(), v => { try { localStorage.setItem('writerCiteHints', v ? 'on' : 'off'); } catch (e) { } this.citeFind(); this.forceUpdate(); }, { title: '像是用了某个来源却没有引文的句子标成灰色，句末给出建议的引文，按 Tab 插入' }))),
+        R(chk('引文建议', this.citeHints(), v => { try { localStorage.setItem('writerCiteHints', v ? 'on' : 'off'); } catch (e) { } this.citeFind(); this.forceUpdate(); }, { title: '像是用了某个来源却没有引文的句子标成灰色，句末给出建议的引文，按 Tab 插入' })),
+        R(lab('写作辅助'), sp(), sel('assist', this.assistMenu(I, HD).label, this.assistMenu(I, HD).items, { w: 190, title: '按论文格式协助写作：引文和书目按这个格式排版，语法检查带上它的规范，AI 助手知道这是什么论文' }))),
       G('题注', R(btn('题注包含章节号', 'numbers', () => { const p = this.caretBlock(); if (!p?.hasAttribute('data-w-caption')) return; p.setAttribute('data-w-captionchapter', '1'); this.numberCaptions(this.edRef.current); this.change({ html: this.edRef.current.innerHTML, headingNumbering: d.headingNumbering || 'decimal' }); }), btn('连续题注编号', 'numbers', () => { const p = this.caretBlock(); if (!p?.hasAttribute('data-w-caption')) return; p.removeAttribute('data-w-captionchapter'); this.numberCaptions(this.edRef.current); this.after(); })), R(btn('图目录', 'toc', () => this.insertToc('图')), btn('表目录', 'toc', () => this.insertToc('表'))), R(btn('插入题注', 'picture', () => this.insertCaption(capLabel), { title: '图、表、公式的题注，编号自动更新' }),
         sel('caplab', $t('标签：{l}', { l: capLabel }), CAPTIONS.map(l => I(l, () => this.setState({ capLabel: l }), { on: capLabel === l })), { w: 120, title: '题注标签' }))),
       G('交叉引用', R(sel('xkind', $t('引用：{k}', { k: $t(kinds.find(x => x[0] === kind)[1]) }), kinds.map(([key, l]) => I(l, () => this.setState({ xrefKind: key }), { on: kind === key })), { title: '引用的类型' }),
@@ -2685,6 +2878,9 @@ class Component extends DCLogic {
         R(lab('显示'), sp(), sel('markup', $t({ all: '所有标记', none: '无标记', original: '原始版本' }[st.markup || 'all']), null, { w: 132, title: '所有标记：修订和批注都显示；无标记：显示修改后的样子；原始版本：显示修改前的样子' })),
         ...(d.formatRevisions || []).map(r => R(lab((r.author || 'Writer') + ': ' + r.text.slice(0, 36)), btn('接受格式', 'check', () => this.resolveFormat(r.id, true)), btn('拒绝格式', 'cross', () => this.resolveFormat(r.id, false)))),
         R(btn('全部接受', 'check', () => this.resolveTrack(true), { title: '接受所有修订' }), btn('全部拒绝', 'cross', () => this.resolveTrack(false), { title: '拒绝所有修订' }))),
+      G('语法检查', R(btn('检查全文', 'check', () => this.gramAll(), { title: '用 AI 检查全文的拼写、语法和格式：建议标在文字上，光标移到那里按 Tab 接受，Esc 忽略' })),
+        R(lab('写完一段自动检查'), sp(), sw(this.gramOn(), v => this.gramSet(v), '光标离开一段时，这一段会发给模型检查：要删的字划线，有问题的地方画波浪线')),
+        !this.props.grammar && R(empty($t('接入模型后可用：设置 › AI')))),
       G('查找与替换', R(input('查找', st.fq, e => this.setState({ fq: e.target.value, fcount: null }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.findNext(); } }, this.panelFindRef)),
         R(input('替换为', st.fr, e => this.setState({ fr: e.target.value }), e => { if (e.key === 'Enter' && !(e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) { e.preventDefault(); this.replaceOne(); } }, null, '替换为：回车替换找到的这一处')),
         R(lab('区分大小写'), sp(), sw(!!st.findCase, v => this.setState({ findCase: v, fcount: null }))),
@@ -2855,7 +3051,8 @@ class Component extends DCLogic {
       M('cstyle', '引文样式', ((this.EN && this.EN.CITE_STYLES) || []).map(([key, l]) => I(l, () => this.setCiteStyle(key), { on: (d.citeStyle || 'mla') === key })), '引文和书目的格式；换样式后所有引文和书目自动改写'),
       M('cite', '插入引文', this.citeItems(I, HD), '在光标处插入所选来源的引文；Chicago 脚注样式插入脚注'),
       B('管理源', () => this.openSources(), { title: '粘贴 DOI、ISBN、网址或整条参考文献，自动查到来源' }), B('书目', () => this.insertBib(), { title: '在文档末尾插入作品引用列表：按样式排序、悬挂缩进、另起一页' }),
-      B('更新引文和书目', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' }), SEP,
+      B('更新引文和书目', () => this.refreshCites(), { title: '按来源重新生成所有引文和书目' }),
+      M('assist', this.assistMenu(I, HD).label, this.assistMenu(I, HD).items, '按论文格式协助写作：引文和书目按这个格式排版，语法检查带上它的规范，AI 助手知道这是什么论文'), SEP,
       M('cap', '插入题注', CAPTIONS.map(l => I(l, () => this.insertCaption(l))), '图、表、公式的题注，编号自动更新'),
       M('xref', '交叉引用', (g => g.length ? g : [I('没有可引用的标题、题注或书签', () => { })])([['heading', '标题'], ['caption', '题注'], ['bookmark', '书签']].flatMap(([k, l]) => { const list = bookmarks.filter(t => t.kind === k); return list.length ? [HD($t(l)), ...list.map(t => I(t.label, () => this.insertRef(t)))] : []; })), '引用标题、题注或书签；在 Word 中按住 Ctrl 点击可跳转')
     ];
@@ -2875,6 +3072,8 @@ class Component extends DCLogic {
         I('批注', () => this.setState({ hideCm: !st.hideCm }), { on: !st.hideCm })], '所有标记：修订和批注都显示；无标记：显示修改后的样子；原始版本：显示修改前的样子'),
       B(d.track ? '修订：开' : '修订：关', () => this.change({ track: !d.track }), { on: !!d.track, title: '开启后，插入与删除会被标记' }),
       B('接受所有修订', () => this.resolveTrack(true)), B('拒绝所有修订', () => this.resolveTrack(false)), SEP,
+      B('检查语法', () => this.gramAll(), { title: '用 AI 检查全文的拼写、语法和格式：建议标在文字上，光标移到那里按 Tab 接受，Esc 忽略', dis: !this.props.grammar }),
+      B(this.gramOn() ? '自动检查：开' : '自动检查：关', () => this.gramSet(!this.gramOn()), { on: this.gramOn(), title: '写完一段、光标离开时自动检查这一段' }), SEP,
       B('查找替换', () => { this.focusFind = true; this.setState({ showFind: true }); })
     ];
     const web = st.view === 'web';
@@ -3018,7 +3217,7 @@ class Component extends DCLogic {
       onSheetDbl: e => { if (hf && !(e.target.closest && e.target.closest('.wd-hfbox,[data-hfbar]'))) this.exitHF(); // double-click the text: back to it
         const mk = !hf && e.target.closest && e.target.closest('.wd-ed sup[data-fn]'); if (mk && this.paged) this.toNote(mk.getAttribute('data-fn')); }, // a note's mark: to the note, as Word
       onKey: this.onKey, // the text's own keys (查找 Ctrl+F, 链接 Ctrl+K, Tab in tables and lists…)
-      onInput: e => { if (this.selImg) this.selectImg(null); if (this.state.ctxBar) this.setState({ ctxBar: null }); this.sync(TYPED.test((e && (e.nativeEvent || e).inputType) || '')); },
+      onInput: e => { if (this.selImg) this.selectImg(null); if (this.state.ctxBar) this.setState({ ctxBar: null }); this.sync(TYPED.test((e && (e.nativeEvent || e).inputType) || '')); this.gramTouch(); },
       onEdClick: e => {
         const t = e.target;
         if (t.tagName === 'IMG') { if (t !== this.selImg) this.selectImg(t); }

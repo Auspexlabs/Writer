@@ -1,7 +1,7 @@
 // Word templates for the new-file gallery (see lib.mjs for how a template is written, build.mjs for how it is built).
 import { span, esc, bold, lines, NAVY, INK, CLAY, SLATE, PLUM, OCHRE } from './lib.mjs';
 
-export const cats = [['简历求职', 'Résumés & Jobs'], ['报告计划', 'Reports & Plans'], ['行政办公', 'Office & Admin'], ['合同信函', 'Contracts & Letters'], ['学习', 'Study']];
+export const cats = [['简历求职', 'Résumés & Jobs'], ['报告计划', 'Reports & Plans'], ['行政办公', 'Office & Admin'], ['合同信函', 'Contracts & Letters'], ['学习', 'Study'], ['学术论文', 'Academic Papers']];
 
 // ---- shared pieces ----
 const heading = (d, C, text, level = 2) => d[level === 1 ? 'h1' : level === 3 ? 'h3' : 'h2'](span(text, { color: C.acc }));
@@ -28,6 +28,48 @@ const signOff = async (d, t, who, date) => {
   await d.p(esc(date), { align: t('right', 'left') });
 };
 const check = (...items) => items.map(x => '☐ ' + x).join('　');
+
+// ---- academic papers (mla-paper, apa-paper, chicago-paper): one essay, cited three ways ----
+/** The paper the three templates share: its title, its sources (real ones, in the engine's source JSON) and its paragraphs. A
+ *  paragraph's `cite` names the source it draws on and the page; the text ends in " ." so that an in-text citation lands before
+ *  the period with a space in front of it (the engine puts it exactly at the offset), and a Chicago note lands after it. */
+const PAPER = {
+  title: 'The Quiet Commons: Public Libraries and the Renewal of Civic Life',
+  sources: [
+    { tag: 'Put95', type: 'article', authors: [{ last: 'Putnam', first: 'Robert D.' }], title: "Bowling Alone: America's Declining Social Capital", container: 'Journal of Democracy', year: '1995', volume: '6', issue: '1', pages: '65-78', doi: '10.1353/jod.1995.0002' },
+    { tag: 'Old99', type: 'book', authors: [{ last: 'Oldenburg', first: 'Ray' }], title: 'The Great Good Place: Cafés, Coffee Shops, Bookstores, Bars, Hair Salons, and Other Hangouts at the Heart of a Community', publisher: 'Marlowe', place: 'New York', year: '1999' },
+    { tag: 'Jac61', type: 'book', authors: [{ last: 'Jacobs', first: 'Jane' }], title: 'The Death and Life of Great American Cities', publisher: 'Random House', place: 'New York', year: '1961' },
+    { tag: 'Kli18', type: 'newspaper', authors: [{ last: 'Klinenberg', first: 'Eric' }], title: 'To Restore Civil Society, Start with the Library', container: 'The New York Times', year: '2018', month: '9', day: '8', url: 'https://www.nytimes.com/2018/09/08/opinion/sunday/civil-society-library.html', accessed: '2026-10-01' },
+  ],
+  body: [
+    { heading: 'Introduction', text: 'Every weekday afternoon the reading room of a branch library fills with people who have nowhere else to be together: students sharing a table, retirees with the newspapers, parents waiting out the rain. Such rooms are easy to overlook, yet they do something the rest of the city has largely stopped doing. This essay argues that the public library has become the last widely available third place in American life, and that its value lies less in its collection than in the ordinary contact it makes possible.' },
+    { heading: 'The Decline of Association', text: 'The loss of that contact is well documented. Membership in civic associations fell steadily through the second half of the twentieth century, and with it went the informal trust that such membership sustains .', cite: 'Put95', pages: '67' },
+    { text: 'Oldenburg gives the missing ingredient a name. A third place is neither home nor work but a neutral ground where conversation is the main activity and where the regulars set the tone .', cite: 'Old99', pages: '16', named: true },
+    { heading: 'The Library as Social Infrastructure', text: 'Jane Jacobs observed decades earlier that the life of a street depends on "eyes upon the street" and on the small, unplanned exchanges of the people who share it .', cite: 'Jac61', pages: '35', named: true },
+    { text: 'A library extends that sidewalk logic indoors. Nobody has to buy anything to stay, the rules are few and the same for everyone, and the person at the next table is as likely to be a stranger as a neighbour. Recent reporting makes the same point in the language of engineering: branches serve as social infrastructure in the way that bridges and power lines serve as physical infrastructure .', cite: 'Kli18' },
+    { heading: 'Conclusion', text: 'None of this means that books no longer matter; the collection is the reason the room exists. But what the reading room offers, more than any single service, is a place to be among strangers without owing anyone anything, and that is what a civic life is made of.' },
+  ],
+};
+/** Letter paper, one-inch margins, Times New Roman 12 double-spaced with no space between paragraphs (what MLA, APA and Chicago
+ *  all ask for), the page's header or footer, the citation style, and the paper's sources. */
+async function paperSetup(d, style, page) {
+  await d.page(Object.assign({ page: 'Letter', margin: '1in' }, page));
+  await d.set('/', { style: { id: 'Normal', font: 'Times New Roman', size: 12, lineSpacing: '2', spaceBefore: '0pt', spaceAfter: '0pt' }, citationStyle: style });
+  for (const s of PAPER.sources) await d.set('/', { source: s });
+}
+/** The paragraphs, each indented half an inch, cited in the style: MLA and APA put a citation in the text before the period
+ *  (MLA leaves the author out when the sentence names them; APA keeps author and year), Chicago puts a note after the period,
+ *  so its text has no space before it. APA and Chicago have their headings; an MLA essay reads on. */
+async function body(d, style) {
+  for (const x of PAPER.body) {
+    if (x.heading && style !== 'mla' && x.heading !== 'Introduction') await d.h1(esc(x.heading));
+    const text = style === 'chicago' ? x.text.replace(/ \.$/, '.') : x.text;
+    const r = await d.p(esc(text), { indentFirst: '0.5in' });
+    if (!x.cite) continue;
+    if (style === 'chicago') await d.run(['add', d.file, r.path, '--type', 'footnote', '--prop', 'cite=' + x.cite, ...(x.pages ? ['--prop', 'pages=' + x.pages] : [])]);
+    else await d.run(['add', d.file, r.path, '--type', 'citation', '--prop', 'sources=' + x.cite, '--prop', 'at=' + (text.length - 1), ...(x.pages ? ['--prop', 'pages=' + x.pages] : []), ...(x.named && style === 'mla' ? ['--prop', 'noAuthor=true'] : [])]);
+  }
+}
 
 export default [
   {
@@ -437,6 +479,49 @@ export default [
         [L(t('部门负责人意见', 'Manager')), { html: esc(t('☐ 同意　☐ 不同意', '☐ Approved　☐ Declined')), valign: 'top' }, L(t('人力资源部意见', 'Human Resources')), { html: esc(t('☐ 同意　☐ 不同意', '☐ Approved　☐ Declined')), valign: 'top' }],
         [L(t('备注', 'Notes')), { html: span(t('1. 请假 1 天以内由部门负责人审批，3 天以上需分管副总审批。2. 病假需附医院证明。3. 本单一式两份，人力资源部与部门各存一份。', '1. Up to one day is approved by the manager; more than three days also needs the division head. 2. Sick leave needs a medical note. 3. Two copies: one for HR, one for the department.'), { size: 9.5, color: C.sub }), colspan: 3 }, null, null],
       ], { widths: ['3.2cm', '5cm', '3.2cm', '5cm'], borders: 'all', borderColor: C.line, heights: [1, 1, 1, 1, 1, 3.2, 2.2, 1, 3.4, 2] });
+    },
+  },
+  // ---- academic papers: the paper's body is English in both languages (an MLA, APA or Chicago paper is written in English);
+  // the sources are real and kept as Word keeps them, cited through the engine, so the paper starts with working citations
+  // and a works-cited list that redraws itself as sources are added ----
+  {
+    id: 'mla-paper', cat: '学术论文', name: ['MLA 论文', 'MLA Paper'],
+    async build(d) {
+      await paperSetup(d, 'mla', { header: '<p style="text-align:right">Chen {page}</p>' });
+      for (const line of ['Alex Chen', 'Professor Maria Rivera', 'English 102', '14 October 2026']) await d.p(esc(line));
+      await d.p(esc(PAPER.title), { align: 'center' });
+      await body(d, 'mla');
+      await d.run(['add', d.file, '/body', '--type', 'bibliography']);
+    },
+  },
+  {
+    id: 'apa-paper', cat: '学术论文', name: ['APA 论文', 'APA Paper'],
+    async build(d) {
+      await paperSetup(d, 'apa', { header: '<p style="text-align:right">{page}</p>' });
+      await d.set('/', { style: { id: 'Heading1', font: 'Times New Roman', size: 12, bold: true, color: '000000', align: 'center', spaceBefore: '0pt', spaceAfter: '0pt', lineSpacing: '2' } });
+      await d.set('/', { style: { id: 'Heading2', font: 'Times New Roman', size: 12, bold: true, color: '000000', align: 'left', spaceBefore: '0pt', spaceAfter: '0pt', lineSpacing: '2' } });
+      for (let i = 0; i < 3; i++) await d.p('');
+      await d.p(bold(PAPER.title), { align: 'center' });
+      await d.p('');
+      for (const line of ['Alex Chen', 'Department of English, Lakeside University', 'ENG 102: Composition and Research', 'Professor Maria Rivera', 'October 14, 2026']) await d.p(esc(line), { align: 'center' });
+      await d.pagebreak();
+      await d.p(bold(PAPER.title), { align: 'center' });
+      await body(d, 'apa');
+      await d.run(['add', d.file, '/body', '--type', 'bibliography']);
+    },
+  },
+  {
+    id: 'chicago-paper', cat: '学术论文', name: ['Chicago 论文', 'Chicago Paper'],
+    async build(d) {
+      await paperSetup(d, 'chicago', { footer: '<p style="text-align:center">{page}</p>', titlePg: true });
+      await d.set('/', { style: { id: 'Heading1', font: 'Times New Roman', size: 12, bold: true, color: '000000', align: 'center', spaceBefore: '0pt', spaceAfter: '0pt', lineSpacing: '2' } });
+      for (let i = 0; i < 8; i++) await d.p('');
+      await d.p(bold(PAPER.title), { align: 'center' });
+      for (let i = 0; i < 8; i++) await d.p('');
+      for (const line of ['Alex Chen', 'History 210: The American City', 'Professor Maria Rivera', 'October 14, 2026']) await d.p(esc(line), { align: 'center' });
+      await d.pagebreak();
+      await body(d, 'chicago');
+      await d.run(['add', d.file, '/body', '--type', 'bibliography']);
     },
   },
 ];
