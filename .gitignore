@@ -11,7 +11,7 @@ dist/
 !website/dist/**
 
 # certificates, provisioning profiles and API keys for release builds (never committed)
-.signing/
+.signing
 desktop/SIGNING.local.md
 website/.deploy.local
 website/.stats/
